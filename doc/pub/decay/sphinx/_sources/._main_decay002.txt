@@ -152,8 +152,8 @@ we make use of
  * ``zeros(Nt+1)`` for creating an array of a size ``Nt+1``
    and initializing the elements to zero
 
- * ``linspace(0, T, Nt+1)`` for creating an array with ``Nt+1`` coordinates uniformly
-   distributed between ``0`` and ``T``
+ * ``linspace(0, T, Nt+1)`` for creating an array with ``Nt+1``
+   coordinates uniformly distributed between ``0`` and ``T``
 
 The ``for`` loop deserves a comment, especially for newcomers to Python.
 The construction ``range(0, Nt, s)`` generates all integers from ``0`` to ``Nt``
@@ -312,8 +312,7 @@ Running the program
 ~~~~~~~~~~~~~~~~~~~
 
 The function and main program shown above must be placed in a file,
-say with name `decay_v1.py <http://tinyurl.com/jvzzcfn/decay/decay_v1.py>`__ (``v1`` stands for "version 1" - we shall make
-numerous different versions of this program).  Make sure you
+say with name `decay_v1.py <http://tinyurl.com/jvzzcfn/decay/decay_v1.py>`__ (``v1`` for 1st version of this program).  Make sure you
 write the code with a suitable text editor (Gedit, Emacs, Vim,
 Notepad++, or similar).  The program is run by executing the file this
 way:
@@ -375,22 +374,114 @@ The reason is that such typesetting
 makes the text more compact in the vertical direction
 than showing sessions with IPython syntax.
 
-.. Explain running programs in IPython
+.. index:: plotting curves
 
-.. Prompt: maybe just something with Unix to promote virtual Ubuntu
+.. index:: visualizing curves
+
+Plotting the solution
+~~~~~~~~~~~~~~~~~~~~~
+
+Having the ``t`` and ``u`` arrays, the approximate solution ``u`` is visualized
+by the intuitive command ``plot(t, u)``:
+
+.. code-block:: python
+
+        from matplotlib.pyplot import *
+        plot(t, u)
+        show()
+
+It will be illustrative to also plot :math:`{u_{\small\mbox{e}}}(t)` for comparison. We first
+need to make a function for computing the analytical solution :math:`{u_{\small\mbox{e}}}(t)=Ie^{-at}`
+of the model problem:
+
+.. code-block:: python
+
+        def exact_solution(t, I, a):
+            return I*exp(-a*t)
+
+It is tempting to just do
+
+.. code-block:: python
+
+        u_e = exact_solution(t, I, a)
+        plot(t, u, t, u_e)
+
+However, this is not exactly what we want: the ``plot`` function draws
+straight lines between the discrete points ``(t[n], u_e[n])`` while
+:math:`{u_{\small\mbox{e}}}(t)` varies as an exponential function between the mesh points.
+The technique for showing the "exact" variation of :math:`{u_{\small\mbox{e}}}(t)` between
+the mesh points is to introduce a very fine mesh for :math:`{u_{\small\mbox{e}}}(t)`:
+
+.. code-block:: python
+
+        t_e = linspace(0, T, 1001)      # fine mesh
+        u_e = exact_solution(t_e, I, a)
+
+We can also plot the curves with different colors and styles, e.g.,
+
+.. code-block:: python
+
+        plot(t_e, u_e, 'b-',         # blue line for u_e
+             t,   u,   'r--o')       # red dashes w/circles
+
+With more than one curve in the plot we need to associate each curve
+with a legend. We also want appropriate names on the axis, a title,
+and a file containing the plot as an image for inclusion in reports.
+The Matplotlib package (``matplotlib.pyplot``) contains functions for
+this purpose. The names of the functions are similar to the plotting
+functions known from MATLAB.  A complete function for creating
+the comparison plot becomes
+
+.. code-block:: python
+
+        from matplotlib.pyplot import *
+        
+        def plot_numerical_and_exact(theta, I, a, T, dt):
+            """Compare the numerical and exact solution in a plot."""
+            u, t = solver(I=I, a=a, T=T, dt=dt, theta=theta)
+        
+            t_e = linspace(0, T, 1001)        # fine mesh for u_e
+            u_e = exact_solution(t_e, I, a)
+        
+            plot(t,   u,   'r--o',            # red dashes w/circles
+                 t_e, u_e, 'b-')              # blue line for exact sol.
+            legend(['numerical', 'exact'])
+            xlabel('t')
+            ylabel('u')
+            title('theta=%g, dt=%g' % (theta, dt))
+            savefig('plot_%s_%g.png' % (theta, dt))
+        
+        plot_numerical_and_exact(I=1, a=2, T=8, dt=0.8, theta=1)
+        show()
+
+Note that ``savefig`` here creates a PNG file whose name reflects the
+values of :math:`\theta` and :math:`\Delta t` so that we can easily distinguish
+files from different runs with :math:`\theta` and :math:`\Delta t`.
+
+The complete code is found in the file
+`decay_v2.py <http://tinyurl.com/jvzzcfn/decay/decay_v2.py>`__. The resulting plot
+is shown in Figure :ref:`decay:fig:v2`. As seen, there is quite some
+discrepancy between the exact and the numerical solution.
+Fortunately, the numerical solution approaches the exact one as
+:math:`\Delta t` is reduced.
+
+.. figure:: decay_v2.png
+   :width: 500
 
 Verifying the implementation
 ----------------------------
 
 It is easy to make mistakes while deriving and implementing numerical
-algorithms, so we should never believe in the printed :math:`u` values before
-they have been thoroughly verified. The most obvious idea is to compare
-the computed solution with the exact solution, when that exists,
-but there will always be a discrepancy between these two solutions
-because of the numerical approximations. The challenging question is whether
-we have the mathematically correct discrepancy or if we have another,
-maybe small, discrepancy due to both an approximation error
-and an error in the implementation.
+algorithms, so we should never believe in the solution before it has
+been thoroughly verified.  The most obvious idea to verify the
+computations is to compare the numerical solution with the exact
+solution, when that exists, but there will always be a discrepancy
+between these two solutions because of the numerical
+approximations. The challenging question is whether we have the
+mathematically correct discrepancy or if we have another, maybe small,
+discrepancy due to both an approximation error and an error in the
+implementation. When looking at Figure :ref:`decay:fig:v2`, it is
+impossible to judge whether the program is correct or not.
 
 The purpose of *verifying* a program is to bring evidence for the
 property that there are no errors in the implementation. To avoid
@@ -456,31 +547,20 @@ conventions are three-fold:
    in program abortion (due to an ``AssertionError`` exception) if
    the test failed.
 
-The main program, where we call the ``solver`` function and print ``u``,
-is now put in a separate function ``main``:
-
-.. code-block:: python
-
-        def main():
-            u, t = solver(I=1, a=2, T=8, dt=0.8, theta=1)
-            # Write out a table of t and u values:
-            for i in range(len(t)):
-                print 't=%6.3f u=%g' % (t[i], u[i])
-                # or print 't={t:6.3f} u={u:g}'.format(t=t[i], u=u[i])
-
-The main program in the file may first run the verification test
-prior to going on with the real simulation (``main()``):
+The main program can routinely run the verification test prior to
+solving the real problem:
 
 .. code-block:: python
 
         test_solver_three_steps()
-        main()
+        plot_numerical_and_exact(I=1, a=2, T=8, dt=0.8, theta=1)
+        show()
 
-Since the verification test is always done, future errors introduced
-accidentally in the program have a good chance of being detected.
-
+(Rather than calling ``test_*()`` functions explicitly, one will
+normally ask a testing framework like nose
+or pytest to find and run such functions.)
 The complete program including the verification above is
-found in the file `decay_verf.py <http://tinyurl.com/jvzzcfn/decay/decay_verf.py>`__.
+found in the file `decay_v3.py <http://tinyurl.com/jvzzcfn/decay/decay_v3.py>`__.
 
 .. _decay:computing:error:
 
@@ -491,14 +571,6 @@ Now that we have some evidence for a correct implementation, we are in a
 position to compare the computed :math:`u^n` values in the ``u`` array with
 the exact :math:`u` values at the mesh points, in order to study the error
 in the numerical solution.
-
-Let us first make a function for the analytical solution :math:`{u_{\small\mbox{e}}}(t)=Ie^{-at}`
-of the model problem:
-
-.. code-block:: python
-
-        def exact_solution(t, I, a):
-            return I*exp(-a*t)
 
 .. index:: representative (mesh function)
 
@@ -792,75 +864,12 @@ Plotting solutions
 
 .. index:: visualizing curves
 
-Having the ``t`` and ``u`` arrays, the approximate solution ``u`` is visualized
-by the intuitive command ``plot(t, u)``:
-
-.. code-block:: python
-
-        from matplotlib.pyplot import *
-        plot(t, u)
-        show()
-
-Plotting multiple curves
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-It will be illustrative to also plot :math:`{u_{\small\mbox{e}}}(t)` for comparison. Doing a
-``plot(t, u_e)`` is not exactly what we want: the ``plot`` function draws
-straight lines between the discrete points ``(t[n], u_e[n])`` while
-:math:`{u_{\small\mbox{e}}}(t)` varies as an exponential function between the mesh points.
-The technique for showing the "exact" variation of :math:`{u_{\small\mbox{e}}}(t)` between
-the mesh points is to introduce a very fine mesh for :math:`{u_{\small\mbox{e}}}(t)`:
-
-.. code-block:: python
-
-        t_e = linspace(0, T, 1001)      # fine mesh
-        u_e = exact_solution(t_e, I, a)
-        plot(t_e, u_e, 'b-')            # blue line for u_e
-        plot(t,   u,   'r--o')          # red dashes w/circles
-
-With more than one curve in the plot we need to associate each curve
-with a legend. We also want appropriate names on the axis, a title,
-and a file containing the plot as an image for inclusion in reports.
-The Matplotlib package (``matplotlib.pyplot``) contains functions for
-this purpose. The names of the functions are similar to the plotting
-functions known from MATLAB.  A complete plot session then becomes
-
-.. code-block:: python
-
-        from matplotlib.pyplot import *
-        
-        figure()                          # create new plot
-        t_e = linspace(0, T, 1001)        # fine mesh for u_e
-        u_e = exact_solution(t_e, I, a)
-        plot(t,   u,   'r--o')            # red dashes w/circles
-        plot(t_e, u_e, 'b-')              # blue line for exact sol.
-        legend(['numerical', 'exact'])
-        xlabel('t')
-        ylabel('u')
-        title('theta=%g, dt=%g' % (theta, dt))
-        savefig('%s_%g.png' % (theta, dt))
-        show()
-
-Note that ``savefig`` here creates a PNG file whose name reflects the
-values of :math:`\theta` and :math:`\Delta t` so that we can easily distinguish
-files from different runs with :math:`\theta` and :math:`\Delta t`.
-
-A bit more sophisticated and easy-to-read filename can be generated
-by mapping the :math:`\theta` value to acronyms for the three common
-schemes: FE (Forward Euler, :math:`\theta=0`), BE (Backward Euler, :math:`\theta=1`),
-CN (Crank-Nicolson, :math:`\theta=0.5`). A Python dictionary is ideal for such
-a mapping from numbers to strings:
-
-.. code-block:: python
-
-        theta2name = {0: 'FE', 1: 'BE', 0.5: 'CN'}
-        savefig('%s_%g.png' % (theta2name[theta], dt))
-
 Experiments with computing and plotting
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------------------
 
 Let us wrap up the computation of the error measure and all the
-plotting statements in a function ``explore``. This function
+plotting statements for comparing the exact and numerical
+solution in a new function ``explore``. This function
 can be called for various :math:`\theta` and :math:`\Delta t` values
 to see how the error varies with the method and the mesh resolution:
 
@@ -888,14 +897,23 @@ to see how the error varies with the method and the mesh resolution:
                 theta2name = {0: 'FE', 1: 'BE', 0.5: 'CN'}
                 savefig('%s_%g.png' % (theta2name[theta], dt))
                 savefig('%s_%g.pdf' % (theta2name[theta], dt))
-                savefig('%s_%g.eps' % (theta2name[theta], dt))
                 show()
             return E
 
-The ``figure()`` call is key here: without it, a new ``plot`` command will
+The ``figure()`` call is key: without it, a new ``plot`` command will
 draw the new pair of curves in the same plot window, while we want
 the different pairs to appear in separate windows and files.
 Calling ``figure()`` ensures this.
+
+Filenames with the method name (FE, BE, or CN) rather than the
+:math:`\theta` value embedded in the name, can easily be created with
+the aid of a little Python dictionary for mapping :math:`\theta` to
+method acronyms:
+
+.. code-block:: python
+
+        theta2name = {0: 'FE', 1: 'BE', 0.5: 'CN'}
+        savefig('%s_%g.png' % (theta2name[theta], dt))
 
 .. index:: PNG plot
 
@@ -905,19 +923,30 @@ Calling ``figure()`` ensures this.
 
 .. index:: viewing graphics files
 
-The ``explore`` function stores the plot in three different image file formats:
-PNG, PDF, and EPS (Encapsulated PostScript). The PNG format is aimed
-at being included in HTML files, the PDF format in pdfLaTeX documents,
-and the EPS format in LaTeX documents. Frequently used viewers for these
+The ``explore`` function stores the plot in two different image file formats:
+PNG and PDF. The PNG format is aimed
+at being included in HTML files and the PDF format in LaTeX documents
+(more precisely, in pdfLaTeX documents).
+Frequently used viewers for these
 image files on Unix systems are ``gv`` (comes with Ghostscript)
-for the PDF and EPS formats and
+for the PDF format and
 ``display`` (from the ImageMagick) suite for PNG files:
 
 .. code-block:: text
 
         Terminal> gv BE_0.5.pdf
-        Terminal> gv BE_0.5.eps
         Terminal> display BE_0.5.png
+
+A main program may run a loop over the three methods (:math:`\theta` values)
+and call ``explore`` to compute errors and make plots:
+
+.. code-block:: python
+
+        def main(I, a, T, dt_values, theta_values=(0, 0.5, 1)):
+            for theta in theta_values:
+                for dt in dt_values:
+                    E = explore(I, a, T, dt, theta, makeplot=True)
+                    print '%3.1f %6.2f: %12.3E' % (theta, dt, E)
 
 The complete code containing the functions above
 resides in the file `decay_plot_mpl.py <http://tinyurl.com/jvzzcfn/decay/decay_plot_mpl.py>`__.
@@ -982,7 +1011,7 @@ The ``convert -trim`` command removes surrounding white areas in the figure
 
 .. index:: pdfcrop program
 
-For \LaTeX{} reports it is not recommended to use ``montage`` and PNG files
+For LaTeX reports it is not recommended to use ``montage`` and PNG files
 as the result has too low resolution. Instead, plots should be made
 in the PDF format and combined using the ``pdftk``, ``pdfnup``, and ``pdfcrop`` tools
 (on Linux/Unix):
@@ -990,8 +1019,8 @@ in the PDF format and combined using the ``pdftk``, ``pdfnup``, and ``pdfcrop`` 
 .. code-block:: text
 
         Terminal> pdftk FE_0.4.png FE_0.04.png output tmp.pdf
-        Terminal> pdfnup --nup 2x1 tmp.pdf     # output in tmp-nup.pdf
-        Terminal> pdfcrop tmp-nup.pdf FE1.png  # output in FE1.png
+        Terminal> pdfnup --nup 2x1 --outfile tmp.pdf tmp.pdf
+        Terminal> pdfcrop tmp.pdf FE1.png  # output in FE1.png
 
 Here, ``pdftk`` combines images into a multi-page PDF file, ``pdfnup``
 combines the images in individual pages to a table of images (pages),

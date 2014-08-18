@@ -39,7 +39,6 @@ def explore(I, a, T, dt, theta=0.5, makeplot=True):
         theta2name = {0: 'FE', 1: 'BE', 0.5: 'CN'}
         savefig('%s_%g.png' % (theta2name[theta], dt))
         savefig('%s_%g.pdf' % (theta2name[theta], dt))
-        savefig('%s_%g.eps' % (theta2name[theta], dt))
         show()
     return E
 

@@ -13,8 +13,13 @@ def solver(I, a, T, dt, theta):
     return u, t
 
 u, t = solver(I=1, a=2, T=8, dt=0.8, theta=1)
+
 # Write out a table of t and u values:
 for i in range(len(t)):
     print 't=%6.3f u=%g' % (t[i], u[i])
     # or print 't={t:6.3f} u={u:g}'.format(t=t[i], u=u[i])
 
+# Plot the solution only
+from matplotlib.pyplot import plot
+plot(t, u)
+show()

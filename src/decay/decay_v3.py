@@ -13,6 +13,26 @@ def solver(I, a, T, dt, theta):
         u[n+1] = (1 - (1-theta)*a*dt)/(1 + theta*dt*a)*u[n]
     return u, t
 
+def exact_solution(t, I, a):
+    return I*exp(-a*t)
+
+from matplotlib.pyplot import *
+
+def plot_numerical_and_exact(theta, I, a, T, dt):
+    """Compare the numerical and exact solution in a plot."""
+    u, t = solver(I=I, a=a, T=T, dt=dt, theta=theta)
+
+    t_e = linspace(0, T, 1001)        # fine mesh for u_e
+    u_e = exact_solution(t_e, I, a)
+
+    plot(t,   u,   'r--o',            # red dashes w/circles
+         t_e, u_e, 'b-')              # blue line for exact sol.
+    legend(['numerical', 'exact'])
+    xlabel('t')
+    ylabel('u')
+    title('theta=%g, dt=%g' % (theta, dt))
+    savefig('plot_%s_%g.png' % (theta, dt))
+
 def test_solver_three_steps():
     """Compare three steps with known manual computations."""
     theta = 0.8; a = 2; I = 0.1; dt = 0.8
@@ -29,12 +49,6 @@ def test_solver_three_steps():
     success = diff <= tol
     assert success
 
-def main():
-    u, t = solver(I=1, a=2, T=8, dt=0.8, theta=1)
-    # Write out a table of t and u values:
-    for i in range(len(t)):
-        print 't=%6.3f u=%g' % (t[i], u[i])
-        # or print 't={t:6.3f} u={u:g}'.format(t=t[i], u=u[i])
-
 test_solver_three_steps()
-main()
+plot_numerical_and_exact(I=1, a=2, T=8, dt=0.8, theta=1)
+show()

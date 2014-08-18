@@ -153,7 +153,7 @@ td.padding {
 MathJax.Hub.Config({
   TeX: {
      equationNumbers: {  autoNumber: "none"  },
-     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js"]
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
   }
 });
 </script>
@@ -163,11 +163,11 @@ MathJax.Hub.Config({
 
 <!-- newcommands_keep.tex -->
 $$
-\newcommand{\uex}{{u_{\small\mbox{e}}}}
-\newcommand{\uexd}[1]{{u_{\small\mbox{e}, #1}}}
-\newcommand{\vex}{{v_{\small\mbox{e}}}}
-\newcommand{\vexd}[1]{{v_{\small\mbox{e}, #1}}}
-\newcommand{\Aex}{{A_{\small\mbox{e}}}}
+\newcommand{\uex}{u_{\mbox{\footnotesize e}}}
+\newcommand{\uexd}[1]{u_{\mbox{\footnotesize e}, #1}}
+\newcommand{\vex}{v_{\mbox{\footnotesize e}}}
+\newcommand{\vexd}[1]{v_{\mbox{\footnotesize e}, #1}}
+\newcommand{\Aex}{A_{\mbox{\footnotesize e}}}
 \newcommand{\half}{\frac{1}{2}}
 \newcommand{\halfi}{{1/2}}
 \newcommand{\tp}{\thinspace .}
@@ -267,7 +267,7 @@ $$
 <center>[1] <b style="font-weight: bold">Center for Biomedical Computing, Simula Research Laboratory</b></center>
 <center>[2] <b style="font-weight: bold">Department of Informatics, University of Oslo</b></center>
 <p>
-<center><h4>Aug 12, 2014</h4></center> <!-- date -->
+<center><h4>Aug 18, 2014</h4></center> <!-- date -->
 <p>
 
 </section>
@@ -1721,6 +1721,145 @@ Terminal&gt; ./decay_v1.py
 
 <section class="slide">
 
+<h2>Plotting the solution  <a name="___sec53"></a></h2>
+
+Basic syntax:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">matplotlib.pyplot</span> <span style="color: #8B008B; font-weight: bold">import</span> *
+
+plot(t, u)
+show()
+</pre></div>
+<p>
+Can (and should!) add labels on axes, title, legends.
+
+<p>
+
+</section>
+
+
+<section class="slide">
+
+<h2>Comparing with the exact solution  <a name="___sec54"></a></h2>
+
+Python function for the exact solution \( \uex(t)=Ie^{-at} \):
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">exact_solution</span>(t, I, a):
+    <span style="color: #8B008B; font-weight: bold">return</span> I*exp(-a*t)
+</pre></div>
+<p>
+Quick plotting:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">u_e = exact_solution(t, I, a)
+plot(t, u, t, u_e)
+</pre></div>
+<p>
+Problem: \( \uex(t) \) applies the same mesh as \( u^n \) and
+looks as a piecewise linear function.
+
+<p>
+Remedy: Introduce a very fine mesh for \( \uex \).
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">t_e = linspace(<span style="color: #B452CD">0</span>, T, <span style="color: #B452CD">1001</span>)      <span style="color: #228B22"># fine mesh</span>
+u_e = exact_solution(t_e, I, a)
+
+plot(t_e, u_e, <span style="color: #CD5555">&#39;b-&#39;</span>,            <span style="color: #228B22"># blue line for u_e</span>
+     t,   u,   <span style="color: #CD5555">&#39;r--o&#39;</span>)          <span style="color: #228B22"># red dashes w/circles</span>
+</pre></div>
+<p>
+
+</section>
+
+
+<section class="slide">
+
+<h2>Add legends, axes labels, title, and wrap in a function  <a name="___sec55"></a></h2>
+
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">matplotlib.pyplot</span> <span style="color: #8B008B; font-weight: bold">import</span> *
+
+<span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">plot_numerical_and_exact</span>(theta, I, a, T, dt):
+    <span style="color: #CD5555">&quot;&quot;&quot;Compare the numerical and exact solution in a plot.&quot;&quot;&quot;</span>
+    u, t = solver(I=I, a=a, T=T, dt=dt, theta=theta)
+
+    t_e = linspace(<span style="color: #B452CD">0</span>, T, <span style="color: #B452CD">1001</span>)        <span style="color: #228B22"># fine mesh for u_e</span>
+    u_e = exact_solution(t_e, I, a)
+
+    plot(t,   u,   <span style="color: #CD5555">&#39;r--o&#39;</span>,            <span style="color: #228B22"># red dashes w/circles</span>
+         t_e, u_e, <span style="color: #CD5555">&#39;b-&#39;</span>)              <span style="color: #228B22"># blue line for exact sol.</span>
+    legend([<span style="color: #CD5555">&#39;numerical&#39;</span>, <span style="color: #CD5555">&#39;exact&#39;</span>])
+    xlabel(<span style="color: #CD5555">&#39;t&#39;</span>)
+    ylabel(<span style="color: #CD5555">&#39;u&#39;</span>)
+    title(<span style="color: #CD5555">&#39;theta=%g, dt=%g&#39;</span> % (theta, dt))
+    savefig(<span style="color: #CD5555">&#39;plot_%s_%g.png&#39;</span> % (theta, dt))
+</pre></div>
+<p>
+Complete code in
+<a href="http://tinyurl.com/jvzzcfn/decay/decay_v2.py" target="_self"><tt>decay_v2.py</tt></a>
+
+<p>
+<center><p><img src="fig-decay/decay_v2.png" align="bottom" width=500></p></center>
+
+<p>
+
+</section>
+
+
+<section class="slide">
+
+<h2>Plotting with SciTools  <a name="___sec56"></a></h2>
+
+<a href="http://code.google.com/p/scitools" target="_self">SciTools</a> provides a
+unified plotting interface (Easyviz) to many different plotting
+packages: Matplotlib, Gnuplot, Grace, VTK, OpenDX, ...
+
+<p>
+Can use Matplotlib (MATLAB-like) syntax,
+or a more compact <code>plot</code> function syntax:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">scitools.std</span> <span style="color: #8B008B; font-weight: bold">import</span> *
+
+plot(t,   u,   <span style="color: #CD5555">&#39;r--o&#39;</span>,           <span style="color: #228B22"># red dashes w/circles</span>
+     t_e, u_e, <span style="color: #CD5555">&#39;b-&#39;</span>,             <span style="color: #228B22"># blue line for exact sol.</span>
+     legend=[<span style="color: #CD5555">&#39;numerical&#39;</span>, <span style="color: #CD5555">&#39;exact&#39;</span>],
+     xlabel=<span style="color: #CD5555">&#39;t&#39;</span>,
+     ylabel=<span style="color: #CD5555">&#39;u&#39;</span>,
+     title=<span style="color: #CD5555">&#39;theta=%g, dt=%g&#39;</span> % (theta, dt),
+     savefig=<span style="color: #CD5555">&#39;%s_%g.png&#39;</span> % (theta2name[theta], dt),
+     show=<span style="color: #658b00">True</span>)
+</pre></div>
+<p>
+Change backend (plotting engine, Matplotlib by default):
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; python decay_plot_st.py --SCITOOLS_easyviz_backend gnuplot
+Terminal&gt; python decay_plot_st.py --SCITOOLS_easyviz_backend grace
+</pre></div>
+<p>
+
+</section>
+
+
+<section class="slide">
+
 <h1>Verifying the implementation <a name="decay:verification"></a></h1>
 
 <ul>
@@ -1737,7 +1876,7 @@ Terminal&gt; ./decay_v1.py
 
 <section class="slide">
 
-<h2>Simplest method: run a few algorithmic steps by hand  <a name="___sec54"></a></h2>
+<h2>Simplest method: run a few algorithmic steps by hand  <a name="___sec58"></a></h2>
 
 Use a calculator (\( I=0.1 \), \( \theta=0.8 \), \( \Delta t =0.8 \)):
 
@@ -1767,7 +1906,7 @@ See the function <code>verify_three_steps</code> in <a href="http://tinyurl.com/
 
 <section class="slide">
 
-<h2>Comparison with an exact discrete solution  <a name="___sec55"></a></h2>
+<h2>Comparison with an exact discrete solution  <a name="___sec59"></a></h2>
 
 <div class="alert alert-block alert-notice alert-text-normal"><b style="font-weight: bold">Best verification.</b>
 Compare computed numerical solution
@@ -1800,7 +1939,7 @@ $$
 
 <section class="slide">
 
-<h2>Making a test based on an exact discrete solution  <a name="___sec56"></a></h2>
+<h2>Making a test based on an exact discrete solution  <a name="___sec60"></a></h2>
 
 The exact discrete solution as
 <p>&nbsp;<br>
@@ -1838,10 +1977,9 @@ Implementation in <a href="http://tinyurl.com/jvzzcfn/decay/decay_verf2.py" targ
 
 <section class="slide">
 
-<h2>Test the understanding!  <a name="___sec57"></a></h2>
+<h2>Test the understanding!  <a name="___sec61"></a></h2>
 
-Make a program for solving
-Newton's law of cooling
+Make a program for solving Newton's law of cooling
 
 <p>&nbsp;<br>
 $$ T' = -k(T-T_s),\quad T(0)=T_0,\ t\in (0,t_{\mbox{end}}]\tp$$
@@ -1932,7 +2070,7 @@ $$
 
 <section class="slide">
 
-<h2>Norms of mesh functions  <a name="___sec60"></a></h2>
+<h2>Norms of mesh functions  <a name="___sec64"></a></h2>
 
 <ul>
  <p><li> Problem: \( f^n =f(t_n) \) is a mesh function and hence not defined for all \( t \).
@@ -1965,7 +2103,7 @@ $$ ||f^n||_{\ell^2} = \left(\Delta t\sum_{n=0}^{N_t} (f^n)^2\right)^{1/2} \tp$$
 
 <section class="slide">
 
-<h2>Implementation of the norm of the error  <a name="___sec61"></a></h2>
+<h2>Implementation of the norm of the error  <a name="___sec65"></a></h2>
 
 <p>&nbsp;<br>
 $$ E = ||e^n||_{\ell^2}  = \sqrt{\Delta t\sum_{n=0}^{N_t} (e^n)^2}$$
@@ -1988,9 +2126,10 @@ E = sqrt(dt*<span style="color: #658b00">sum</span>(e**<span style="color: #B452
 
 <section class="slide">
 
-<h2>Comment on array vs scalar computation  <a name="___sec62"></a></h2>
+<h2>Comment on array vs scalar computation  <a name="___sec66"></a></h2>
 
 Scalar computing of <code>E = sqrt(dt*sum(e**2))</code>:
+
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
@@ -2023,130 +2162,6 @@ Compute on entire arrays (when possible)!
 </div>
 
 
-<p>
-
-</section>
-
-
-<section class="slide">
-
-<h1>Plotting solutions <a name="decay:plotting"></a></h1>
-
-Basic plotting with Matplotlib is much like MATLAB plotting
-
-<p>
-
-<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
-<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">matplotlib.pyplot</span> <span style="color: #8B008B; font-weight: bold">import</span> *
-plot(t, u)
-show()
-</pre></div>
-<p>
-Compare <code>u</code> curve with \( \uex(t) \):
-
-<p>
-
-<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
-<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">t_e = linspace(<span style="color: #B452CD">0</span>, T, <span style="color: #B452CD">1001</span>)      <span style="color: #228B22"># fine mesh</span>
-u_e = exact_solution(t_e, I, a)
-plot(t_e, u_e, <span style="color: #CD5555">&#39;b-&#39;</span>)            <span style="color: #228B22"># blue line for u_e</span>
-plot(t,   u,   <span style="color: #CD5555">&#39;r--o&#39;</span>)          <span style="color: #228B22"># red dashes w/circles</span>
-</pre></div>
-<p>
-<center><p><img src="fig-decay/FE1.png" align="bottom" width=800,></p></center>
-
-<p>
-
-</section>
-
-
-<section class="slide">
-
-<h2>Decorating a plot  <a name="___sec64"></a></h2>
-
-<ul>
- <p><li> Use different line types</li>
- <p><li> Add axis labels</li>
- <p><li> Add curve legends</li>
- <p><li> Add plot title</li>
- <p><li> Save plot to file</li>
-</ul>
-<p>
-
-<p>
-
-<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
-<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">matplotlib.pyplot</span> <span style="color: #8B008B; font-weight: bold">import</span> *
-
-figure()                          <span style="color: #228B22"># create new plot</span>
-t_e = linspace(<span style="color: #B452CD">0</span>, T, <span style="color: #B452CD">1001</span>)        <span style="color: #228B22"># fine mesh for u_e</span>
-u_e = exact_solution(t_e, I, a)
-plot(t,   u,   <span style="color: #CD5555">&#39;r--o&#39;</span>)            <span style="color: #228B22"># red dashes w/circles</span>
-plot(t_e, u_e, <span style="color: #CD5555">&#39;b-&#39;</span>)              <span style="color: #228B22"># blue line for exact sol.</span>
-legend([<span style="color: #CD5555">&#39;numerical&#39;</span>, <span style="color: #CD5555">&#39;exact&#39;</span>])
-xlabel(<span style="color: #CD5555">&#39;t&#39;</span>)
-ylabel(<span style="color: #CD5555">&#39;u&#39;</span>)
-title(<span style="color: #CD5555">&#39;theta=%g, dt=%g&#39;</span> % (theta, dt))
-savefig(<span style="color: #CD5555">&#39;%s_%g.png&#39;</span> % (theta, dt))
-show()
-</pre></div>
-<p>
-See complete code in <a href="http://tinyurl.com/jvzzcfn/decay/decay_plot_mpl.py" target="_self"><tt>decay_plot_mpl.py</tt></a>.
-
-<p>
-
-</section>
-
-
-<section class="slide">
-
-<h2>How the plots look like  <a name="___sec65"></a></h2>
-
-<center><p><img src="fig-decay/BE1.png" align="bottom" width=800></p></center>
-
-<p>
-
-</section>
-
-
-<section class="slide">
-
-<h2>Plotting with SciTools  <a name="___sec66"></a></h2>
-
-<a href="http://code.google.com/p/scitools" target="_self">SciTools</a> provides a
-unified plotting interface (Easyviz) to many different plotting
-packages: Matplotlib, Gnuplot, Grace, VTK, OpenDX, ...
-
-<p>
-Can use Matplotlib (MATLAB-like) syntax,
-or a more compact <code>plot</code> function syntax:
-
-<p>
-
-<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
-<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">scitools.std</span> <span style="color: #8B008B; font-weight: bold">import</span> *
-
-plot(t,   u,   <span style="color: #CD5555">&#39;r--o&#39;</span>,           <span style="color: #228B22"># red dashes w/circles</span>
-     t_e, u_e, <span style="color: #CD5555">&#39;b-&#39;</span>,             <span style="color: #228B22"># blue line for exact sol.</span>
-     legend=[<span style="color: #CD5555">&#39;numerical&#39;</span>, <span style="color: #CD5555">&#39;exact&#39;</span>],
-     xlabel=<span style="color: #CD5555">&#39;t&#39;</span>,
-     ylabel=<span style="color: #CD5555">&#39;u&#39;</span>,
-     title=<span style="color: #CD5555">&#39;theta=%g, dt=%g&#39;</span> % (theta, dt),
-     savefig=<span style="color: #CD5555">&#39;%s_%g.png&#39;</span> % (theta2name[theta], dt),
-     show=<span style="color: #658b00">True</span>)
-</pre></div>
-<p>
-Complete code in <a href="https://github.com/hplgit/INF5620/blob/gh-pages/src/decay/decay_plot_st.py" target="_self"><tt>decay_plot_st.py</tt></a>.
-
-<p>
-Change backend (plotting engine, Matplotlib by default):
-
-<p>
-
-<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
-<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; python decay_plot_st.py --SCITOOLS_easyviz_backend gnuplot
-Terminal&gt; python decay_plot_st.py --SCITOOLS_easyviz_backend grace
-</pre></div>
 <p>
 
 </section>

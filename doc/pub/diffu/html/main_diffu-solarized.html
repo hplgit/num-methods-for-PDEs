@@ -1,0 +1,295 @@
+<!--
+Automatically generated HTML file from Doconce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Doconce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Finite difference methods for diffusion processes">
+<meta name="keywords" content="stationary solution,explicit discretization methods,implicit discretization methods,amplification factor,energy estimates (diffusion)">
+
+
+
+
+<link href="https://raw.githubusercontent.com/hplgit/doconce/master/bundled/html_styles/style_solarized_box/css/solarized_light_code.css" rel="stylesheet" type="text/css" title="light"/>
+<script src="http://www.peterhaschke.com/assets/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<link href="http://thomasf.github.io/solarized-css/solarized-light.min.css" rel="stylesheet">
+<style type="text/css">
+
+div { text-align: justify; text-justify: inter-word; }
+</style>
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [(' The 1D diffusion equation ', 1, None, '___sec0'),
+              (' The initial-boundary value problem for 1D diffusion ',
+               2,
+               None,
+               '___sec1'),
+              (' Forward Euler scheme ', 2, 'diffu:pde1:FE', 'diffu:pde1:FE'),
+              (' Backward Euler scheme ',
+               2,
+               'diffu:pde1:BE',
+               'diffu:pde1:BE'),
+              (' Sparse matrix implementation ',
+               2,
+               'diffu:pde1:impl:sparse',
+               'diffu:pde1:impl:sparse'),
+              (' The $\\theta$ rule ',
+               2,
+               'diffu:pde1:theta',
+               'diffu:pde1:theta'),
+              (' The Laplace and Poisson equation ', 2, None, '___sec6'),
+              (' Extensions ', 2, None, '___sec7'),
+              (' Analysis of schemes for the diffusion equation ',
+               1,
+               'diffu:pde1:analysis',
+               'diffu:pde1:analysis'),
+              (' Properties of the solution ',
+               2,
+               'diffu:pde1:analysis:uex',
+               'diffu:pde1:analysis:uex'),
+              (' Similarity solution ', 3, None, '___sec10'),
+              (' Solution for a Gaussian pulse ', 3, None, '___sec11'),
+              (' Solution for a sine component ', 3, None, '___sec12'),
+              (' Analysis of discrete equations ', 2, None, '___sec13'),
+              (' Analysis of the finite difference schemes ',
+               2,
+               'diffu:pde1:analysis',
+               'diffu:pde1:analysis'),
+              (' Stability ', 3, None, '___sec15'),
+              (' Accuracy ', 3, None, '___sec16'),
+              (' Analysis of the Forward Euler scheme ',
+               2,
+               'diffu:pde1:analysis:FE',
+               'diffu:pde1:analysis:FE'),
+              (' Stability ', 3, None, '___sec18'),
+              (' Accuracy ', 3, None, '___sec19'),
+              (' Analysis of the Backward Euler scheme ',
+               2,
+               'diffu:pde1:analysis:BE',
+               'diffu:pde1:analysis:BE'),
+              (' Stability ', 3, None, '___sec21'),
+              (' Analysis of the Crank-Nicolson scheme ',
+               2,
+               'diffu:pde1:analysis:CN',
+               'diffu:pde1:analysis:CN'),
+              (' Stability ', 3, None, '___sec23'),
+              (' Summary of accuracy of amplification factors ',
+               2,
+               None,
+               '___sec24'),
+              (' Exercise 1: Use an analytical solution to formulate a 1D test ',
+               2,
+               None,
+               '___sec25'),
+              (' Exercise 2: Use an analytical solution to formulate a 2D test ',
+               2,
+               None,
+               '___sec26'),
+              (' Exercise 3: Examine stability of a diffusion model with a source term ',
+               2,
+               'diffu:exer:uterm',
+               'diffu:exer:uterm'),
+              (' Exercises ', 1, None, '___sec28'),
+              (' Exercise 4: Stabilizing the Crank-Nicolson method by Rannacher time stepping ',
+               2,
+               'diffu:exer:CN:Rannacher',
+               'diffu:exer:CN:Rannacher'),
+              (' Project 5: Energy estimates for diffusion problems ',
+               2,
+               'diffu:exer:energy:estimates',
+               'diffu:exer:energy:estimates'),
+              (' Bibliography ', 1, None, '___sec31')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\uex}{{u_{\small\mbox{e}}}}
+\newcommand{\uexd}[1]{{u_{\small\mbox{e}, #1}}}
+\newcommand{\vex}{{v_{\small\mbox{e}}}}
+\newcommand{\vexd}[1]{{v_{\small\mbox{e}, #1}}}
+\newcommand{\Aex}{{A_{\small\mbox{e}}}}
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\halfi}{{1/2}}
+\newcommand{\tp}{\thinspace .}
+
+\newcommand{\Ddt}[1]{\frac{D #1}{dt}}
+\newcommand{\E}[1]{\hbox{E}\lbrack #1 \rbrack}
+\newcommand{\Var}[1]{\hbox{Var}\lbrack #1 \rbrack}
+\newcommand{\Std}[1]{\hbox{Std}\lbrack #1 \rbrack}
+
+\newcommand{\xpoint}{\boldsymbol{x}}
+\newcommand{\normalvec}{\boldsymbol{n}}
+\newcommand{\Oof}[1]{\mathcal{O}(#1)}
+
+\newcommand{\x}{\boldsymbol{x}}
+\newcommand{\X}{\boldsymbol{X}}
+\renewcommand{\u}{\boldsymbol{u}}
+\renewcommand{\v}{\boldsymbol{v}}
+\newcommand{\w}{\boldsymbol{w}}
+\newcommand{\V}{\boldsymbol{V}}
+\newcommand{\e}{\boldsymbol{e}}
+\newcommand{\f}{\boldsymbol{f}}
+\newcommand{\F}{\boldsymbol{F}}
+\newcommand{\stress}{\boldsymbol{\sigma}}
+\newcommand{\strain}{\boldsymbol{\varepsilon}}
+\newcommand{\stressc}{{\sigma}}
+\newcommand{\strainc}{{\varepsilon}}
+\newcommand{\I}{\boldsymbol{I}}
+\newcommand{\T}{\boldsymbol{T}}
+
+\newcommand{\dfc}{\alpha}  % diffusion coefficient
+\newcommand{\ii}{\boldsymbol{i}}
+\newcommand{\jj}{\boldsymbol{j}}
+\newcommand{\kk}{\boldsymbol{k}}
+\newcommand{\ir}{\boldsymbol{i}_r}
+\newcommand{\ith}{\boldsymbol{i}_{\theta}}
+\newcommand{\iz}{\boldsymbol{i}_z}
+
+\newcommand{\Ix}{\mathcal{I}_x}
+\newcommand{\Iy}{\mathcal{I}_y}
+\newcommand{\Iz}{\mathcal{I}_z}
+\newcommand{\It}{\mathcal{I}_t}
+\newcommand{\If}{\mathcal{I}_s}     % for FEM
+\newcommand{\Ifd}{{I_d}}  % for FEM
+\newcommand{\Ifb}{{I_b}}  % for FEM
+\newcommand{\setb}[1]{#1^0}    % set begin
+\newcommand{\sete}[1]{#1^{-1}} % set end
+\newcommand{\setl}[1]{#1^-}
+\newcommand{\setr}[1]{#1^+}
+\newcommand{\seti}[1]{#1^i}
+\newcommand{\sequencei}[1]{\left\{ {#1}_i \right\}_{i\in\If}}
+
+\newcommand{\basphi}{\varphi}
+\newcommand{\baspsi}{\psi}
+\newcommand{\refphi}{\tilde\basphi}
+\newcommand{\psib}{\boldsymbol{\psi}}
+\newcommand{\sinL}[1]{\sin\left((#1+1)\pi\frac{x}{L}\right)}
+\newcommand{\xno}[1]{x_{#1}}
+\newcommand{\Xno}[1]{X_{(#1)}}
+\newcommand{\yno}[1]{y_{#1}}
+\newcommand{\Yno}[1]{Y_{(#1)}}
+\newcommand{\xdno}[1]{\boldsymbol{x}_{#1}}
+
+\newcommand{\dX}{\, \mathrm{d}X}
+\newcommand{\dx}{\, \mathrm{d}x}
+\newcommand{\ds}{\, \mathrm{d}s}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Integerp}{\mathbb{N}}
+\newcommand{\Integer}{\mathbb{Z}}
+$$
+
+
+
+
+    
+<a name="part0000"></a>
+<p>
+<!-- begin top navigation -->
+<table style="width: 100%"><tr><td>
+</td><td>
+<div style="text-align: right;"><a href="._main_diffu-solarized001.html">Next &raquo;</a></div>
+</td></tr></table>
+<!-- end top navigation -->
+</p>
+
+<p>
+<!-- ------------------- main content ---------------------- -->
+
+
+<title>Finite difference methods for diffusion processes</title>
+
+<center><h1>Finite difference methods for diffusion processes</h1></center>  <!-- document title -->
+
+<p>
+<!-- author(s): Hans Petter Langtangen -->
+
+<center>
+<b>Hans Petter Langtangen</b> [1, 2]
+</center>
+
+
+<p>
+<!-- institution(s) -->
+
+<center>[1] <b>Center for Biomedical Computing, Simula Research Laboratory</b></center>
+<center>[2] <b>Department of Informatics, University of Oslo</b></center>
+<p>
+<center><h4>Aug 18, 2014</h4></center> <!-- date -->
+<p>
+Note: <b>VERY PRELIMINARY VERSION</b>
+
+<h2>Table of contents</h2>
+
+<a href="._main_diffu-solarized001.html#___sec0"> The 1D diffusion equation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec1"> The initial-boundary value problem for 1D diffusion </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#diffu:pde1:FE"> Forward Euler scheme </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#diffu:pde1:BE"> Backward Euler scheme </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#diffu:pde1:impl:sparse"> Sparse matrix implementation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#diffu:pde1:theta"> The \( \theta \) rule </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec6"> The Laplace and Poisson equation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec7"> Extensions </a><br>
+<a href="._main_diffu-solarized001.html#diffu:pde1:analysis"> Analysis of schemes for the diffusion equation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#diffu:pde1:analysis:uex"> Properties of the solution </a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec10"> Similarity solution </a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec11"> Solution for a Gaussian pulse </a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec12"> Solution for a sine component </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec13"> Analysis of discrete equations </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#diffu:pde1:analysis"> Analysis of the finite difference schemes </a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec15"> Stability </a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec16"> Accuracy </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#diffu:pde1:analysis:FE"> Analysis of the Forward Euler scheme </a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec18"> Stability </a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec19"> Accuracy </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#diffu:pde1:analysis:BE"> Analysis of the Backward Euler scheme </a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec21"> Stability </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#diffu:pde1:analysis:CN"> Analysis of the Crank-Nicolson scheme </a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec23"> Stability </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec24"> Summary of accuracy of amplification factors </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec25"> Exercise 1: Use an analytical solution to formulate a 1D test </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#___sec26"> Exercise 2: Use an analytical solution to formulate a 2D test </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#diffu:exer:uterm"> Exercise 3: Examine stability of a diffusion model with a source term </a><br>
+<a href="._main_diffu-solarized001.html#___sec28"> Exercises </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#diffu:exer:CN:Rannacher"> Exercise 4: Stabilizing the Crank-Nicolson method by Rannacher time stepping </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._main_diffu-solarized001.html#diffu:exer:energy:estimates"> Project 5: Energy estimates for diffusion problems </a><br>
+<a href="._main_diffu-solarized002.html#___sec31"> Bibliography </a><br>
+</p>
+<p>
+<p>
+<!-- begin bottom navigation -->
+<table style="width: 100%"><tr><td>
+</td><td>
+<div style="text-align: right;"><a href="._main_diffu-solarized001.html">Next &raquo;</a></div>
+</td></tr></table>
+<!-- end bottom navigation -->
+</p>
+
+<!-- ------------------- end of main content --------------- -->
+
+
+</body>
+</html>
+    
+

@@ -1,0 +1,1846 @@
+<!--
+Automatically generated HTML file from Doconce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Doconce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Finite difference methods for diffusion processes">
+<meta name="keywords" content="stationary solution,explicit discretization methods,implicit discretization methods,amplification factor,energy estimates (diffusion)">
+
+
+
+<!-- Bootstrap style: bootstrap_FlatUI -->
+<link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://raw.github.com/hplgit/doconce/master/bundled/html_styles/style_bootstrap/css/bootstrap_FlatUI.css" rel="stylesheet">
+<!-- not necessary
+<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+-->
+
+<style type="text/css">
+/* Let inline verbatim have the same color as the surroundings */
+code { color: inherit; background-color: transparent; }
+</style>
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [(' The 1D diffusion equation ', 1, None, '___sec0'),
+              (' The initial-boundary value problem for 1D diffusion ',
+               2,
+               None,
+               '___sec1'),
+              (' Forward Euler scheme ', 2, 'diffu:pde1:FE', 'diffu:pde1:FE'),
+              (' Backward Euler scheme ',
+               2,
+               'diffu:pde1:BE',
+               'diffu:pde1:BE'),
+              (' Sparse matrix implementation ',
+               2,
+               'diffu:pde1:impl:sparse',
+               'diffu:pde1:impl:sparse'),
+              (' The $\\theta$ rule ',
+               2,
+               'diffu:pde1:theta',
+               'diffu:pde1:theta'),
+              (' The Laplace and Poisson equation ', 2, None, '___sec6'),
+              (' Extensions ', 2, None, '___sec7'),
+              (' Analysis of schemes for the diffusion equation ',
+               1,
+               'diffu:pde1:analysis',
+               'diffu:pde1:analysis'),
+              (' Properties of the solution ',
+               2,
+               'diffu:pde1:analysis:uex',
+               'diffu:pde1:analysis:uex'),
+              (' Similarity solution ', 3, None, '___sec10'),
+              (' Solution for a Gaussian pulse ', 3, None, '___sec11'),
+              (' Solution for a sine component ', 3, None, '___sec12'),
+              (' Analysis of discrete equations ', 2, None, '___sec13'),
+              (' Analysis of the finite difference schemes ',
+               2,
+               'diffu:pde1:analysis',
+               'diffu:pde1:analysis'),
+              (' Stability ', 3, None, '___sec15'),
+              (' Accuracy ', 3, None, '___sec16'),
+              (' Analysis of the Forward Euler scheme ',
+               2,
+               'diffu:pde1:analysis:FE',
+               'diffu:pde1:analysis:FE'),
+              (' Stability ', 3, None, '___sec18'),
+              (' Accuracy ', 3, None, '___sec19'),
+              (' Analysis of the Backward Euler scheme ',
+               2,
+               'diffu:pde1:analysis:BE',
+               'diffu:pde1:analysis:BE'),
+              (' Stability ', 3, None, '___sec21'),
+              (' Analysis of the Crank-Nicolson scheme ',
+               2,
+               'diffu:pde1:analysis:CN',
+               'diffu:pde1:analysis:CN'),
+              (' Stability ', 3, None, '___sec23'),
+              (' Summary of accuracy of amplification factors ',
+               2,
+               None,
+               '___sec24'),
+              (' Exercise 1: Use an analytical solution to formulate a 1D test ',
+               2,
+               None,
+               '___sec25'),
+              (' Exercise 2: Use an analytical solution to formulate a 2D test ',
+               2,
+               None,
+               '___sec26'),
+              (' Exercise 3: Examine stability of a diffusion model with a source term ',
+               2,
+               'diffu:exer:uterm',
+               'diffu:exer:uterm'),
+              (' Exercises ', 1, None, '___sec28'),
+              (' Exercise 4: Stabilizing the Crank-Nicolson method by Rannacher time stepping ',
+               2,
+               'diffu:exer:CN:Rannacher',
+               'diffu:exer:CN:Rannacher'),
+              (' Project 5: Energy estimates for diffusion problems ',
+               2,
+               'diffu:exer:energy:estimates',
+               'diffu:exer:energy:estimates'),
+              (' Bibliography ', 1, None, '___sec31')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\uex}{{u_{\small\mbox{e}}}}
+\newcommand{\uexd}[1]{{u_{\small\mbox{e}, #1}}}
+\newcommand{\vex}{{v_{\small\mbox{e}}}}
+\newcommand{\vexd}[1]{{v_{\small\mbox{e}, #1}}}
+\newcommand{\Aex}{{A_{\small\mbox{e}}}}
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\halfi}{{1/2}}
+\newcommand{\tp}{\thinspace .}
+
+\newcommand{\Ddt}[1]{\frac{D #1}{dt}}
+\newcommand{\E}[1]{\hbox{E}\lbrack #1 \rbrack}
+\newcommand{\Var}[1]{\hbox{Var}\lbrack #1 \rbrack}
+\newcommand{\Std}[1]{\hbox{Std}\lbrack #1 \rbrack}
+
+\newcommand{\xpoint}{\boldsymbol{x}}
+\newcommand{\normalvec}{\boldsymbol{n}}
+\newcommand{\Oof}[1]{\mathcal{O}(#1)}
+
+\newcommand{\x}{\boldsymbol{x}}
+\newcommand{\X}{\boldsymbol{X}}
+\renewcommand{\u}{\boldsymbol{u}}
+\renewcommand{\v}{\boldsymbol{v}}
+\newcommand{\w}{\boldsymbol{w}}
+\newcommand{\V}{\boldsymbol{V}}
+\newcommand{\e}{\boldsymbol{e}}
+\newcommand{\f}{\boldsymbol{f}}
+\newcommand{\F}{\boldsymbol{F}}
+\newcommand{\stress}{\boldsymbol{\sigma}}
+\newcommand{\strain}{\boldsymbol{\varepsilon}}
+\newcommand{\stressc}{{\sigma}}
+\newcommand{\strainc}{{\varepsilon}}
+\newcommand{\I}{\boldsymbol{I}}
+\newcommand{\T}{\boldsymbol{T}}
+
+\newcommand{\dfc}{\alpha}  % diffusion coefficient
+\newcommand{\ii}{\boldsymbol{i}}
+\newcommand{\jj}{\boldsymbol{j}}
+\newcommand{\kk}{\boldsymbol{k}}
+\newcommand{\ir}{\boldsymbol{i}_r}
+\newcommand{\ith}{\boldsymbol{i}_{\theta}}
+\newcommand{\iz}{\boldsymbol{i}_z}
+
+\newcommand{\Ix}{\mathcal{I}_x}
+\newcommand{\Iy}{\mathcal{I}_y}
+\newcommand{\Iz}{\mathcal{I}_z}
+\newcommand{\It}{\mathcal{I}_t}
+\newcommand{\If}{\mathcal{I}_s}     % for FEM
+\newcommand{\Ifd}{{I_d}}  % for FEM
+\newcommand{\Ifb}{{I_b}}  % for FEM
+\newcommand{\setb}[1]{#1^0}    % set begin
+\newcommand{\sete}[1]{#1^{-1}} % set end
+\newcommand{\setl}[1]{#1^-}
+\newcommand{\setr}[1]{#1^+}
+\newcommand{\seti}[1]{#1^i}
+\newcommand{\sequencei}[1]{\left\{ {#1}_i \right\}_{i\in\If}}
+
+\newcommand{\basphi}{\varphi}
+\newcommand{\baspsi}{\psi}
+\newcommand{\refphi}{\tilde\basphi}
+\newcommand{\psib}{\boldsymbol{\psi}}
+\newcommand{\sinL}[1]{\sin\left((#1+1)\pi\frac{x}{L}\right)}
+\newcommand{\xno}[1]{x_{#1}}
+\newcommand{\Xno}[1]{X_{(#1)}}
+\newcommand{\yno}[1]{y_{#1}}
+\newcommand{\Yno}[1]{Y_{(#1)}}
+\newcommand{\xdno}[1]{\boldsymbol{x}_{#1}}
+
+\newcommand{\dX}{\, \mathrm{d}X}
+\newcommand{\dx}{\, \mathrm{d}x}
+\newcommand{\ds}{\, \mathrm{d}s}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Integerp}{\mathbb{N}}
+\newcommand{\Integer}{\mathbb{Z}}
+$$
+
+
+
+
+    
+<!-- Bootstrap navigation bar -->
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="main_diffu.html">Finite difference methods for diffusion processes</a>
+  </div>
+  <div class="navbar-collapse collapse navbar-responsive-collapse">
+    <ul class="nav navbar-nav navbar-right">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Contents <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+     <!-- navigation toc: --> <li><a href="#___sec0" style="font-size: 80%;">The 1D diffusion equation</a></li>
+     <!-- navigation toc: --> <li><a href="#diffu:pde1:analysis" style="font-size: 80%;">Analysis of schemes for the diffusion equation</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec28" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._main_diffu002.html#___sec31" style="font-size: 80%;">Bibliography</a></li>
+
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+</div> <!-- end of navigation bar -->
+
+<div class="container">
+
+<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p> <!-- add vertical space -->
+
+<a name="part0001"></a>
+<!-- !split -->
+
+<h1 id="___sec0">The 1D diffusion equation <a name="___sec0"></a></h1>
+
+index{diffusion equation, 1D}
+index{heat equation, 1D}
+
+<p>
+The famous <em>diffusion equation</em>, also known as the <em>heat equation</em>,
+reads
+
+$$ \frac{\partial u}{\partial t} =
+\alpha \frac{\partial^2 u}{\partial x^2},
+$$
+
+where \( u(x,t) \) is the unknown function to be solved for, \( x \) is a coordinate
+in space, and \( t \) is time. The coefficient \( \alpha \) is the <em>diffusion
+coefficient</em> and determines how fast \( u \) changes in time. A quick
+short form for the diffusion equation is \( u_t = \alpha u_{xx} \).
+
+<p>
+Compared to the wave equation, \( u_{tt}=c^2u_{xx} \), which looks very similar,
+but the diffusion equation features solutions that are very different from
+those of the wave equation. Also, the diffusion equation
+makes quite different demands to the numerical
+methods.
+
+<p>
+Typical diffusion problems may experience rapid change in the very
+beginning, but then the evolution of \( u \) becomes slower and slower.
+The solution is usually very smooth, and after some time, one cannot
+recognize the initial shape of \( u \). This is in sharp contrast to solutions
+of the wave equation where the initial shape is preserved - the solution
+is basically a moving initial condition. The standard wave equation
+\( u_{tt}=c^2u_{xx} \) has solutions that propagates with speed \( c \) forever,
+without  changing shape, while the diffusion equation converges to
+a <em>stationary solution</em> \( \bar u(x) \) as \( t\rightarrow\infty \). In this
+limit, \( u_t=0 \), and \( \bar u \) is governed by \( \bar u''(x)=0 \).
+This stationary limit of the diffusion equation is called
+the <em>Laplace</em> equation and arises in a very wide range of applications
+throughout the sciences.
+
+<p>
+It is possible to solve for \( u(x,t) \) using a explicit scheme,
+but the time step restrictions soon become much less favorable than for
+an explicit scheme for the wave equation. And of more importance,
+since the solution \( u \) of the diffusion equation is very smooth and changes
+slowly, small time steps are not convenient and not
+required by accuracy as the diffusion process converges to a stationary
+state.
+
+<h2 id="___sec1">The initial-boundary value problem for 1D diffusion <a name="___sec1"></a></h2>
+
+To obtain a unique solution of the diffusion equation, or equivalently,
+to apply numerical methods, we need initial and boundary conditions.
+The diffusion equation goes with one initial condition \( u(x,0)=I(x) \), where
+\( I \) is a prescribed function. One boundary condition is required at
+each point on the boundary, which in 1D means that \( u \) must be known,
+\( u_x \) must be known, or some combination of them.
+
+<p>
+We shall start
+with the simplest boundary condition: \( u=0 \). The complete
+initial-boundary value diffusion problem in one
+space dimension can then be specified as
+
+$$
+\begin{align}
+\frac{\partial u}{\partial t} &=
+\alpha \frac{\partial^2 u}{\partial x^2}, \quad x\in (0,L),\ t\in (0,T]
+\tag{1}\\
+u(x,0) &= I(x), \quad  x\in [0,L]
+\tag{2}\\
+u(0,t) & = 0, \quad  t>0,
+\tag{3}\\
+u(L,t) & = 0, \quad  t>0\tp
+\tag{4}
+\end{align}
+$$
+
+Equation <a href="#mjx-eqn-1">(1)</a> is known as a one-dimensional
+<em>diffusion equation</em>, also often referred to as a
+<em>heat equation</em>. With only a first-order derivative in time,
+only one <em>initial condition</em> is needed, while the second-order
+derivative in space leads to a demand for two <em>boundary conditions</em>.
+The parameter \( \alpha \) must be given and is referred to as the
+<em>diffusion coefficient</em>.
+
+<p>
+Diffusion equations like <a href="#mjx-eqn-1">(1)</a> have a wide range of
+applications throughout physical, biological, and financial sciences.
+One of the most common applications is propagation of heat, where
+\( u(x,t) \) represents the temperature of some substance at point \( x \) and
+time \( t \). The section ref{diffu:app} goes into several widely occurring
+applications.
+
+<h2 id="diffu:pde1:FE">Forward Euler scheme<a name="diffu:pde1:FE"></a></h2>
+
+The first step in the discretization procedure is to replace the
+domain \( [0,L]\times [0,T] \) by a set of mesh points. Here we apply
+equally spaced mesh points
+
+$$
+\begin{equation*} x_i=i\Delta x,\quad i=0,\ldots,N_x,\end{equation*}
+$$
+
+and
+
+$$
+\begin{equation*} t_n=n\Delta t,\quad n=0,\ldots,N_t \tp  \end{equation*}
+$$
+
+Moreover, \( u^n_i \) denotes the mesh function that
+approximates \( u(x_i,t_n) \) for \( i=0,\ldots,N_x \) and \( n=0,\ldots,N_t \).
+Requiring the PDE <a href="#mjx-eqn-1">(1)</a> to be fulfilled at a mesh point \( (x_i,t_n) \)
+leads to the equation
+
+$$
+\begin{equation}
+\frac{\partial}{\partial t} u(x_i, t_n) =
+\alpha\frac{\partial^2}{\partial x^2} u(x_i, t_n),
+\tag{5}
+\end{equation}
+$$
+
+The next step is to replace the derivatives by finite difference approximations.
+The computationally simplest method arises from
+using a forward difference in time and a central difference in
+space:
+
+$$
+\begin{equation}
+[D_t^+ u = \alpha D_xD_x u]^n_i \tp
+\tag{6}
+\end{equation}
+$$
+
+Written out,
+
+$$
+\begin{equation}
+\frac{u^{n+1}_i-u^n_i}{\Delta t} = \alpha \frac{u^{n}_{i+1} - 2u^n_i + u^n_{i-1}}{\Delta x^2} \tp
+\tag{7}
+\end{equation}
+$$
+
+We have turned the PDE into algebraic equations, also often called
+discrete equations. The key property of the equations is that they
+are algebraic, which makes them easy to solve.
+As usual, we anticipate that \( u^n_i \) is already computed such that
+\( u^{n+1}_i \) is the only unknown in <a href="#mjx-eqn-7">(7)</a>.
+Solving with respect to this unknown is easy:
+
+$$
+\begin{equation}
+u^{n+1}_i = u^n_i + \alpha\frac{\Delta t}{\Delta x^2}\left(
+u^{n}_{i+1} - 2u^n_i + u^n_{i-1}\right) \tp
+\tag{8}
+\end{equation}
+$$
+
+
+<p>
+The computational algorithm then becomes
+
+<ol>
+ <li> compute $u^0_i=I(x_i)$for \( i=0,\ldots,N_x \)</li>
+ <li> for \( n=0,1,\ldots,N_t \):</li>
+
+<ol>
+   <li> apply <a href="#mjx-eqn-8">(8)</a> for all the internal
+      spatial points \( i=1,\ldots,N_x-1 \)</li>
+   <li> set the boundary values
+      \( u^{n+1}_i=0 \) for \( i=0 \) and \( i=N_x \)</li>
+</ol>
+
+</ol>
+
+The algorithm is compactly fully specified in Python:
+
+<p>
+
+<!-- code=text (!bc cod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">x = linspace(0, L, Nx+1)    # mesh points in space
+dx = x[1] - x[0]
+t = linspace(0, T, Nt+1)    # mesh points in time
+dt = t[1] - t[0]
+Fo = a*dt/dx**2
+u   = zeros(Nx+1)
+u_1 = zeros(Nx+1)
+
+# Set initial condition u(x,0) = I(x)
+for i in range(0, Nx+1):
+    u_1[i] = I(x[i])
+
+for n in range(0, Nt):
+    # Compute u at inner mesh points
+    for i in range(1, Nx):
+        u[i] = u_1[i] + Fo*(u_1[i-1] - 2*u_1[i] + u_1[i+1])
+
+    # Insert boundary conditions
+    u[0] = 0;  u[Nx] = 0
+
+    # Update u_1 before next step
+    u_1[:]= u
+</pre></div>
+
+<h2 id="diffu:pde1:BE">Backward Euler scheme<a name="diffu:pde1:BE"></a></h2>
+
+We now apply a backward difference in time in <a href="#mjx-eqn-5">(5)</a>,
+but the same central difference in space:
+
+$$
+\begin{equation}
+[D_t^- u = D_xD_x u]^n_i,
+\tag{9}
+\end{equation}
+$$
+
+which written out reads
+
+$$
+\begin{equation}
+\frac{u^{n}_i-u^{n-1}_i}{\Delta t} = \alpha\frac{u^{n}_{i+1} - 2u^n_i + u^n_{i-1}}{\Delta x^2} \tp
+\tag{10}
+\end{equation}
+$$
+
+Now we assume \( u^{n-1}_i \) is computed, but all quantities at the "new"
+time level \( n \) are unknown. This time it is not possible to solve
+with respect to \( u_i^{n} \) because this value couples to its neighbors
+in space, \( u^n_{i-1} \) and \( u^n_{i+1} \), which are also unknown.
+Let us examine this fact for the case when \( N_x=3 \). Equation <a href="#mjx-eqn-10">(10)</a> written for \( i=1,\ldots,Nx-1= 1,2 \) becomes
+
+$$
+\begin{align}
+\frac{u^{n}_1-u^{n-1}_1}{\Delta t} &= \alpha\frac{u^{n}_{2} - 2u^n_1 + u^n_{0}}{\Delta x^2}\\
+\frac{u^{n}_2-u^{n-1}_2}{\Delta t} &= \alpha\frac{u^{n}_{3} - 2u^n_2 + u^n_{1}}{\Delta x^2}
+\end{align}
+$$
+
+The boundary values \( u^n_0 \) and \( u^n_3 \) are known as zero. Collecting the
+unknown new values \( u^n_1 \) and \( u^n_2 \) on the left-hand side gives
+
+$$
+\begin{align}
+\left(1+  2\alpha\frac{\Delta t}{\Delta x^2}\right) u^{n}_1
+- \alpha\frac{\Delta t}{\Delta x^2} u^{n}_{2}  &= u^{n-1}_1,\\
+- \alpha\frac{\Delta t}{\Delta x^2} u^{n}_{1} +
+\left(1+  2\alpha\frac{\Delta t}{\Delta x^2}\right) u^{n}_2
+  &= u^{n-1}_2
+\tp
+\end{align}
+$$
+
+This is a coupled \( 2\times 2 \) system of algebraic equations for
+the unknowns \( u^n_1 \) and \( u^n_2 \).
+Discretization methods that lead to a coupled system of equations
+for the unknown function at a new time level are said to be
+<em>implicit methods</em>.
+The counterpart, <em>explicit methods</em>, refers to discretization
+methods where there is a simple explicit formula for the values of
+the unknown function at each of the spatial mesh points at the new
+time level. From an implementational point of view, implicit methods
+are more comprehensive to code since they require
+the solution of coupled equations, i.e., a matrix system, at each time level.
+
+<p>
+In the general case, <a href="#mjx-eqn-10">(10)</a> gives rise to
+a coupled \( (Nx-1)\times (Nx-1) \) system of algebraic equations for
+all the unknown \( u^n_i \) at the interior spatial points \( i=1,\ldots,Nx-1 \).
+Collecting the unknowns on the left-hand side, and
+introducing the <em>numerical Fourier number</em>
+
+$$
+\begin{equation}
+F_o = \alpha\frac{\Delta t}{\Delta x^2},
+\end{equation}
+$$
+
+<a href="#mjx-eqn-10">(10)</a> can be written
+
+$$
+\begin{equation}
+- F_o u^n_{i-1} + \left(1+  2F_o \right) u^{n}_i - F_o u^n_{i+1} =
+u_{i-1}^{n-1},
+\tag{11}
+\end{equation}
+$$
+
+for \( i=1,\ldots,Nx-1 \).
+One can either view these equations as a system for where the
+\( u^{n}_i \) values at the internal grid points, \( i=1,\ldots,N_x-1 \), are
+unknown, or we may append the boundary values \( u^n_0 \) and \( u^n_{N_x} \)
+to the system. In the latter case, all \( u^n_i \) for \( i=0,\ldots,N_x \)
+are unknown and we must add the boundary equations to
+the \( N_x-1 \) equations in <a href="#mjx-eqn-11">(11)</a>:
+
+$$
+\begin{align}
+u_0^n &= 0,label{diffu:pde1:step4BE:BC:0}\\
+u_{N_x}^n &= 0\tp
+\tag{13}
+\end{align}
+$$
+
+
+<p>
+A coupled system of algebraic equations can be written on matrix form,
+and this is important if we want to call up ready-made software for
+solving the system.  The equations <a href="#mjx-eqn-11">(11)</a>
+and <a href="#mjx-eqn-12">(12)</a>--<a href="#mjx-eqn-13">(13)</a>
+correspond to the matrix equation
+
+$$
+\begin{equation*} AU = b\end{equation*}
+$$
+
+where \( U=(u^n_0,\ldots,u^n_{N_x}) \), and
+the matrix \( A \) has the following structure:
+
+$$
+\begin{equation}
+A =
+\left(
+\begin{array}{cccccccccc}
+A_{0,0} & A_{0,1} & 0
+&\cdots &
+\cdots & \cdots & \cdots &
+\cdots & 0 \\
+A_{1,0} & A_{1,1} & 0 & \ddots &   & &  & &  \vdots \\
+0 & A_{2,1} & A_{2,2} & A_{2,3} &
+\ddots & &  &  & \vdots \\
+\vdots & \ddots &  & \ddots & \ddots & 0 &  & & \vdots \\
+\vdots &  & \ddots & \ddots & \ddots & \ddots & \ddots & & \vdots \\
+\vdots & &  & 0 & A_{i,i-1} & A_{i,i} & A_{i,i+1} & \ddots & \vdots \\
+\vdots & & &  & \ddots & \ddots & \ddots &\ddots  & 0 \\
+\vdots & & & &  &\ddots  & \ddots &\ddots  & A_{N_x-1,N_x} \\
+0 &\cdots & \cdots &\cdots & \cdots & \cdots  & 0 & A_{N_x,N_x-1} & A_{N_x,N_x}
+\end{array}
+\right)
+\tag{14}
+\end{equation}
+$$
+
+The nonzero elements are given by
+
+$$
+\begin{align}
+A_{i,i-1} &= -F_o\\
+A_{i,i} &= 1+ 2F_o\\
+A_{i,i+1} &= -F_o
+\end{align}
+$$
+
+for the equations for internal points, \( i=1,\ldots,N_x-1 \). The equations
+for the boundary points correspond to
+
+$$
+\begin{align}
+A_{0,0} &= 1,\\
+A_{0,1} &= 0,\\
+A_{N_x,N_x-1} &= 0,\\
+A_{N_x,N_x} &= 1\tp
+\end{align}
+$$
+
+The right-hand side \( b \) is written as
+
+$$
+\begin{equation}
+b = \left(\begin{array}{c}
+b_0\\
+b_1\\
+\vdots\\
+b_i\\
+\vdots\\
+b_{N_x}
+\end{array}\right)
+\end{equation}
+$$
+
+with
+
+$$
+\begin{align}
+b_0 &= 0,\\
+b_i &= u^{n-1}_i,\quad i=1,\ldots,N_x-1,\\
+b_{N_x} &= 0 \tp  \end{align}
+$$
+
+
+<p>
+We observe that the matrix \( A \) contains quantities that do not change
+in time. Therefore, \( A \) can be formed once and for all before we enter
+the recursive formulas for the time evolution.
+The right-hand side \( b \), however, must be updated at each time step.
+This leads to the following computational algorithm, here sketched
+with Python code:
+
+<p>
+
+<!-- code=text (!bc cod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">x = linspace(0, L, Nx+1)   # mesh points in space
+dx = x[1] - x[0]
+t = linspace(0, T, N+1)    # mesh points in time
+u   = zeros(Nx+1)
+u_1 = zeros(Nx+1)
+
+# Data structures for the linear system
+A = zeros((Nx+1, Nx+1))
+b = zeros(Nx+1)
+
+for i in range(1, Nx):
+    A[i,i-1] = -Fo
+    A[i,i+1] = -Fo
+    A[i,i] = 1 + 2*Fo
+A[0,0] = A[Nx,Nx] = 1
+
+# Set initial condition u(x,0) = I(x)
+for i in range(0, Nx+1):
+    u_1[i] = I(x[i])
+
+import scipy.linalg
+
+for n in range(0, Nt):
+    # Compute b and solve linear system
+    for i in range(1, Nx):
+        b[i] = -u_1[i]
+    b[0] = b[Nx] = 0
+    u[:] = scipy.linalg.solve(A, b)
+
+    # Update u_1 before next step
+    u_1[:] = u
+</pre></div>
+
+<h2 id="diffu:pde1:impl:sparse">Sparse matrix implementation<a name="diffu:pde1:impl:sparse"></a></h2>
+
+We have seen from <a href="#mjx-eqn-14">(14)</a> that the matrix \( A \)
+is tridiagonal. The code segment above used a full, dense matrix
+representation of \( A \), which stores a lot of values we know are zero
+beforehand, and worse, the solution algorithm computes with all these zeros.
+With \( N_x+1 \) unknowns, the work by the solution algorithm is \( \frac{1}{3}
+(N_x+1)^3 \) and the storage requirements \( (N_x+1)^2 \). By utilizing
+the fact that \( A \) is tridiagonal and employing corresponding software
+tools, the work and storage demands can be proportional to \( N_x \) only.
+
+<p>
+The key idea is to apply a data structure for a
+tridiagonal or sparse matrix. The <code>scipy.sparse</code> package has
+relevant utilities. For example, we can store the nonzero diagonals of
+a matrix. The package also has linear system solvers that operate on
+sparse matrix data structures. The code below illustrates how we
+can store only the main diagonal and the upper and lower diagonals.
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #408080; font-style: italic"># Representation of sparse matrix and right-hand side</span>
+main  <span style="color: #666666">=</span> zeros(Nx<span style="color: #666666">+1</span>)
+lower <span style="color: #666666">=</span> zeros(Nx<span style="color: #666666">-1</span>)
+upper <span style="color: #666666">=</span> zeros(Nx<span style="color: #666666">-1</span>)
+b     <span style="color: #666666">=</span> zeros(Nx<span style="color: #666666">+1</span>)
+
+<span style="color: #408080; font-style: italic"># Precompute sparse matrix</span>
+main[:] <span style="color: #666666">=</span> <span style="color: #666666">1</span> <span style="color: #666666">+</span> <span style="color: #666666">2*</span>Fo
+lower[:] <span style="color: #666666">=</span> <span style="color: #666666">-</span>Fo  <span style="color: #408080; font-style: italic">#1</span>
+upper[:] <span style="color: #666666">=</span> <span style="color: #666666">-</span>Fo  <span style="color: #408080; font-style: italic">#1</span>
+<span style="color: #408080; font-style: italic"># Insert boundary conditions</span>
+main[<span style="color: #666666">0</span>] <span style="color: #666666">=</span> <span style="color: #666666">1</span>
+main[Nx] <span style="color: #666666">=</span> <span style="color: #666666">1</span>
+
+A <span style="color: #666666">=</span> scipy<span style="color: #666666">.</span>sparse<span style="color: #666666">.</span>diags(
+    diagonals<span style="color: #666666">=</span>[main, lower, upper],
+    offsets<span style="color: #666666">=</span>[<span style="color: #666666">0</span>, <span style="color: #666666">-1</span>, <span style="color: #666666">1</span>], shape<span style="color: #666666">=</span>(Nx<span style="color: #666666">+1</span>, Nx<span style="color: #666666">+1</span>),
+    format<span style="color: #666666">=</span><span style="color: #BA2121">&#39;csr&#39;</span>)
+<span style="color: #008000; font-weight: bold">print</span> A<span style="color: #666666">.</span>todense()
+
+<span style="color: #408080; font-style: italic"># Set initial condition</span>
+<span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">0</span>,Nx<span style="color: #666666">+1</span>):
+    u_1[i] <span style="color: #666666">=</span> I(x[i])
+
+<span style="color: #008000; font-weight: bold">for</span> n <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">0</span>, Nt):
+    b <span style="color: #666666">=</span> u_1
+    b[<span style="color: #666666">0</span>] <span style="color: #666666">=</span> b[<span style="color: #666666">-1</span>] <span style="color: #666666">=</span> <span style="color: #666666">0.0</span>  <span style="color: #408080; font-style: italic"># boundary conditions</span>
+    u[:] <span style="color: #666666">=</span> scipy<span style="color: #666666">.</span>sparse<span style="color: #666666">.</span>linalg<span style="color: #666666">.</span>spsolve(A, b)
+    u_1[:] <span style="color: #666666">=</span> u
+</pre></div>
+<p>
+The <code>scipy.sparse.linalg.spsolve</code> function utilizes the sparse storage
+structure of <code>A</code> and performs in this case a very efficient Gaussian
+elimination solve.
+
+<h2 id="diffu:pde1:theta">The \( \theta \) rule<a name="diffu:pde1:theta"></a></h2>
+
+The \( \theta \) rule provides a family of finite difference approximations
+in time:
+
+<ul>
+ <li> \( \theta=0 \) gives the Forward Euler scheme in time</li>
+ <li> \( \theta=1 \) gives the Backward Euler scheme in time</li>
+ <li> \( \theta=\half \) gives the Crank-Nicolson scheme in time</li>
+</ul>
+
+Applied to the 1D diffusion problem we have
+
+$$ \frac{u^{n+1}_i-u^n_i}{\Delta t} =
+\alpha\left( \theta \frac{u^{n+1}_{i+1} - 2u^{n+1}_i + u^{n+1}_{i-1}}{\Delta x^2}
++ (1-\theta) \frac{u^{n}_{i+1} - 2u^n_i + u^n_{i-1}}{\Delta x^2}\right)
+\tp
+$$
+
+This scheme also leads to a matrix system with entries \( 1+2F_o\theta \) on
+the main diagonal of the matrix, and \( -F_o\theta \) on the
+super- and sub-diagonal. The right-hand side entry \( b_i \) is
+
+$$ b_i = u^n_{i} + F_o(1-\theta)
+\frac{u^{n}_{i+1} - 2u^n_i + u^n_{i-1}}{\Delta x^2}\tp
+$$
+
+<h2 id="___sec6">The Laplace and Poisson equation <a name="___sec6"></a></h2>
+
+The Laplace equation, \( \nabla^2 u = 0 \), or the Poisson equation,
+\( -\nabla^2 u = f \), occur in numerous applications throughout science and
+engineering. We can solve 1D variants of the Laplace equations with the listed
+software, because we can interpret \( u_{xx}=0 \) as the limiting solution
+of \( u_t = \alpha u_{xx} \) when \( u \) reach a steady state limit where
+\( u_t\rightarrow 0 \).
+Similarly, Poisson's equation \( -u_{xx}=f \) arises from solving
+\( u_t = u_{xx} + f \) and letting \( t\rightarrow \) so \( u_t\rightarrow 0 \).
+
+<p>
+Technically in a program, we can simulate \( t\rightarrow\infty \)
+by just taking one large time step,
+or equivalently, set \( \alpha \) to a large value. All we need is to have
+\( F_o \) large. As \( F_o\rightarrow\infty \), we can from the schemes see that
+the limiting discrete equation becomes
+
+$$ \frac{u^{n+1}_{i+1} - 2u^{n+1}_i + u^{n+1}_{i-1}}{\Delta x^2} = 0,$$
+
+which is nothing but the discretization \( [D_xD_x u]^{n+1}_i=0 \) of
+\( u_{xx}=0 \).
+
+<p>
+The Backward Euler scheme can solve the limit equation directly and
+hence produce a solution of the 1D Laplace equation.
+With the Forward Euler scheme we must do the time stepping since \( F_o>1/2 \)
+is illegal and leads to instability. We may interpret this time stepping
+as solving the equation system from \( u_{xx} \) by iterating on a time
+pseudo time variable.
+
+<h2 id="___sec7">Extensions <a name="___sec7"></a></h2>
+
+These extensions are performed exactly as for a wave equation as they
+only affect the spatial derivatives (which are the same as in the
+wave equation).
+
+<ul>
+ <li> Variable coefficients</li>
+ <li> Neumann and Robin conditions</li>
+ <li> 2D and 3D</li>
+</ul>
+
+Future versions of this document will for completeness and
+independence of the wave equation document feature info on the three
+points. The Robin condition is new, but straightforward to handle:
+
+$$ -\dfc\frac{\partial u}{\partial n} = h_T(u-U_s),\quad
+[-\dfc D_x u = h_T(u-U_s)]^n_i
+$$
+
+<h1 id="___sec8">Analysis of schemes for the diffusion equation <a name="___sec8"></a></h1>
+<a name="diffu:pde1:analysis"></a>
+
+<h2 id="diffu:pde1:analysis:uex">Properties of the solution<a name="diffu:pde1:analysis:uex"></a></h2>
+
+A particular characteristic of diffusive processes, governed
+by an equation like
+
+$$
+\begin{equation}
+u_t = \alpha u_{xx},
+\tag{15}
+\end{equation}
+$$
+
+is that the
+initial shape \( u(x,0)=I(x) \) spreads out in space with time,
+along with a decaying amplitude.
+Three different examples will illustrate the spreading of \( u \) in
+space and the decay in time.
+
+<h3 id="___sec10">Similarity solution <a name="___sec10"></a></h3>
+
+The diffusion equation <a href="#mjx-eqn-15">(15)</a> admits solutions
+that depend on \( \eta = (x-c)/\sqrt{4\alpha t} \) for a given value
+of \( c \). One particular solution
+is
+
+$$
+\begin{equation}
+u(x,t) = a\,\mbox{erf}(\eta) + b,
+\tag{16}
+\end{equation}
+$$
+
+where
+
+$$
+\begin{equation}
+\mbox{erf}(\eta) = \frac{2}{\sqrt{\pi}}\int_0^\eta e^{-\zeta^2}d\zeta,
+\tag{17}
+\end{equation}
+$$
+
+is the <em>error function</em>, and \( a \) and \( b \) are arbitrary constants.
+The error function lies in \( (-1,1) \), is odd around \( \eta =0 \), and
+goes relatively quickly to \( \pm 1 \):
+
+$$
+\begin{align*}
+\lim_{\eta\rightarrow -\infty}\mbox{erf}(\eta) &=-1,\\
+\lim_{\eta\rightarrow \infty}\mbox{erf}(\eta) &=1,\\
+\mbox{erf}(\eta) &= -\mbox{erf}(-\eta),\\
+\mbox{erf}(0) &=0,\\
+\mbox{erf}(2) &=0.99532227,\\
+\mbox{erf}(3) &=0.99997791
+\tp
+\end{align*}
+$$
+
+
+<p>
+As \( t\rightarrow 0 \), the error function approaches a step function centered
+at \( x=c \). For a diffusion problem posed on the unit interval \( [0,1] \),
+we may choose the step at \( x=1/2 \) (meaning \( c=1/2 \)), \( a=-1/2 \), \( b=1/2 \).
+Then
+
+$$
+\begin{equation}
+u(x,t) = \half\left(1 -
+\mbox{erf}\left(\frac{x-\half}{\sqrt{4\alpha t}}\right)\right) =
+\half\mbox{erfc}\left(\frac{x-\half}{\sqrt{4\alpha t}}\right),
+\tag{18}
+\end{equation}
+$$
+
+where we have introduced the <em>complementary error function</em>
+\( \mbox{erfc}(\eta) = 1-\mbox{erf}(\eta) \).
+The solution <a href="#mjx-eqn-18">(18)</a>
+implies the boundary conditions
+
+$$
+\begin{align}
+u(0,t) &= \half\left(1 - \mbox{erf}\left(\frac{-1/2}{\sqrt{4\alpha t}}\right)\right),
+\tag{19} \\
+u(1,t) &= \half\left(1 - \mbox{erf}\left(\frac{1/2}{\sqrt{4\alpha t}}\right)\right)
+\tag{20}
+\tp
+\end{align}
+$$
+
+For small enough \( t \), \( u(0,t)\approx 1 \) and \( u(1,t)\approx 1 \), but as
+\( t\rightarrow\infty \), \( u(x,t)\rightarrow 1/2 \) on \( [0,1] \).
+
+<h3 id="___sec11">Solution for a Gaussian pulse <a name="___sec11"></a></h3>
+
+The standard diffusion equation \( u_t = \alpha u_{xx} \) admits a
+Gaussian function as solution:
+
+$$
+\begin{equation}
+u(x,t) = \frac{1}{\sqrt{4\pi\alpha t}} \exp{\left({-\frac{(x-c)^2}{4\alpha t}}\right)}
+\tag{21}
+\tp
+\end{equation}
+$$
+
+At \( t=0 \) this is a Dirac delta function, so for computational
+purposes one must start to view the solution at some time \( t=t_\epsilon>0 \).
+Replacing \( t \) by \( t_\epsilon +t \) in <a href="#mjx-eqn-21">(21)</a>
+makes it easy to operate with a (new) \( t \) that starts at \( t=0 \)
+with an initial condition with a finite width.
+The important feature of <a href="#mjx-eqn-21">(21)</a> is that
+the standard deviation \( \sigma \) of a sharp initial Gaussian pulse
+increases in time according to \( \sigma = \sqrt{2\alpha t} \), making
+the pulse diffuse and flatten out.
+
+<p>
+<!-- Mention combinations of such kernels to build up a general analytical sol? -->
+<!-- Or maybe an exercise for verification. -->
+
+<h3 id="___sec12">Solution for a sine component <a name="___sec12"></a></h3>
+
+For example, <a href="#mjx-eqn-15">(15)</a>
+admits a solution of the form
+
+$$
+\begin{equation}
+u(x,t) = Qe^{-at}\sin\left( kx\right)
+\tag{22}
+\tp
+\end{equation}
+$$
+
+The parameters \( Q \) and \( k \) can be freely chosen, while
+inserting <a href="#mjx-eqn-22">(22)</a> in <a href="#mjx-eqn-15">(15)</a> gives the constraint
+
+$$
+\begin{equation*} a = -\alpha k^2
+\tp
+\end{equation*}
+$$
+
+
+<p>
+A very important feature is that the initial shape \( I(x)=Q\sin kx \)
+undergoes a damping \( \exp{(-\alpha k^2t)} \), meaning that
+rapid oscillations in space, corresponding to large \( k \), are very much
+faster dampened than slow oscillations in space, corresponding to small
+\( k \). This feature leads to a smoothing of the initial condition with time.
+
+<p>
+The following examples illustrates the damping properties of <a href="#mjx-eqn-22">(22)</a>. We consider the specific problem
+
+$$
+\begin{align*}
+u_t &= u_{xx},\quad x\in (0,1),\ t\in (0,T],\\
+u(0,t) &= u(1,t) = 0,\quad t\in (0,T],\\
+u(x,0) & = \sin (\pi x) + 0.1\sin(100\pi x)
+\tp
+\end{align*}
+$$
+
+The initial condition has been chosen such that adding
+two solutions like <a href="#mjx-eqn-22">(22)</a> constructs
+an analytical solution to the problem:
+
+$$
+\begin{equation}
+u(x,t) = e^{-\pi^2 t}\sin (\pi x) + 0.1e^{-\pi^2 10^4 t}\sin (100\pi x)
+\tag{23}
+\tp
+\end{equation}
+$$
+
+Figure <a href="#diffu:pde1:fig:damping">1</a> illustrates the rapid damping of
+rapid oscillations \( \sin (100\pi x) \) and the very much slower damping of the
+slowly varying \( \sin (\pi x) \) term. After about \( t=0.5\cdot10^{-4} \) the rapid
+oscillations do not have a visible amplitude, while we have to wait
+until \( t\sim 0.5 \) before the amplitude of the long wave \( \sin (\pi x) \)
+becomes very small.
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 1:  Evolution of the solution of a diffusion problem: initial condition (upper left), 1/100 reduction of the small waves (upper right), 1/10 reduction of the long wave (lower left), and 1/100 reduction of the long wave (lower right). <a name="diffu:pde1:fig:damping"></a> </p></center>
+<p><img src="fig-diffu/diffusion_damping.png" align="bottom" width=800></p>
+</center>
+
+<p>
+<!-- x/sqrt(t) solution, kernel with integral -->
+
+<h2 id="___sec13">Analysis of discrete equations <a name="___sec13"></a></h2>
+
+A counterpart to <a href="#mjx-eqn-22">(22)</a> is the complex representation
+of the same function:
+
+$$ u(x,t) = Qe^{-at}e^{ikx},$$
+
+where \( i=\sqrt{-1} \) is the imaginary unit.
+We can add such functions, often referred to as wave components,
+to make a Fourier representation
+of a general solution of the diffusion equation:
+
+$$
+\begin{equation}
+u(x,t) \approx \sum_{k\in K} b_k e^{-\alpha k^2t}e^{ikx},
+\tag{24}
+\end{equation}
+$$
+
+where \( K \) is a set of an infinite number of \( k \) values needed to construct
+the solution. In practice, however, the series is truncated and
+\( K \) is a finite set of \( k \) values
+need build a good approximate solution.
+Note that <a href="#mjx-eqn-23">(23)</a> is a special case of
+<a href="#mjx-eqn-24">(24)</a> where \( K=\{\pi, 100\pi\} \), \( b_{\pi}=1 \),
+and \( b_{100\pi}=0.1 \).
+
+<p>
+The amplitudes \( b_k \) of the individual Fourier waves must be determined
+from the initial condition. At \( t=0 \) we have \( u\approx\sum_kb_k\exp{(ikx)} \)
+and find \( K \) and \( b_k \) such that
+
+$$
+\begin{equation}
+I(x) \approx \sum_{k\in K} b_k e^{ikx}\tp
+\end{equation}
+$$
+
+(The relevant formulas for \( b_k \) come from Fourier analysis, or
+equivalently, a least-squares method for approximating \( I(x) \)
+in a function space with basis \( \exp{(ikx)} \).)
+
+<p>
+Much insight about the behavior of numerical methods can be obtained
+by investigating how a wave component \( \exp{(-\alpha k^2 t)}\exp{(ikx)} \)
+is treated by the numerical scheme. It appears that such wave
+components are also solutions of the schemes, but the damping
+factor \( \exp{(-\alpha k^2 t)} \) varies among the schemes.
+To ease the forthcoming algebra, we write the damping factor
+as \( A^n \). The exact amplification factor corresponding to \( A \)
+is \( \Aex = \exp{(-\alpha k^2\Delta t)} \).
+
+<h2 id="diffu:pde1:analysis">Analysis of the finite difference schemes<a name="diffu:pde1:analysis"></a></h2>
+
+We have seen that a general solution of the diffusion equation
+can be built as a linear combination of basic components
+
+$$
+\begin{equation*} e^{-\alpha k^2t}e^{ikx} \tp  \end{equation*}
+$$
+
+A fundamental question is whether such components are also solutions of
+the finite difference schemes. This is indeed the case, but the
+amplitude \( \exp{(-\alpha k^2t)} \) might be modified (which also happens when
+solving the ODE counterpart \( u'=-\alpha u \)).
+We therefore look for numerical solutions of the form
+
+$$
+\begin{equation}
+u^n_q = A^n e^{ikq\Delta x} = A^ne^{ikx},
+\tag{25}
+\end{equation}
+$$
+
+where the amplification factor \( A \)
+must be determined by inserting the component into an actual scheme.
+
+<h3 id="___sec15">Stability <a name="___sec15"></a></h3>
+
+The exact amplification factor is \( \Aex=\exp{(-\alpha^2 k^2\Delta t)} \).
+We should therefore require \( |A| < 1 \) to have a decaying numerical
+solution as well. If
+\( -1\leq A<0 \), \( A^n \) will change sign from time level to
+time level, and we get stable, non-physical oscillations in the numerical
+solutions that are not present in the exact solution.
+
+<h3 id="___sec16">Accuracy <a name="___sec16"></a></h3>
+
+To determine how accurately a finite difference scheme treats one
+wave component <a href="#mjx-eqn-25">(25)</a>, we see that the basic
+deviation from the exact solution is reflected in how well
+\( A^n \) approximates \( \Aex^n \),
+or how well \( A \) approximates \( \Aex \).
+
+<p>
+<!-- We shall in particular investigate the error \( \Aex - A \) in the -->
+<!-- amplification factor. -->
+
+<h2 id="diffu:pde1:analysis:FE">Analysis of the Forward Euler scheme<a name="diffu:pde1:analysis:FE"></a></h2>
+
+<!-- 2DO: refer to vib and wave -->
+
+<p>
+The Forward Euler finite difference scheme for \( u_t = \alpha u_{xx} \) can
+be written as
+
+$$
+\begin{equation*} [D_t^+ u = \alpha D_xD_x u]^n_q\tp  \end{equation*}
+$$
+
+Inserting a wave component <a href="#mjx-eqn-25">(25)</a>
+in the scheme demands calculating the terms
+
+$$ e^{ikq\Delta x}[D_t^+ A]^n = e^{ikq\Delta x}A^n\frac{A-1}{\Delta t},$$
+
+and
+
+$$ A^nD_xD_x [e^{ikx}]_q = A^n\left( - e^{ikq\Delta x}\frac{4}{\Delta x^2}
+\sin^2\left(\frac{k\Delta x}{2}\right)\right)
+\tp  $$
+
+Inserting these terms in the discrete equation and
+dividing by \( A^n e^{ikq\Delta x} \) leads to
+
+$$
+\begin{equation*}
+\frac{A-1}{\Delta t} = -\alpha \frac{4}{\Delta x^2}\sin^2\left(
+\frac{k\Delta x}{2}\right),
+\end{equation*}
+$$
+
+and consequently
+
+$$
+\begin{equation}
+A = 1 -4F_o\sin^2\left(
+\frac{k\Delta x}{2}\right),
+\end{equation}
+$$
+
+where
+
+$$
+\begin{equation}
+F_o = \frac{\alpha\Delta t}{\Delta x^2}
+\end{equation}
+$$
+
+is the <em>numerical Fourier number</em>.
+The complete numerical solution is then
+
+$$
+\begin{equation}
+u^n_q = \left(1 -4F_o\sin^2\left(
+\frac{k\Delta x}{2}\right)\right)^ne^{ikq\Delta x}
+\tp
+\end{equation}
+$$
+
+<h3 id="___sec18">Stability <a name="___sec18"></a></h3>
+
+We easily see that \( A\leq 1 \). However, the \( A \) can be less than \( -1 \),
+which will lead
+to growth of a numerical wave component. The criterion \( A\geq -1 \) implies
+
+$$ 4F_o\sin^2 (p/2)\leq 2
+\tp  $$
+
+The worst case is when \( \sin^2 (p/2)=1 \), so a sufficient criterion for
+stability is
+
+$$
+\begin{equation}
+F_o\leq {\half},
+\end{equation}
+$$
+
+or expressed as a condition on \( \Delta t \):
+
+$$
+\begin{equation}
+\Delta t\leq \frac{\Delta x^2}{2\alpha}\tp
+\end{equation}
+$$
+
+Note that halving the spatial mesh size, \( \Delta x \rightarrow {\half}
+\Delta x \), requires \( \Delta t \) to be reduced by a factor of \( 1/4 \).
+The method hence becomes very expensive for fine spatial meshes.
+
+<p>
+<!-- 2DO: verification based on exact solutions -->
+
+<h3 id="___sec19">Accuracy <a name="___sec19"></a></h3>
+
+Since \( A \) is expressed in terms of \( F_o \) and the parameter we now call
+\( p=k\Delta x/2 \), we also express \( \Aex \) by \( F_o \) and \( p \):
+
+$$ \Aex = \exp{(-\alpha k^2\Delta t)} = \exp{(-4F_op^2)}
+\tp $$
+
+Computing
+the Taylor series expansion of \( A/\Aex \) in terms of \( F_o \)
+can easily be done with aid of <code>sympy</code>:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">A_exact</span>(Fo, p):
+    <span style="color: #008000; font-weight: bold">return</span> exp(<span style="color: #666666">-4*</span>Fo<span style="color: #666666">*</span>p<span style="color: #666666">**2</span>)
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">A_FE</span>(Fo, p):
+    <span style="color: #008000; font-weight: bold">return</span> <span style="color: #666666">1</span> <span style="color: #666666">-</span> <span style="color: #666666">4*</span>Fo<span style="color: #666666">*</span>sin(p)<span style="color: #666666">**2</span>
+
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
+Fo, p <span style="color: #666666">=</span> symbols(<span style="color: #BA2121">&#39;Fo p&#39;</span>)
+A_err_FE <span style="color: #666666">=</span> A_FE(Fo, p)<span style="color: #666666">/</span>A_exact(Fo, p)
+<span style="color: #008000; font-weight: bold">print</span> A_err_FE<span style="color: #666666">.</span>series(Fo, <span style="color: #666666">0</span>, <span style="color: #666666">6</span>)
+</pre></div>
+<p>
+The result is
+
+$$ \frac{A}{\Aex} = 1 - 4 F_o \sin^{2}p + 2F_o p^{2} - 16F_o^{2} p^{2} \sin^{2}p + 8 F_o^{2} p^{4} + \cdots
+$$
+
+Recalling that \( F_o=\alpha\Delta t/\Delta x \), \( p=k\Delta x/2 \), and that
+\( \sin^2p\leq 1 \), we
+realize that the dominating error terms are at most
+
+$$ 1 - 4\alpha \frac{\Delta t}{\Delta x^2} +
+\alpha\Delta t - 4\alpha^2\Delta t^2
++ \alpha^2 \Delta t^2\Delta x^2 + \cdots
+\tp
+$$
+
+<h2 id="diffu:pde1:analysis:BE">Analysis of the Backward Euler scheme<a name="diffu:pde1:analysis:BE"></a></h2>
+
+Discretizing \( u_t = \alpha u_{xx} \) by a Backward Euler scheme,
+
+$$
+\begin{equation*} [D_t^- u = \alpha D_xD_x u]^n_q,\end{equation*}
+$$
+
+and inserting a wave component <a href="#mjx-eqn-25">(25)</a>,
+leads to calculations similar to those arising from the Forward Euler scheme,
+but since
+
+$$ e^{ikq\Delta x}[D_t^- A]^n = A^ne^{ikq\Delta x}\frac{1 - A^{-1}}{\Delta t},$$
+
+we get
+
+$$
+\begin{equation*}
+\frac{1-A^{-1}}{\Delta t} = -\alpha \frac{4}{\Delta x^2}\sin^2\left(
+\frac{k\Delta x}{2}\right),
+\end{equation*}
+$$
+
+and then
+
+$$
+\begin{equation}
+A = \left(1  + 4F_o\sin^2p\right)^{-1}
+\tag{26}
+\tp
+\end{equation}
+$$
+
+The complete numerical solution can be written
+
+$$
+\begin{equation}
+u^n_q = \left(1  + 4F_o\sin^2 p\right)^{-n}
+e^{ikq\Delta x} \tp
+\end{equation}
+$$
+
+<h3 id="___sec21">Stability <a name="___sec21"></a></h3>
+
+We see from <a href="#mjx-eqn-26">(26)</a> that \( 0<A<1 \), which means
+that all numerical wave components are stable and non-oscillatory
+for any \( \Delta t >0 \).
+
+<h2 id="diffu:pde1:analysis:CN">Analysis of the Crank-Nicolson scheme<a name="diffu:pde1:analysis:CN"></a></h2>
+
+The Crank-Nicolson scheme can be written as
+
+$$ [D_t u = \alpha D_xD_x \overline{u}^x]^{n+\half}_q, $$
+
+or
+
+$$ [D_t u]^{n+\half}_q = \half\alpha\left( [D_xD_x u]^{n}_q +
+[D_xD_x u]^{n+1}_q\right)
+\tp
+$$
+
+Inserting <a href="#mjx-eqn-25">(25)</a> in the time derivative approximation
+leads to
+
+$$ [D_t A^n e^{ikq\Delta x}]^{n+\half} = A^{n+\half} e^{ikq\Delta x}\frac{A^{\half}-A^{-\half}}{\Delta t} = A^ne^{ikq\Delta x}\frac{A-1}{\Delta t}
+\tp $$
+
+Inserting <a href="#mjx-eqn-25">(25)</a> in the other terms
+and dividing by
+\( A^ne^{ikq\Delta x} \) gives the relation
+
+$$
+\frac{A-1}{\Delta t} = -\half\alpha\frac{4}{\Delta x^2}
+\sin^2\left(\frac{k\Delta x}{2}\right)
+(1 + A),
+$$
+
+and after some more algebra,
+
+$$
+\begin{equation}
+A = \frac{ 1 - 2F_o\sin^2p}{1 + 2F_o\sin^2p}
+\tp
+\end{equation}
+$$
+
+The exact numerical solution is hence
+
+$$
+\begin{equation}
+u^n_q = \left(\frac{ 1 - 2F_o\sin^2p}{1 + 2F_o\sin^2p}\right)^ne^{ikp\Delta x}
+\tp
+\end{equation}
+$$
+
+<h3 id="___sec23">Stability <a name="___sec23"></a></h3>
+
+The criteria \( A>-1 \) and \( A<1 \) are fulfilled for any \( \Delta t >0 \).
+
+<h2 id="___sec24">Summary of accuracy of amplification factors <a name="___sec24"></a></h2>
+
+We can plot the various amplification factors against \( p=k\Delta x/2 \) for
+different choices of the \( F_o \) parameter. Figures <a href="#diffu:pde1:fig:A:err:C20">2</a>,
+<a href="#diffu:pde1:fig:A:err:C0.5">3</a>, and <a href="#diffu:pde1:fig:A:err:C0.1">4</a>
+show how long and small waves are damped by the various schemes compared
+to the exact damping. As long as all schemes are stable, the amplification
+factor is positive, except for Crank-Nicolson when \( F_o>0.5 \).
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 2:  Amplification factors for large time steps. <a name="diffu:pde1:fig:A:err:C20"></a> </p></center>
+<p><img src="fig-diffu/diffusion_A_Fo20_Fo2_FDM.png" align="bottom" width=800></p>
+</center>
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 3:  Amplification factors for time steps around the Forward Euler stability limit. <a name="diffu:pde1:fig:A:err:C0.5"></a> </p></center>
+<p><img src="fig-diffu/diffusion_A_Fo05_Fo025_FDM.png" align="bottom" width=800></p>
+</center>
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 4:  Amplification factors for small time steps. <a name="diffu:pde1:fig:A:err:C0.1"></a> </p></center>
+<p><img src="fig-diffu/diffusion_A_Fo01_Fo001_FDM.png" align="bottom" width=800></p>
+</center>
+
+<p>
+The effect of negative amplification factors is that \( A^n \) changes sign
+from one time level to the next, thereby giving rise to oscillations in
+time in an animation of the solution. We see from Figure <a href="#diffu:pde1:fig:A:err:C20">2</a> that for \( F_o=20 \), waves with \( p\geq \pi/2 \) undergo a damping close to
+\( -1 \), which means that the amplitude does not decay and that the wave component
+jumps up and down in time. For \( F_o=2 \) we have a damping of a factor of 0.5
+from one time level to the next, which is very much smaller than the
+exact damping. Short waves will therefore fail to be effectively dampened.
+These waves will manifest themselves as high frequency
+oscillatory noise in the solution.
+
+<p>
+A value \( p=\pi/4 \) corresponds to
+four mesh points per wave length of \( e^{ikx} \), while
+\( p=\pi/2 \) implies only two points per wave length, which is the smallest number
+of points we can have to represent the wave on the mesh.
+
+<p>
+To demonstrate the oscillatory behavior of the Crank-Nicolson scheme, we
+choose an initial condition that leads to short waves with
+significant amplitude. A discontinuous \( I(x) \) will in particular serve
+this purpose.
+
+<p>
+Run \( F_o=... \)...
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="___sec25">Exercise 1: Use an analytical solution to formulate a 1D test <a name="___sec25"></a></h2>
+
+This exercise explores the exact solution <a href="#mjx-eqn-21">(21)</a>.
+We shall formulate a diffusion problem in half of the domain for
+half of the Gaussian pulse. Then we shall investigate the
+impact of using an incorrect boundary condition, which we in
+general cases often are forced due if the solution needs to pass
+through finite boundaries undisturbed.
+
+<p>
+<b>a)</b>
+The solution <a href="#mjx-eqn-21">(21)</a> is seen to be symmetric
+at \( x=c \), because \( \partial u/\partial x =0 \) always vanishes for
+\( x=c \). Use this property to formulate a complete initial boundary
+value problem in 1D involving the diffusion equation \( u_t=\alpha u_{xx} \)
+on \( [0,L] \) with \( u_x(0,t)=0 \) and \( u(L,t) \) known.
+
+<p>
+<b>b)</b>
+Use the exact solution to set up a convergence rate test for an
+implementation of the problem. Investigate if a one-sided
+difference for \( u_x(0,t) \), say \( u_0=u_1 \), destroys the second-order
+accuracy in space.
+
+<p>
+<b>c)</b>
+Imagine that we want to solve the problem numerically on
+\( [0,L] \), but we do not know the exact solution and cannot of that
+reason assign a correct Dirichlet condition at \( x=L \).
+One idea is to simply set \( u(L,t)=0 \) since this will be an
+accurate approximation before the diffused pulse reaches \( x=L \)
+and even thereafter it might be a satisfactory condition.
+Let \( \uex \) be the exact solution and let \( u \) be the solution
+of \( u_t=\alpha u_{xx} \) with an initial Gaussian pulse and
+the boundary conditions \( u_x(0,t)=u(L,t)=0 \). Derive a diffusion
+problem for the error \( e=\uex - u \). Solve this problem
+numerically using an exact Dirichlet condition at \( x=L \).
+Animate the evolution of the error and make a curve plot of
+the error measure
+
+$$ E(t)=\sqrt{\frac{\int_0^L e^2dx}{\int_0^L udx}}\tp $$
+
+Is this a suitable error measure for the present problem?
+
+<p>
+<b>d)</b>
+Instead of using \( u(L,t)=0 \) as approximate boundary condition for
+letting the diffused Gaussian pulse out of our finite domain,
+one may try \( u_x(L,t)=0 \) since the solution for large \( t \) is
+quite flat. Argue that this condition gives a completely wrong
+asymptotic solution as \( t\rightarrow 0 \). To do this,
+integrate the diffusion equation from \( 0 \) to \( L \), integrate
+\( u_{xx} \) by parts (or use Gauss' divergence theorem in 1D) to
+arrive at the important property
+
+$$ \frac{d}{dt}\int_{0}^L u(x,t)dx = 0,$$
+
+implying that \( \int_0^Ludx \) must be constant in time, and therefore
+
+$$ \int_{0}^L u(x,t)dx = \int_{0}^LI(x)dx\tp $$
+
+The integral of the initial pulse is 1.
+
+<p>
+<b>e)</b>
+Another idea for an artificial boundary condition at \( x=L \)
+is to use a cooling law
+
+$$
+\begin{equation}
+-\alpha u_x = q(u - u_S),
+\tag{27}
+\end{equation}
+$$
+
+where \( q \) is an unknown heat transfer coefficient and \( u_S \) is
+the surrounding temperature in the medium outside of \( [0,L] \).
+(Note that arguing that \( u_S \) is approximately \( u(L,t) \) gives
+the \( u_x=0 \) condition from the previous subexercise that is
+qualitatively wrong for large \( t \).)
+Develop a diffusion problem for the error in the solution using
+<a href="#mjx-eqn-27">(27)</a> as boundary condition.
+Assume one can take \( u_S=0 \) "outside the domain"
+as \( u\rightarrow 0 \) for \( x\rightarrow\infty \).
+Find a function \( q=q(t) \) such that the exact solution
+obeys the condition <a href="#mjx-eqn-27">(27)</a>.
+Test some constant values of \( q \) and animate how the corresponding
+error function behaves. Also compute \( E(t) \) curves as suggested in
+subexercise b).
+
+<p>
+Filename: <code>diffu_symmetric_gaussian.py</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="___sec26">Exercise 2: Use an analytical solution to formulate a 2D test <a name="___sec26"></a></h2>
+
+Generalize <a href="#mjx-eqn-21">(21)</a> to multi dimensions by
+assuming that one-dimensional solutions can be multiplied to solve
+\( u_t = \alpha\nabla^2 u \).
+Use this solution to formulate a 2D test case where the peak of
+the Gaussian is at the origin and where the domain is a
+rectangule in the first quadrant. Use symmetry boundary
+conditions \( \partial u/\partial n=0 \) whereever possible, and use
+exact Dirichlet conditions on the remaining boundaries.
+Filename: <code>diffu_symmetric_gaussian_2D.pdf</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="diffu:exer:uterm">Exercise 3: Examine stability of a diffusion model with a source term<a name="diffu:exer:uterm"></a></h2>
+
+Consider a diffusion equation with a linear \( u \) term:
+
+$$ u_t = \alpha u_{xx} + \beta u\tp$$
+
+
+<p>
+<b>a)</b>
+Derive in detail a Forward Euler scheme, a Backward Euler scheme,
+and a Crank-Nicolson for this type of diffusion model.
+Thereafter, formulate a \( \theta \)-rule to summarize the three schemes.
+
+<p>
+<b>b)</b>
+Assume a solution like <a href="#mjx-eqn-22">(22)</a> and find the relation
+between \( a \), \( k \), \( \alpha \), and \( \beta \).
+
+<p>
+<b>c)</b>
+Calculate the stability of the Forward Euler scheme. Design
+numerical experiments to confirm the results.
+
+<p>
+<b>d)</b>
+Repeat c) for the Backward Euler scheme.
+
+<p>
+<b>e)</b>
+Repeat c) for the Crank-Nicolson scheme.
+
+<p>
+<b>f)</b>
+How does the extra term \( bu \) impact the accuracy of the three schemes?
+
+<p>
+<!-- --- begin hint in exercise --- -->
+
+<p>
+<b>Hint.</b>
+Compare the numerical and exact amplification factors, either in
+graphs or by Taylor series expansion (or both).
+
+<p>
+<!-- --- end hint in exercise --- -->
+
+<p>
+Filename: <code>diffu_stab_uterm.pdf</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<h1 id="___sec28">Exercises <a name="___sec28"></a></h1>
+
+<!-- --- begin exercise --- -->
+
+<h2 id="diffu:exer:CN:Rannacher">Exercise 4: Stabilizing the Crank-Nicolson method by Rannacher time stepping<a name="diffu:exer:CN:Rannacher"></a></h2>
+
+It is well known that the Crank-Nicolson method may give rise to
+non-physical oscillations in the solution of diffusion equations
+if the initial data exhibit jumps (see the section <a href="#diffu:pde1:analysis:CN">Analysis of the Crank-Nicolson scheme</a>).
+Rannacher <a href="._main_diffu002.html#Rannacher_1984">[1]</a> suggested a stabilizing technique
+consisting of using the Backward Euler scheme for the first two
+time steps with step length \( \half\Delta t \). One can generalize
+this idea to taking \( 2m \) time steps of size \( \half\Delta t \) with
+the Backward Euler method and then continuing with the
+Crank-Nicolson method, which is of second-order in time.
+The idea is that the high frequencies of the initial solution are
+quickly damped out, and the Backward Euler scheme treats these
+high frequencies correctly. Thereafter, the high frequency content of
+the solution is gone and the Crank-Nicolson method will do well.
+
+<p>
+Test this idea for \( m=1,2,3 \) on a diffusion problem with a
+discontinuous initial condition. Measure the convergence rate using
+the solution <a href="#mjx-eqn-18">(18)</a> with the boundary
+conditions
+<a href="#mjx-eqn-19">(19)</a>-<a href="#mjx-eqn-20">(20)</a>
+for \( t \) values such that the conditions are in the vicinity of \( \pm 1 \).
+For example, \( t< 5a 1.6\cdot 10^{-2} \) makes the solution diffusion from
+a step to almost a straight line. The
+program <code>diffu_erf_sol.py</code> shows how to compute the analytical
+solution.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="diffu:exer:energy:estimates">Project 5: Energy estimates for diffusion problems<a name="diffu:exer:energy:estimates"></a></h2>
+
+This project concerns so-called <em>energy estimates</em> for diffusion problems
+that can be used for qualitative analytical insight and for
+verification of implementations.
+
+<p>
+<b>a)</b>
+We start with a 1D homogeneous diffusion equation with zero Dirichlet
+conditions:
+
+$$
+\begin{align}
+u_t &= \alpha u_xx, & x\in \Omega =(0,L),\ t\in (0,T],
+\tag{28} \\
+u(0,t) = u(L,t) &= 0, & t\in (0,T],
+\tag{29}\\
+u(x,0) &= I(x), & x\in [0,L]
+\tag{30}
+\tp
+\end{align}
+$$
+
+The energy estimate for this problem reads
+
+$$
+\begin{equation}
+||u||_{L^2} \leq ||I||_{L^2},
+\tag{31}
+\end{equation}
+$$
+
+where the \( ||\cdot ||_{L^2} \) norm is defined by
+
+$$
+\begin{equation}
+||g||_{L^2} = \sqrt{\int_0^L g^2dx}\tp
+\tag{32}
+\end{equation}
+$$
+
+The quantify  \( ||u||_{L^2} \) or \( \half ||u||_{L^2} \) is known
+as the <em>energy</em> of the solution, although it is not the physical
+energy of the system. A mathematical tradition has introduced the
+notion <em>energy</em> in this context.
+
+<p>
+The estimate <a href="#mjx-eqn-31">(31)</a> says that the
+"size of $u$" never exceeds that of the initial condition, or
+more equivalently, that the area under the \( u \) curve decreases
+with time.
+
+<p>
+To show <a href="#mjx-eqn-31">(31)</a>, multiply the PDE
+by \( u \) and integrate from \( 0 \) to \( L \). Use that \( uu_t \) can be
+expressed as the time derivative of \( u^2 \) and that \( u_xxu \) can
+integrated by parts to form an integrand \( u_x^2 \). Show that
+the time derivative of \( ||u||_{L^2}^2 \) must be less than or equal
+to zero. Integrate this expression and derive
+<a href="#mjx-eqn-31">(31)</a>.
+
+<p>
+<!-- <a href="http://www.ann.jussieu.fr/~frey/cours/UdC/ma691/ma691_ch6.pdf" target="_self"><tt>http://www.ann.jussieu.fr/~frey/cours/UdC/ma691/ma691_ch6.pdf</tt></a> -->
+
+<p>
+<b>b)</b>
+Now we address a slightly different problem,
+
+$$
+\begin{align}
+u_t &= \alpha u_xx + f(x,t), & x\in \Omega =(0,L),\ t\in (0,T],
+\tag{33} \\
+u(0,t) = u(L,t) &= 0, & t\in (0,T],
+\tag{34}\\
+u(x,0) &= 0, & x\in [0,L]
+\tag{35}
+\tp
+\end{align}
+$$
+
+The associated energy estimate is
+
+$$
+\begin{equation}
+||u||_{L^2} \leq ||f||_{L^2}\tp
+\tag{36}
+\end{equation}
+$$
+
+(This result is more difficult to derive.)
+
+<p>
+Now consider the compound problem with an initial condition \( I(x) \) and
+a right-hand side \( f(x,t) \):
+
+$$
+\begin{align}
+u_t &= \alpha u_xx + f(x,t), & x\in \Omega =(0,L),\ t\in (0,T],
+\tag{37} \\
+u(0,t) = u(L,t) &= 0, & t\in (0,T],
+\tag{38}\\
+u(x,0) &= I(x), & x\in [0,L]
+\tag{39}
+\tp
+\end{align}
+$$
+
+Show that if \( w_1 \) fulfills
+<a href="#mjx-eqn-28">(28)</a>-<a href="#mjx-eqn-30">(30)</a>
+and \( w_2 \) fulfills
+<a href="#mjx-eqn-33">(33)</a>-<a href="#mjx-eqn-35">(35)</a>,
+then \( u=w_1 + w_2 \) is the solution of
+<a href="#mjx-eqn-37">(37)</a>-<a href="#mjx-eqn-39">(39)</a>.
+Using the triangle inequality for norms,
+
+$$ ||a + b|| \leq ||a|| + ||b||,$$
+
+show that the energy estimate for
+<a href="#mjx-eqn-37">(37)</a>-<a href="#mjx-eqn-39">(39)</a>
+becomes
+
+$$
+\begin{equation}
+||u||_{L^2} \leq ||I||_{L^2} + ||f||_{L^2}\tp
+\tag{40}
+\end{equation}
+$$
+
+
+<p>
+<b>c)</b>
+One application of <a href="#mjx-eqn-40">(40)</a> is to prove uniqueness
+of the solution.
+Suppose \( u_1 \) and \( u_2 \) both fulfill
+<a href="#mjx-eqn-37">(37)</a>-<a href="#mjx-eqn-39">(39)</a>.
+Show that \( u=u_1 - u_2 \) then fulfills
+<a href="#mjx-eqn-37">(37)</a>-<a href="#mjx-eqn-39">(39)</a>
+with \( f=0 \) and \( I=0 \). Use <a href="#mjx-eqn-40">(40)</a>
+to deduce that the energy must be zero for all times and therefore
+that \( u_1=u_2 \), which proves that the solution is unique.
+
+<p>
+<b>d)</b>
+Generalize <a href="#mjx-eqn-40">(40)</a> to a 2D/3D
+diffusion equation \( u_t = \nabla\cdot (\alpha \nabla u) \) for \( x\in\Omega \).
+
+<p>
+<!-- --- begin hint in exercise --- -->
+
+<p>
+<b>Hint.</b>
+Use integration by parts in multi dimensions:
+
+$$ \int_\Omega u \nabla\cdot (\alpha\nabla u)\dx =
+- \int_\Omega \alpha \nabla u\cdot\nabla u\dx
++ \int_{\partial\Omega} u \alpha\frac{\partial u}{\partial n},$$
+
+where \( \frac{\partial u}{\partial n} = \boldsymbol{n}\cdot\nabla u \),
+\( \boldsymbol{n} \) being the outward unit normal to the boundary \( \partial\Omega \)
+of the domain \( \Omega \).
+
+<p>
+<!-- --- end hint in exercise --- -->
+
+<p>
+<b>e)</b>
+Now we also consider the multi-dimensional PDE \( u_t =
+\nabla\cdot (\alpha \nabla u) \). Integrate both sides over \( \Omega \)
+and use Gauss' divergence theorem, \( \int_\Omega \nabla\cdot\boldsymbol{q}\dx
+= \int_{\partial\Omega}\boldsymbol{q}\cdot\boldsymbol{n}\ds \) for a vector field
+\( \boldsymbol{q} \). Show that if we have homogeneous Neumann conditions
+on the boundary, \( \partial u/\partial n=0 \), area under the
+\( u \) surface remains constant in time and
+
+$$
+\begin{equation}
+\int_{\Omega} u\dx = \int_{\Omega} I\dx
+\tp
+\tag{41}
+\end{equation}
+$$
+
+
+<p>
+<b>f)</b>
+Establish a code in 1D, 2D, or 3D that can solve a diffusion equation with a
+source term \( f \), initial condition \( I \), and zero Dirichlet or
+Neumann conditions on the whole boundary.
+
+<p>
+We can use <a href="#mjx-eqn-40">(40)</a>
+and <a href="#mjx-eqn-41">(41)</a> as a partial verification
+of the code. Choose some functions \( f \) and \( I \) and
+check that <a href="#mjx-eqn-40">(40)</a> is obeyed at any
+time when zero Dirichlet conditions are used.
+Iterate over the same \( I \) functions and check that
+<a href="#mjx-eqn-41">(41)</a> is fulfilled
+when using zero Neumann conditions.
+
+<p>
+<b>g)</b>
+Make a list of some possible bugs in the code, such as indexing errors
+in arrays, failure to set the correct boundary conditions,
+evaluation of a term at a wrong time level, and similar.
+For each of the bugs, see if the verification tests from the previous
+subexercise pass or fail. This investigation shows how strong
+the energy estimates and the estimate <a href="#mjx-eqn-41">(41)</a>
+are for pointing out errors in the implementation.
+
+<p>
+Filename: <code>diffu_energy.pdf</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<p>
+<!-- navigation buttons at the bottom of the page -->
+<ul class="pager">
+  <li class="previous">
+    <a href="._main_diffu000.html">&larr; Prev</a>
+  </li>
+  <li class="next">
+    <a href="._main_diffu002.html">Next &rarr;</a>
+  </li>
+</ul>
+<!-- ------------------- end of main content --------------- -->
+
+</div>  <!-- end container -->
+<!-- include javascript, jQuery *first* -->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+<!-- Bootstrap footer
+<footer>
+<a href="http://..."><img width="250" align=right src="http://..."></a>
+</footer>
+-->
+
+
+</body>
+</html>
+    
+

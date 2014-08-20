@@ -20,8 +20,6 @@ def solver(I, a, b, T, dt, theta):
                   (1 + dt*theta*a(t[n+1]))
     return u, t
 
-import nose.tools as nt
-
 def test_constant_solution():
     """
     Test problem where u=u_const is the exact solution, to be
@@ -43,7 +41,8 @@ def test_constant_solution():
     print u
     u_e = exact_solution(t)
     difference = abs(u_e - u).max()  # max deviation
-    nt.assert_almost_equal(difference, 0, places=14)
+    tol = 1E-14
+    assert difference < tol
 
 def test_linear_solution():
     """
@@ -66,8 +65,8 @@ def test_linear_solution():
     u_e = exact_solution(t)
     difference = abs(u_e - u).max()  # max deviation
     print difference
-    # No of decimal places for comparison depend on size of c
-    nt.assert_almost_equal(difference, 0, places=14)
+    tol = 1E-14  # depends on c!
+    assert difference < tol
 
 if __name__ == '__main__':
     #test_constant_solution()

@@ -40,7 +40,6 @@ def explore(I, a, T, dt, theta=0.5, makeplot=True):
              savefig='%s_%g.png' % (theta2name[theta], dt),
              show=True)
         savefig='%s_%g.pdf' % (theta2name[theta], dt)
-        savefig='%s_%g.eps' % (theta2name[theta], dt)
     return E
 
 def main(I, a, T, dt_values, theta_values=(0, 0.5, 1)):

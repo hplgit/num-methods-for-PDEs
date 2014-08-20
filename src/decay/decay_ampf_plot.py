@@ -28,7 +28,6 @@ def amplification_factor(names):
     ylabel('A')
     savefig('A_factors.png')
     savefig('A_factors.pdf')
-    savefig('A_factors.eps')
     show()
 
 if __name__ == '__main__':

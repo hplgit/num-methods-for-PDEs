@@ -1,0 +1,426 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Boundary conditions: specified derivative</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Introduction to finite element methods" href="index.html" />
+    <link rel="next" title="Implementation (4)" href="._main_fem017.html" />
+    <link rel="prev" title="Boundary conditions: specified nonzero value" href="._main_fem015.html" />
+ 
+  
+   <style type="text/css">
+     div.admonition {
+       background-color: whiteSmoke;
+       border: 1px solid #bababa;
+     }
+   </style>
+  </head>
+
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_fem017.html" title="Implementation (4)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="._main_fem015.html" title="Boundary conditions: specified nonzero value"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Introduction to finite element methods</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="boundary-conditions-specified-derivative">
+<span id="fem-deq-1d-bc-nat"></span><h1>Boundary conditions: specified derivative<a class="headerlink" href="#boundary-conditions-specified-derivative" title="Permalink to this headline">¶</a></h1>
+<p>Suppose our model problem <span class="math">\(-u''(x)=f(x)\)</span> features
+the boundary conditions <span class="math">\(u'(0)=C\)</span> and <span class="math">\(u(L)=D\)</span>.
+As already indicated in the section <a class="reference internal" href="._main_fem013.html#fem-deq-1d-varform-ex"><em>Examples on variational formulations</em></a>,
+the former condition can be incorporated through the boundary term
+that arises from integration by parts. This details of this method will now be
+illustrated in the context of finite element basis functions.</p>
+<div class="section" id="the-variational-formulation">
+<h2>The variational formulation<a class="headerlink" href="#the-variational-formulation" title="Permalink to this headline">¶</a></h2>
+<p>Starting with the Galerkin method,</p>
+<div class="math">
+\[\int_0^L(u''(x)+f(x)){\psi}_i(x) {\, \mathrm{d}x} = 0,\quad i\in{\mathcal{I}_s},\]</div>
+<p>integrating <span class="math">\(u''{\psi}_i\)</span> by parts results in</p>
+<div class="math">
+\[\int_0^Lu'(x)'{\psi}_i'(x) {\, \mathrm{d}x} -(u'(L){\psi}_i(L) - u'(0){\psi}_i(0)) =
+\int_0^L f(x){\psi}_i(x) {\, \mathrm{d}x}, \quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
+<p>The first boundary term, <span class="math">\(u'(L){\psi}_i(L)\)</span>,
+vanishes because <span class="math">\(u(L)=D\)</span>. There are two arguments for
+this result, explained in detail below.
+The second boundary
+term, <span class="math">\(u'(0){\psi}_i(0)\)</span>, can be used to implement the condition <span class="math">\(u'(0)=C\)</span>,
+provided <span class="math">\({\psi}_i(0)\neq 0\)</span> for some <span class="math">\(i\)</span> (but with finite elements
+we fortunately have <span class="math">\({\psi}_0(0)=1\)</span>).
+The variational form of the differential equation then becomes</p>
+<div class="math" id="equation-fem:deq:1D:BC:nat:varform  \int_0^Lu'(x){\varphi}_i'(x) {\, \mathrm{d}x} + C{\varphi}_i(0) = \int_0^L f(x){\varphi}_i(x) {\, \mathrm{d}x},\quad i\in{\mathcal{I}_s}{\thinspace .}">
+<span id="eq-fem-deq-1d-bc-nat-varform"></span></div>
+</div>
+<div class="section" id="boundary-term-vanishes-because-of-the-test-functions">
+<span id="fem-deq-1d-bc-nat-ultest"></span><h2>Boundary term vanishes because of the test functions<a class="headerlink" href="#boundary-term-vanishes-because-of-the-test-functions" title="Permalink to this headline">¶</a></h2>
+<p>At points where <span class="math">\(u\)</span> is known we may require <span class="math">\({\psi}_i\)</span> to vanish.
+Here, <span class="math">\(u(L)=D\)</span> and then <span class="math">\({\psi}_i(L)=0\)</span>, <span class="math">\(i\in{\mathcal{I}_s}\)</span>. Obviously,
+the boundary term <span class="math">\(u'(L){\psi}_i(L)\)</span> then vanishes.</p>
+<p>The set of basis functions <span class="math">\(\left\{ {{\psi}}_i \right\}_{i\in{\mathcal{I}_s}}\)</span> contains in this
+case all the finite element basis functions on the mesh, expect
+the one that is 1 at <span class="math">\(x=L\)</span>. The basis function that is left out is
+used in a boundary function <span class="math">\(B(x)\)</span> instead.
+With a left-to-right numbering,
+<span class="math">\({\psi}_i = {\varphi}_i\)</span>, <span class="math">\(i=0,\ldots,N_n-1\)</span>, and <span class="math">\(B(x)=D{\varphi}_{N_n}\)</span>:</p>
+<div class="math">
+\[u(x) = D{\varphi}_{N_n}(x) + \sum_{j=0}^{N=N_n-1} c_j{\varphi}_j(x){\thinspace .}\]</div>
+<p>Inserting this expansion for <span class="math">\(u\)</span> in the variational form
+<a href="#equation-fem:deq:1D:BC:nat:varform">(?)</a> leads to the linear system</p>
+<div class="math" id="equation-fem:deq:1D:natBC">
+<span id="eq-fem-deq-1d-natbc"></span><span class="eqno">(2)</span>\[     \sum_{j=0}^{N}\left(
+     \int_0^L {\varphi}_i'(x){\varphi}_j'(x) {\, \mathrm{d}x} \right)c_j =
+     \int_0^L\left(f(x){\varphi}_i(x) -D{\varphi}_{N_n}'(x){\varphi}_i(x)\right) {\, \mathrm{d}x}
+      - C{\varphi}_i(0),\]</div>
+<p>for <span class="math">\(i=0,\ldots,N=N_n-1\)</span>.</p>
+</div>
+<div class="section" id="boundary-term-vanishes-because-of-linear-system-modifications">
+<span id="fem-deq-1d-bc-nat-ulmod"></span><h2>Boundary term vanishes because of linear system modifications<a class="headerlink" href="#boundary-term-vanishes-because-of-linear-system-modifications" title="Permalink to this headline">¶</a></h2>
+<p>We may, as an alternative to the approach in the previous section, use
+a basis <span class="math">\(\left\{ {{\psi}}_i \right\}_{i\in{\mathcal{I}_s}}\)</span> which contains all the finite element
+functions on the mesh: <span class="math">\({\psi}_i={\varphi}_i\)</span>, <span class="math">\(i=0,\ldots,N_n=N\)</span>.  In
+this case, <span class="math">\(u'(L){\psi}_i(L)=u'(L){\varphi}_i(L)\neq 0\)</span> for the <span class="math">\(i\)</span>
+corresponding to the boundary node at <span class="math">\(x=L\)</span> (where <span class="math">\({\varphi}_i=1\)</span>).
+The number of this node is <span class="math">\(i=N_n=N\)</span> if a left-to-right numbering of
+nodes is utilized.</p>
+<p>However, even though <span class="math">\(u'(L){\varphi}_N(L)\neq 0\)</span>, we do not need to
+compute this term.  For <span class="math">\(i&lt;N\)</span> we realize that <span class="math">\({\varphi}_i(L)=0\)</span>.  The
+only nonzero contribution to the right-hand side from the affects
+<span class="math">\(b_N\)</span> (<span class="math">\(i=N\)</span>). Without a boundary function we must implement the
+condition <span class="math">\(u(L)=D\)</span> by the equivalent statement <span class="math">\(c_N=D\)</span> and modify the
+linear system accordingly. This modification will earse the last
+row and replace <span class="math">\(b_N\)</span> by another value. Any attempt to compute
+the boundary term <span class="math">\(u'(L){\varphi}_N(L)\)</span> and store it in <span class="math">\(b_N\)</span> will be
+lost. Therefore, we can safely forget about boundary terms
+corresponding to Dirichlet boundary conditions also when we use
+the methods from the section <a class="reference internal" href="._main_fem015.html#fem-deq-1d-fem-essbc-bfunc-modsys"><em>Modification of the linear system  (1)</em></a>
+or the section <a class="reference internal" href="._main_fem015.html#fem-deq-1d-fem-essbc-bfunc-modsys-symm"><em>Symmetric modification of the linear system</em></a>.</p>
+<p>The expansion for <span class="math">\(u\)</span> reads</p>
+<div class="math">
+\[u(x) = \sum_{j\in{\mathcal{I}_s}} c_j{\varphi}_j(x),
+\quad B(x) = D{\varphi}_N(x),\]</div>
+<p>with <span class="math">\(N=N_n\)</span>. Insertion in the variational form
+<a href="#equation-fem:deq:1D:BC:nat:varform">(?)</a> leads to
+the linear system</p>
+<div class="math" id="equation-fem:deq:1D:natBC2">
+<span id="eq-fem-deq-1d-natbc2"></span><span class="eqno">(3)</span>\[     \sum_{j\in{\mathcal{I}_s}}\left(
+     \int_0^L {\varphi}_i'(x){\varphi}_j'(x) {\, \mathrm{d}x} \right)c_j =
+     \int_0^L\left(f(x){\varphi}_i(x)\right) {\, \mathrm{d}x}
+      - C{\varphi}_i(0),\quad i\in{\mathcal{I}_s}
+     {\thinspace .}\]</div>
+<p>After having computed the system, we replace the last row by
+<span class="math">\(c_N=D\)</span>, either straightforwardly as in
+Section ref:ref:<cite>fem:deq:1D:fem:essBC:Bfunc:modsys</cite> or in a symmetric
+fashion as in Section ref:ref:<cite>fem:deq:1D:fem:essBC:Bfunc:modsys:symm</cite>.
+These modifications can also be performed in the element matrix and
+vector for the right-most cell.</p>
+</div>
+<div class="section" id="direct-computation-of-the-global-linear-system">
+<span id="fem-deq-1d-bc-nat-aub"></span><h2>Direct computation of the global linear system<a class="headerlink" href="#direct-computation-of-the-global-linear-system" title="Permalink to this headline">¶</a></h2>
+<p>We now turn to actual computations with P1 finite elements.
+The focus is on how the linear system and
+the element matrices and vectors are modified by the
+condition <span class="math">\(u'(0)=C\)</span>.</p>
+<p>Consider first the approach where Dirichlet conditions are incorporated
+by a <span class="math">\(B(x)\)</span> function and the known degree of freedom
+<span class="math">\(C_{N_n}\)</span> is left out from the linear system
+(see the section <a class="reference internal" href="#fem-deq-1d-bc-nat-ultest"><em>Boundary term vanishes because of the test functions</em></a>).
+The relevant formula for the linear
+system is given by <a href="#equation-fem:deq:1D:natBC">(2)</a>.
+There are three differences compared to the extensively
+computed case where <span class="math">\(u(0)=0\)</span> in the sections <a class="reference internal" href="._main_fem014.html#fem-deq-1d-comp-global"><em>Computation in the global physical domain</em></a> and <a class="reference internal" href="._main_fem014.html#fem-deq-1d-comp-elmwise"><em>Cellwise computations  (1)</em></a>.
+First, because we do not have a Dirichlet
+condition at the left boundary, we need to extend the linear system
+<a class="reference internal" href="._main_fem014.html#eq-fem-deq-1d-ex1-ab-glob"><em>(15.3)</em></a> with an equation associated with the node
+<span class="math">\(x_{0}=0\)</span>.
+According to the section <a class="reference internal" href="._main_fem015.html#fem-deq-1d-fem-essbc-bfunc-modsys"><em>Modification of the linear system  (1)</em></a>, this
+extension consists of including <span class="math">\(A_{0,0}=1/h\)</span>, <span class="math">\(A_{0,1}=-1/h\)</span>, and <span class="math">\(b_0=h\)</span>.
+For <span class="math">\(i&gt;0\)</span> we have <span class="math">\(A_{i,i}=2/h\)</span>, <span class="math">\(A_{i-1,i}=A_{i,i+1}=-1/h\)</span>.
+Second, we need to include
+the extra term
+<span class="math">\(-C{\varphi}_i(0)\)</span> on the right-hand side. Since all <span class="math">\({\varphi}_i(0)=0\)</span>
+for <span class="math">\(i=1,\ldots,N\)</span>, this term reduces to <span class="math">\(-C{\varphi}_0(0)=-C\)</span> and
+affects only the first equation (<span class="math">\(i=0\)</span>). We simply add <span class="math">\(-C\)</span> to <span class="math">\(b_0\)</span>
+such that <span class="math">\(b_0=h - C\)</span>.
+Third, the boundary term <span class="math">\(-\int_0^L D{\varphi}_{N_n}(x){\varphi}_i{\, \mathrm{d}x}\)</span>
+must be computed. Since <span class="math">\(i=0,\ldots,N=N_n-1\)</span>, this integral can only
+get a nonzero contribution with <span class="math">\(i=N_n-1\)</span> over the last cell.
+The result becomes <span class="math">\(-Dh/6\)</span>.
+The resulting linear system can be summarized in the form</p>
+<div class="math" id="equation-fem:deq:1D:BC:nat:Aub:system">
+<span id="eq-fem-deq-1d-bc-nat-aub-system"></span><span class="eqno">(4)</span>\[\begin{split}     \frac{1}{h}\left(
+     \begin{array}{ccccccccc}
+     1 &amp; -1 &amp; 0 &amp;\cdots &amp; \cdots &amp; \cdots &amp; \cdots &amp; \cdots &amp; 0 \\
+     -1 &amp; 2 &amp; -1 &amp; \ddots &amp;   &amp; &amp;  &amp; &amp;  \vdots \\
+     0 &amp; -1 &amp; 2 &amp; -1 &amp;
+     \ddots &amp; &amp;  &amp;  &amp; \vdots \\
+     \vdots &amp; \ddots &amp;  &amp; \ddots &amp; \ddots &amp; 0 &amp;  &amp; &amp; \vdots \\
+     \vdots &amp;  &amp; \ddots &amp; \ddots &amp; \ddots &amp; \ddots &amp; \ddots &amp; &amp; \vdots \\
+     \vdots &amp; &amp;  &amp; 0 &amp; -1 &amp; 2 &amp; -1 &amp; \ddots &amp; \vdots \\
+     \vdots &amp; &amp; &amp;  &amp; \ddots &amp; \ddots &amp; \ddots &amp;\ddots  &amp; 0 \\
+     \vdots &amp; &amp; &amp; &amp;  &amp;\ddots  &amp; \ddots &amp;\ddots  &amp; -1 \\
+     0 &amp;\cdots &amp; \cdots &amp;\cdots &amp; \cdots &amp; \cdots  &amp; 0 &amp; -1 &amp; 2
+     \end{array}
+     \right)
+     \left(
+     \begin{array}{c}
+     c_0 \\
+     \vdots\\
+     \vdots\\
+     \vdots \\
+     \vdots \\
+     \vdots \\
+     \vdots \\
+     \vdots\\
+     c_{N}
+     \end{array}
+     \right)
+     =
+     \left(
+     \begin{array}{c}
+     h - C \\
+     2h\\
+     \vdots\\
+     \vdots \\
+     \vdots \\
+     \vdots \\
+     \vdots \\
+     \vdots\\
+     2h - Dh/6
+     \end{array}
+     \right){\thinspace .}\end{split}\]</div>
+<p>Next we consider the technique where we modify the linear system to
+incorporate Dirichlet conditions
+(see the section <a class="reference internal" href="#fem-deq-1d-bc-nat-ulmod"><em>Boundary term vanishes because of linear system modifications</em></a>). Now <span class="math">\(N=N_n\)</span>.
+The two differences from the
+case above is that the <span class="math">\(-\int_0^LD{\varphi}_{N_n}{\varphi}_i{\, \mathrm{d}x}\)</span> term is
+left out of the right-hand side and an extra last row associated
+with the node <span class="math">\(x_{N_n}=L\)</span> where the Dirichlet condition applies
+is appended to the system.
+This last row is anyway replaced by the condition <span class="math">\(C_N=D\)</span> or this
+condition can be incorporated in a symmetric fashion. Using the simplest,
+former approach gives</p>
+<div class="math" id="equation-fem:deq:1D:BC:nat:Aub:system:mod">
+<span id="eq-fem-deq-1d-bc-nat-aub-system-mod"></span><span class="eqno">(5)</span>\[\begin{split}     \frac{1}{h}\left(
+     \begin{array}{ccccccccc}
+     1 &amp; -1 &amp; 0 &amp;\cdots &amp; \cdots &amp; \cdots &amp; \cdots &amp; \cdots &amp; 0 \\
+     -1 &amp; 2 &amp; -1 &amp; \ddots &amp;   &amp; &amp;  &amp; &amp;  \vdots \\
+     0 &amp; -1 &amp; 2 &amp; -1 &amp;
+     \ddots &amp; &amp;  &amp;  &amp; \vdots \\
+     \vdots &amp; \ddots &amp;  &amp; \ddots &amp; \ddots &amp; 0 &amp;  &amp; &amp; \vdots \\
+     \vdots &amp;  &amp; \ddots &amp; \ddots &amp; \ddots &amp; \ddots &amp; \ddots &amp; &amp; \vdots \\
+     \vdots &amp; &amp;  &amp; 0 &amp; -1 &amp; 2 &amp; -1 &amp; \ddots &amp; \vdots \\
+     \vdots &amp; &amp; &amp;  &amp; \ddots &amp; \ddots &amp; \ddots &amp;\ddots  &amp; 0 \\
+     \vdots &amp; &amp; &amp; &amp;  &amp;\ddots  &amp; -1 &amp; 2  &amp; -1 \\
+     0 &amp;\cdots &amp; \cdots &amp;\cdots &amp; \cdots &amp; \cdots  &amp; 0 &amp; 0 &amp; 1
+     \end{array}
+     \right)
+     \left(
+     \begin{array}{c}
+     c_0 \\
+     \vdots\\
+     \vdots\\
+     \vdots \\
+     \vdots \\
+     \vdots \\
+     \vdots \\
+     \vdots\\
+     c_{N}
+     \end{array}
+     \right)
+     =
+     \left(
+     \begin{array}{c}
+     h - C \\
+     2h\\
+     \vdots\\
+     \vdots \\
+     \vdots \\
+     \vdots \\
+     \vdots \\
+     2h \\
+     D
+     \end{array}
+     \right){\thinspace .}\end{split}\]</div>
+</div>
+<div class="section" id="cellwise-computations-2">
+<h2>Cellwise computations  (2)<a class="headerlink" href="#cellwise-computations-2" title="Permalink to this headline">¶</a></h2>
+<p>Now we compute with one element at a time, working in the reference
+coordinate system <span class="math">\(X\in [-1,1]\)</span>.
+We need to see how the
+<span class="math">\(u'(0)=C\)</span> condition affects the element matrix and vector.
+The extra term <span class="math">\(-C{\varphi}_i(0)\)</span> in the variational formulation
+only affects the element vector in the first cell.
+On the reference cell, <span class="math">\(-C{\varphi}_i(0)\)</span> is transformed to
+<span class="math">\(-C{\tilde{\varphi}}_r(-1)\)</span>, where <span class="math">\(r\)</span> counts local degrees of freedom.
+We have <span class="math">\({\tilde{\varphi}}_0(-1)=1\)</span> and <span class="math">\({\tilde{\varphi}}_1(-1)=0\)</span> so
+we are left with the contribution
+<span class="math">\(-C{\tilde{\varphi}}_0(-1)=-C\)</span> to <span class="math">\(\tilde b^{(0)}_0\)</span>:</p>
+<div class="math" id="equation-fem:deq:1D:ex1:Ab:elm:bc:nat">
+<span id="eq-fem-deq-1d-ex1-ab-elm-bc-nat"></span><span class="eqno">(6)</span>\[\begin{split}     \tilde A^{(0)} =
+     A = \frac{1}{h}\left(\begin{array}{rr}
+     1 &amp; 1\\
+     -1 &amp; 1
+     \end{array}\right),\quad
+     \tilde b^{(0)} = \left(\begin{array}{c}
+     h - C\\
+     h
+     \end{array}\right){\thinspace .}\end{split}\]</div>
+<p>No other element matrices or vectors are affected by the <span class="math">\(-C{\varphi}_i(0)\)</span>
+boundary term.</p>
+<p>There are two alternative ways of incorporating the Dirichlet condition.
+Following the section <a class="reference internal" href="#fem-deq-1d-bc-nat-ultest"><em>Boundary term vanishes because of the test functions</em></a>, we get
+a <span class="math">\(1\times 1\)</span> element matrix in the last cell and
+an element vector with an extra term containing <span class="math">\(D\)</span>:</p>
+<div class="math" id="equation-fem:deq:1D:ex1:Ab:elm:ends">
+<span id="eq-fem-deq-1d-ex1-ab-elm-ends"></span><span class="eqno">(7)</span>\[     \tilde A^{(e)} =\frac{1}{h}\left(\begin{array}{r}
+     1
+     \end{array}\right),\quad
+     \tilde b^{(e)} = h\left(\begin{array}{c}
+     1 - D/6
+     \end{array}\right),\]</div>
+<p>Alternatively, we include the degree of freedom at the node with
+<span class="math">\(u\)</span> specified. The element matrix and vector must then be modified
+to constrain the <span class="math">\(\tilde c_1 = c_N\)</span> value at local node <span class="math">\(r=1\)</span>:</p>
+<div class="math" id="equation-fem:deq:1D:ex1:Ab:elm:bc:nat:mod">
+<span id="eq-fem-deq-1d-ex1-ab-elm-bc-nat-mod"></span><span class="eqno">(8)</span>\[\begin{split}     \tilde A^{(N_e)} =
+     A = \frac{1}{h}\left(\begin{array}{rr}
+     1 &amp; 1\\
+     0 &amp; 1
+     \end{array}\right),\quad
+     \tilde b^{(N_e)} = \left(\begin{array}{c}
+     h\\
+     D
+     \end{array}\right){\thinspace .}\end{split}\]</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Boundary conditions: specified derivative</a><ul>
+<li><a class="reference internal" href="#the-variational-formulation">The variational formulation</a></li>
+<li><a class="reference internal" href="#boundary-term-vanishes-because-of-the-test-functions">Boundary term vanishes because of the test functions</a></li>
+<li><a class="reference internal" href="#boundary-term-vanishes-because-of-linear-system-modifications">Boundary term vanishes because of linear system modifications</a></li>
+<li><a class="reference internal" href="#direct-computation-of-the-global-linear-system">Direct computation of the global linear system</a></li>
+<li><a class="reference internal" href="#cellwise-computations-2">Cellwise computations  (2)</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="._main_fem015.html"
+                        title="previous chapter">Boundary conditions: specified nonzero value</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_fem017.html"
+                        title="next chapter">Implementation  (4)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_fem016.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_fem017.html" title="Implementation (4)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="._main_fem015.html" title="Boundary conditions: specified nonzero value"
+             >previous</a> |</li>
+        <li><a href="index.html">Introduction to finite element methods</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

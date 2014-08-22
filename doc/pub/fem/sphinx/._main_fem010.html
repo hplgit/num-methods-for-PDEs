@@ -1,0 +1,395 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Finite elements in 2D and 3D</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Introduction to finite element methods" href="index.html" />
+    <link rel="next" title="Exercises (1)" href="._main_fem011.html" />
+    <link rel="prev" title="Approximation of functions in 2D" href="._main_fem009.html" />
+ 
+  
+   <style type="text/css">
+     div.admonition {
+       background-color: whiteSmoke;
+       border: 1px solid #bababa;
+     }
+   </style>
+  </head>
+
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_fem011.html" title="Exercises (1)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="._main_fem009.html" title="Approximation of functions in 2D"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Introduction to finite element methods</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="finite-elements-in-2d-and-3d">
+<h1>Finite elements in 2D and 3D<a class="headerlink" href="#finite-elements-in-2d-and-3d" title="Permalink to this headline">¶</a></h1>
+<p>Finite element approximation is particularly powerful in 2D and 3D because
+the method can handle a geometrically complex domain <span class="math">\(\Omega\)</span> with ease.
+The principal idea is, as in 1D, to divide the domain into cells
+and use polynomials for approximating a function over a cell.
+Two popular cell shapes are triangles and the quadrilaterals.
+Figures <a class="reference internal" href="#fem-approx-fe-2d-fig-rectp1"><em>Examples on 2D P1 elements</em></a>, <a class="reference internal" href="#fem-approx-fe-2d-fig-circp1"><em>Examples on 2D P1 elements in a deformed geometry</em></a>,
+and <a class="reference internal" href="#fem-approx-fe-2d-fig-rectq1"><em>Examples on 2D Q1 elements</em></a> provide examples. P1 elements
+means linear functions (<span class="math">\(a_0 + a_1x + a_2y\)</span>) over triangles, while Q1 elements
+have bilinear functions (<span class="math">\(a_0 + a_1x + a_2y + a_3xy\)</span>) over rectangular cells.
+Higher-order elements can easily be defined.</p>
+<div class="figure" id="fem-approx-fe-2d-fig-rectp1">
+<a class="reference internal image-reference" href="_images/mesh2D_rect_P1.png"><img alt="_images/mesh2D_rect_P1.png" src="_images/mesh2D_rect_P1.png" style="width: 800px;" /></a>
+<p class="caption"><em>Examples on 2D P1 elements</em></p>
+</div>
+<div class="figure" id="fem-approx-fe-2d-fig-circp1">
+<a class="reference internal image-reference" href="_images/mesh2D_quarter_circle.png"><img alt="_images/mesh2D_quarter_circle.png" src="_images/mesh2D_quarter_circle.png" style="width: 400px;" /></a>
+<p class="caption"><em>Examples on 2D P1 elements in a deformed geometry</em></p>
+</div>
+<div class="figure" id="fem-approx-fe-2d-fig-rectq1">
+<a class="reference internal image-reference" href="_images/mesh2D_rect_Q1.png"><img alt="_images/mesh2D_rect_Q1.png" src="_images/mesh2D_rect_Q1.png" style="width: 400px;" /></a>
+<p class="caption"><em>Examples on 2D Q1 elements</em></p>
+</div>
+<div class="section" id="basis-functions-over-triangles-in-the-physical-domain">
+<h2>Basis functions over triangles in the physical domain<a class="headerlink" href="#basis-functions-over-triangles-in-the-physical-domain" title="Permalink to this headline">¶</a></h2>
+<p>Cells with triangular shape will be in main focus here.  With the P1
+triangular element, <span class="math">\(u\)</span> is a linear function over each cell, as
+depicted in Figure <a class="reference internal" href="#fem-approx-fe-2d-fig-femfunc"><em>Example on piecewise linear 2D functions defined on triangles</em></a>, with
+discontinuous derivatives at the cell boundaries.</p>
+<div class="figure" id="fem-approx-fe-2d-fig-femfunc">
+<a class="reference internal image-reference" href="_images/demo2D_4x3r.png"><img alt="_images/demo2D_4x3r.png" src="_images/demo2D_4x3r.png" style="width: 400px;" /></a>
+<p class="caption"><em>Example on piecewise linear 2D functions defined on triangles</em></p>
+</div>
+<p>We give the vertices of the cells global and local numbers as in 1D.
+The degrees of freedom in the P1 element are the function values at
+a set of nodes, which are the three vertices.
+The basis function <span class="math">\({\varphi}_i(x,y)\)</span> is then 1 at the vertex with global vertex
+number <span class="math">\(i\)</span> and zero at all other vertices.
+On an element, the three degrees of freedom uniquely determine
+the linear basis functions in that element, as usual.
+The global
+<span class="math">\({\varphi}_i(x,y)\)</span> function is then a combination of the linear functions
+(planar surfaces)
+over all the neighboring cells
+that have vertex number <span class="math">\(i\)</span> in common. Figure <a class="reference internal" href="#fem-approx-fe-2d-fig-basphi"><em>Example on a piecewise linear 2D basis function over a patch of triangles</em></a>
+tries to illustrate the shape of such a &#8220;pyramid&#8221;-like function.</p>
+<div class="figure" id="fem-approx-fe-2d-fig-basphi">
+<a class="reference internal image-reference" href="_images/demo2D_basisfunc.png"><img alt="_images/demo2D_basisfunc.png" src="_images/demo2D_basisfunc.png" style="width: 400px;" /></a>
+<p class="caption"><em>Example on a piecewise linear 2D basis function over a patch of triangles</em></p>
+</div>
+<div class="section" id="element-matrices-and-vectors">
+<h3>Element matrices and vectors<a class="headerlink" href="#element-matrices-and-vectors" title="Permalink to this headline">¶</a></h3>
+<p>As in 1D, we split the integral over <span class="math">\(\Omega\)</span> into a sum of integrals
+over cells. Also as in 1D, <span class="math">\({\varphi}_i\)</span> overlaps <span class="math">\({\varphi}_j\)</span>
+(i.e., <span class="math">\({\varphi}_i{\varphi}_j\neq 0\)</span>) if and only if
+<span class="math">\(i\)</span> and <span class="math">\(j\)</span> are vertices in the same cell. Therefore, the integral
+of <span class="math">\({\varphi}_i{\varphi}_j\)</span> over an element is nonzero only when <span class="math">\(i\)</span> and <span class="math">\(j\)</span>
+run over the vertex numbers in the element. These nonzero contributions
+to the coefficient matrix are, as in 1D, collected in an element matrix.
+The size of the element matrix becomes <span class="math">\(3\times 3\)</span> since there are
+three degrees of freedom
+that <span class="math">\(i\)</span> and <span class="math">\(j\)</span> run over. Again, as in 1D, we number the
+local vertices in a cell, starting at 0, and add the entries in
+the element matrix into the global system matrix, exactly as in 1D.
+All details and code appear below.</p>
+</div>
+</div>
+<div class="section" id="basis-functions-over-triangles-in-the-reference-cell">
+<h2>Basis functions over triangles in the reference cell<a class="headerlink" href="#basis-functions-over-triangles-in-the-reference-cell" title="Permalink to this headline">¶</a></h2>
+<p>As in 1D, we can define the basis functions and the degrees of freedom
+in a reference cell and then use a mapping from the reference coordinate
+system to the physical coordinate system.
+We also have a mapping of local degrees of freedom numbers to global degrees
+of freedom numbers.</p>
+<p>The reference cell in an <span class="math">\((X,Y)\)</span> coordinate system has vertices
+<span class="math">\((0,0)\)</span>, <span class="math">\((1,0)\)</span>, and <span class="math">\((0,1)\)</span>, corresponding to local vertex numbers
+0, 1, and 2, respectively. The P1 element has linear functions
+<span class="math">\({\tilde{\varphi}}_r(X,Y)\)</span> as basis functions, <span class="math">\(r=0,1,2\)</span>.
+Since a linear function <span class="math">\({\tilde{\varphi}}_r(X,Y)\)</span> in 2D is on
+the form <span class="math">\(C_{r,0} + C_{r,1}X + C_{r,2}Y\)</span>, and hence has three
+parameters <span class="math">\(C_{r,0}\)</span>, <span class="math">\(C_{r,1}\)</span>, and <span class="math">\(C_{r,2}\)</span>, we need three
+degrees of freedom. These are in general taken as the function values at a
+set of nodes. For the P1 element the set of nodes is the three vertices.
+Figure <a class="reference internal" href="#fem-approx-fe-2d-fig-p12d"><em>2D P1 element</em></a> displays the geometry of the
+element and the location of the nodes.</p>
+<div class="figure" id="fem-approx-fe-2d-fig-p12d">
+<a class="reference internal image-reference" href="_images/P1_2d.png"><img alt="_images/P1_2d.png" src="_images/P1_2d.png" style="width: 100px;" /></a>
+<p class="caption"><em>2D P1 element</em></p>
+</div>
+<p>Requiring <span class="math">\({\tilde{\varphi}}_r=1\)</span> at node number <span class="math">\(r\)</span> and
+<span class="math">\({\tilde{\varphi}}_r=0\)</span> at the two other nodes, gives three linear equations to
+determine <span class="math">\(C_{r,0}\)</span>, <span class="math">\(C_{r,1}\)</span>, and <span class="math">\(C_{r,2}\)</span>. The result is</p>
+<div class="math">
+\[{\tilde{\varphi}}_0(X,Y) = 1 - X - Y,\]</div>
+<div class="math">
+\[{\tilde{\varphi}}_1(X,Y) = X,\]</div>
+<div class="math">
+\[{\tilde{\varphi}}_2(X,Y) = Y\]</div>
+<p>Higher-order approximations are obtained by increasing the polynomial order,
+adding additional nodes, and letting the degrees of freedom be
+function values at the nodes. Figure <a class="reference internal" href="#fem-approx-fe-2d-fig-p22d"><em>2D P2 element</em></a>
+shows the location of the six nodes in the P2 element.</p>
+<div class="figure" id="fem-approx-fe-2d-fig-p22d">
+<a class="reference internal image-reference" href="_images/P2_2d.png"><img alt="_images/P2_2d.png" src="_images/P2_2d.png" style="width: 100px;" /></a>
+<p class="caption"><em>2D P2 element</em></p>
+</div>
+<p>A polynomial of degree <span class="math">\(p\)</span> in <span class="math">\(X\)</span> and <span class="math">\(Y\)</span> has <span class="math">\(n_p=(p+1)(p+2)/2\)</span> terms
+and hence needs <span class="math">\(n_p\)</span> nodes. The values at the nodes constitute <span class="math">\(n_p\)</span>
+degrees of freedom. The location of the nodes for
+<span class="math">\({\tilde{\varphi}}_r\)</span> up to degree 6 is displayed in Figure
+<a class="reference internal" href="#fem-approx-fe-2d-fig-p162d"><em>2D P1, P2, P3, P4, P5, and P6 elements</em></a>.</p>
+<div class="figure" id="fem-approx-fe-2d-fig-p162d">
+<a class="reference internal image-reference" href="_images/P1-6_2d.png"><img alt="_images/P1-6_2d.png" src="_images/P1-6_2d.png" style="width: 400px;" /></a>
+<p class="caption"><em>2D P1, P2, P3, P4, P5, and P6 elements</em></p>
+</div>
+<p>The generalization to 3D is straightforward: the reference element is a
+<a class="reference external" href="http://en.wikipedia.org/wiki/Tetrahedron">tetrahedron</a>
+with vertices <span class="math">\((0,0,0)\)</span>, <span class="math">\((1,0,0)\)</span>, <span class="math">\((0,1,0)\)</span>, and <span class="math">\((0,0,1)\)</span>
+in a <span class="math">\(X,Y,Z\)</span> reference coordinate system. The P1 element has its degrees
+of freedom as four nodes, which are the four vertices, see Figure
+<a class="reference internal" href="#fem-approx-fe-2d-fig-p1-123d"><em>P1 elements in 1D, 2D, and 3D</em></a>. The P2 element adds additional
+nodes along the edges of the cell, yielding a total of 10 nodes and
+degrees of freedom, see
+Figure <a class="reference internal" href="#fem-approx-fe-2d-fig-p2-123d"><em>P2 elements in 1D, 2D, and 3D</em></a>.</p>
+<div class="figure" id="fem-approx-fe-2d-fig-p1-123d">
+<a class="reference internal image-reference" href="_images/P1-1d2d3d.png"><img alt="_images/P1-1d2d3d.png" src="_images/P1-1d2d3d.png" style="width: 400px;" /></a>
+<p class="caption"><em>P1 elements in 1D, 2D, and 3D</em></p>
+</div>
+<div class="figure" id="fem-approx-fe-2d-fig-p2-123d">
+<a class="reference internal image-reference" href="_images/P2-1d2d3d.png"><img alt="_images/P2-1d2d3d.png" src="_images/P2-1d2d3d.png" style="width: 400px;" /></a>
+<p class="caption"><em>P2 elements in 1D, 2D, and 3D</em></p>
+</div>
+<span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><p id="index-3">The interval in 1D, the triangle in 2D, the tetrahedron in 3D, and
+its generalizations to higher space dimensions are known
+as <em>simplex</em> cells (the geometry) or <em>simplex</em> elements (the geometry,
+basis functions, degrees of freedom, etc.). The plural forms
+<a class="reference external" href="http://en.wikipedia.org/wiki/Simplex">simplices</a> and
+simplexes are
+also a much used shorter terms when referring to this type of cells or elements.
+The side of a simplex is called a <em>face</em>, while the tetrahedron also
+has <em>edges</em>.</p>
+<p><strong>Acknowledgment.</strong>
+Figures <a class="reference internal" href="#fem-approx-fe-2d-fig-p12d"><em>2D P1 element</em></a> to <a class="reference internal" href="#fem-approx-fe-2d-fig-p2-123d"><em>P2 elements in 1D, 2D, and 3D</em></a>
+are created by Anders Logg and taken from the <a class="reference external" href="https://launchpad.net/fenics-book">FEniCS book</a>: <em>Automated Solution of Differential Equations by the Finite Element Method</em>, edited by A. Logg, K.-A. Mardal, and G. N. Wells, published
+by <a class="reference external" href="http://goo.gl/lbyVMH">Springer</a>, 2012.</p>
+</div>
+<div class="section" id="affine-mapping-of-the-reference-cell">
+<h2>Affine mapping of the reference cell<a class="headerlink" href="#affine-mapping-of-the-reference-cell" title="Permalink to this headline">¶</a></h2>
+<p>Let <span class="math">\({\tilde{\varphi}}_r^{(1)}\)</span> denote the basis functions associated
+with the P1 element in 1D, 2D, or 3D, and let <span class="math">\(\boldsymbol{x}_{q(e,r)}\)</span> be
+the physical coordinates of local vertex number <span class="math">\(r\)</span> in cell <span class="math">\(e\)</span>.
+Furthermore,
+let <span class="math">\(\boldsymbol{X}\)</span> be a point in the reference coordinate system corresponding
+to the point <span class="math">\(\boldsymbol{x}\)</span> in the physical coordinate system.
+The affine mapping of any <span class="math">\(\boldsymbol{X}\)</span> onto <span class="math">\(\boldsymbol{x}\)</span> is
+then defined by</p>
+<div class="math" id="equation-fem:approx:fe:affine:map">
+<span id="eq-fem-approx-fe-affine-map"></span><span id="index-4"></span><span class="eqno">(1)</span>\[     \boldsymbol{x} = \sum_{r} {\tilde{\varphi}}_r^{(1)}(\boldsymbol{X})\boldsymbol{x}_{q(e,r)},\]</div>
+<p>where <span class="math">\(r\)</span> runs over the local vertex numbers in the cell.
+The affine mapping essentially stretches, translates, and rotates
+the triangle. Straight or planar faces of the reference cell are
+therefore mapped onto
+straight or planar faces in the physical coordinate system. The mapping can
+be used for both P1 and higher-order elements, but note that the
+mapping itself always applies the P1 basis functions.</p>
+<div class="figure" id="fem-approx-fe-map-fig-2dp1">
+<a class="reference internal image-reference" href="_images/ElmT3n2D_map.png"><img alt="_images/ElmT3n2D_map.png" src="_images/ElmT3n2D_map.png" style="width: 400px;" /></a>
+<p class="caption"><em>Affine mapping of a P1 element</em></p>
+</div>
+</div>
+<div class="section" id="isoparametric-mapping-of-the-reference-cell">
+<h2>Isoparametric mapping of the reference cell<a class="headerlink" href="#isoparametric-mapping-of-the-reference-cell" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-5"></span><p id="index-6">Instead of using the P1 basis functions in the mapping
+<a href="#equation-fem:approx:fe:affine:map">(1)</a>,
+we may use the basis functions of the actual Pd element:</p>
+<div class="math" id="equation-fem:approx:fe:isop:map">
+<span id="eq-fem-approx-fe-isop-map"></span><span class="eqno">(2)</span>\[     \boldsymbol{x} = \sum_{r} {\tilde{\varphi}}_r(\boldsymbol{X})\boldsymbol{x}_{q(e,r)},\]</div>
+<p>where <span class="math">\(r\)</span> runs over all nodes, i.e., all points associated with the
+degrees of freedom. This is called an <em>isoparametric mapping</em>.
+For P1 elements it is identical to the affine mapping
+<a href="#equation-fem:approx:fe:affine:map">(1)</a>, but for higher-order elements
+the mapping of the straight or planar faces of the reference cell will
+result in a <em>curved</em> face in the physical coordinate system.
+For example, when we use the basis functions of the triangular P2 element
+in 2D in <a href="#equation-fem:approx:fe:isop:map">(2)</a>, the straight faces of the
+reference triangle are mapped onto curved faces of parabolic shape in
+the physical coordinate system, see Figure <a class="reference internal" href="#fem-approx-fe-map-fig-2dp2"><em>Isoparametric mapping of a P2 element</em></a>.</p>
+<div class="figure" id="fem-approx-fe-map-fig-2dp2">
+<a class="reference internal image-reference" href="_images/ElmT6n2D_map.png"><img alt="_images/ElmT6n2D_map.png" src="_images/ElmT6n2D_map.png" style="width: 400px;" /></a>
+<p class="caption"><em>Isoparametric mapping of a P2 element</em></p>
+</div>
+<p>From <a href="#equation-fem:approx:fe:affine:map">(1)</a> or
+<a href="#equation-fem:approx:fe:isop:map">(2)</a> it is easy to realize that the
+vertices are correctly mapped. Consider a vertex with local number <span class="math">\(s\)</span>.
+Then <span class="math">\({\tilde{\varphi}}_s=1\)</span> at this vertex and zero at the others.
+This means that only one term in the sum is nonzero and <span class="math">\(\boldsymbol{x}=\boldsymbol{x}_{q(e,s)}\)</span>,
+which is the coordinate of this vertex in the global coordinate system.</p>
+</div>
+<div class="section" id="computing-integrals">
+<h2>Computing integrals<a class="headerlink" href="#computing-integrals" title="Permalink to this headline">¶</a></h2>
+<p>Let <span class="math">\(\tilde\Omega^r\)</span> denote the reference cell and <span class="math">\(\Omega^{(e)}\)</span>
+the cell in the physical coordinate system. The transformation of
+the integral from the physical to the reference coordinate system reads</p>
+<div class="math">
+\[\int_{\Omega^{(e)}}{\varphi}_i (\boldsymbol{x}) {\varphi}_j (\boldsymbol{x}) {\, \mathrm{d}x} =
+\int_{\tilde\Omega^r} {\tilde{\varphi}}_i (\boldsymbol{X}) {\tilde{\varphi}}_j (\boldsymbol{X})
+\det J\, {\, \mathrm{d}X},\]</div>
+<div class="math">
+\[\int_{\Omega^{(e)}}{\varphi}_i (\boldsymbol{x}) f(\boldsymbol{x}) {\, \mathrm{d}x} =
+\int_{\tilde\Omega^r} {\tilde{\varphi}}_i (\boldsymbol{X}) f(\boldsymbol{x}(\boldsymbol{X})) \det J\, {\, \mathrm{d}X},\]</div>
+<p>where <span class="math">\({\, \mathrm{d}x}\)</span> means the infinitesimal area element <span class="math">\(dx dy\)</span> in 2D and
+<span class="math">\(dx dy dz\)</span> in 3D, with a similar
+definition of <span class="math">\({\, \mathrm{d}X}\)</span>. The quantity <span class="math">\(\det J\)</span> is the determinant of the
+Jacobian of the mapping <span class="math">\(\boldsymbol{x}(\boldsymbol{X})\)</span>. In 2D,</p>
+<div class="math" id="equation-fem:approx:fe:2D:mapping:J:detJ">
+<span id="eq-fem-approx-fe-2d-mapping-j-detj"></span><span class="eqno">(3)</span>\[\begin{split}     J = \left[\begin{array}{cc}
+     \frac{\partial x}{\partial X} &amp; \frac{\partial x}{\partial Y}\\
+     \frac{\partial y}{\partial X} &amp; \frac{\partial y}{\partial Y}
+     \end{array}\right], \quad
+     \det J = \frac{\partial x}{\partial X}\frac{\partial y}{\partial Y}
+     - \frac{\partial x}{\partial Y}\frac{\partial y}{\partial X}
+     {\thinspace .}\end{split}\]</div>
+<p>With the affine mapping
+<a href="#equation-fem:approx:fe:affine:map">(1)</a>, <span class="math">\(\det J=2\Delta\)</span>, where <span class="math">\(\Delta\)</span> is
+the area or volume of the cell in the physical coordinate system.</p>
+<p><strong>Remark.</strong>
+Observe that finite elements in 2D and 3D builds on the same
+<em>ideas</em> and <em>concepts</em> as in 1D, but there is simply much
+more to compute because the
+specific mathematical formulas in 2D and 3D are more complicated
+and the book keeping with dof maps also gets more complicated.
+The manual work is tedious, lengthy, and error-prone
+so automation by the computer is a must.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Finite elements in 2D and 3D</a><ul>
+<li><a class="reference internal" href="#basis-functions-over-triangles-in-the-physical-domain">Basis functions over triangles in the physical domain</a><ul>
+<li><a class="reference internal" href="#element-matrices-and-vectors">Element matrices and vectors</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#basis-functions-over-triangles-in-the-reference-cell">Basis functions over triangles in the reference cell</a></li>
+<li><a class="reference internal" href="#affine-mapping-of-the-reference-cell">Affine mapping of the reference cell</a></li>
+<li><a class="reference internal" href="#isoparametric-mapping-of-the-reference-cell">Isoparametric mapping of the reference cell</a></li>
+<li><a class="reference internal" href="#computing-integrals">Computing integrals</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="._main_fem009.html"
+                        title="previous chapter">Approximation of functions in 2D</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_fem011.html"
+                        title="next chapter">Exercises  (1)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_fem010.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_fem011.html" title="Exercises (1)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="._main_fem009.html" title="Approximation of functions in 2D"
+             >previous</a> |</li>
+        <li><a href="index.html">Introduction to finite element methods</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

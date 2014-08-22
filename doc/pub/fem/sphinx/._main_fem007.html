@@ -1,0 +1,429 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>A generalized element concept</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Introduction to finite element methods" href="index.html" />
+    <link rel="next" title="Numerical integration (1)" href="._main_fem008.html" />
+    <link rel="prev" title="Comparison of finite element and finite difference approximation" href="._main_fem006.html" />
+ 
+  
+   <style type="text/css">
+     div.admonition {
+       background-color: whiteSmoke;
+       border: 1px solid #bababa;
+     }
+   </style>
+  </head>
+
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_fem008.html" title="Numerical integration (1)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="._main_fem006.html" title="Comparison of finite element and finite difference approximation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Introduction to finite element methods</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="a-generalized-element-concept">
+<span id="fem-approx-fe-element"></span><h1>A generalized element concept<a class="headerlink" href="#a-generalized-element-concept" title="Permalink to this headline">¶</a></h1>
+<p>So far, finite element computing has employed the <tt class="docutils literal"><span class="pre">nodes</span></tt> and
+<tt class="docutils literal"><span class="pre">element</span></tt> lists together with the definition of the basis functions
+in the reference element. Suppose we want to introduce a piecewise
+constant approximation with one basis function <span class="math">\({\tilde{\varphi}}_0(x)=1\)</span> in
+the reference element, corresponding to a <span class="math">\({\varphi}_i(x)\)</span> function that
+is 1 on element number <span class="math">\(i\)</span> and zero on all other elements.
+Although we could associate the function value
+with a node in the middle of the elements, there are no nodes at the
+ends, and the previous code snippets will not work because we
+cannot find the element boundaries from the <tt class="docutils literal"><span class="pre">nodes</span></tt> list.</p>
+<div class="section" id="cells-vertices-and-degrees-of-freedom">
+<span id="fem-approx-fe-element-terminology"></span><h2>Cells, vertices, and degrees of freedom<a class="headerlink" href="#cells-vertices-and-degrees-of-freedom" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><p id="index-3">We now introduce <em>cells</em> as the subdomains <span class="math">\(\Omega^{(e)}\)</span> previously
+referred as elements. The cell boundaries are denoted as <em>vertices</em>.
+The reason for this name is that cells are recognized by their vertices
+in 2D and 3D. We also define a set of <em>degrees of freedom</em>, which are
+the quantities we aim to compute. The most common type of degree
+of freedom is the value of the unknown function <span class="math">\(u\)</span> at some point.
+(For example, we can introduce nodes as before and say the degrees of
+freedom are the values of <span class="math">\(u\)</span> at the nodes.) The basis functions are
+constructed so that they equal unity for one particular degree of
+freedom and zero for the rest. This property ensures that when
+we evaluate <span class="math">\(u=\sum_j c_j{\varphi}_j\)</span> for degree of freedom number <span class="math">\(i\)</span>,
+we get <span class="math">\(u=c_i\)</span>. Integrals are performed over cells, usually by
+mapping the cell of interest to a <em>reference cell</em>.</p>
+<p>With the concepts of cells, vertices, and degrees of freedom we
+increase the decoupling of the geometry (cell, vertices) from the
+space of basis functions. We will associate different
+sets of basis functions with a cell. In 1D, all cells are intervals,
+while in 2D we can have cells that are triangles with straight sides,
+or any polygon, or in fact any two-dimensional geometry. Triangles and
+quadrilaterals are most common, though. The popular cell types in 3D
+are tetrahedra and hexahedra.</p>
+</div>
+<div class="section" id="extended-finite-element-concept">
+<span id="fem-approx-fe-element-def"></span><h2>Extended finite element concept<a class="headerlink" href="#extended-finite-element-concept" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-4"></span><p id="index-5">The concept of a <em>finite element</em> is now</p>
+<blockquote>
+<div><ul class="simple">
+<li>a <em>reference cell</em> in a local reference coordinate system;</li>
+<li>a set of <em>basis functions</em> <span class="math">\({\tilde{\varphi}}_i\)</span> defined on the cell;</li>
+<li>a set of <em>degrees of freedom</em> that uniquely determines
+the basis functions such that <span class="math">\({\tilde{\varphi}}_i=1\)</span> for degree of freedom
+number <span class="math">\(i\)</span> and <span class="math">\({\tilde{\varphi}}_i=0\)</span> for all other degrees of freedom;</li>
+<li>a mapping between local and global degree of freedom numbers,
+here called the <em>dof map</em>;</li>
+<li>a geometric <em>mapping</em> of the reference cell onto to cell in the physical
+domain.</li>
+</ul>
+</div></blockquote>
+<p>There must be a geometric description of a cell. This is trivial in 1D
+since the cell is an interval and is described by the interval limits,
+here called vertices. If the cell is <span class="math">\(\Omega^{(e)}=[x_L,x_R]\)</span>,
+vertex 0 is <span class="math">\(x_L\)</span> and vertex 1 is <span class="math">\(x_R\)</span>. The reference cell in 1D
+is <span class="math">\([-1,1]\)</span> in the reference coordinate system <span class="math">\(X\)</span>.</p>
+<p id="index-6">The expansion of <span class="math">\(u\)</span> over one cell is often used:</p>
+<div class="math">
+\[u(x) = \tilde u(X) = \sum_{r} c_r{\tilde{\varphi}}_r(X),\quad x\in\Omega^{(e)},\
+X\in [-1,1],\]</div>
+<p>where the sum is taken over the numbers of the degrees of freedom and
+<span class="math">\(c_r\)</span> is the value of <span class="math">\(u\)</span> for degree of freedom number <span class="math">\(r\)</span>.</p>
+<p>Our previous P1, P2, etc., elements are defined by introducing <span class="math">\(d+1\)</span>
+equally spaced nodes in the reference cell and saying that the degrees
+of freedom are the <span class="math">\(d+1\)</span> function values at these nodes.  The basis
+functions must be 1 at one node and 0 at the others, and the Lagrange
+polynomials have exactly this property.  The nodes can be numbered
+from left to right with associated degrees of freedom that are
+numbered in the same way.  The degree of freedom mapping becomes what
+was previously represented by the <tt class="docutils literal"><span class="pre">elements</span></tt> lists.  The cell mapping
+is the same affine mapping <a class="reference internal" href="._main_fem004.html#eq-fem-approx-fe-affine-mapping"><em>(5.6)</em></a> as
+before.</p>
+</div>
+<div class="section" id="implementation-2">
+<span id="fem-approx-fe-element-impl"></span><h2>Implementation  (2)<a class="headerlink" href="#implementation-2" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-7"></span><span class="target" id="index-8"></span><p id="index-9">Implementationwise,</p>
+<blockquote>
+<div><ul class="simple">
+<li>we replace <tt class="docutils literal"><span class="pre">nodes</span></tt> by <tt class="docutils literal"><span class="pre">vertices</span></tt>;</li>
+<li>we introduce <tt class="docutils literal"><span class="pre">cells</span></tt> such that <tt class="docutils literal"><span class="pre">cell[e][r]</span></tt> gives the mapping
+from local vertex <tt class="docutils literal"><span class="pre">r</span></tt> in cell <tt class="docutils literal"><span class="pre">e</span></tt> to the global vertex number
+in <tt class="docutils literal"><span class="pre">vertices</span></tt>;</li>
+<li>we replace <tt class="docutils literal"><span class="pre">elements</span></tt> by <tt class="docutils literal"><span class="pre">dof_map</span></tt> (the contents are the same
+for Pd elements).</li>
+</ul>
+</div></blockquote>
+<p>Consider the example from the section <a class="reference internal" href="._main_fem004.html#fem-approx-fe-def-elements-nodes"><em>Elements and nodes</em></a>
+where <span class="math">\(\Omega =[0,1]\)</span> is divided into two cells,
+<span class="math">\(\Omega^{(0)}=[0,0.4]\)</span> and <span class="math">\(\Omega^{(1)}=[0.4,1]\)</span>, as
+depicted in Figure <a class="reference internal" href="._main_fem004.html#fem-approx-fe-def-elements-nodes-fig-p2"><em>Finite element mesh with 2 elements and 5 nodes</em></a>.
+The vertices are <span class="math">\([0,0.4,1]\)</span>. Local vertex 0 and 1 are
+<span class="math">\(0\)</span> and <span class="math">\(0.4\)</span> in cell 0 and <span class="math">\(0.4\)</span> and <span class="math">\(1\)</span> in cell 1.
+A P2 element means that the degrees of freedom are
+the value of <span class="math">\(u\)</span> at three equally spaced points (nodes) in each
+cell. The data structures become</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">vertices</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">cells</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]]</span>
+<span class="n">dof_map</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]]</span>
+</pre></div>
+</div>
+<p>If we would approximate <span class="math">\(f\)</span> by piecewise constants, known as
+P0 elements, we simply
+introduce one point or node in an element, preferably <span class="math">\(X=0\)</span>,
+and define one degree of freedom, which is the function value
+at this node. Moreover, we set <span class="math">\({\tilde{\varphi}}_0(X)=1\)</span>.
+The <tt class="docutils literal"><span class="pre">cells</span></tt> and <tt class="docutils literal"><span class="pre">vertices</span></tt> arrays remain the same, but
+<tt class="docutils literal"><span class="pre">dof_map</span></tt> is altered:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">dof_map</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+</pre></div>
+</div>
+<p>We use the <tt class="docutils literal"><span class="pre">cells</span></tt> and <tt class="docutils literal"><span class="pre">vertices</span></tt> lists to retrieve information
+on the geometry of a cell, while <tt class="docutils literal"><span class="pre">dof_map</span></tt> is the
+<span class="math">\(q(e,r)\)</span> mapping introduced earlier in the
+assembly of element matrices and vectors.
+For example, the <tt class="docutils literal"><span class="pre">Omega_e</span></tt> variable (representing the cell interval)
+in previous code snippets must now be computed as</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">Omega_e</span> <span class="o">=</span> <span class="p">[</span><span class="n">vertices</span><span class="p">[</span><span class="n">cells</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">vertices</span><span class="p">[</span><span class="n">cells</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">1</span><span class="p">]]</span>
+</pre></div>
+</div>
+<p>The assembly is done by</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">A</span><span class="p">[</span><span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">r</span><span class="p">],</span> <span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">s</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">A_e</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">s</span><span class="p">]</span>
+<span class="n">b</span><span class="p">[</span><span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">r</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">b_e</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>We will hereafter drop the <tt class="docutils literal"><span class="pre">nodes</span></tt> and <tt class="docutils literal"><span class="pre">elements</span></tt> arrays
+and work exculsively with <tt class="docutils literal"><span class="pre">cells</span></tt>, <tt class="docutils literal"><span class="pre">vertices</span></tt>, and <tt class="docutils literal"><span class="pre">dof_map</span></tt>.
+The module <tt class="docutils literal"><span class="pre">fe_approx1D_numint.py</span></tt> now replaces the module
+<tt class="docutils literal"><span class="pre">fe_approx1D</span></tt> and offers similar functions that work with
+the new concepts:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">fe_approx1D_numint</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span>
+<span class="n">N_e</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">vertices</span><span class="p">,</span> <span class="n">cells</span><span class="p">,</span> <span class="n">dof_map</span> <span class="o">=</span> <span class="n">mesh_uniform</span><span class="p">(</span><span class="n">N_e</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">Omega</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">phi</span> <span class="o">=</span> <span class="p">[</span><span class="n">basis</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">])</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_e</span><span class="p">)]</span>
+<span class="n">A</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">assemble</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">cells</span><span class="p">,</span> <span class="n">dof_map</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+<span class="c"># Make very fine mesh and sample u(x) on this mesh for plotting</span>
+<span class="n">x_u</span><span class="p">,</span> <span class="n">u</span> <span class="o">=</span> <span class="n">u_glob</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">vertices</span><span class="p">,</span> <span class="n">cells</span><span class="p">,</span> <span class="n">dof_map</span><span class="p">,</span>
+                <span class="n">resolution_per_element</span><span class="o">=</span><span class="mi">51</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">x_u</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>These steps are offered in the <tt class="docutils literal"><span class="pre">approximate</span></tt> function, which we here
+apply to see how well four P0 elements (piecewise constants)
+can approximate a parabola:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">fe_approx1D_numint</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">x</span><span class="o">=</span><span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s">&quot;x&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">N_e</span> <span class="ow">in</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">:</span>
+    <span class="n">approximate</span><span class="p">(</span><span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">x</span><span class="p">),</span> <span class="n">d</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">N_e</span><span class="o">=</span><span class="n">N_e</span><span class="p">,</span> <span class="n">Omega</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Figure <a class="reference internal" href="#fem-approx-fe-element-impl-fig-p0-x2"><em>Approximation of a parabola by 4 (left) and 8 (right) P0 elements</em></a> shows the result.</p>
+<div class="figure" id="fem-approx-fe-element-impl-fig-p0-x2">
+<a class="reference internal image-reference" href="_images/fe_p0_x2_4e_8e.png"><img alt="_images/fe_p0_x2_4e_8e.png" src="_images/fe_p0_x2_4e_8e.png" style="width: 600px;" /></a>
+<p class="caption"><em>Approximation of a parabola by 4 (left) and 8 (right) P0 elements</em></p>
+</div>
+</div>
+<div class="section" id="computing-the-error-of-the-approximation">
+<span id="fem-approx-fe-element-impl-error"></span><h2>Computing the error of the approximation<a class="headerlink" href="#computing-the-error-of-the-approximation" title="Permalink to this headline">¶</a></h2>
+<p>So far we have focused on computing the coefficients <span class="math">\(c_j\)</span> in the
+approximation <span class="math">\(u(x)=\sum_jc_j{\varphi}_j\)</span> as well as on plotting <span class="math">\(u\)</span> and
+<span class="math">\(f\)</span> for visual comparison. A more quantitative comparison needs to
+investigate the error <span class="math">\(e(x)=f(x)-u(x)\)</span>. We mostly want a single number to
+reflect the error and use a norm for this purpose, usually the <span class="math">\(L^2\)</span> norm</p>
+<div class="math">
+\[||e||_{L^2} = \left(\int_{\Omega} e^2 dx\right)^{1/2}{\thinspace .}\]</div>
+<p>Since the finite element approximation is defined for all <span class="math">\(x\in\Omega\)</span>,
+and we are interested in how <span class="math">\(u(x)\)</span> deviates from <span class="math">\(f(x)\)</span> through all
+the elements,
+we can either integrate analytically or use an accurate numerical
+approximation. The latter is more convenient as it is a generally
+feasible and simple approach. The idea is to sample <span class="math">\(e(x)\)</span>
+at a large number of points in each element. The function <tt class="docutils literal"><span class="pre">u_glob</span></tt>
+in the <tt class="docutils literal"><span class="pre">fe_approx1D_numint</span></tt> module does this for <span class="math">\(u(x)\)</span> and returns
+an array <tt class="docutils literal"><span class="pre">x</span></tt> with coordinates and an array <tt class="docutils literal"><span class="pre">u</span></tt> with the <span class="math">\(u\)</span> values:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">x</span><span class="p">,</span> <span class="n">u</span> <span class="o">=</span> <span class="n">u_glob</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">vertices</span><span class="p">,</span> <span class="n">cells</span><span class="p">,</span> <span class="n">dof_map</span><span class="p">,</span>
+              <span class="n">resolution_per_element</span><span class="o">=</span><span class="mi">101</span><span class="p">)</span>
+<span class="n">e</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="n">u</span>
+</pre></div>
+</div>
+<p>Let us use the Trapezoidal method to approximate the integral. Because
+different elements may have different lengths, the <tt class="docutils literal"><span class="pre">x</span></tt> array has
+a non-uniformly distributed set of coordinates. Also, the <tt class="docutils literal"><span class="pre">u_glob</span></tt>
+function works in an element by element fashion such that coordinates
+at the boundaries between elements appear twice. We therefore need
+to use a &#8220;raw&#8221; version of the Trapezoidal rule where we just add up
+all the trapezoids:</p>
+<div class="math">
+\[\int_\Omega g(x) dx \approx \sum_{j=0}^{n-1} \frac{1}{2}(g(x_j) +
+g(x_{j+1}))(x_{j+1}-x_j),\]</div>
+<p>if <span class="math">\(x_0,\ldots,x_n\)</span> are all the coordinates in <tt class="docutils literal"><span class="pre">x</span></tt>. In
+vectorized Python code,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">g_x</span> <span class="o">=</span> <span class="n">g</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">integral</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">g_x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">g_x</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p>Computing the <span class="math">\(L^2\)</span> norm of the error, here named <tt class="docutils literal"><span class="pre">E</span></tt>, is now achieved by</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">e2</span> <span class="o">=</span> <span class="n">e</span><span class="o">**</span><span class="mi">2</span>
+<span class="n">E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">e2</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">e2</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+</pre></div>
+</div>
+<div class="admonition-how-does-the-error-depend-on-math-h-and-math-d admonition">
+<p class="first admonition-title">How does the error depend on <span class="math">\(h\)</span> and <span class="math">\(d\)</span></p>
+<p class="last">Theory and experiments show that the least squares or projection/Galerkin
+method in combination with Pd elements of equal length <span class="math">\(h\)</span> has an error</p>
+</div>
+<div class="math" id="equation-fem:approx:fe:error:theorem">
+<span id="eq-fem-approx-fe-error-theorem"></span><span class="eqno">(1)</span>\[        ||e||_{L^2} = Ch^{d+1},\]\[where  \( C \)  is a constant depending on  \( f \) , but not on  \( h \)  or  \( d \) .\]</div>
+</div>
+<div class="section" id="example-cubic-hermite-polynomials">
+<span id="fem-approx-fe-element-impl-hermite"></span><h2>Example: Cubic Hermite polynomials<a class="headerlink" href="#example-cubic-hermite-polynomials" title="Permalink to this headline">¶</a></h2>
+<p id="index-10">The finite elements considered so far represent <span class="math">\(u\)</span> as piecewise
+polynomials with discontinuous derivatives at the cell boundaries.
+Sometimes it is desirable to have continuous derivatives. A primary
+examples is the solution of differential equations with fourth-order
+derivatives where standard finite element formulations lead to
+a need for basis functions with continuous first-order derivatives.
+The most common type of such basis functions in 1D is the
+so-called cubic Hermite polynomials.
+The construction of such polynomials, as explained next, will further
+exemplify the concepts of a cell, vertex, degree of freedom, and dof map.</p>
+<p>Given a reference cell <span class="math">\([-1,1]\)</span>, we seek cubic polynomials
+with the values of the <em>function</em> and its <em>first-order derivative</em> at
+<span class="math">\(X=-1\)</span> and <span class="math">\(X=1\)</span> as the four degrees of freedom. Let us number
+the degrees of freedom as</p>
+<blockquote>
+<div><ul class="simple">
+<li>0: value of function at <span class="math">\(X=-1\)</span></li>
+<li>1: value of first derivative at <span class="math">\(X=-1\)</span></li>
+<li>2: value of function at <span class="math">\(X=1\)</span></li>
+<li>3: value of first derivative at <span class="math">\(X=1\)</span></li>
+</ul>
+</div></blockquote>
+<p>By having the derivatives as unknowns, we ensure that
+the derivative of a basis function in two neighboring elements
+is the same at the node points.</p>
+<p>The four basis functions can be written in a general form</p>
+<div class="math">
+\[{\tilde{\varphi}}_i (X) = \sum_{j=0}^3 C_{i,j}X^j,\]</div>
+<p>with four coefficients <span class="math">\(C_{i,j}\)</span>, <span class="math">\(j=0,1,2,3\)</span>, to be determined for
+each <span class="math">\(i\)</span>. The constraints
+that basis function number <span class="math">\(i\)</span> must be 1 for degree of
+freedom number <span class="math">\(i\)</span> and zero for the other three degrees of freedom,
+gives four equations to determine <span class="math">\(C_{i,j}\)</span> for each <span class="math">\(i\)</span>. In mathematical
+detail,</p>
+<div class="math">
+\[\begin{split}{\tilde{\varphi}}_0 (-1) &amp;= 1,\quad {\tilde{\varphi}}_0 (1)={\tilde{\varphi}}_0'(-1)={\tilde{\varphi}}_i' (1)=0,\\
+{\tilde{\varphi}}_1' (-1) &amp;= 1,\quad {\tilde{\varphi}}_1 (-1)={\tilde{\varphi}}_1(1)={\tilde{\varphi}}_1' (1)=0,\\
+{\tilde{\varphi}}_2 (1) &amp;= 1,\quad {\tilde{\varphi}}_2 (-1)={\tilde{\varphi}}_2'(-1)={\tilde{\varphi}}_2' (1)=0,\\
+{\tilde{\varphi}}_3' (1) &amp;= 1,\quad {\tilde{\varphi}}_3 (-1)={\tilde{\varphi}}_3'(-1)={\tilde{\varphi}}_3 (1)=0
+{\thinspace .}\end{split}\]</div>
+<p>These four <span class="math">\(4\times 4\)</span> linear equations can be solved, yielding the
+following formulas
+for the cubic basis functions:</p>
+<div class="math">
+\[{\tilde{\varphi}}_0(X) = 1 - \frac{3}{4}(X+1)^2 + \frac{1}{4}(X+1)^3\]</div>
+<div class="math">
+\[{\tilde{\varphi}}_1(X) = -(X+1)(1 - \frac{1}{2}(X+1))^2\]</div>
+<div class="math">
+\[{\tilde{\varphi}}_2(X) = \frac{3}{4}(X+1)^2 - \frac{1}{2}(X+1)^3\]</div>
+<div class="math">
+\[{\tilde{\varphi}}_3(X) = -\frac{1}{2}(X+1)(\frac{1}{2}(X+1)^2 - (X+1))\]</div>
+<div class="math">
+</div>
+<p>The construction of the dof map needs a scheme for numbering the
+global degrees of freedom. A natural left-to-right numbering
+has the function value at vertex <span class="math">\(x_{i}\)</span>
+as degree of freedom number <span class="math">\(2i\)</span> and the value of the derivative
+at <span class="math">\(x_{i}\)</span> as degree of freedom number <span class="math">\(2i+1\)</span>, <span class="math">\(i=0,\ldots,N_e+1\)</span>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">A generalized element concept</a><ul>
+<li><a class="reference internal" href="#cells-vertices-and-degrees-of-freedom">Cells, vertices, and degrees of freedom</a></li>
+<li><a class="reference internal" href="#extended-finite-element-concept">Extended finite element concept</a></li>
+<li><a class="reference internal" href="#implementation-2">Implementation  (2)</a></li>
+<li><a class="reference internal" href="#computing-the-error-of-the-approximation">Computing the error of the approximation</a></li>
+<li><a class="reference internal" href="#example-cubic-hermite-polynomials">Example: Cubic Hermite polynomials</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="._main_fem006.html"
+                        title="previous chapter">Comparison of finite element and finite difference approximation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_fem008.html"
+                        title="next chapter">Numerical integration  (1)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_fem007.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_fem008.html" title="Numerical integration (1)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="._main_fem006.html" title="Comparison of finite element and finite difference approximation"
+             >previous</a> |</li>
+        <li><a href="index.html">Introduction to finite element methods</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

@@ -1,0 +1,439 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Approximation of functions in 2D</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Introduction to finite element methods" href="index.html" />
+    <link rel="next" title="Finite elements in 2D and 3D" href="._main_fem010.html" />
+    <link rel="prev" title="Numerical integration (1)" href="._main_fem008.html" />
+ 
+  
+   <style type="text/css">
+     div.admonition {
+       background-color: whiteSmoke;
+       border: 1px solid #bababa;
+     }
+   </style>
+  </head>
+
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_fem010.html" title="Finite elements in 2D and 3D"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="._main_fem008.html" title="Numerical integration (1)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Introduction to finite element methods</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="approximation-of-functions-in-2d">
+<span id="fem-approx-2d"></span><h1>Approximation of functions in 2D<a class="headerlink" href="#approximation-of-functions-in-2d" title="Permalink to this headline">¶</a></h1>
+<p>All the concepts and algorithms developed for approximation of 1D functions
+<span class="math">\(f(x)\)</span> can readily be extended to 2D functions <span class="math">\(f(x,y)\)</span> and 3D functions
+<span class="math">\(f(x,y,z)\)</span>. Basically, the extensions consists of defining basis functions
+<span class="math">\({\psi}_i(x,y)\)</span> or <span class="math">\({\psi}_i(x,y,z)\)</span> over some domain <span class="math">\(\Omega\)</span>, and
+for the least squares and Galerkin methods, the integration is done over
+<span class="math">\(\Omega\)</span>.</p>
+<p>As in 1D, the least squares and projection/Galerkin methods
+two lead to linear systems</p>
+<div class="math">
+\[\begin{split}\sum_{j\in{\mathcal{I}_s}} A_{i,j}c_j &amp;= b_i,\quad i\in{\mathcal{I}_s},\\
+A_{i,j} &amp;= ({\psi}_i,{\psi}_j),\\
+b_i &amp;= (f,{\psi}_i),\end{split}\]</div>
+<p>where the inner product of two functions <span class="math">\(f(x,y)\)</span> and <span class="math">\(g(x,y)\)</span> is defined
+completely analogously to the 1D case <a class="reference internal" href="._main_fem003.html#eq-fem-approx-ls-innerprod"><em>(4.2)</em></a>:</p>
+<div class="math">
+\[(f,g) = \int_\Omega f(x,y)g(x,y) dx dy\]</div>
+<div class="section" id="d-basis-functions-as-tensor-products-of-1d-functions">
+<span id="fem-approx-2d-global"></span><h2>2D basis functions as tensor products of 1D functions<a class="headerlink" href="#d-basis-functions-as-tensor-products-of-1d-functions" title="Permalink to this headline">¶</a></h2>
+<p id="index-0">One straightforward
+way to construct a basis in 2D is to combine
+1D basis functions. Say we have the 1D vector space</p>
+<div class="math" id="equation-fem:approx:2D:Vx">
+<span id="eq-fem-approx-2d-vx"></span><span class="eqno">(1)</span>\[     V_x = \mbox{span}\{ \hat{\psi}_0(x),\ldots,\hat{\psi}_{N_x}(x)\}\]\[     {\thinspace .}\]</div>
+<p>A similar space for variation in <span class="math">\(y\)</span> can be defined,</p>
+<div class="math" id="equation-fem:approx:2D:Vy">
+<span id="eq-fem-approx-2d-vy"></span><span class="eqno">(2)</span>\[     V_y = \mbox{span}\{ \hat{\psi}_0(y),\ldots,\hat{\psi}_{N_y}(y)\}\]\[     {\thinspace .}\]</div>
+<p>We can then form 2D basis functions as <em>tensor products</em> of 1D basis functions.</p>
+<div class="admonition-tensor-products admonition">
+<p class="first admonition-title">Tensor products</p>
+<p>Given two vectors <span class="math">\(a=(a_0,\ldots,a_M)\)</span> and <span class="math">\(b=(b_0,\ldots,b_N)\)</span>,
+their <em>outer tensor product</em>, also called the <em>dyadic product</em>,
+is <span class="math">\(p=a\otimes b\)</span>, defined through</p>
+<div class="math">
+\[p_{i,j}=a_ib_j,\quad i=0,\ldots,M,\ j=0,\ldots,N{\thinspace .}\]</div>
+<p>In the tensor terminology,
+<span class="math">\(a\)</span> and <span class="math">\(b\)</span> are first-order tensors (vectors with one index, also termed
+rank-1 tensors), and then their outer
+tensor product is a second-order tensor (matrix with two indices, also
+termed rank-2 tensor). The
+corresponding <em>inner tensor product</em> is the well-known scalar or dot
+product of two vectors: <span class="math">\(p=a\cdot b = \sum_{j=0}^N a_jb_j\)</span>. Now,
+<span class="math">\(p\)</span> is a rank-0 tensor.</p>
+<p>Tensors are typically represented by arrays in computer code.
+In the above example, <span class="math">\(a\)</span> and <span class="math">\(b\)</span> are represented by
+one-dimensional arrays of length
+<span class="math">\(M\)</span> and <span class="math">\(N\)</span>, respectively, while <span class="math">\(p=a\otimes b\)</span> must be represented
+by a two-dimensional array of size <span class="math">\(M\times N\)</span>.</p>
+<p class="last"><a class="reference external" href="http://en.wikipedia.org/wiki/Tensor_product">Tensor products</a> can
+be used in a variety of context.</p>
+</div>
+<p>Given the vector spaces <span class="math">\(V_x\)</span> and <span class="math">\(V_y\)</span> as defined
+in <a href="#equation-fem:approx:2D:Vx">(1)</a> and <a href="#equation-fem:approx:2D:Vy">(2)</a>, the
+tensor product space <span class="math">\(V=V_x\otimes V_y\)</span> has a basis formed
+as the tensor product of the basis for <span class="math">\(V_x\)</span> and <span class="math">\(V_y\)</span>.
+That is, if <span class="math">\(\left\{ {\varphi}_i(x) \right\}_{i\in{\mathcal{I}_x}}\)</span>
+and <span class="math">\(\left\{ {\varphi}_i(y) \right\}_{i\in {\mathcal{I}_y}}\)</span> are basis for
+<span class="math">\(V_x\)</span> and <span class="math">\(V_y\)</span>, respectively, the elements in the basis for <span class="math">\(V\)</span> arise
+from the tensor product:
+<span class="math">\(\left\{ {\varphi}_i(x){\varphi}_j(y) \right\}_{i\in {\mathcal{I}_x},j\in {\mathcal{I}_y}}\)</span>.
+The index sets are <span class="math">\(I_x=\{0,\ldots,N_x\}\)</span> and <span class="math">\(I_y=\{0,\ldots,N_y\}\)</span>.</p>
+<p>The notation for a basis function in 2D can employ a double index as in</p>
+<div class="math">
+\[{\psi}_{p,q}(x,y) = \hat{\psi}_p(x)\hat{\psi}_q(y),
+\quad p\in{\mathcal{I}_x},q\in{\mathcal{I}_y}{\thinspace .}\]</div>
+<p>The expansion for <span class="math">\(u\)</span> is then written as a double sum</p>
+<div class="math">
+\[u = \sum_{p\in{\mathcal{I}_x}}\sum_{q\in{\mathcal{I}_y}} c_{p,q}{\psi}_{p,q}(x,y){\thinspace .}\]</div>
+<p>Alternatively, we may employ a single index,</p>
+<div class="math">
+\[{\psi}_i(x,y) = \hat{\psi}_p(x)\hat{\psi}_q(y),\]</div>
+<p>and use the standard form for <span class="math">\(u\)</span>,</p>
+<div class="math">
+\[u = \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x,y){\thinspace .}\]</div>
+<p>The single index is related to the double index through
+<span class="math">\(i=p N_y + q\)</span> or <span class="math">\(i=q N_x + p\)</span>.</p>
+</div>
+<div class="section" id="example-polynomial-basis-in-2d">
+<h2>Example: Polynomial basis in 2D<a class="headerlink" href="#example-polynomial-basis-in-2d" title="Permalink to this headline">¶</a></h2>
+<p>Suppose we choose <span class="math">\(\hat{\psi}_p(x)=x^p\)</span>, and try an approximation with
+<span class="math">\(N_x=N_y=1\)</span>:</p>
+<div class="math">
+\[{\psi}_{0,0}=1,\quad {\psi}_{1,0}=x, \quad {\psi}_{0,1}=y,
+\quad {\psi}_{1,1}=xy
+{\thinspace .}\]</div>
+<p>Using a mapping to one index like <span class="math">\(i=q N_x + p\)</span>, we get</p>
+<div class="math">
+\[{\psi}_0=1,\quad {\psi}_1=x, \quad {\psi}_2=y,\quad{\psi}_3 =xy
+{\thinspace .}\]</div>
+<p>With the specific choice <span class="math">\(f(x,y) = (1+x^2)(1+2y^2)\)</span> on
+<span class="math">\(\Omega = [0,L_x]\times [0,L_y]\)</span>, we can perform actual calculations:</p>
+<div class="math">
+\[\begin{split}A_{0,0} &amp;= ({\psi}_0,{\psi}_0) = \int_0^{L_y}\int_{0}^{L_x}
+{\psi}_0(x,y)^2 dx dy = \int_0^{L_y}\int_{0}^{L_x}dx dy = L_xL_y,\\
+A_{1,0} &amp;= ({\psi}_1,{\psi}_0) = \int_0^{L_y}\int_{0}^{L_x} x dxdy =
+{\frac{1}{2}}L_x^2L_y,\\
+A_{0,1} &amp;= ({\psi}_0,{\psi}_1) = \int_0^{L_y}\int_{0}^{L_x} y dxdy =
+{\frac{1}{2}}L_y^2L_x,\\
+A_{0,1} &amp;= ({\psi}_0,{\psi}_1) = \int_0^{L_y}\int_{0}^{L_x} xy dxdy =
+\int_0^{L_y}ydy \int_{0}^{L_x} xdx =
+\frac{1}{4}L_y^2L_x^2
+{\thinspace .}\end{split}\]</div>
+<p>The right-hand side vector has the entries</p>
+<div class="math">
+\[\begin{split}b_{0} &amp;= ({\psi}_0,f) = \int_0^{L_y}\int_{0}^{L_x}1\cdot (1+x^2)(1+2y^2) dxdy\\
+&amp;= \int_0^{L_y}(1+2y^2)dy \int_{0}^{L_x} (1+x^2)dx
+= (L_y + \frac{2}{3}L_y^3)(L_x + \frac{1}{3}L_x^3)\\
+b_{1} &amp;= ({\psi}_1,f) = \int_0^{L_y}\int_{0}^{L_x} x(1+x^2)(1+2y^2) dxdy\\
+&amp;=\int_0^{L_y}(1+2y^2)dy \int_{0}^{L_x} x(1+x^2)dx
+= (L_y + \frac{2}{3}L_y^3)({\frac{1}{2}}L_x^2 + \frac{1}{4}L_x^4)\\
+b_{2} &amp;= ({\psi}_2,f) = \int_0^{L_y}\int_{0}^{L_x} y(1+x^2)(1+2y^2) dxdy\\
+&amp;= \int_0^{L_y}y(1+2y^2)dy \int_{0}^{L_x} (1+x^2)dx
+= ({\frac{1}{2}}L_y + {\frac{1}{2}}L_y^4)(L_x + \frac{1}{3}L_x^3)\\
+b_{3} &amp;= ({\psi}_2,f) = \int_0^{L_y}\int_{0}^{L_x} xy(1+x^2)(1+2y^2) dxdy\\
+&amp;= \int_0^{L_y}y(1+2y^2)dy \int_{0}^{L_x} x(1+x^2)dx
+= ({\frac{1}{2}}L_y^2 + {\frac{1}{2}}L_y^4)({\frac{1}{2}}L_x^2 + \frac{1}{4}L_x^4)
+{\thinspace .}\end{split}\]</div>
+<p>There is a general pattern in these calculations that we can explore.
+An arbitrary matrix entry has the formula</p>
+<div class="math">
+\[\begin{split}A_{i,j} &amp;= ({\psi}_i,{\psi}_j) = \int_0^{L_y}\int_{0}^{L_x}
+{\psi}_i{\psi}_j dx dy \\
+&amp;= \int_0^{L_y}\int_{0}^{L_x}
+{\psi}_{p,q}{\psi}_{r,s} dx dy
+= \int_0^{L_y}\int_{0}^{L_x}
+\hat{\psi}_p(x)\hat{\psi}_q(y)\hat{\psi}_r(x)\hat{\psi}_s(y) dx dy\\
+&amp;= \int_0^{L_y} \hat{\psi}_q(y)\hat{\psi}_s(y)dy
+\int_{0}^{L_x} \hat{\psi}_p(x) \hat{\psi}_r(x) dx\\
+&amp;= \hat A^{(x)}_{p,r}\hat A^{(y)}_{q,s},\end{split}\]</div>
+<p>where</p>
+<div class="math">
+\[\hat A^{(x)}_{p,r} = \int_{0}^{L_x} \hat{\psi}_p(x) \hat{\psi}_r(x) dx,
+\quad
+\hat A^{(y)}_{q,s} = \int_0^{L_y} \hat{\psi}_q(y)\hat{\psi}_s(y)dy,\]</div>
+<p>are matrix entries for one-dimensional approximations. Moreover,
+<span class="math">\(i=q N_y+q\)</span> and <span class="math">\(j=s N_y+r\)</span>.</p>
+<p>With <span class="math">\(\hat{\psi}_p(x)=x^p\)</span> we have</p>
+<div class="math">
+\[\hat A^{(x)}_{p,r} = \frac{1}{p+r+1}L_x^{p+r+1},\quad
+\hat A^{(y)}_{q,s} = \frac{1}{q+s+1}L_y^{q+s+1},\]</div>
+<p>and</p>
+<div class="math">
+\[A_{i,j} = \hat A^{(x)}_{p,r} \hat A^{(y)}_{q,s} =
+\frac{1}{p+r+1}L_x^{p+r+1} \frac{1}{q+s+1}L_y^{q+s+1},\]</div>
+<p>for <span class="math">\(p,r\in{\mathcal{I}_x}\)</span> and <span class="math">\(q,s\in{\mathcal{I}_y}\)</span>.</p>
+<p>Corresponding reasoning for the right-hand side leads to</p>
+<div class="math">
+\[\begin{split}b_i &amp;= ({\psi}_i,f) = \int_0^{L_y}\int_{0}^{L_x}{\psi}_i f\,dxdx\\
+&amp;= \int_0^{L_y}\int_{0}^{L_x}\hat{\psi}_p(x)\hat{\psi}_q(y) f\,dxdx\\
+&amp;= \int_0^{L_y}\hat{\psi}_q(y) (1+2y^2)dy
+\int_0^{L_y}\hat{\psi}_p(x) x^p (1+x^2)dx\\
+&amp;= \int_0^{L_y} y^q (1+2y^2)dy
+\int_0^{L_y}x^p (1+x^2)dx\\
+&amp;= (\frac{1}{q+1} L_y^{q+1} + \frac{2}{q+3}L_y^{q+3})
+(\frac{1}{p+1} L_x^{p+1} + \frac{2}{q+3}L_x^{p+3})\end{split}\]</div>
+<p>Choosing <span class="math">\(L_x=L_y=2\)</span>, we have</p>
+<div class="math">
+\[\begin{split}A =
+\left[\begin{array}{cccc}
+4 &amp; 4 &amp; 4 &amp; 4\\
+4 &amp; \frac{16}{3} &amp; 4 &amp; \frac{16}{3}\\
+4 &amp; 4 &amp; \frac{16}{3} &amp; \frac{16}{3}\\
+4 &amp; \frac{16}{3} &amp; \frac{16}{3} &amp; \frac{64}{9}
+\end{array}\right],\quad
+b = \left[\begin{array}{c}
+\frac{308}{9}\\\frac{140}{3}\\44\\60\end{array}\right],
+\quad c = \left[
+\begin{array}{r}
+-\frac{1}{9} \\
+\frac{4}{3} \\
+ - \frac{2}{3} \\
+ 8
+\end{array}\right]
+{\thinspace .}\end{split}\]</div>
+<p>Figure <a class="reference internal" href="#fem-approx-fe-2d-fig-ubilinear"><em>Approximation of a 2D quadratic function (left) by a 2D bilinear function (right) using the Galerkin or least squares method</em></a> illustrates the result.</p>
+<div class="figure" id="fem-approx-fe-2d-fig-ubilinear">
+<a class="reference internal image-reference" href="_images/approx2D_bilinear.png"><img alt="_images/approx2D_bilinear.png" src="_images/approx2D_bilinear.png" style="width: 800px;" /></a>
+<p class="caption"><em>Approximation of a 2D quadratic function (left) by a 2D bilinear function (right) using the Galerkin or least squares method</em></p>
+</div>
+</div>
+<div class="section" id="implementation-3">
+<span id="fem-approx-2d-global-code"></span><h2>Implementation  (3)<a class="headerlink" href="#implementation-3" title="Permalink to this headline">¶</a></h2>
+<p>The <tt class="docutils literal"><span class="pre">least_squares</span></tt> function from
+the section <a class="reference internal" href="._main_fem003.html#fem-approx-global-orth"><em>Orthogonal basis functions</em></a> and/or the
+file <a class="reference external" href="http://tinyurl.com/jvzzcfn/fem/fe_approx1D.py">approx1D.py</a>
+can with very small modifications solve 2D approximation problems.
+First, let <tt class="docutils literal"><span class="pre">Omega</span></tt> now be a list of the intervals in <span class="math">\(x\)</span> and <span class="math">\(y\)</span> direction.
+For example, <span class="math">\(\Omega = [0,L_x]\times [0,L_y]\)</span> can be represented
+by <tt class="docutils literal"><span class="pre">Omega</span> <span class="pre">=</span> <span class="pre">[[0,</span> <span class="pre">L_x],</span> <span class="pre">[0,</span> <span class="pre">L_y]]</span></tt>.</p>
+<p>Second, the symbolic integration must be extended to 2D:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">sympy</span> <span class="kn">as</span> <span class="nn">sp</span>
+
+<span class="n">integrand</span> <span class="o">=</span> <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">psi</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+<span class="n">I</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span>
+                 <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]),</span>
+                 <span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p>provided <tt class="docutils literal"><span class="pre">integrand</span></tt> is an expression involving the <tt class="docutils literal"><span class="pre">sympy</span></tt> symbols <tt class="docutils literal"><span class="pre">x</span></tt>
+and <tt class="docutils literal"><span class="pre">y</span></tt>.
+The 2D version of numerical integration becomes</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Integral</span><span class="p">):</span>
+    <span class="n">integrand</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">lambdify</span><span class="p">([</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">],</span> <span class="n">integrand</span><span class="p">)</span>
+    <span class="n">I</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">mpmath</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span>
+                       <span class="p">[</span><span class="n">Omega</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]],</span>
+                       <span class="p">[</span><span class="n">Omega</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]])</span>
+</pre></div>
+</div>
+<p>The right-hand side integrals are modified in a similar way.</p>
+<p>Third, we must construct a list of 2D basis functions. Here are two
+examples based on tensor products of 1D &#8220;Taylor-style&#8221; polynomials <span class="math">\(x^i\)</span>
+and 1D sine functions <span class="math">\(\sin((i+1)\pi x)\)</span>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">taylor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Nx</span><span class="p">,</span> <span class="n">Ny</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">x</span><span class="o">**</span><span class="n">i</span><span class="o">*</span><span class="n">y</span><span class="o">**</span><span class="n">j</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Nx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Ny</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+
+<span class="k">def</span> <span class="nf">sines</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Nx</span><span class="p">,</span> <span class="n">Ny</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Nx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Ny</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>The complete code appears in
+<a class="reference external" href="http://tinyurl.com/jvzzcfn/fem/fe_approx2D.py">approx2D.py</a>.</p>
+<p>The previous hand calculation where a quadratic <span class="math">\(f\)</span> was approximated by
+a bilinear function can be computed symbolically by</p>
+<div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">approx2D</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">f</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">psi</span> <span class="o">=</span> <span class="n">taylor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">Omega</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">]]</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">u</span> <span class="o">=</span> <span class="n">least_squares</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Omega</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="k">print</span> <span class="n">u</span>
+<span class="mi">8</span><span class="o">*</span><span class="n">x</span><span class="o">*</span><span class="n">y</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">x</span><span class="o">/</span><span class="mi">3</span> <span class="o">+</span> <span class="mi">4</span><span class="o">*</span><span class="n">y</span><span class="o">/</span><span class="mi">3</span> <span class="o">-</span> <span class="mi">1</span><span class="o">/</span><span class="mi">9</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="k">print</span> <span class="n">sp</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="mi">2</span><span class="o">*</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>We may continue with adding higher powers to the basis:</p>
+<div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="n">psi</span> <span class="o">=</span> <span class="n">taylor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">u</span> <span class="o">=</span> <span class="n">least_squares</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Omega</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="k">print</span> <span class="n">u</span>
+<span class="mi">2</span><span class="o">*</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="k">print</span> <span class="n">u</span><span class="o">-</span><span class="n">f</span>
+<span class="mi">0</span>
+</pre></div>
+</div>
+<p>For <span class="math">\(N_x\geq 2\)</span> and <span class="math">\(N_y\geq 2\)</span> we recover the exact function <span class="math">\(f\)</span>, as
+expected, since in that case <span class="math">\(f\in V\)</span> (see
+the section <a class="reference internal" href="._main_fem003.html#fem-approx-global-exact"><em>Perfect approximation</em></a>).</p>
+</div>
+<div class="section" id="extension-to-3d">
+<span id="fem-approx-3d-global"></span><h2>Extension to 3D<a class="headerlink" href="#extension-to-3d" title="Permalink to this headline">¶</a></h2>
+<p>Extension to 3D is in principle straightforward once the 2D extension
+is understood. The only major difference is that we need the
+repeated outer tensor product,</p>
+<div class="math">
+\[V = V_x\otimes V_y\otimes V_z{\thinspace .}\]</div>
+<p>In general, given vectors (first-order tensors)
+<span class="math">\(a^{(q)} = (a^{(q)}_0,\ldots,a^{(q)}_{N_q}\)</span>, <span class="math">\(q=0,\ldots,m\)</span>,
+the tensor product <span class="math">\(p=a^{(0)}\otimes\cdots\otimes a^{m}\)</span> has
+elements</p>
+<div class="math">
+\[p_{i_0,i_1,\ldots,i_m} = a^{(0)}_{i_1}a^{(1)}_{i_1}\cdots a^{(m)}_{i_m}{\thinspace .}\]</div>
+<p>The basis functions in 3D are then</p>
+<div class="math">
+\[{\psi}_{p,q,r}(x,y,z) = \hat{\psi}_p(x)\hat{\psi}_q(y)\hat{\psi}_r(z),\]</div>
+<p>with <span class="math">\(p\in{\mathcal{I}_x}\)</span>, <span class="math">\(q\in{\mathcal{I}_y}\)</span>, <span class="math">\(r\in{\mathcal{I}_z}\)</span>. The expansion of <span class="math">\(u\)</span> becomes</p>
+<div class="math">
+\[u(x,y,z) = \sum_{p\in{\mathcal{I}_x}}\sum_{q\in{\mathcal{I}_y}}\sum_{r\in{\mathcal{I}_z}} c_{p,q,r}
+{\psi}_{p,q,r}(x,y,z){\thinspace .}\]</div>
+<p>A single index can be introduced also here, e.g., <span class="math">\(i=N_xN_yr + q_Nx + p\)</span>,
+<span class="math">\(u=\sum_i c_i{\psi}_i(x,y,z)\)</span>.</p>
+<div class="admonition-use-of-tensor-product-spaces admonition">
+<p class="first admonition-title">Use of tensor product spaces</p>
+<p class="last">Constructing a multi-dimensional space and basis from tensor products
+of 1D spaces is a standard technique when working with global basis
+functions. In the world of finite elements, constructing basis functions
+by tensor products is much used on quadrilateral and hexahedra cell
+shapes, but not on triangles and tetrahedra. Also, the global
+finite element basis functions are almost exclusively denoted by a single
+index and not by the natural tuple of indices that arises from
+tensor products.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Approximation of functions in 2D</a><ul>
+<li><a class="reference internal" href="#d-basis-functions-as-tensor-products-of-1d-functions">2D basis functions as tensor products of 1D functions</a></li>
+<li><a class="reference internal" href="#example-polynomial-basis-in-2d">Example: Polynomial basis in 2D</a></li>
+<li><a class="reference internal" href="#implementation-3">Implementation  (3)</a></li>
+<li><a class="reference internal" href="#extension-to-3d">Extension to 3D</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="._main_fem008.html"
+                        title="previous chapter">Numerical integration  (1)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_fem010.html"
+                        title="next chapter">Finite elements in 2D and 3D</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_fem009.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_fem010.html" title="Finite elements in 2D and 3D"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="._main_fem008.html" title="Numerical integration (1)"
+             >previous</a> |</li>
+        <li><a href="index.html">Introduction to finite element methods</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

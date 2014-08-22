@@ -1,0 +1,432 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Examples on variational formulations</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Introduction to finite element methods" href="index.html" />
+    <link rel="next" title="Computing with finite elements" href="._main_fem014.html" />
+    <link rel="prev" title="Basic principles for approximating differential equations" href="._main_fem012.html" />
+ 
+  
+   <style type="text/css">
+     div.admonition {
+       background-color: whiteSmoke;
+       border: 1px solid #bababa;
+     }
+   </style>
+  </head>
+
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_fem014.html" title="Computing with finite elements"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="._main_fem012.html" title="Basic principles for approximating differential equations"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Introduction to finite element methods</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="examples-on-variational-formulations">
+<span id="fem-deq-1d-varform-ex"></span><h1>Examples on variational formulations<a class="headerlink" href="#examples-on-variational-formulations" title="Permalink to this headline">¶</a></h1>
+<p>The following sections derive variational formulations for some
+prototype differential equations in 1D, and demonstrate how we with
+ease can handle variable coefficients, mixed Dirichlet and Neumann
+boundary conditions, first-order derivatives, and nonlinearities.</p>
+<div class="section" id="variable-coefficient">
+<h2>Variable coefficient<a class="headerlink" href="#variable-coefficient" title="Permalink to this headline">¶</a></h2>
+<p>Consider the problem</p>
+<div class="math">
+\[-\frac{d}{dx}\left( {\alpha}(x)\frac{du}{dx}\right) = f(x),\quad x\in\Omega =[0,L],\
+u(0)=C,\ u(L)=D{\thinspace .}\]</div>
+<p>There are two new features of this problem compared with
+previous examples: a variable
+coefficient <span class="math">\(a(x)\)</span> and nonzero Dirichlet conditions at both boundary points.</p>
+<p>Let us first deal with the boundary conditions. We seek</p>
+<div class="math">
+\[u(x) = B(x) + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_i(x),\]</div>
+<p>with <span class="math">\({\psi}_i(0)={\psi}_i(L)=0\)</span> for <span class="math">\(i\in{\mathcal{I}_s}\)</span>. The function <span class="math">\(B(x)\)</span>
+must then fulfill <span class="math">\(B(0)=C\)</span> and <span class="math">\(B(L)=D\)</span>. How <span class="math">\(B\)</span> varies in between
+<span class="math">\(x=0\)</span> and <span class="math">\(x=L\)</span> is not of importance. One possible choice is</p>
+<div class="math">
+\[B(x) = C + \frac{1}{L}(D-C)x,\]</div>
+<p>which follows from <a class="reference internal" href="._main_fem012.html#eq-fem-deq-1d-essbc-bfunc-gen"><em>(13.24)</em></a> with <span class="math">\(p=1\)</span>.</p>
+<p>We seek <span class="math">\((u-B)\in V\)</span>. As usual,</p>
+<div class="math">
+\[V = \hbox{span}\{{\psi}_0,\ldots,{\psi}_N\},\]</div>
+<p>but the two Dirichlet boundary conditions demand that</p>
+<div class="math">
+\[{\psi}_i(0)={\psi}_i(L)=0, \quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
+<p>Note that any <span class="math">\(v\in V\)</span> has the property <span class="math">\(v(0)=v(L)=0\)</span>.</p>
+<p>The residual arises by inserting our <span class="math">\(u\)</span> in the differential equation:</p>
+<div class="math">
+\[R = -\frac{d}{dx}\left( {\alpha}\frac{du}{dx}\right) -f{\thinspace .}\]</div>
+<p>Galerkin&#8217;s method is</p>
+<div class="math">
+\[(R, v) = 0,\quad \forall v\in V,\]</div>
+<p>or written with explicit integrals,</p>
+<div class="math">
+\[\int_{\Omega} \left(\frac{d}{dx}\left( {\alpha}\frac{du}{dx}\right) -f\right)v {\, \mathrm{d}x} = 0,\quad \forall v\in V {\thinspace .}\]</div>
+<p>We proceed with integration by parts to lower the derivative from
+second to first order:</p>
+<div class="math">
+\[-\int_{\Omega} \frac{d}{dx}\left( {\alpha}(x)\frac{du}{dx}\right) v {\, \mathrm{d}x}
+= \int_{\Omega} {\alpha}(x)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} -
+\left[{\alpha}\frac{du}{dx}v\right]_0^L
+{\thinspace .}\]</div>
+<p>The boundary term vanishes since <span class="math">\(v(0)=v(L)=0\)</span>.
+The variational formulation is then</p>
+<div class="math">
+\[\int_{\Omega} {\alpha}(x)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} = \int_{\Omega} f(x)v{\, \mathrm{d}x},\quad
+\forall v\in V{\thinspace .}\]</div>
+<p>The variational formulation can alternatively be written in a more
+compact form:</p>
+<div class="math">
+\[({\alpha} u',v') = (f,v),\quad \forall v\in V
+{\thinspace .}\]</div>
+<p>The corresponding abstract notation reads</p>
+<div class="math">
+\[a(u,v)=L(v)\quad\forall v\in V,\]</div>
+<p>with</p>
+<div class="math">
+\[a(u,v)= ({\alpha} u',v'),\quad L(v)=(f,v) {\thinspace .}\]</div>
+<p>Note that the <span class="math">\(a\)</span> in the notation <span class="math">\(a(\cdot,\cdot)\)</span> is not to be mixed with the
+variable coefficient <span class="math">\(a(x)\)</span> in the differential equation.</p>
+<p>We may insert <span class="math">\(u=B + \sum_jc_j{\psi}_j\)</span> and <span class="math">\(v={\psi}_i\)</span> to
+derive the linear system:</p>
+<div class="math">
+\[({\alpha} B' + {\alpha} \sum_{j\in{\mathcal{I}_s}} c_j {\psi}_j', {\psi}_i') =
+(f,{\psi}_i), \quad i\in{\mathcal{I}_s} {\thinspace .}\]</div>
+<p>Isolating everything with the <span class="math">\(c_j\)</span> coefficients on the left-hand side
+and all known terms on the right-hand side
+gives</p>
+<div class="math">
+\[\sum_{j\in{\mathcal{I}_s}} ({\alpha}{\psi}_j', {\psi}_i')c_j  =
+(f,{\psi}_i) + (a(D-C)L^{-1}, {\psi}_i'), \quad i\in{\mathcal{I}_s}
+{\thinspace .}\]</div>
+<p>This is nothing but a linear system <span class="math">\(\sum_j A_{i,j}c_j=b_i\)</span>
+with</p>
+<div class="math">
+\[\begin{split}A_{i,j} &amp;= (a{\psi}_j', {\psi}_i') = \int_{\Omega} {\alpha}(x){\psi}_j'(x),
+{\psi}_i'(x){\, \mathrm{d}x},\\
+b_i &amp;= (f,{\psi}_i) + (a(D-C)L^{-1},{\psi}_i')=
+\int_{\Omega} \left(f(x){\psi}_i(x) + {\alpha}(x)\frac{D-C}{L}{\psi}_i'(x)\right) {\, \mathrm{d}x}
+{\thinspace .}\end{split}\]</div>
+</div>
+<div class="section" id="first-order-derivative-in-the-equation-and-boundary-condition">
+<h2>First-order derivative in the equation and boundary condition<a class="headerlink" href="#first-order-derivative-in-the-equation-and-boundary-condition" title="Permalink to this headline">¶</a></h2>
+<p>The next problem to formulate in variational form reads</p>
+<div class="math">
+\[-u''(x) + bu'(x) = f(x),\quad x\in\Omega =[0,L],\
+u(0)=C,\ u'(L)=E{\thinspace .}\]</div>
+<p>The new features are a first-order derivative <span class="math">\(u'\)</span> in the equation
+and the boundary
+condition involving the derivative: <span class="math">\(u'(L)=E\)</span>.
+Since we have a Dirichlet condition at <span class="math">\(x=0\)</span>,
+we must force <span class="math">\({\psi}_i(0)=0\)</span> and use a boundary function
+to take care of the condition <span class="math">\(u(0)=C\)</span>.
+Because there is no Dirichlet
+condition on <span class="math">\(x=L\)</span> we do not make any requirements to <span class="math">\({\psi}_i(L)\)</span>.
+The simplest possible choice of <span class="math">\(B(x)\)</span> is <span class="math">\(B(x)=C\)</span>.</p>
+<p>The expansion for <span class="math">\(u\)</span> becomes</p>
+<div class="math">
+\[u = C + \sum_{j\in{\mathcal{I}_s}} c_j {\psi}_i(x)
+{\thinspace .}\]</div>
+<p>The variational formulation arises from multiplying the equation by
+a test function <span class="math">\(v\in V\)</span> and integrating over <span class="math">\(\Omega\)</span>:</p>
+<div class="math">
+\[(-u'' + bu' - f, v) = 0,\quad\forall v\in V\]</div>
+<p>We apply integration by parts to the <span class="math">\(u''v\)</span> term only. Although we could
+also integrate <span class="math">\(u' v\)</span> by parts, this is not common.
+The result becomes</p>
+<div class="math">
+\[(u' + bu',v') = (f,v) + [u' v]_0^L, \quad\forall v\in V {\thinspace .}\]</div>
+<p>Now, <span class="math">\(v(0)=0\)</span> so</p>
+<div class="math">
+\[[u' v]_0^L = u'(L)v(L) = E v(L),\]</div>
+<p>because <span class="math">\(u'(L)=E\)</span>.
+Integration by parts allows us to take care of the Neumann condition
+in the boundary term.</p>
+<span class="target" id="index-0"></span><div class="admonition-natural-and-essential-boundary-conditions admonition" id="index-1">
+<p class="first admonition-title">Natural and essential boundary conditions</p>
+<p class="last">Omitting a boundary term like <span class="math">\([u'v]_0^L\)</span>
+implies that we actually impose the condition <span class="math">\(u'=0\)</span> unless there
+is a Dirichlet condition (i.e., <span class="math">\(v=0\)</span>) at that point! This result has great
+practical consequences, because it is easy to forget the boundary
+term, and this mistake may implicitly
+set a boundary condition! Since
+homogeneous Neumann conditions can be incorporated
+without doing anything, and non-homogeneous Neumann conditions can
+just be inserted in the boundary term,
+such conditions are known as <em>natural boundary conditions</em>.
+Dirichlet conditions requires more essential steps in the mathematical
+formulation, such as forcing all <span class="math">\({\varphi}_i=0\)</span> on the boundary
+and constructing a <span class="math">\(B(x)\)</span>, and are
+therefore known as <em>essential boundary conditions</em>.</p>
+</div>
+<p>The final variational form reads</p>
+<div class="math">
+\[(u',v') + (bu',v) = (f,v) + E v(L), \quad\forall v\in V {\thinspace .}\]</div>
+<p>In the abstract notation we have</p>
+<div class="math">
+\[a(u,v)=L(v)\quad\forall v\in V,\]</div>
+<p>with the particular formulas</p>
+<div class="math">
+\[a(u,v)=(u',v') + (bu',v),\quad L(v)= (f,v) + E v(L){\thinspace .}\]</div>
+<p>The associated linear system is derived by inserting <span class="math">\(u=B+\sum_jc_j{\psi}_j\)</span>
+and replacing <span class="math">\(v\)</span> by <span class="math">\({\psi}_i\)</span> for <span class="math">\(i\in{\mathcal{I}_s}\)</span>. Some algebra results in</p>
+<div class="math">
+\[\sum_{j\in{\mathcal{I}_s}} \underbrace{(({\psi}_j',{\psi}_i') + (b{\psi}_j',{\psi}_i))}_{A_{i,j}} c_j = \underbrace{(f,{\psi}_i) + E {\psi}_i(L)}_{b_i}
+{\thinspace .}\]</div>
+<p>Observe that in this problem, the coefficient matrix is not symmetric,
+because of the term</p>
+<div class="math">
+\[(b{\psi}_j',{\psi}_i)=\int_{\Omega} b{\psi}_j'{\psi}_i {\, \mathrm{d}x}
+ \neq \int_{\Omega} b {\psi}_i' {\psi}_j {\, \mathrm{d}x} = ({\psi}_i',b{\psi}_j)
+{\thinspace .}\]</div>
+</div>
+<div class="section" id="nonlinear-coefficient">
+<h2>Nonlinear coefficient<a class="headerlink" href="#nonlinear-coefficient" title="Permalink to this headline">¶</a></h2>
+<p>Finally, we show that the techniques used above to derive variational
+forms also apply to nonlinear differential equation
+problems as well. Here is a model problem with
+a nonlinear coefficient and right-hand side:</p>
+<div class="math">
+\[-({\alpha}(u)u')' = f(u),\quad x\in [0,L],\ u(0)=0,\ u'(L)=E
+{\thinspace .}\]</div>
+<p>Our space <span class="math">\(V\)</span> has basis <span class="math">\(\left\{ {{\psi}}_i \right\}_{i\in{\mathcal{I}_s}}\)</span>, and because of the
+condition <span class="math">\(u(0)=0\)</span>, we must require <span class="math">\({\psi}_i(0)=0\)</span>, <span class="math">\(i\in{\mathcal{I}_s}\)</span>.</p>
+<p>Galerkin&#8217;s method is about inserting the approximate
+<span class="math">\(u\)</span>, multiplying the differential equation by <span class="math">\(v\in V\)</span>, and integrate,</p>
+<div class="math">
+\[-\int_0^L \frac{d}{dx}\left({\alpha}(u)\frac{du}{dx}\right)v {\, \mathrm{d}x} =
+\int_0^L f(u)v {\, \mathrm{d}x}\quad\forall v\in V
+{\thinspace .}\]</div>
+<p>The integration by parts does not differ from the case where we have
+<span class="math">\({\alpha}(x)\)</span> instead of <span class="math">\({\alpha}(u)\)</span>:</p>
+<div class="math">
+\[\int_0^L {\alpha}(u)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} =
+\int_0^L f(u)v{\, \mathrm{d}x} + [{\alpha}(u)vu']_0^L\quad\forall v\in V
+{\thinspace .}\]</div>
+<p>The term <span class="math">\({\alpha}(u(0))v(0)u'(0)=0\)</span> since <span class="math">\(v(0)\)</span>.
+The other term, <span class="math">\({\alpha}(u(L))v(L)u'(L)\)</span>,
+is used to impose the other boundary condition <span class="math">\(u'(L)=E\)</span>, resulting in</p>
+<div class="math">
+\[\int_0^L {\alpha}(u)\frac{du}{dx}\frac{dv}{dx}v{\, \mathrm{d}x} =
+\int_0^L f(u)v{\, \mathrm{d}x} + {\alpha}(u(L))v(L)E\quad\forall v\in V,\]</div>
+<p>or alternatively written more compactly as</p>
+<div class="math">
+\[({\alpha}(u)u', v') = (f(u),v) + {\alpha}(L)v(L)E\quad\forall v\in V
+{\thinspace .}\]</div>
+<p>Since the problem is nonlinear, we cannot identify a bilinear
+form <span class="math">\(a(u,v)\)</span> and a linear form <span class="math">\(L(v)\)</span>.
+An abstract notation is typically <em>find  \( u \)  such that</em></p>
+<div class="math">
+\[F(u;v) = 0\quad\forall v\in V,\]</div>
+<p>with</p>
+<div class="math">
+\[F(u;v) = (a(u)u', v') - (f(u),v) - a(L)v(L)E
+{\thinspace .}\]</div>
+<p>By inserting <span class="math">\(u=\sum_j c_j{\psi}_j\)</span> we get a <em>nonlinear system of
+algebraic equations</em> for the unknowns <span class="math">\(c_i\)</span>, <span class="math">\(i\in{\mathcal{I}_s}\)</span>. Such systems must
+be solved by constructing a sequence of linear systems whose solutions
+hopefully converge to the solution of the nonlinear system. Frequently applied
+methods are Picard iteration and Newton&#8217;s method.</p>
+</div>
+<div class="section" id="computing-with-dirichlet-and-neumann-conditions">
+<span id="fem-deq-1d-varform-ex-dn-case"></span><h2>Computing with Dirichlet and Neumann conditions<a class="headerlink" href="#computing-with-dirichlet-and-neumann-conditions" title="Permalink to this headline">¶</a></h2>
+<p>Let us perform the necessary calculations to solve</p>
+<div class="math">
+\[-u''(x)=2,\quad x\in \Omega=[0,1],\quad u'(0)=C,\ u(1)=D,\]</div>
+<p>using a global polynomial basis <span class="math">\({\psi}_i\sim x^i\)</span>.
+The requirements on <span class="math">\({\psi}_i\)</span> is that <span class="math">\({\psi}_i(1)=0\)</span>, because <span class="math">\(u\)</span> is
+specified at <span class="math">\(x=1\)</span>, so a proper set of polynomial basis functions can be</p>
+<div class="math">
+\[{\psi}_i(x)=(1-x)^{i+1}, \quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
+<p>A suitable <span class="math">\(B(x)\)</span> function
+to handle the boundary condition <span class="math">\(u(1)=D\)</span> is <span class="math">\(B(x)=Dx\)</span>.
+The variational formulation becomes</p>
+<div class="math">
+\[(u',v') = (2,v) - Cv(0)\quad\forall v\in V{\thinspace .}\]</div>
+<p>The entries in the linear system are then</p>
+<div class="math">
+\[\begin{split}A_{i,j} &amp;= ({\psi}_j,{\psi}_i) = \int_{0}^1 {\psi}_i'(x){\psi}_j'(x){\, \mathrm{d}x}
+= \int_0^1 (i+1)(j+1)(1-x)^{i+j}{\, \mathrm{d}x} = \frac{ij + i + j + 1}{i + j + 1},\\
+b_i &amp;= (2,{\psi}_i) - (D,{\psi}_i') -C{\psi}_i(0)\\
+&amp;= \int_0^1\left( 2{\psi}_i(x) - D{\psi}_i'(x)\right){\, \mathrm{d}x} -C{\psi}_i(0)\\
+&amp;= \int_0^1 \left( 2(1-x)^{i+1} - D(i+1)(1-x)^i\right){\, \mathrm{d}x}  -C{\psi}_i(0)\\
+&amp;= \frac{2 - (2+i)(D+C)}{i+2}
+{\thinspace .}\end{split}\]</div>
+<p>With <span class="math">\(N=1\)</span>
+the global matrix system is</p>
+<div class="math">
+\[\begin{split}\left(\begin{array}{cc}
+1 &amp; 1\\
+1 &amp; 4/3
+\end{array}\right)
+\left(\begin{array}{c}
+c_0\\
+c_1
+\end{array}\right)
+=
+\left(\begin{array}{c}
+-C+D+1\\
+2/3 -C + D
+\end{array}\right)\end{split}\]</div>
+<p>The solution becomes <span class="math">\(c_0=-C+D+2\)</span> and <span class="math">\(c_1=-1\)</span>, resulting in</p>
+<div class="math">
+\[u(x) = 1 -x^2 + D + C(x-1),\]</div>
+<p>The exact solution is found by.
+integrating twice and applying the boundary conditions, either
+by hand or using <tt class="docutils literal"><span class="pre">sympy</span></tt> as shown in the section <a class="reference internal" href="._main_fem012.html#fem-deq-1d-models-simple"><em>Simple model problems</em></a>.
+It appears that the numerical solution coincides with the exact one.
+This result is to be expected because if <span class="math">\(({u_{\small\mbox{e}}} - B)\in V\)</span>, <span class="math">\(u = {u_{\small\mbox{e}}}\)</span>,
+as proved next.</p>
+</div>
+<div class="section" id="when-the-numerical-method-is-exact">
+<h2>When the numerical method is exact<a class="headerlink" href="#when-the-numerical-method-is-exact" title="Permalink to this headline">¶</a></h2>
+<p>We have some variational formulation: find <span class="math">\((u-B)\in V\)</span> such that
+<span class="math">\(a(u,v)=L(u)\ \forall V\)</span>. The exact solution also fulfills
+<span class="math">\(a({u_{\small\mbox{e}}},v)=L(v)\)</span>, but normally <span class="math">\(({u_{\small\mbox{e}}} -B)\)</span> lies in a much larger
+(infinite-dimensional) space. Suppose, nevertheless, that
+<span class="math">\({u_{\small\mbox{e}}} = B + E\)</span>, where <span class="math">\(E\in V\)</span>. That is, apart from Dirichlet conditions,
+<span class="math">\({u_{\small\mbox{e}}}\)</span> lines in our finite-dimensional space <span class="math">\(V\)</span> we use to compute <span class="math">\(u\)</span>.
+Writing also <span class="math">\(u\)</span> on the same form <span class="math">\(u=B+F\)</span>, we have</p>
+<div class="math">
+\[\begin{split}a(B+E,v) &amp;= L(v)\quad\forall v\in V,\\
+a(B+F,v) &amp;= L(v)\quad\forall v\in V{\thinspace .}\end{split}\]</div>
+<p>Subtracting the equations show that <span class="math">\(a(E-F,v)=0\)</span> for all <span class="math">\(v\in V\)</span>, and
+therefore <span class="math">\(E-F=0\)</span> and <span class="math">\(u={u_{\small\mbox{e}}}\)</span>.</p>
+<p>The case treated in the section <a class="reference internal" href="#fem-deq-1d-varform-ex-dn-case"><em>Computing with Dirichlet and Neumann conditions</em></a>
+is of the type where <span class="math">\({u_{\small\mbox{e}}} - B\)</span> is a quadratic function that is 0
+at <span class="math">\(x=1\)</span>, and therefore <span class="math">\(({u_{\small\mbox{e}}} -B)\in V\)</span>, and the method
+finds the exact solution.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Examples on variational formulations</a><ul>
+<li><a class="reference internal" href="#variable-coefficient">Variable coefficient</a></li>
+<li><a class="reference internal" href="#first-order-derivative-in-the-equation-and-boundary-condition">First-order derivative in the equation and boundary condition</a></li>
+<li><a class="reference internal" href="#nonlinear-coefficient">Nonlinear coefficient</a></li>
+<li><a class="reference internal" href="#computing-with-dirichlet-and-neumann-conditions">Computing with Dirichlet and Neumann conditions</a></li>
+<li><a class="reference internal" href="#when-the-numerical-method-is-exact">When the numerical method is exact</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="._main_fem012.html"
+                        title="previous chapter">Basic principles for approximating differential equations</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_fem014.html"
+                        title="next chapter">Computing with finite elements</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_fem013.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_fem014.html" title="Computing with finite elements"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="._main_fem012.html" title="Basic principles for approximating differential equations"
+             >previous</a> |</li>
+        <li><a href="index.html">Introduction to finite element methods</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

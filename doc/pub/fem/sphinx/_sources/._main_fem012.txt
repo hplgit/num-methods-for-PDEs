@@ -1,0 +1,1221 @@
+.. !split
+
+.. 2DO
+
+.. Must illustrate how to make weak form of continuous problem and
+
+.. discretize. Do that in time-dependent problems too.
+
+.. Maybe <,> \langle, \rangle as inner product
+
+.. Must say something about error estimates!
+
+.. no (au')', have (\alpha u')' - it solves all the problems with a and a(.,.)
+
+.. _fem:deq:1D:principles:
+
+Basic principles for approximating differential equations
+=========================================================
+
+The finite element method is a very flexible approach for solving partial
+differential equations. Its two most attractive features are the ease
+of handling domains of complex shape in two and three dimensions and
+the ease of constructing higher-order discretization methods. The
+finite element method is usually applied for discretization in space,
+and therefore spatial problems will be our focus in the coming sections.
+Extensions to time-dependent problems may, for instance, use finite difference
+approximations in time.
+
+Before studying how finite element methods are used to tackle differential
+equation, we first look at how global basis functions and the
+least squares, Galerkin, and collocation principles can be used to solve
+differential equations.
+
+.. _fem:deq:1D:models:
+
+Differential equation models
+----------------------------
+
+Let us consider an abstract differential equation for a function :math:`u(x)` of
+one variable, written as
+
+.. math::
+        
+        \mathcal{L}(u) = 0,\quad x\in\Omega{\thinspace .}  
+
+Here are a few examples on possible choices of :math:`\mathcal{L}(u)`, of
+increasing complexity:
+
+.. _Eq:fem:deq:1D:L1:
+
+.. math::
+   :label: fem:deq:1D:L1
+        
+        \mathcal{L}(u) = \frac{d^2u}{dx^2} - f(x),
+        
+        
+
+.. _Eq:fem:deq:1D:L2:
+
+.. math::
+   :label: fem:deq:1D:L2
+          
+        \mathcal{L}(u) = \frac{d}{dx}\left({\alpha}(x)\frac{du}{dx}\right) + f(x),
+        
+        
+
+.. _Eq:fem:deq:1D:L3:
+
+.. math::
+   :label: fem:deq:1D:L3
+          
+        \mathcal{L}(u) = \frac{d}{dx}\left({\alpha}(u)\frac{du}{dx}\right) - au + f(x),
+        
+        
+
+.. _Eq:fem:deq:1D:L4:
+
+.. math::
+   :label: fem:deq:1D:L4
+          
+        \mathcal{L}(u) = \frac{d}{dx}\left({\alpha}(u)\frac{du}{dx}\right) + f(u,x)
+        
+        {\thinspace .}
+        
+
+Both :math:`{\alpha}(x)` and :math:`f(x)` are considered as specified functions,
+while :math:`a` is a prescribed parameter.  Differential equations
+corresponding to :eq:`fem:deq:1D:L1`-:eq:`fem:deq:1D:L2` arise in
+diffusion phenomena, such as steady transport of heat in solids and
+flow of viscous fluids between flat plates. The form
+:eq:`fem:deq:1D:L3` arises when transient diffusion or wave
+phenomenon are discretized in time by finite differences. The equation
+:eq:`fem:deq:1D:L4` appear in chemical models when diffusion of a
+substance is combined with chemical reactions. Also in biology,
+:eq:`fem:deq:1D:L4` plays an important role, both for spreading of
+species and in models involving generation and
+propagation of electrical signals.
+
+Let :math:`\Omega =[0,L]` be the domain in one space dimension.
+In addition to the differential equation, :math:`u` must fulfill
+boundary conditions at the boundaries of the domain, :math:`x=0` and :math:`x=L`.
+When :math:`\mathcal{L}` contains up to second-order derivatives, as in the
+examples above, :math:`m=1`, we need one boundary condition at each of
+the (two) boundary points, here abstractly specified as
+
+.. math::
+        
+        \mathcal{B}_0(u)=0,\ x=0,\quad \mathcal{B}_1(u)=0,\ x=L
+        
+
+There are three common choices of boundary conditions:
+
+.. math::
+        
+        \mathcal{B}_i(u) = u - g,\quad \hbox{Dirichlet condition}
+        
+
+.. math::
+          
+        \mathcal{B}_i(u) = -{\alpha} \frac{du}{dx} - g,\quad \hbox{Neumann condition}
+        
+
+.. math::
+          
+        \mathcal{B}_i(u) = -{\alpha} \frac{du}{dx} - h(u-g),\quad \hbox{Robin condition}
+        
+
+Here, :math:`g` and :math:`a` are specified quantities.
+
+From now on we shall use :math:`{u_{\small\mbox{e}}}(x)` as symbol for the *exact* solution,
+fulfilling
+
+.. math::
+        
+        \mathcal{L}({u_{\small\mbox{e}}})=0,\quad x\in\Omega,
+        
+
+while :math:`u(x)` is our notation for an *approximate* solution of the differential
+equation.
+
+
+.. admonition:: Remark on notation
+
+   In the literature about the finite element method,
+   is common to use :math:`u` as the exact solution and :math:`u_h` as the
+   approximate solution, where :math:`h` is a discretization parameter. However,
+   the vast part of the present text is about the approximate solutions,
+   and having a subscript :math:`h` attached all the time
+   is cumbersome. Of equal importance is the close correspondence between
+   implementation and mathematics that we strive to achieve in this text:
+   when it is natural to use ``u`` and not ``u_h`` in
+   code, we let the mathematical notation be dictated by the code's
+   preferred notation. After all, it is the powerful computer implementations
+   of the finite element method that justifies studying the mathematical
+   formulation and aspects of the method.
+
+
+
+
+.. _fem:deq:1D:models:simple:
+
+Simple model problems
+---------------------
+
+A common model problem used much in the forthcoming examples is
+
+.. _Eq:fem:deq:1D:model1:
+
+.. math::
+   :label: fem:deq:1D:model1
+        
+        -u''(x) = f(x),\quad x\in\Omega=[0,L],\quad u(0)=0,\ u(L)=D
+        {\thinspace .}
+        
+        
+
+A closely related problem with a different boundary condition at
+:math:`x=0` reads
+
+.. _Eq:fem:deq:1D:model2:
+
+.. math::
+   :label: fem:deq:1D:model2
+        
+        -u''(x) = f(x),\quad x\in\Omega=[0,L],\quad u'(0)=C,\ u(L)=D{\thinspace .}
+        
+        
+
+A third variant has a variable coefficient,
+
+.. _Eq:fem:deq:1D:model3:
+
+.. math::
+   :label: fem:deq:1D:model3
+        
+        -({\alpha}(x)u'(x))' = f(x),\quad x\in\Omega=[0,L],\quad u'(0)=C,\ u(L)=D{\thinspace .}
+        
+        
+
+We can easily solve these using ``sympy``. For :eq:`fem:deq:1D:model1`
+we can write the function
+
+.. code-block:: python
+
+        def model1(f, L, D):
+            """Solve -u'' = f(x), u(0)=0, u(L)=D."""
+            u_x = - sp.integrate(f, (x, 0, x)) + c_0
+            u = sp.integrate(u_x, (x, 0, x)) + c_1
+            r = sp.solve([u.subs(x, 0)-0, u.subs(x,L)-D], [c_0, c_1])
+            u = u.subs(c_0, r[c_0]).subs(c_1, r[c_1])
+            u = sp.simplify(sp.expand(u))
+            return u
+
+Calling ``model1(2, L, D)`` results in the solution
+
+.. _Eq:fem:deq:1D:model1:sol:
+
+.. math::
+   :label: fem:deq:1D:model1:sol
+        
+        u(x) = \frac{1}{L}x \left(D + L^{2} - L x\right)
+        
+        
+
+Model :eq:`fem:deq:1D:model2` can be solved by
+
+.. code-block:: python
+
+        def model2(f, L, C, D):
+            """Solve -u'' = f(x), u'(0)=C, u(L)=D."""
+            u_x = - sp.integrate(f, (x, 0, x)) + c_0
+            u = sp.integrate(u_x, (x, 0, x)) + c_1
+            r = sp.solve([sp.diff(u,x).subs(x, 0)-C, u.subs(x,L)-D], [c_0, c_1])
+            u = u.subs(c_0, r[c_0]).subs(c_1, r[c_1])
+            u = sp.simplify(sp.expand(u))
+            return u
+
+to yield
+
+.. _Eq:fem:deq:1D:model2:sol:
+
+.. math::
+   :label: fem:deq:1D:model2:sol
+        
+        u(x) = - x^{2} + C x - C L + D + L^{2},
+        
+        
+
+if :math:`f(x)=2`. Model :eq:`fem:deq:1D:model3` requires a bit more involved
+code,
+
+.. code-block:: python
+
+        def model3(f, a, L, C, D):
+            """Solve -(a*u')' = f(x), u(0)=C, u(L)=D."""
+            au_x = - sp.integrate(f, (x, 0, x)) + c_0
+            u = sp.integrate(au_x/a, (x, 0, x)) + c_1
+            r = sp.solve([u.subs(x, 0)-C, u.subs(x,L)-D], [c_0, c_1])
+            u = u.subs(c_0, r[c_0]).subs(c_1, r[c_1])
+            u = sp.simplify(sp.expand(u))
+            return u
+
+With :math:`f(x)=0` and :math:`{\alpha}(x)=1+x^2` we get
+
+.. math::
+         u(x) =
+        \frac{C \operatorname{atan}{\left (L \right )} - C \operatorname{atan}{\left (x \right )} + D \operatorname{atan}{\left (x \right )}}{\operatorname{atan}{\left (L \right )}}
+        
+
+.. _fem:deq:1D:residual:min:
+
+Forming the residual
+--------------------
+
+The fundamental idea is to seek an approximate solution
+:math:`u` in some space :math:`V`,
+
+.. math::
+        
+        V = \hbox{span}\{ {\psi}_0(x),\ldots,{\psi}_N(x)\},
+        
+
+which means that :math:`u` can always be expressed as a linear combination
+of the basis functions :math:`\left\{ {{\varphi}}_i \right\}_{i\in{\mathcal{I}_s}}`, with :math:`{\mathcal{I}_s}` as
+the index set :math:`\{0,\ldots,N\}`:
+
+.. math::
+         u(x) = \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x){\thinspace .}
+
+The coefficients :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` are unknowns to be computed.
+
+(Later, in the section :ref:`fem:deq:1D:essBC`, we will see that if we specify boundary values of :math:`u` different
+from zero, we must look for an approximate solution
+:math:`u(x) = B(x) + \sum_{j} c_j{\psi}_j(x)`,
+where :math:`\sum_{j}c_j{\psi}_j\in V` and :math:`B(x)` is some function for
+incorporating the right boundary values. Because of :math:`B(x)`, :math:`u` will not
+necessarily lie in :math:`V`. This modification does not imply any difficulties.)
+
+We need principles for deriving :math:`N+1` equations to determine the
+:math:`N+1` unknowns :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}`.
+When approximating a given function :math:`f` by :math:`u=\sum_jc_j{\varphi}_j`,
+a key idea is to minimize the square norm of the
+approximation error :math:`e=u-f` or (equvalently) demand that :math:`e` is
+orthogonal to :math:`V`. Working with :math:`e` is not so useful here since
+the approximation error in our case is :math:`e={u_{\small\mbox{e}}} - u` and :math:`{u_{\small\mbox{e}}}` is
+unknown. The only general indicator we have on the quality of the approximate
+solution is to what degree :math:`u` fulfills the differential equation.
+Inserting :math:`u=\sum_j c_j {\psi}_j` into :math:`\mathcal{L}(u)` reveals that the
+result is not zero, because :math:`u` is only likely to equal :math:`{u_{\small\mbox{e}}}`.
+The nonzero result,
+
+.. index:: residual
+
+.. math::
+        
+        R = \mathcal{L}(u) = \mathcal{L}(\sum_j c_j {\psi}_j),
+        
+
+is called the *residual* and measures the
+error in fulfilling the governing equation.
+
+Various principles for determining :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` try to minimize
+:math:`R` in some sense. Note that :math:`R` varies with :math:`x` and
+the :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` parameters. We may write this dependence
+explicitly as
+
+.. math::
+        
+        R = R(x; c_0, \ldots, c_N){\thinspace .}  
+
+Below, we present three principles for making :math:`R` small:
+a least squares method, a projection or Galerkin method, and
+a collocation or interpolation method.
+
+The least squares method  (4)
+-----------------------------
+
+The least-squares method aims to find :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` such that
+the square norm of the residual
+
+.. math::
+        
+        ||R|| = (R, R) = \int_{\Omega} R^2 {\, \mathrm{d}x}
+        
+
+is minimized. By introducing
+an inner product of two functions :math:`f` and :math:`g`
+on :math:`\Omega` as
+
+.. math::
+        
+        (f,g) = \int_{\Omega} f(x)g(x) {\, \mathrm{d}x},
+        
+
+the least-squares method can be defined as
+
+.. math::
+        
+        \min_{c_0,\ldots,c_N} E = (R,R){\thinspace .}  
+
+Differentiating with respect to the free parameters :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}`
+gives the :math:`N+1` equations
+
+.. _Eq:fem:deq:1D:LS:eq1:
+
+.. math::
+   :label: fem:deq:1D:LS:eq1
+        
+        \int_{\Omega} 2R\frac{\partial R}{\partial c_i} {\, \mathrm{d}x} = 0\quad
+        \Leftrightarrow\quad (R,\frac{\partial R}{\partial c_i})=0,\quad
+        i\in{\mathcal{I}_s}{\thinspace .}
+        
+        
+
+The Galerkin method  (1)
+------------------------
+
+The least-squares
+principle is equivalent to demanding the error to be orthogonal to
+the space :math:`V` when approximating a function :math:`f` by :math:`u\in V`.
+With a differential equation
+we do not know the true error so we must instead require the residual :math:`R`
+to be orthogonal to :math:`V`. This idea implies
+seeking :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` such that
+
+.. _Eq:fem:deq:1D:Galerkin0:
+
+.. math::
+   :label: fem:deq:1D:Galerkin0
+        
+        (R,v)=0,\quad \forall v\in V{\thinspace .}
+        
+        
+
+This is the Galerkin method for differential equations.
+
+.. As shown in :ref:`(3.11) <Eq:fem:approx:vec:Np1dim:Galerkin>` and :ref:`(3.12) <Eq:fem:approx:vec:Np1dim:Galerkin0>`,
+
+This statement is equivalent to :math:`R` being orthogonal to the :math:`N+1`
+basis functions only:
+
+.. _Eq:fem:deq:1D:Galerkin:
+
+.. math::
+   :label: fem:deq:1D:Galerkin
+        
+        (R,{\psi}_i)=0,\quad i\in{\mathcal{I}_s},
+        
+        
+
+resulting in :math:`N+1` equations for determining :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}`.
+
+The Method of Weighted Residuals
+--------------------------------
+
+A generalization of the Galerkin method is to demand that :math:`R`
+is orthogonal to some space :math:`W`, but not necessarily the same
+space as :math:`V` where we seek the unknown function.
+This generalization is naturally called the *method of weighted residuals*:
+
+.. _Eq:fem:deq:1D:WRM0:
+
+.. math::
+   :label: fem:deq:1D:WRM0
+        
+        (R,v)=0,\quad \forall v\in W{\thinspace .}
+        
+        
+
+If :math:`\{w_0,\ldots,w_N\}` is a basis for :math:`W`, we can equivalently
+express the method of weighted residuals as
+
+.. _Eq:fem:deq:1D:WRM:
+
+.. math::
+   :label: fem:deq:1D:WRM
+        
+        (R,w_i)=0,\quad i\in{\mathcal{I}_s}{\thinspace .}
+        
+        
+
+The result is :math:`N+1` equations for :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}`.
+
+The least-squares method can also be viewed as a weighted residual
+method with :math:`w_i = \partial R/\partial c_i`.
+
+.. index:: variational formulation
+
+
+.. admonition:: Variational formulation of the continuous problem
+
+   Formulations like :eq:`fem:deq:1D:WRM0` (or
+   :eq:`fem:deq:1D:WRM`) and :eq:`fem:deq:1D:Galerkin0`
+   (or :eq:`fem:deq:1D:Galerkin`) are known as
+   *variational formulations*.
+   These equations are in this text primarily used for a numerical approximation
+   :math:`u\in V`, where :math:`V` is a *finite-dimensional* space with dimension
+   :math:`N+1`. However, we may also let :math:`V` be an *infinite-dimensional* space
+   containing the exact solution :math:`{u_{\small\mbox{e}}}(x)` such that also :math:`{u_{\small\mbox{e}}}`
+   fulfills the same variational formulation. The variational formulation is in
+   that case a mathematical way of stating the problem and acts as an
+   alternative to the usual formulation of a differential equation with
+   initial and/or boundary conditions.
+
+
+
+
+Test and Trial Functions
+------------------------
+
+.. index:: trial function
+
+.. index:: test function
+
+.. index:: trial space
+
+.. index:: test space
+
+In the context of the Galerkin method and the method of weighted residuals it is
+common to use the name *trial function* for the approximate :math:`u =
+\sum_j c_j {\psi}_j`.
+
+.. Sometimes the functions that spans the space where :math:`u` lies are also called
+
+.. trial functions.
+
+The space containing the trial function is known as the *trial space*.
+The function :math:`v` entering the orthogonality requirement in
+the Galerkin method and the method of weighted residuals is called
+*test function*, and so are the :math:`{\psi}_i` or :math:`w_i` functions that are
+used as weights in the inner products with the residual.  The space
+where the test functions comes from is naturally called the
+*test space*.
+
+We see that in the method of weighted residuals the test and trial spaces
+are different and so are the test and trial functions.
+In the Galerkin method the test and trial spaces are the same (so far).
+
+.. Later in the section :ref:`fem:deq:1D:essBC` we shall see that boundary
+
+.. conditions may lead to a difference between the test and trial spaces
+
+.. in the Galerkin method.
+
+
+.. admonition:: Remark
+
+   It may be subject to debate whether
+   it is only the form of :eq:`fem:deq:1D:WRM0` or :eq:`fem:deq:1D:Galerkin0`
+   after integration by parts, as explained in the section :ref:`fem:deq:1D:varform`,
+   that qualifies for the term variational formulation. The result after
+   integration by parts is what is obtained after taking the *first
+   variation* of an optimization problem, see the section :ref:`fem:deq:1D:optimization`. However, here we use variational formulation as a common term for
+   formulations which, in contrast to the differential equation :math:`R=0`,
+   instead demand that an average of :math:`R` is zero: :math:`(R,v)=0` for all :math:`v` in some space.
+
+
+
+
+The collocation method  (1)
+---------------------------
+
+The idea of the collocation method is to demand that :math:`R` vanishes
+at :math:`N+1` selected points :math:`x_{0},\ldots,x_{N}` in :math:`\Omega`:
+
+.. _Eq:fem:deq:1D:collocation:
+
+.. math::
+   :label: fem:deq:1D:collocation
+        
+        R(x_{i}; c_0,\ldots,c_N)=0,\quad i\in{\mathcal{I}_s}{\thinspace .}
+        
+        
+
+The collocation method can also be viewed as a method of weighted residuals
+with Dirac delta functions as weighting functions.
+Let :math:`\delta (x-x_{i})` be the Dirac delta function centered around
+:math:`x=x_{i}` with the properties that :math:`\delta (x-x_{i})=0` for :math:`x\neq x_{i}`
+and
+
+.. _Eq:fem:deq:1D:Dirac:
+
+.. math::
+   :label: fem:deq:1D:Dirac
+        
+        \int_{\Omega} f(x)\delta (x-x_{i}) {\, \mathrm{d}x} =
+        f(x_{i}),\quad x_{i}\in\Omega{\thinspace .}
+        
+        
+
+Intuitively, we may think of :math:`\delta (x-x_{i})` as a very peak-shaped
+function around :math:`x=x_{i}` with integral 1, roughly visualized
+in Figure :ref:`fem:deq:1D:fig:Dirac`.
+Because of :eq:`fem:deq:1D:Dirac`, we can let :math:`w_i=\delta(x-x_{i})`
+be weighting functions in the method of weighted residuals,
+and :eq:`fem:deq:1D:WRM` becomes equivalent to
+:eq:`fem:deq:1D:collocation`.
+
+.. _fem:deq:1D:fig:Dirac:
+
+.. figure:: delta_func_weight.png
+   :width: 400
+
+   *Approximation of delta functions by narrow Gaussian functions*
+
+The subdomain collocation method
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The idea of this approach is to demand the integral of :math:`R` to vanish
+over :math:`N+1` subdomains :math:`\Omega_i` of :math:`\Omega`:
+
+.. math::
+        
+        \int_{\Omega_i} R\, {\, \mathrm{d}x}=0,\quad i\in{\mathcal{I}_s}{\thinspace .}  
+
+This statement can also be expressed as a weighted residual method
+
+.. math::
+        
+        \int_{\Omega} Rw_i\, {\, \mathrm{d}x}=0,\quad i\in{\mathcal{I}_s}, 
+
+where :math:`w_i=1` for :math:`x\in\Omega_i` and :math:`w_i=0` otherwise.
+
+.. _fem:deq:1D:ex:sines:
+
+Examples on using the principles
+--------------------------------
+
+Let us now apply global basis functions to illustrate the principles
+for minimizing :math:`R`.
+
+The model problem
+~~~~~~~~~~~~~~~~~
+
+We consider the differential equation problem
+
+.. _Eq:fem:deq:1D:model1b:
+
+.. math::
+   :label: fem:deq:1D:model1b
+        
+        -u''(x) = f(x),\quad x\in\Omega=[0,L],\quad u(0)=0,\ u(L)=0
+        {\thinspace .}
+        
+        
+
+Basis functions
+~~~~~~~~~~~~~~~
+
+Our choice of basis functions :math:`{\psi}_i`
+for :math:`V` is
+
+.. _Eq:fem:deq:1D:ex:sines:psi:
+
+.. math::
+   :label: fem:deq:1D:ex:sines:psi
+        
+        {\psi}_i(x) = {\sin\left((i+1)\pi\frac{x}{L}\right)},\quad i\in{\mathcal{I}_s}{\thinspace .}
+        
+        
+
+An important property of these functions is that :math:`{\psi}_i(0)={\psi}_i(L)=0`,
+which means that the boundary conditions on :math:`u` are fulfilled:
+
+.. math::
+         u(0) = \sum_jc_j{\psi}_j(0) = 0,\quad u(L) = \sum_jc_j{\psi}_j(L) =0
+        {\thinspace .} 
+
+Another nice property is that the chosen sine functions
+are orthogonal on :math:`\Omega`:
+
+.. math::
+        
+        \int\limits_0^L {\sin\left((i+1)\pi\frac{x}{L}\right)}{\sin\left((j+1)\pi\frac{x}{L}\right)}\, {\, \mathrm{d}x} = \left\lbrace
+        \begin{array}{ll} \frac{1}{2} L & i=j  \\ 0, & i\neq j
+        \end{array}\right.
+        
+
+provided :math:`i` and :math:`j` are integers.
+
+.. Sympy can do this!
+
+.. k, m, n = symbols('k m n', integer=True)
+
+.. >>> integrate(sin(k*x)*sin(m*x), (x, 0, 2*pi))
+
+.. 0
+
+.. >>>integrate(sin(k*x)*sin(k*x), (x, 0, 2*pi))
+
+.. pi
+
+The residual
+~~~~~~~~~~~~
+
+We can readily calculate the following explicit expression for the
+residual:
+
+.. math::
+        
+        R(x;c_0, \ldots, c_N) = u''(x) + f(x),\nonumber
+        
+
+.. math::
+          
+        = \frac{d^2}{dx^2}\left(\sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x)\right)
+        + f(x),\nonumber
+        
+
+.. _Eq:fem:deq:1D:ex:sines:res:
+
+.. math::
+   :label: fem:deq:1D:ex:sines:res
+          
+        = \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j''(x) + f(x){\thinspace .}
+        
+        
+
+The least squares method  (5)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The equations :eq:`fem:deq:1D:LS:eq1`
+in the least squares method require an expression for
+:math:`\partial R/\partial c_i`. We have
+
+.. math::
+        
+        \frac{\partial R}{\partial c_i} =
+        \frac{\partial}{\partial c_i}
+        \left(\sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j''(x) + f(x)\right)
+        = \sum_{j\in{\mathcal{I}_s}} \frac{\partial c_j}{\partial c_i}{\psi}_j''(x)
+        = {\psi}_i''(x){\thinspace .}  
+
+The governing equations for :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` are then
+
+.. math::
+        
+        (\sum_j c_j {\psi}_j'' + f,{\psi}_i'')=0,\quad i\in{\mathcal{I}_s},
+        
+
+which can be rearranged as
+
+.. math::
+        
+        \sum_{j\in{\mathcal{I}_s}}({\psi}_i'',{\psi}_j'')c_j = -(f,{\psi}_i''),\quad i\in{\mathcal{I}_s}{\thinspace .}
+        
+
+This is nothing but a linear system
+
+.. math::
+         \sum_{j\in{\mathcal{I}_s}}A_{i,j}c_j = b_i,\quad i\in{\mathcal{I}_s},
+        
+
+with
+
+.. math::
+        
+        A_{i,j} = ({\psi}_i'',{\psi}_j'')\nonumber
+        
+
+.. math::
+          
+         = \pi^4(i+1)^2(j+1)^2L^{-4}\int_0^L {\sin\left((i+1)\pi\frac{x}{L}\right)}{\sin\left((j+1)\pi\frac{x}{L}\right)}\, {\, \mathrm{d}x}\nonumber
+        
+
+.. math::
+          
+        = \left\lbrace
+        \begin{array}{ll} {1\over2}L^{-3}\pi^4(i+1)^4  i=j  
+        
+
+.. math::
+          0,  i\neq j
+        \end{array}\right.
+        
+        
+
+.. math::
+          
+        b_i = -(f,{\psi}_i'') = (i+1)^2\pi^2L^{-2}\int_0^Lf(x){\sin\left((i+1)\pi\frac{x}{L}\right)}\, {\, \mathrm{d}x}
+        
+
+Since the coefficient matrix is diagonal we can easily solve for
+
+.. _Eq:fem:deq:1D:ex:sines:solution:
+
+.. math::
+   :label: fem:deq:1D:ex:sines:solution
+        
+        c_i = \frac{2L}{\pi^2(i+1)^2}\int_0^Lf(x){\sin\left((i+1)\pi\frac{x}{L}\right)}\, {\, \mathrm{d}x}{\thinspace .}
+        
+        
+
+With the special choice of :math:`f(x)=2` can be calculated in ``sympy`` by
+
+.. code-block:: python
+
+        from sympy import *
+        import sys
+        
+        i, j = symbols('i j', integer=True)
+        x, L = symbols('x L')
+        f = 2
+        a = 2*L/(pi**2*(i+1)**2)
+        c_i = a*integrate(f*sin((i+1)*pi*x/L), (x, 0, L))
+        c_i = simplify(c_i)
+        print c_i
+
+The answer becomes
+
+.. math::
+        
+        c_i = 4 \frac{L^{2} \left(\left(-1\right)^{i} + 1\right)}{\pi^{3}
+        \left(i^{3} + 3 i^{2} + 3 i + 1\right)}
+        
+
+Now, :math:`1+(-1)^i=0` for :math:`i` odd, so only the coefficients with even index
+are nonzero. Introducing :math:`i=2k` for :math:`k=0,\ldots,N/2` to count the
+relevant indices (for :math:`N` odd, :math:`k` goes to :math:`(N-1)/2`), we get the solution
+
+.. math::
+        
+        u(x) = \sum_{k=0}^{N/2} \frac{8L^2}{\pi^3(2k+1)^3}{\sin\left((2k+1)\pi\frac{x}{L}\right)}{\thinspace .}  
+
+The coefficients decay very fast: :math:`c_2 = c_0/27`, :math:`c_4=c_0/125`.
+The solution will therefore be dominated by the first term,
+
+.. math::
+         u(x) \approx \frac{8L^2}{\pi^3}\sin\left(\pi\frac{x}{L}\right){\thinspace .}  
+
+The Galerkin method  (2)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Galerkin principle :eq:`fem:deq:1D:Galerkin0`
+applied to :eq:`fem:deq:1D:model1b` consists of inserting
+our special residual :eq:`fem:deq:1D:ex:sines:res` in
+:eq:`fem:deq:1D:Galerkin0`
+
+.. math::
+        
+        (u''+f,v)=0,\quad \forall v\in V,
+        
+
+or
+
+.. math::
+        
+        (u'',v) = -(f,v),\quad\forall v\in V{\thinspace .}  
+
+This is the variational formulation, based on the Galerkin principle,
+of our differential equation.
+The :math:`\forall v\in V` requirement is equivalent to
+demanding the equation :math:`(u'',v) = -(f,v)` to be fulfilled for all
+basis functions :math:`v={\psi}_i`, :math:`i\in{\mathcal{I}_s}`, see
+:eq:`fem:deq:1D:Galerkin0` and :eq:`fem:deq:1D:Galerkin`.
+We therefore have
+
+.. math::
+        
+        (\sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j'', {\psi}_i)=-(f,{\psi}_i),\quad i\in{\mathcal{I}_s}{\thinspace .}  
+
+This equation can be rearranged to a form that explicitly shows
+that we get a linear system for the unknowns :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}`:
+
+.. math::
+        
+        \sum_{j\in{\mathcal{I}_s}} ({\psi}_i,{\psi}_j'')c_j = (f, {\psi}_i),\quad i\in{\mathcal{I}_s}{\thinspace .}  
+
+For the particular choice of the basis functions :eq:`fem:deq:1D:ex:sines:psi`
+we get in fact the same linear system
+as in the least squares method
+because :math:`{\psi}''= -(i+1)^2\pi^2L^{-2}{\psi}`.
+
+The collocation method  (2)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For the collocation method :eq:`fem:deq:1D:collocation` we need to
+decide upon a set of :math:`N+1` collocation points in :math:`\Omega`. A simple
+choice is to use uniformly spaced points: :math:`x_{i}=i\Delta x`, where
+:math:`\Delta x = L/N` in our case (:math:`N\geq 1`). However, these points
+lead to at least two rows in the matrix consisting of zeros
+(since :math:`{\psi}_i(x_{0})=0` and :math:`{\psi}_i(x_{N})=0`), thereby making the matrix
+singular and non-invertible. This forces us to choose some other
+collocation points, e.g., random points or points uniformly distributed
+in the interior of :math:`\Omega`.
+Demanding the residual to vanish
+at these points leads, in our model problem :eq:`fem:deq:1D:model1b`, to
+the equations
+
+.. math::
+        
+        -\sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j''(x_{i}) = f(x_{i}),\quad i\in{\mathcal{I}_s},
+        
+
+which is seen to be a linear system with entries
+
+.. math::
+         A_{i,j}=-{\psi}_j''(x_{i})=
+        (j+1)^2\pi^2L^{-2}\sin\left((j+1)\pi \frac{x_i}{L}\right),
+
+in the coefficient matrix and entries
+:math:`b_i=2` for the right-hand side (when :math:`f(x)=2`).
+
+The special case of :math:`N=0`
+can sometimes be of interest. A natural choice is then the midpoint
+:math:`x_{0}=L/2` of the domain, resulting in
+:math:`A_{0,0} = -{\psi}_0''(x_{0}) = \pi^2L^{-2}`, :math:`f(x_0)=2`,
+and hence :math:`c_0=2L^2/\pi^2`.
+
+Comparison
+~~~~~~~~~~
+
+In the present model problem, with :math:`f(x)=2`, the exact solution is
+:math:`u(x)=x(L-x)`, while for :math:`N=0` the Galerkin and least squares method
+result in :math:`u(x)=8L^2\pi^{-3}\sin (\pi x/L)` and the
+collocation method leads to :math:`u(x)=2L^2\pi^{-2}\sin (\pi x/L)`.
+Since all methods fulfill the boundary conditions :math:`u(0)=u(L)=0`, we
+expect the largest discrepancy to occur at the midpoint of the domain:
+:math:`x=L/2`. The error at the midpoint becomes :math:`-0.008L^2` for the
+Galerkin and least squares method, and :math:`0.047L^2` for the collocation
+method.
+
+.. _fem:deq:1D:varform:
+
+Integration by parts
+--------------------
+
+.. index:: integration by parts
+
+A problem arises if we want to apply popular finite element functions
+to solve our model problem :eq:`fem:deq:1D:model1b`
+by the standard least squares, Galerkin, or collocation methods: the piecewise
+polynomials :math:`{\psi}_i(x)` have discontinuous derivatives at the
+cell boundaries which makes it problematic to compute
+the second-order derivative.  This fact actually makes the least squares and
+collocation methods less suitable for finite element approximation of
+the unknown function. (By rewriting the equation :math:`-u''=f` as a
+system of two first-order equations, :math:`u'=v` and :math:`-v'=f`, the
+least squares method can be applied. Also, differentiating discontinuous
+functions can actually be handled by distribution theory in
+mathematics.)  The Galerkin method and the method of
+weighted residuals can, however, be applied together with finite
+element basis functions if we use *integration by parts*
+as a means for transforming a second-order derivative to a first-order
+one.
+
+Consider the model problem :eq:`fem:deq:1D:model1b` and its
+Galerkin formulation
+
+.. math::
+         -(u'',v) = (f,v)\quad\forall v\in V{\thinspace .}  
+
+Using integration by parts in the Galerkin method,
+we can move a derivative of :math:`u` onto :math:`v`:
+
+.. math::
+        
+        \int_0^L u''(x)v(x) {\, \mathrm{d}x} = - \int_0^Lu'(x)v'(x){\, \mathrm{d}x}
+        + [vu']_0^L\nonumber
+        
+
+.. _Eq:fem:deq:1D:intbyparts:
+
+.. math::
+   :label: fem:deq:1D:intbyparts
+          
+        = - \int_0^Lu'(x)v'(x) {\, \mathrm{d}x}
+        + u'(L)v(L) - u'(0)v(0){\thinspace .}
+        
+        
+
+Usually, one integrates the problem at the stage where the :math:`u` and :math:`v`
+functions enter the formulation.
+Alternatively, but less common, we can integrate by parts in the expressions for
+the matrix entries:
+
+.. math::
+        
+        \int_0^L{\psi}_i(x){\psi}_j''(x) {\, \mathrm{d}x} =
+        - \int_0^L{\psi}_i'(x){\psi}_j'(x) dx
+        + [{\psi}_i{\psi}_j']_0^L\nonumber
+        
+
+.. _Eq:fem:deq:1D:intbyparts0:
+
+.. math::
+   :label: fem:deq:1D:intbyparts0
+          
+        = - \int_0^L{\psi}_i'(x){\psi}_j'(x) {\, \mathrm{d}x}
+        + {\psi}_i(L){\psi}_j'(L) - {\psi}_i(0){\psi}_j'(0){\thinspace .}
+        
+        
+
+Integration by parts serves to reduce the order of the derivatives and
+to make the coefficient matrix symmetric since
+:math:`({\psi}_i',{\psi}_j') = ({\psi}_i',{\psi}_j')`.
+The symmetry property depends
+on the type of terms that enter the differential equation.
+As will be seen later in the section :ref:`fem:deq:1D:BC:nat`,
+integration by parts also provides a method for implementing
+boundary conditions involving :math:`u'`.
+
+With the choice :eq:`fem:deq:1D:ex:sines:psi` of basis functions we see
+that the "boundary terms" :math:`{\psi}_i(L){\psi}_j'(L)` and :math:`{\psi}_i(0){\psi}_j'(0)`
+vanish since :math:`{\psi}_i(0)={\psi}_i(L)=0`.
+
+.. A boundary term associated with
+
+.. a location at the boundary where we have Dirichlet conditions will always
+
+.. vanish because :math:`{\psi}_i=0` at such locations.
+
+.. index:: weak form
+
+.. index:: strong form
+
+Weak form
+~~~~~~~~~
+
+Since the variational formulation after integration by parts make
+weaker demands on the differentiability of :math:`u` and the basis
+functions :math:`{\psi}_i`,
+the resulting integral formulation is referred to as a *weak form* of
+the differential equation problem. The original variational formulation
+with second-order derivatives, or the differential equation problem
+with second-order derivative, is then the *strong form*, with
+stronger requirements on the differentiability of the functions.
+
+For differential equations with second-order derivatives, expressed as
+variational formulations and solved by finite element methods, we will
+always perform integration by parts to arrive at expressions involving
+only first-order derivatives.
+
+.. _fem:deq:1D:essBC:Bfunc:
+
+Boundary function  (1)
+----------------------
+
+So far we have assumed zero Dirichlet boundary conditions, typically
+:math:`u(0)=u(L)=0`, and we have demanded that :math:`{\psi}_i(0)={\psi}_i(L)=0`
+for :math:`i\in{\mathcal{I}_s}`. What about a boundary condition like :math:`u(L)=D\neq0`?
+This condition immediately faces a problem:
+:math:`u = \sum_j c_j{\varphi}_j(L) = 0` since all :math:`{\varphi}_i(L)=0`.
+
+A boundary condition of the form :math:`u(L)=D` can be implemented by
+demanding that all :math:`{\psi}_i(L)=0`, but adding a
+*boundary function* :math:`B(x)` with the right boundary value, :math:`B(L)=D`, to
+the expansion for :math:`u`:
+
+.. math::
+         u(x) = B(x) + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x)
+        {\thinspace .}
+        
+
+This :math:`u` gets the right value at :math:`x=L`:
+
+.. math::
+         u(L) = B(L) + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(L) = B(L) = D{\thinspace .}  
+
+The idea is that for any boundary where :math:`u` is known we demand :math:`{\psi}_i` to
+vanish and construct a function :math:`B(x)` to attain the boundary value of :math:`u`.
+There are no restrictions how :math:`B(x)` varies with :math:`x` in the interior of the
+domain, so this variation needs to be constructed in some way.
+
+For example, with :math:`u(0)=0` and
+:math:`u(L)=D`, we can choose :math:`B(x)=x D/L`, since this form ensures that
+:math:`B(x)` fulfills the boundary conditions: :math:`B(0)=0` and :math:`B(L)=D`.
+The unknown function is then sought on the form
+
+.. _Eq:fem:deq:1D:essBC:Bfunc:u1:
+
+.. math::
+   :label: fem:deq:1D:essBC:Bfunc:u1
+        
+        u(x) = \frac{x}{L}D + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x),
+        
+        
+
+with :math:`{\psi}_i(0)={\psi}_i(L)=0`.
+
+The :math:`B(x)` function can be chosen in many ways as long as its boundary
+values are correct. For example, :math:`B(x)=D(x/L)^p` for any power :math:`p`
+will work fine in the above example.
+
+As another example, consider a domain :math:`\Omega = [a,b]`
+where the boundary conditions are :math:`u(a)=U_a` and :math:`u(b)=U_b`.  A class
+of possible :math:`B(x)` functions is
+
+.. _Eq:fem:deq:1D:essBC:Bfunc:gen:
+
+.. math::
+   :label: fem:deq:1D:essBC:Bfunc:gen
+         B(x)=U_a + \frac{U_b-U_a}{(b-a)^p}(x-a)^p,\quad p>0
+        {\thinspace .}
+        
+        
+
+Real applications will most likely use the simplest version, :math:`p=1`,
+but here such a :math:`p` parameter was included to demonstrate the
+ambiguity in the construction of :math:`B(x)`.
+
+
+.. admonition:: Summary
+
+   The general procedure of incorporating Dirichlet boundary
+   conditions goes as follows.
+   Let :math:`\partial\Omega_E` be the part(s) of the boundary
+   :math:`\partial\Omega` of the domain :math:`\Omega` where :math:`u` is specified.
+   Set :math:`{\psi}_i=0` at the points in :math:`\partial\Omega_E` and seek :math:`u`
+   as
+   
+   .. _Eq:fem:deq:1D:essBC:Bfunc:u2:
+
+.. math::
+   :label: fem:deq:1D:essBC:Bfunc:u2
+           
+           u(x) = B(x) + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x),
+           
+           
+   
+   where :math:`B(x)` equals the boundary conditions on :math:`u` at :math:`\partial\Omega_E`.
+
+
+
+
+**Remark.**
+With the :math:`B(x)` term, :math:`u` does not in general lie in :math:`V=\hbox{span}\,
+\{{\psi}_0,\ldots,{\psi}_N\}` anymore. Moreover, when a prescribed value
+of :math:`u` at the boundary, say :math:`u(a)=U_a` is different from zero, it does
+not make sense to say that :math:`u` lies in a vector space, because
+this space does not obey the requirements of addition and scalar multiplication.
+For example,
+:math:`2u` does not lie in the space since its boundary value is :math:`2U_a`,
+which is incorrect. It only makes sense to split :math:`u` in two parts,
+as done above, and have the unknown part :math:`\sum_j c_j {\psi}_j` in a
+proper function space.
+
+.. Sometimes it is said that :math:`u` is in the *affine space* :math:`B+V`.
+
+.. _fem:deq:1D:varform:abstract:
+
+Abstract notation for variational formulations
+----------------------------------------------
+
+We have seen that variational formulations end up with a formula involving
+:math:`u` and :math:`v`, such as :math:`(u',v')` and a formula involving :math:`v` and known
+functions, such as :math:`(f,v)`. A widely used notation is to introduce an abstract
+variational statement written as :math:`a(u,v)=L(v)`,
+where :math:`a(u,v)` is a so-called *bilinear form* involving all the terms
+that contain both the test and trial
+function, while :math:`L(v)` is a *linear form* containing all the terms without
+the trial function. For example, the statement
+
+.. math::
+         \int_{\Omega} u' v' {\, \mathrm{d}x} =
+        \int_{\Omega} fv{\, \mathrm{d}x}\quad\hbox{or}\quad (u',v') = (f,v)
+        \quad\forall v\in V
+
+can be written in abstract form: *find :math:`u` such that*
+
+.. math::
+         a(u,v) = L(v)\quad \forall v\in V,
+
+where we have the definitions
+
+.. math::
+         a(u,v) = (u',v'),\quad L(v) = (f,v){\thinspace .}  
+
+The term *linear* means that :math:`L(\alpha_1 v_1 + \alpha_2 v_2)
+=\alpha_1 L(v_1) + \alpha_2 L(v_2)` for two test functions :math:`v_1` and :math:`v_2`, and
+scalar parameters :math:`\alpha_1` and :math:`\alpha_2`. Similarly, the term *bilinear*
+means that :math:`a(u,v)` is linear in both its arguments:
+
+.. math::
+        
+        a(\alpha_1 u_1 + \alpha_2 u_2, v) &= \alpha_1 a(u_1,v) + \alpha_2 a(u_2, v),
+        \\ 
+        a(u, \alpha_1 v_1 + \alpha_2 v_2) &= \alpha_1 a(u,v_1) + \alpha_2 a(u, v_2)
+        {\thinspace .}
+        
+
+In nonlinear problems these linearity properties do not hold in general
+and the abstract notation is then :math:`F(u;v)=0`.
+
+The matrix system associated with :math:`a(u,v)=L(v)` can also be written in
+an abstract form by inserting :math:`v={\psi}_i` and :math:`u=\sum_j c_j{\psi}_j`
+in :math:`a(u,v)=L(v)`. Using the linear properties, we get
+
+.. math::
+         \sum_{j\in{\mathcal{I}_s}} a({\psi}_j,{\psi}_i) c_j = L({\psi}_i),\quad i\in{\mathcal{I}_s},
+        
+
+which is a linear system
+
+.. math::
+         \sum_{j\in{\mathcal{I}_s}}A_{i,j}c_j = b_i,\quad i\in{\mathcal{I}_s},
+
+where
+
+.. math::
+         A_{i,j} =a({\psi}_j,{\psi}_i), \quad b_i = L({\psi}_i){\thinspace .}
+
+In many problems, :math:`a(u,v)` is symmetric such that
+:math:`a({\psi}_j,{\psi}_i) = a({\psi}_i,{\psi}_j)`. In those cases the
+coefficient matrix becomes symmetric, :math:`A_{i,j}=A_{j,i}`, a property
+that can simplify solution algorithms for linear systems
+and make them more stable in addition to saving memory and computations.
+
+The abstract notation :math:`a(u,v)=L(v)` for linear differential equation problems
+is much used in the literature and
+in description of finite element software (in particular the
+`FEniCS <http://fenicsproject.org>`__ documentation). We shall
+frequently summarize variational forms using this notation.
+
+.. _fem:deq:1D:optimization:
+
+Variational problems and optimization of functionals
+----------------------------------------------------
+
+If :math:`a(u,v)=a(v,u)`, it can be shown that the variational statement
+
+.. math::
+         a(u,v)=L(v)\quad\forall v\in V,
+
+is equivalent to minimizing the functional
+
+.. math::
+         F(v) = {\frac{1}{2}}a(v,v) - L(v) 
+
+over all functions :math:`v\in V`. That is,
+
+.. math::
+         F(u)\leq F(v)\quad \forall v\in V{\thinspace .} 
+
+Inserting a :math:`v=\sum_j c_j{\psi}_j` turns minimization of :math:`F(v)` into
+minimization of a quadratic function
+
+.. math::
+         \bar F(c_0,\ldots,c_N) = \sum_{j\in{\mathcal{I}_s}}\sum_{i\in{\mathcal{I}_s}} a({\psi}_i,{\psi}_j)c_ic_j - \sum_{j\in{\mathcal{I}_s}} L({\psi}_j)c_j
+        
+
+of :math:`N+1` parameters.
+
+Minimization of :math:`\bar F` implies
+
+.. math::
+         \frac{\partial\bar F}{\partial c_i}=0,\quad i\in{\mathcal{I}_s}{\thinspace .}
+
+After some algebra one finds
+
+.. math::
+         \sum{j\in{\mathcal{I}_s}} a({\psi}_i,{\psi}_j)c_j = L({\psi}_i),\quad i\in{\mathcal{I}_s},
+
+which is the same system as that arising from :math:`a(u,v)=L(v)`.
+
+Many traditional applications of the finite element method, especially
+in solid mechanics and structural analysis, start with formulating :math:`F(v)`
+from physical principles, such as minimization of energy, and then
+proceeds with deriving :math:`a(u,v)=L(v)`, which is the equation usually desired
+in implementations.
+

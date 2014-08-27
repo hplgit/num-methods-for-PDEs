@@ -18,6 +18,9 @@ Automatically generated HTML file from Doconce source
 
 <link href="http://thomasf.github.io/solarized-css/solarized-light.min.css" rel="stylesheet">
 <style type="text/css">
+h1 {color: #b58900;}  /* yellow */
+/* h1 {color: #cb4b16;}  orange */
+/* h1 {color: #d33682;}  magenta, the original choice of thomasf */
 .alert-text-small   { font-size: 80%;  }
 .alert-text-large   { font-size: 130%; }
 .alert-text-normal  { font-size: 90%;  }
@@ -823,7 +826,8 @@ $$
 $$
 
 where \( T \) is the temperature of the body, \( T_s \) is the temperature
-of the surroundings, \( t \) is time, and \( k \) is a positive constant.
+of the surroundings, which may be time-dependent,
+\( t \) is time, and \( k \) is a positive constant.
 Equation <a href="#mjx-eqn-80">(80)</a> is primarily viewed as an
 empirical law, valid when heat is efficiently convected away
 from the surface of the body by a flowing fluid such as air
@@ -833,8 +837,8 @@ heat from the body to
 the surroundings and must be determined from physical experiments.
 
 <p>
-We must obviously have an initial condition \( T(0)=T_0 \) in addition
-to the cooling law <a href="#mjx-eqn-80">(80)</a>.
+The cooling law <a href="#mjx-eqn-80">(80)</a> needs an initial
+condition \( T(0)=T_0 \).
 
 <h2>Decay of atmospheric pressure with altitude <a name="decay:app:atm"></a></h2>
 
@@ -1366,26 +1370,25 @@ example.
 <h2>Exercise 10: Derive schemes for Newton's law of cooling <a name="decay:app:exer:cooling:schemes"></a></h2>
 
 Show in detail how we can apply the ideas of the Forward Euler,
-Backward Euler, Crank-Nicolson, and \( \theta \)-rule
+Backward Euler, and Crank-Nicolson
 discretizations to derive explicit
 computational formulas for new temperature values in Newton's law of
 cooling (see the section <a href="#decay:app:Newton:cooling">Newton's law of cooling</a>):
 
 $$
 \begin{equation}
-{dT\over dt} = -k(T-T_s),\quad T(0)=T_0\tp
+{dT\over dt} = -k(T-T_s(t)),\quad T(0)=T_0\tp
 \tag{80}
 \end{equation}
 $$
 
-Here, \( T \) is the temperature of the body, \( T_s \) is the temperature
+Here, \( T \) is the temperature of the body, \( T_s(t) \) is the temperature
 of the surroundings, \( t \) is time, \( k \) is the heat transfer
 coefficient, and \( T_0 \) is the initial temperature of the body.
+Summarize the discretizations in a \( \theta \)-rule
+such that you can get the three
+schemes from a single formula by varying the \( \theta \) parameter.
 Filename: <code>schemes_cooling.pdf</code>.
-
-<p>
-<!-- thinking: operate directly on the T equation -->
-<!-- Can introduce \( u=T-T_s \), or much better for illustration of the -->
 
 <p>
 <!-- --- end exercise --- -->
@@ -1395,29 +1398,122 @@ Filename: <code>schemes_cooling.pdf</code>.
 
 <h2>Exercise 11: Implement schemes for Newton's law of cooling <a name="decay:app:exer:cooling:py"></a></h2>
 
-Formulate a \( \theta \)-rule for the three schemes in <a href="#decay:app:exer:cooling:schemes">Exercise 10: Derive schemes for Newton's law of cooling</a> such that you can get the three
-schemes from a single formula by varying the \( \theta \) parameter.
-Implement the method in a function <code>cooling(T0, k, T_s,
-t_end, dt, theta=0.5)</code>, where <code>T0</code> is the initial temperature, <code>k</code> is
-the heat transfer coefficient, <code>T_s</code> is the temperature of the
+The goal of this exercise is to implement the schemes from
+<a href="#decay:app:exer:cooling:schemes">Exercise 10: Derive schemes for Newton's law of cooling</a> and investigate
+several approaches for verifying the implementation.
+
+<p>
+<b>a)</b>
+Implement the \( \theta \)-rule from
+<a href="#decay:app:exer:cooling:schemes">Exercise 10: Derive schemes for Newton's law of cooling</a>
+<code>cooling(T0, k, T_s, t_end, dt, theta=0.5)</code>,
+where <code>T0</code> is the initial temperature, <code>k</code> is
+the heat transfer coefficient, <code>T_s</code> is a function of <code>t</code> for
+the temperature of the
 surroundings, <code>t_end</code> is the end time of the simulation, <code>dt</code> is the
 time step, and <code>theta</code> corresponds to \( \theta \).  The <code>cooling</code>
 function should return the temperature as an array <code>T</code> of values at
-the mesh points and the time mesh <code>t</code>.  Construct verification
-examples to check that the implementation works.
+the mesh points and the time mesh <code>t</code>.
+
+<p>
+<b>b)</b>
+In the case \( \lim_{t\rightarrow\infty}T_s(t)=C=\mbox{const} \),
+explain why \( T(t)\rightarrow C \). Construct an example where you
+can illustrate this property in a plot. Implement a corresponding
+test function that checks the correctness of the asymptotic
+value of the solution.
+
+<p>
+<b>c)</b>
+A piecewise constant \( T_s(t) \),
+
+$$ T_s(t) = \left\lbrace\begin{array}{ll} C_0,& 0\leq t\leq t^*\\ 
+C_1, & t>t^*,\end{array}\right.
+$$
+
+corresponds to a sudden change in the environmental temperature
+at \( t=t^* \). Choose \( C_1=2T_0 \), \( C_2=\frac{1}{2}T_0 \), and
+\( t^*=4/k \). Plot the solution and explain why it seems physically
+reasonable.
+
+<p>
+<b>d)</b>
+Find a value of \( \Delta t \) such that you can illustrate stability
+problems of the Crank-Nicolson scheme in the test case from c).
+
+<p>
+<b>e)</b>
+Find an expression for the exact solution of
+<a href="#mjx-eqn-80">(80)</a>.  Construct a test case and compare the
+numerical and exact solution in a plot. Find a value of the time step
+\( \Delta t \) such that the two solution curves cannot (visually) be
+distinguished from each other. Many scientists will claim that such a
+plot provides evidence for a correct implementation, but point out why
+there still may be errors in the code.  Can you introduce bugs in the
+<code>cooling</code> function and still achieve visually coinciding curves?
 
 <p>
 <!-- --- begin hint in exercise --- -->
 
 <p>
 <b>Hint.</b>
-For verification, try to find an exact solution of the
-discrete equations. A trick is to introduce \( u=T-T_s \), observe
-that \( u^{n}=(T_0-T_s)A^n \) for some amplification factor \( A \),
-and then express this formula in terms of \( T^n \).
+The exact solution can be derived by multiplying <a href="#mjx-eqn-80">(80)</a>
+by the integrating factor \( e^{kt} \).
 
 <p>
 <!-- --- end hint in exercise --- -->
+
+<p>
+<!-- --- begin solution of exercise --- -->
+<b>Solution.</b>
+Multiplication of \( e^{kt} \), using the product rule for differentiation
+``backwards``, and integrating from 0 to \( t \), results in
+
+$$ \int_0^t (e^{kt}T)'dt = k\int_0^t e^{kt}T_sdt\tp$$
+
+The left-hand side becomes \( e^{kt}T(t)-T_0 \). Multiplying by \( e^{-kt} \)
+then gives
+
+$$ T(t) = T_0e^{-kt} + ke^{-kt}\int_0^t e^{kt}T_sdt,$$
+
+which is the general expression for the exact solution.
+As a check, we consider the case where \( T_s \) is constant.
+That problem can easily be solved by introducing \( u=T-T_s \), resulting in
+\( u'=-ku \), \( u(0)=T_0-T_s \), with solution \( u(t)=(T_0-T_s)e^{-kt} \),
+and consequently \( T=T_s + (T_0-T_s)e^{-kt} \). With a constant \( T_s \) in
+the general solution above, the solution becomes
+
+$$ T(t) = T_0e^{-kt} + ke^{-kt}\int_0^t e^{kt}T_sdt =
+T_0e^{-kt} + ke^{-kt}T_sk^{-1}(e^{kt} - 1)
+= T_0e^{-kt} + T_s - T_se^{-kt} = T_s + (T_0-T_s)e^{-kt},$$
+
+as desired.
+
+<p>
+<!-- --- end solution of exercise --- -->
+
+<p>
+<b>f)</b>
+Implement a test function for comparing the solution returned by
+the <code>cooling</code> function is identical to the exact numerical
+solution of the problem (to machine precision) when \( T_s \) is constant.
+
+<p>
+<!-- --- begin hint in exercise --- -->
+
+<p>
+<b>Hint.</b>
+The exact solution of the
+discrete equations in the case \( T_s \) is a constant can be found by
+introducing \( u=T-T_s \) to get a problem \( u'=-ku \), \( u(0)=T_0-T_s \).
+The solution of the discrete equations is then of the form
+\( u^{n}=(T_0-T_s)A^n \) for some amplification factor \( A \). This
+approach can be used to derive an expression for \( T^n \).
+
+<p>
+<!-- --- end hint in exercise --- -->
+
+<p>
 Filename: <code>cooling.py</code>.
 
 <p>

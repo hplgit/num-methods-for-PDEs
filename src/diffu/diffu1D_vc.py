@@ -32,8 +32,8 @@ calling code can add visualization, error computations, data analysis,
 store solutions, etc.
 """
 
-from scipy.sparse import spdiags
-from scipy.sparse.linalg import spsolve, use_solver
+import scipy.sparse
+import scipy.sparse.linalg
 from numpy import linspace, zeros, random
 import time, sys
 
@@ -85,21 +85,24 @@ def solver_theta(I, a, L, Nx, D, T, theta=0.5, u_L=1, u_R=0,
 
     # Representation of sparse matrix and right-hand side
     diagonal = zeros(Nx+1)
-    lower    = zeros(Nx+1)
-    upper    = zeros(Nx+1)
+    lower    = zeros(Nx)
+    upper    = zeros(Nx)
     b        = zeros(Nx+1)
     # "Active" values: diagonal[:], upper[1:], lower[:-1]
 
     # Precompute sparse matrix (scipy format)
     diagonal[1:-1] = 1 + Dl*(a[2:] + 2*a[1:-1] + a[:-2])
-    lower[0:-2] = -Dl*(a[1:-1] + a[:-2])
-    upper[2:]   = -Dl*(a[2:] + a[1:-1])
+    lower[:] = -Dl*(a[1:-1] + a[:-2])
+    upper[:]   = -Dl*(a[2:] + a[1:-1])
     # Insert boundary conditions
     diagonal[0] = 1
+    upper[0] = 0
     diagonal[Nx] = 1
+    lower[-1] = 0
 
     diags = [0, -1, 1]
-    A = spdiags([diagonal, lower, upper], diags, Nx+1, Nx+1)
+    A = scipy.sparse.spdiags(
+        [diagonal, lower, upper], diags, Nx+1, Nx+1)
     #print A.todense()
 
     # Set initial condition
@@ -115,7 +118,7 @@ def solver_theta(I, a, L, Nx, D, T, theta=0.5, u_L=1, u_R=0,
             (a[2:] + a[1:-1])*(u_1[:-2] - u_1[1:-1]) -
             (a[2:] + a[0:-2])*(u_1[1:-1] - u_1[:-2]))
         b[0] = u_L; b[-1] = u_R  # boundary conditions
-        u[:] = spsolve(A, b)
+        u[:] = scipy.sparse.linalg.spsolve(A, b)
 
         if user_action is not None:
             user_action(u, x, t, n+1)
@@ -184,6 +187,3 @@ def u_exact_stationary(x, a, u_L, u_R):
     g[i] = g[i-1] + 0.5*dx/a[i]
     v = u_L + (u_R - u_L)*g/g[-1]
     return v
-
-
-

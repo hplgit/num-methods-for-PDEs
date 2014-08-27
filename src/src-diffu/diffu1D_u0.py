@@ -36,7 +36,10 @@ spatial mesh point x[i] at time t[n], where the calling code
 can add visualization, error computations, data analysis,
 store solutions, etc.
 """
+import sys, time
+from scitools.std import *
 import scipy.sparse
+import scipy.sparse.linalg
 
 def solver_FE_simple(I, a, L, Nx, Fo, T):
     """
@@ -117,7 +120,8 @@ def solver_FE(I, a, L, Nx, Fo, T,
             user_action(u, x, t, n+1)
 
         # Update u_1 before next step
-        u_1[:] = u
+        #u_1[:] = u  # safe, but slow
+        u_1, u = u, u_1  # just switch references
 
     t1 = time.clock()
     return u, x, t, t1-t0
@@ -161,7 +165,9 @@ def solver_BE_simple(I, a, L, Nx, Fo, T):
         u[:] = linalg.solve(A, b)
 
         # Update u_1 before next step
-        u_1[:]= u
+        #u_1[:]= u
+        u_1, u = u, u_1
+
     t1 = time.clock()
     return u, x, t, t1-t0
 
@@ -185,21 +191,23 @@ def solver_BE(I, a, L, Nx, Fo, T, user_action=None):
     u_1 = zeros(Nx+1)   # solution at t[n]
 
     # Representation of sparse matrix and right-hand side
-    main  = zeros(Nx+1)
-    lower = zeros(Nx-1)
-    upper = zeros(Nx-1)
-    b     = zeros(Nx+1)
+    diagonal = zeros(Nx+1)
+    lower    = zeros(Nx)
+    upper    = zeros(Nx)
+    b        = zeros(Nx+1)
 
     # Precompute sparse matrix
-    main[:] = 1 + 2*Fo
+    diagonal[:] = 1 + 2*Fo
     lower[:] = -Fo  #1
     upper[:] = -Fo  #1
     # Insert boundary conditions
-    main[0] = 1
-    main[Nx] = 1
+    diagonal[0] = 1
+    upper[0] = 0
+    diagonal[Nx] = 1
+    lower[-1] = 0
 
     A = scipy.sparse.diags(
-        diagonals=[main, lower, upper],
+        diagonals=[diagonal, lower, upper],
         offsets=[0, -1, 1], shape=(Nx+1, Nx+1),
         format='csr')
     print A.todense()
@@ -220,7 +228,8 @@ def solver_BE(I, a, L, Nx, Fo, T, user_action=None):
             user_action(u, x, t, n+1)
 
         # Update u_1 before next step
-        u_1[:] = u
+        #u_1[:] = u
+        u_1, u = u, u_1
 
     t1 = time.clock()
     return u, x, t, t1-t0
@@ -249,23 +258,25 @@ def solver_theta(I, a, L, Nx, Fo, T, theta=0.5, u_L=0, u_R=0,
 
     # Representation of sparse matrix and right-hand side
     diagonal = zeros(Nx+1)
-    lower    = zeros(Nx+1)
-    upper    = zeros(Nx+1)
+    lower    = zeros(Nx)
+    upper    = zeros(Nx)
     b        = zeros(Nx+1)
 
     # Precompute sparse matrix (scipy format)
     Fol = Fo*theta
     For = Fo*(1-theta)
-    main[:] = 1 + 2*Fol
+    diagonal[:] = 1 + 2*Fol
     lower[:] = -Fol  #1
     upper[:] = -Fol  #1
     # Insert boundary conditions
-    main[0] = 1
-    main[Nx] = 1
+    diagonal[0] = 1
+    upper[0] = 0
+    diagonal[Nx] = 1
+    lower[-1] = 0
 
     diags = [0, -1, 1]
     A = scipy.sparse.diags(
-        diagonals=[main, lower, upper],
+        diagonals=[diagonal, lower, upper],
         offsets=[0, -1, 1], shape=(Nx+1, Nx+1),
         format='csr')
     #print A.todense()
@@ -287,20 +298,25 @@ def solver_theta(I, a, L, Nx, Fo, T, theta=0.5, u_L=0, u_R=0,
             user_action(u, x, t, n+1)
 
         # Update u_1 before next step
-        u_1[:] = u
+        #u_1[:] = u
+        u_1, u = u, u_1
 
     t1 = time.clock()
     return u, x, t, t1-t0
 
 
 def viz(I, a, L, Nx, Fo, T, umin, umax,
-        scheme='FE', animate=True):
+        scheme='FE', animate=True, framefiles=True):
 
     def plot_u(u, x, t, n):
         plot(x, u, 'r-', axis=[0, L, umin, umax], title='t=%f' % t[n])
+        if framefiles:
+            savefig('tmp_frame%04d.png' % n)
         if t[n] == 0:
             time.sleep(2)
-        else:
+        elif not framefiles:
+            # It takes time to write files so pause is needed
+            # for screen only animation
             time.sleep(0.2)
 
     user_action = plot_u if animate else lambda u,x,t,n: None
@@ -325,7 +341,21 @@ def plug(scheme='FE', Fo=0.5, Nx=50):
 
     u, cpu = viz(I, a, L, Nx, Fo, T,
                  umin=-0.1, umax=1.1,
-                 scheme=scheme, animate=True)
+                 scheme=scheme, animate=True, framefiles=True)
+    print 'CPU time:', cpu
+
+def gaussian(scheme='FE', Fo=0.5, Nx=50, sigma=0.05):
+    L = 1.
+    a = 1
+    T = 0.1
+
+    def I(x):
+        """Gaussian profile as initial condition."""
+        return exp(-0.5*((x-L/2.0)**2)/sigma**2)
+
+    u, cpu = viz(I, a, L, Nx, Fo, T,
+                 umin=-0.1, umax=1.1,
+                 scheme=scheme, animate=True, framefiles=True)
     print 'CPU time:', cpu
 
 
@@ -341,7 +371,8 @@ def expsin(scheme='FE', Fo=0.5, m=3):
         return exact(x, 0)
 
     Nx = 80
-    viz(I, a, L, Nx, Fo, T, -1, 1, scheme=scheme, animate=True)
+    viz(I, a, L, Nx, Fo, T, -1, 1, scheme=scheme, animate=True,
+        framefiles=True)
 
     # Convergence study
     def action(u, x, t, n):
@@ -389,9 +420,6 @@ def test_solvers():
         assert diff < tol, 'max diff: %g' % diff
 
 if __name__ == '__main__':
-    import sys, time
-    from scitools.std import *
-
     if len(sys.argv) < 2:
         print """Usage %s function arg1 arg2 arg3 ...""" % sys.argv[0]
         sys.exit(0)

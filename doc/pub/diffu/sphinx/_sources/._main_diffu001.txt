@@ -1,14 +1,3 @@
-.. Automatically generated Sphinx-extended reStructuredText file from Doconce source
-   (https://github.com/hplgit/doconce/)
-
-Finite difference methods for diffusion processes
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-:Authors: Hans Petter Langtangen
-:Date: Aug 18, 2014
-
-Note: **VERY PRELIMINARY VERSION**
-
 .. !split
 
 The 1D diffusion equation
@@ -75,6 +64,10 @@ with the simplest boundary condition: :math:`u=0`. The complete
 initial-boundary value diffusion problem in one
 space dimension can then be specified as
 
+.. _Eq:diffu:pde1:
+
+.. _Eq:diffu:pde1:
+
 .. math::
    :label: diffu:pde1
         
@@ -83,23 +76,35 @@ space dimension can then be specified as
         
         
 
+.. _Eq:diffu:pde1:ic:u:
+
+.. _Eq:diffu:pde1:ic:u:
+
 .. math::
    :label: diffu:pde1:ic:u
-         
+          
         u(x,0) = I(x), \quad  x\in [0,L]
         
         
 
+.. _Eq:diffu:pde1:bc:0:
+
+.. _Eq:diffu:pde1:bc:0:
+
 .. math::
    :label: diffu:pde1:bc:0
-         
+          
         u(0,t)  = 0, \quad  t>0,
         
         
 
+.. _Eq:diffu:pde1:bc:L:
+
+.. _Eq:diffu:pde1:bc:L:
+
 .. math::
    :label: diffu:pde1:bc:L
-         
+          
         u(L,t)  = 0, \quad  t>0{\thinspace .}
         
         
@@ -143,6 +148,8 @@ approximates :math:`u(x_i,t_n)` for :math:`i=0,\ldots,N_x` and :math:`n=0,\ldots
 Requiring the PDE :eq:`diffu:pde1` to be fulfilled at a mesh point :math:`(x_i,t_n)`
 leads to the equation
 
+.. _Eq:diffu:pde1:step2:
+
 .. math::
    :label: diffu:pde1:step2
         
@@ -156,6 +163,8 @@ The computationally simplest method arises from
 using a forward difference in time and a central difference in
 space:
 
+.. _Eq:diffu:pde1:step3a:
+
 .. math::
    :label: diffu:pde1:step3a
         
@@ -164,6 +173,8 @@ space:
         
 
 Written out,
+
+.. _Eq:diffu:pde1:step3b:
 
 .. math::
    :label: diffu:pde1:step3b
@@ -179,12 +190,21 @@ As usual, we anticipate that :math:`u^n_i` is already computed such that
 :math:`u^{n+1}_i` is the only unknown in :eq:`diffu:pde1:step3b`.
 Solving with respect to this unknown is easy:
 
+.. _Eq:diffu:pde1:step4:
+
 .. math::
    :label: diffu:pde1:step4
         
-        u^{n+1}_i = u^n_i + \alpha\frac{\Delta t}{\Delta x^2}\left(
-        u^{n}_{i+1} - 2u^n_i + u^n_{i-1}\right) {\thinspace .}
+        u^{n+1}_i = u^n_i + Fo\left(
+        u^{n}_{i+1} - 2u^n_i + u^n_{i-1}\right),
         
+        
+
+where we have introduced the *mesh Fourier number*
+
+.. math::
+        
+        Fo = \alpha\frac{\Delta t}{\Delta x^2}{\thinspace .}
         
 
 The computational algorithm then becomes
@@ -226,6 +246,23 @@ The algorithm is compactly fully specified in Python:
             # Update u_1 before next step
             u_1[:]= u
 
+The program `diffu1D_u0.py <http://tinyurl.com/jvzzcfn/diffu/diffu1D_u0.py>`__
+contains a function ``solver_FE`` for solving the 1D diffusion equation
+with :math:`u=0` on the boundary. The functions ``plug`` and ``gaussian``
+runs the case with :math:`I(x)` as a discontinuous plug or a smooth
+Gaussian function, respectively. Experiments with these two functions
+reveal some important observations:
+
+ * The Forward Euler scheme leads to growing solutions if :math:`Fo>\frac{1}{2}`.
+
+ * :math:`I(x)` as a discontinuous plug leads to a saw tooth-like noise
+   for :math:`Fo=\frac{1}{2}`, see `movie <http://tinyurl.com/k3sdbuv/pub/mov-diffu/diffu1D_u0_FE_plug/movie.ogg>`__, which is absent for :math:`Fo\leq\frac{1}{4}`, see
+   `movie <http://tinyurl.com/k3sdbuv/pub/mov-diffu/diffu1D_u0_FE_plug_Fo025/movie.ogg>`__.
+
+ * The smooth Gaussian initial function leads to a smooth solution,
+   see `movie <http://tinyurl.com/k3sdbuv/pub/mov-diffu/diffu1D_u0_FE_plug_gaussian1/movie.ogg>`__
+   for :math:`Fo=\frac{1}{2}`.
+
 .. _diffu:pde1:BE:
 
 Backward Euler scheme
@@ -236,6 +273,8 @@ Backward Euler scheme
 We now apply a backward difference in time in :eq:`diffu:pde1:step2`,
 but the same central difference in space:
 
+.. _Eq:diffu:pde1:step3aBE:
+
 .. math::
    :label: diffu:pde1:step3aBE
         
@@ -244,6 +283,8 @@ but the same central difference in space:
         
 
 which written out reads
+
+.. _Eq:diffu:pde1:step3bBE:
 
 .. math::
    :label: diffu:pde1:step3bBE
@@ -264,7 +305,7 @@ Let us examine this fact for the case when :math:`N_x=3`. Equation :eq:`diffu:pd
         
 
 .. math::
-         
+          
         \frac{u^{n}_2-u^{n-1}_2}{\Delta t} = \alpha\frac{u^{n}_{3} - 2u^n_2 + u^n_{1}}{\Delta x^2}
         
 
@@ -273,42 +314,56 @@ unknown new values :math:`u^n_1` and :math:`u^n_2` on the left-hand side gives
 
 .. math::
         
-        \left(1+  2\alpha\frac{\Delta t}{\Delta x^2}\right) u^{n}_1
-        - \alpha\frac{\Delta t}{\Delta x^2} u^{n}_{2}  = u^{n-1}_1,
+        \left(1+  2Fo\right) u^{n}_1 - Fo u^{n}_{2}    = u^{n-1}_1,
         
 
 .. math::
-         
-        - \alpha\frac{\Delta t}{\Delta x^2} u^{n}_{1} +
-        \left(1+  2\alpha\frac{\Delta t}{\Delta x^2}\right) u^{n}_2
-          = u^{n-1}_2
-        {\thinspace .}
+          
+        - Fo u^{n}_{1} + \left(1+  2Fo\right) u^{n}_2  = u^{n-1}_2{\thinspace .}
         
 
 This is a coupled :math:`2\times 2` system of algebraic equations for
-the unknowns :math:`u^n_1` and :math:`u^n_2`.
-Discretization methods that lead to a coupled system of equations
-for the unknown function at a new time level are said to be
-*implicit methods*.
-The counterpart, *explicit methods*, refers to discretization
-methods where there is a simple explicit formula for the values of
-the unknown function at each of the spatial mesh points at the new
-time level. From an implementational point of view, implicit methods
-are more comprehensive to code since they require
-the solution of coupled equations, i.e., a matrix system, at each time level.
+the unknowns :math:`u^n_1` and :math:`u^n_2`. The equivalent matrix form is
+
+.. math::
+         \left(\begin{array}{cc}
+        1+  2Fo &   - Fo\\ 
+        - Fo    & 1+  2Fo
+        \end{array}\right)
+        \left(\begin{array}{c}
+        u^{n}_1\\ 
+        u^{n}_{2}\\ 
+        \end{array}\right)
+        =
+        \left(\begin{array}{c}
+        u^{n-1}_1\\ 
+        u^{n-1}_2
+        \end{array}\right)
+        
+
+
+.. admonition:: Implicit vs. explicit methods
+
+   Discretization methods that lead to a coupled system of equations
+   for the unknown function at a new time level are said to be
+   *implicit methods*.
+   The counterpart, *explicit methods*, refers to discretization
+   methods where there is a simple explicit formula for the values of
+   the unknown function at each of the spatial mesh points at the new
+   time level. From an implementational point of view, implicit methods
+   are more comprehensive to code since they require
+   the solution of coupled equations, i.e., a matrix system, at each time level.
+
+
+
 
 In the general case, :eq:`diffu:pde1:step3bBE` gives rise to
 a coupled :math:`(Nx-1)\times (Nx-1)` system of algebraic equations for
 all the unknown :math:`u^n_i` at the interior spatial points :math:`i=1,\ldots,Nx-1`.
-Collecting the unknowns on the left-hand side, and
-introducing the *numerical Fourier number*
-
-.. math::
-        
-        F_o = \alpha\frac{\Delta t}{\Delta x^2},
-        
-
+Collecting the unknowns on the left-hand side,
 :eq:`diffu:pde1:step3bBE` can be written
+
+.. _Eq:diffu:pde1:step4BE:
 
 .. math::
    :label: diffu:pde1:step4BE
@@ -320,11 +375,13 @@ introducing the *numerical Fourier number*
 
 for :math:`i=1,\ldots,Nx-1`.
 One can either view these equations as a system for where the
-:math:`u^{n}_i` values at the internal grid points, :math:`i=1,\ldots,N_x-1`, are
+:math:`u^{n}_i` values at the internal mesh points, :math:`i=1,\ldots,N_x-1`, are
 unknown, or we may append the boundary values :math:`u^n_0` and :math:`u^n_{N_x}`
 to the system. In the latter case, all :math:`u^n_i` for :math:`i=0,\ldots,N_x`
 are unknown and we must add the boundary equations to
 the :math:`N_x-1` equations in :eq:`diffu:pde1:step4BE`:
+
+.. _Eq:diffu:pde1:step4BE:BC:0:
 
 .. math::
    :label: diffu:pde1:step4BE:BC:0
@@ -332,9 +389,11 @@ the :math:`N_x-1` equations in :eq:`diffu:pde1:step4BE`:
         u_0^n = 0,
         
 
+.. _Eq:diffu:pde1:step4BE:BC:L:
+
 .. math::
    :label: diffu:pde1:step4BE:BC:L
-         
+          
         u_{N_x}^n = 0{\thinspace .}
         
         
@@ -351,6 +410,8 @@ correspond to the matrix equation
 where :math:`U=(u^n_0,\ldots,u^n_{N_x})`, and
 the matrix :math:`A` has the following structure:
 
+.. _Eq:diffu:pde1:matrix:sparsity:
+
 .. math::
    :label: diffu:pde1:matrix:sparsity
         
@@ -360,15 +421,15 @@ the matrix :math:`A` has the following structure:
         A_{0,0} & A_{0,1} & 0
         &\cdots &
         \cdots & \cdots & \cdots &
-        \cdots & 0 \\
-        A_{1,0} & A_{1,1} & 0 & \ddots &   & &  & &  \vdots \\
+        \cdots & 0 \\ 
+        A_{1,0} & A_{1,1} & 0 & \ddots &   & &  & &  \vdots \\ 
         0 & A_{2,1} & A_{2,2} & A_{2,3} &
-        \ddots & &  &  & \vdots \\
-        \vdots & \ddots &  & \ddots & \ddots & 0 &  & & \vdots \\
-        \vdots &  & \ddots & \ddots & \ddots & \ddots & \ddots & & \vdots \\
-        \vdots & &  & 0 & A_{i,i-1} & A_{i,i} & A_{i,i+1} & \ddots & \vdots \\
-        \vdots & & &  & \ddots & \ddots & \ddots &\ddots  & 0 \\
-        \vdots & & & &  &\ddots  & \ddots &\ddots  & A_{N_x-1,N_x} \\
+        \ddots & &  &  & \vdots \\ 
+        \vdots & \ddots &  & \ddots & \ddots & 0 &  & & \vdots \\ 
+        \vdots &  & \ddots & \ddots & \ddots & \ddots & \ddots & & \vdots \\ 
+        \vdots & &  & 0 & A_{i,i-1} & A_{i,i} & A_{i,i+1} & \ddots & \vdots \\ 
+        \vdots & & &  & \ddots & \ddots & \ddots &\ddots  & 0 \\ 
+        \vdots & & & &  &\ddots  & \ddots &\ddots  & A_{N_x-1,N_x} \\ 
         0 &\cdots & \cdots &\cdots & \cdots & \cdots  & 0 & A_{N_x,N_x-1} & A_{N_x,N_x}
         \end{array}
         \right)
@@ -383,12 +444,12 @@ The nonzero elements are given by
         
 
 .. math::
-         
+          
         A_{i,i} = 1+ 2F_o
         
 
 .. math::
-         
+          
         A_{i,i+1} = -F_o
         
 
@@ -401,17 +462,17 @@ for the boundary points correspond to
         
 
 .. math::
-         
+          
         A_{0,1} = 0,
         
 
 .. math::
-         
+          
         A_{N_x,N_x-1} = 0,
         
 
 .. math::
-         
+          
         A_{N_x,N_x} = 1{\thinspace .}
         
 
@@ -420,11 +481,11 @@ The right-hand side :math:`b` is written as
 .. math::
         
         b = \left(\begin{array}{c}
-        b_0\\
-        b_1\\
-        \vdots\\
-        b_i\\
-        \vdots\\
+        b_0\\ 
+        b_1\\ 
+        \vdots\\ 
+        b_i\\ 
+        \vdots\\ 
         b_{N_x}
         \end{array}\right)
         
@@ -437,12 +498,12 @@ with
         
 
 .. math::
-         
+          
         b_i = u^{n-1}_i,\quad i=1,\ldots,N_x-1,
         
 
 .. math::
-         
+          
         b_{N_x} = 0 {\thinspace .}  
 
 We observe that the matrix :math:`A` contains quantities that do not change
@@ -527,7 +588,7 @@ can store only the main diagonal and the upper and lower diagonals.
             diagonals=[main, lower, upper],
             offsets=[0, -1, 1], shape=(Nx+1, Nx+1),
             format='csr')
-        print A.todense()
+        print A.todense()  # Check that A is correct
         
         # Set initial condition
         for i in range(0,Nx+1):
@@ -542,6 +603,128 @@ can store only the main diagonal and the upper and lower diagonals.
 The ``scipy.sparse.linalg.spsolve`` function utilizes the sparse storage
 structure of ``A`` and performs in this case a very efficient Gaussian
 elimination solve.
+
+The program `diffu1D_u0.py <http://tinyurl.com/jvzzcfn/diffu/diffu1D_u0.py>`__
+contains a function ``solver_BE``, which implements the Backward Euler scheme
+sketched above.
+As mentioned in the section :ref:`diffu:pde1:FE`,
+the functions ``plug`` and ``gaussian``
+runs the case with :math:`I(x)` as a discontinuous plug or a smooth
+Gaussian function. All experiments point to two characteristic
+features of the Backward Euler scheme: 1) it is always stable, and
+2) it always gives a smooth, decaying solution.
+
+.. _diffu:pde1:CN:
+
+Crank-Nicolson scheme
+---------------------
+
+The idea in the Crank-Nicolson scheme is to apply centered
+differences in space and time, combined with an average in time.
+We demand the PDE to be fulfilled at the spatial mesh points, but
+in between the points in the time mesh:
+
+.. math::
+        
+        \frac{\partial}{\partial t} u(x_i, t_{n+\frac{1}{2}}) =
+        \alpha\frac{\partial^2}{\partial x^2}u(x_i, t_{n+\frac{1}{2}}).
+        
+
+for :math:`i=1,\ldots,N_x-1` and :math:`n=0,\ldots, N_t-1`.
+
+With centered differences in space and time, we get
+
+.. math::
+         [D_t u = \alpha D_xD_x u]^{n+1\frac{1}{2}}_i{\thinspace .}
+
+On the right-hand side we get an expression
+
+.. math::
+         u^{n+1\frac{1}{2}}_{i-1} - u^{n+1\frac{1}{2}}_i + u^{n+1\frac{1}{2}}_{i+1}{\thinspace .}
+
+This is problematic since :math:`u^{n+1\frac{1}{2}}_i` is not one of
+the unknown we compute. A possibility is to replace :math:`u^{n+1\frac{1}{2}}_i`
+by an arithmetic average:
+
+.. math::
+         u^{n+1\frac{1}{2}}_i\approx
+        \frac{1}{2}\left(u^{n+1}_i +u^{n+1}_{i+1}\right){\thinspace .}
+        
+
+In the compact notation, we can use the arithmetic average
+notation :math:`\overline{u}^t`:
+
+.. math::
+         [D_t u = \alpha D_xD_x \overline{u}^t]^{n+\frac{1}{2}}_i{\thinspace .}
+
+After writing out the differences and average, multiplying by :math:`\Delta t`,
+and collecting all unknown terms on the left-hand side, we get
+
+.. math::
+        
+        u^{n+1}_i - \frac{1}{2} Fo(u^{n+1}_{i-1} - 2u^{n+1}_i + u^{n+1}_{i+1})
+        = u^{n}_i + \frac{1}{2} Fo(u^{n}_{i-1} - 2u^{n}_i + u^{n}_{i+1}){\thinspace .}
+        
+
+Also here, as in the Backward Euler scheme, the new unknowns
+:math:`u^{n+1}_{i-1}`, :math:`u^{n+1}_{i}`, and :math:`u^{n+1}_{i+1}` are coupled
+in a linear system :math:`AU=b`, where :math:`A` has the same structure
+as in :eq:`diffu:pde1:matrix:sparsity`, but with slightly
+different entries:
+
+.. math::
+        
+        A_{i,i-1} = -\frac{1}{2} F_o
+        
+
+.. math::
+          
+        A_{i,i} = \frac{1}{2} + F_o
+        
+
+.. math::
+          
+        A_{i,i+1} = -\frac{1}{2} F_o
+        
+
+for the equations for internal points, :math:`i=1,\ldots,N_x-1`. The equations
+for the boundary points correspond to
+
+.. math::
+        
+        A_{0,0} = 1,
+        
+
+.. math::
+          
+        A_{0,1} = 0,
+        
+
+.. math::
+          
+        A_{N_x,N_x-1} = 0,
+        
+
+.. math::
+          
+        A_{N_x,N_x} = 1{\thinspace .}
+        
+
+The right-hand side :math:`b` has entries
+
+.. math::
+        
+        b_0 = 0,
+        
+
+.. math::
+          
+        b_i = u^{n-1}_i,\quad i=1,\ldots,N_x-1,
+        
+
+.. math::
+          
+        b_{N_x} = 0 {\thinspace .}  
 
 .. _diffu:pde1:theta:
 
@@ -566,21 +749,30 @@ Applied to the 1D diffusion problem we have
         {\thinspace .}
         
 
-This scheme also leads to a matrix system with entries :math:`1+2F_o\theta` on
-the main diagonal of the matrix, and :math:`-F_o\theta` on the
-super- and sub-diagonal. The right-hand side entry :math:`b_i` is
+This scheme also leads to a matrix system with entries
+
+.. math::
+         A_{i,i-1} = -F_o\theta,\quad A_{i,i} = 1+2F_o\theta\quad,
+        A_{i,i+1} = -F_o\theta,
+
+while right-hand side entry :math:`b_i` is
 
 .. math::
          b_i = u^n_{i} + F_o(1-\theta)
-        \frac{u^{n}_{i+1} - 2u^n_i + u^n_{i-1}}{\Delta x^2}{\thinspace .}
+        \frac{u^{n}_{i+1} - 2u^n_i + u^n_{i-1}}{\Delta x^2}
         
+
+The corresponding entries for the boundary points are as in the Backward
+Euler and Crank-Nicolson schemes listed earlier.
 
 The Laplace and Poisson equation
 --------------------------------
 
 The Laplace equation, :math:`\nabla^2 u = 0`, or the Poisson equation,
 :math:`-\nabla^2 u = f`, occur in numerous applications throughout science and
-engineering. We can solve 1D variants of the Laplace equations with the listed
+engineering. In 1D these equations read
+:math:`u''(x)=0` and :math:`-u''(x)=f(x)`, respectively.
+We can solve 1D variants of the Laplace equations with the listed
 software, because we can interpret :math:`u_{xx}=0` as the limiting solution
 of :math:`u_t = \alpha u_{xx}` when :math:`u` reach a steady state limit where
 :math:`u_t\rightarrow 0`.
@@ -641,6 +833,8 @@ Properties of the solution
 A particular characteristic of diffusive processes, governed
 by an equation like
 
+.. _Eq:diffu:pde1:eq:
+
 .. math::
    :label: diffu:pde1:eq
         
@@ -662,6 +856,8 @@ that depend on :math:`\eta = (x-c)/\sqrt{4\alpha t}` for a given value
 of :math:`c`. One particular solution
 is
 
+.. _Eq:diffu:pdf1:erf:sol:
+
 .. math::
    :label: diffu:pdf1:erf:sol
         
@@ -670,6 +866,8 @@ is
         
 
 where
+
+.. _Eq:diffu:analysis:erf:def:
 
 .. math::
    :label: diffu:analysis:erf:def
@@ -684,11 +882,11 @@ goes relatively quickly to :math:`\pm 1`:
 
 .. math::
         
-        \lim_{\eta\rightarrow -\infty}\mbox{erf}(\eta) &=-1,\\
-        \lim_{\eta\rightarrow \infty}\mbox{erf}(\eta) &=1,\\
-        \mbox{erf}(\eta) &= -\mbox{erf}(-\eta),\\
-        \mbox{erf}(0) &=0,\\
-        \mbox{erf}(2) &=0.99532227,\\
+        \lim_{\eta\rightarrow -\infty}\mbox{erf}(\eta) &=-1,\\ 
+        \lim_{\eta\rightarrow \infty}\mbox{erf}(\eta) &=1,\\ 
+        \mbox{erf}(\eta) &= -\mbox{erf}(-\eta),\\ 
+        \mbox{erf}(0) &=0,\\ 
+        \mbox{erf}(2) &=0.99532227,\\ 
         \mbox{erf}(3) &=0.99997791
         {\thinspace .}
         
@@ -697,6 +895,8 @@ As :math:`t\rightarrow 0`, the error function approaches a step function centere
 at :math:`x=c`. For a diffusion problem posed on the unit interval :math:`[0,1]`,
 we may choose the step at :math:`x=1/2` (meaning :math:`c=1/2`), :math:`a=-1/2`, :math:`b=1/2`.
 Then
+
+.. _Eq:diffu:analysis:pde1:step:erf:sol:
 
 .. math::
    :label: diffu:analysis:pde1:step:erf:sol
@@ -712,6 +912,8 @@ where we have introduced the *complementary error function*
 The solution :eq:`diffu:analysis:pde1:step:erf:sol`
 implies the boundary conditions
 
+.. _Eq:diffu:analysis:pde1:p1:erf:uL:
+
 .. math::
    :label: diffu:analysis:pde1:p1:erf:uL
         
@@ -719,9 +921,11 @@ implies the boundary conditions
          
         
 
+.. _Eq:diffu:analysis:pde1:p1:erf:uR:
+
 .. math::
    :label: diffu:analysis:pde1:p1:erf:uR
-         
+          
         u(1,t) = \frac{1}{2}\left(1 - \mbox{erf}\left(\frac{1/2}{\sqrt{4\alpha t}}\right)\right)
         
         {\thinspace .}
@@ -735,6 +939,8 @@ Solution for a Gaussian pulse
 
 The standard diffusion equation :math:`u_t = \alpha u_{xx}` admits a
 Gaussian function as solution:
+
+.. _Eq:diffu:pde1:sol:Gaussian:
 
 .. math::
    :label: diffu:pde1:sol:Gaussian
@@ -764,6 +970,8 @@ Solution for a sine component
 For example, :eq:`diffu:pde1:eq`
 admits a solution of the form
 
+.. _Eq:diffu:pde1:sol1:
+
 .. math::
    :label: diffu:pde1:sol1
         
@@ -790,8 +998,8 @@ The following examples illustrates the damping properties of :eq:`diffu:pde1:sol
 
 .. math::
         
-        u_t &= u_{xx},\quad x\in (0,1),\ t\in (0,T],\\
-        u(0,t) &= u(1,t) = 0,\quad t\in (0,T],\\
+        u_t &= u_{xx},\quad x\in (0,1),\ t\in (0,T],\\ 
+        u(0,t) &= u(1,t) = 0,\quad t\in (0,T],\\ 
         u(x,0) & = \sin (\pi x) + 0.1\sin(100\pi x)
         {\thinspace .}
         
@@ -799,6 +1007,8 @@ The following examples illustrates the damping properties of :eq:`diffu:pde1:sol
 The initial condition has been chosen such that adding
 two solutions like :eq:`diffu:pde1:sol1` constructs
 an analytical solution to the problem:
+
+.. _Eq:diffu:pde1:sol2:
 
 .. math::
    :label: diffu:pde1:sol2
@@ -837,6 +1047,8 @@ where :math:`i=\sqrt{-1}` is the imaginary unit.
 We can add such functions, often referred to as wave components,
 to make a Fourier representation
 of a general solution of the diffusion equation:
+
+.. _Eq:diffu:pde1:u:Fourier:
 
 .. math::
    :label: diffu:pde1:u:Fourier
@@ -891,6 +1103,8 @@ the finite difference schemes. This is indeed the case, but the
 amplitude :math:`\exp{(-\alpha k^2t)}` might be modified (which also happens when
 solving the ODE counterpart :math:`u'=-\alpha u`).
 We therefore look for numerical solutions of the form
+
+.. _Eq:diffu:pde1:analysis:uni:
 
 .. math::
    :label: diffu:pde1:analysis:uni
@@ -1089,6 +1303,8 @@ we get
         
 
 and then
+
+.. _Eq:diffu:pde1:analysis:BE:A:
 
 .. math::
    :label: diffu:pde1:analysis:BE:A
@@ -1292,6 +1508,8 @@ The integral of the initial pulse is 1.
 Another idea for an artificial boundary condition at :math:`x=L`
 is to use a cooling law
 
+.. _Eq:diffu:pde1:Gaussian:xL:cooling:
+
 .. math::
    :label: diffu:pde1:Gaussian:xL:cooling
         
@@ -1381,6 +1599,262 @@ Filename: ``diffu_stab_uterm.pdf``.
 
 .. --- end exercise ---
 
+Diffusion in heterogeneous media
+================================
+
+Diffusion in heterogeneous media will normally imply a non-constant
+diffusion coefficient :math:`\alpha = \alpha (x)`.
+A 1D diffusion model with such a variable diffusion coefficient reads
+
+.. _Eq:diffu:pde1:
+
+.. _Eq:diffu:pde1:
+
+.. math::
+   :label: diffu:pde1
+        
+        \frac{\partial u}{\partial t} =
+        \frac{\partial}{\partial x}\left( \alpha (x) \frac{\partial u}{\partial x^2}
+        \right), \quad x\in (0,L),\ t\in (0,T]
+        
+        
+
+.. _Eq:diffu:pde1:ic:u:
+
+.. _Eq:diffu:pde1:ic:u:
+
+.. math::
+   :label: diffu:pde1:ic:u
+          
+        u(x,0) = I(x), \quad  x\in [0,L]
+        
+        
+
+.. _Eq:diffu:pde1:bc:0:
+
+.. _Eq:diffu:pde1:bc:0:
+
+.. math::
+   :label: diffu:pde1:bc:0
+          
+        u(0,t)  = U_0, \quad  t>0,
+        
+        
+
+.. _Eq:diffu:pde1:bc:L:
+
+.. _Eq:diffu:pde1:bc:L:
+
+.. math::
+   :label: diffu:pde1:bc:L
+          
+        u(L,t)  = U_L, \quad  t>0{\thinspace .} 
+        
+        
+
+A short form of the diffusion equation with variable coefficients is
+:math:`u_t = (\alpha u_x)_x`.
+
+Stationary solution
+-------------------
+
+As :math:`t\rightarrow\infty`, the solution of the above problem will approach
+a stationary limit where :math:`\partial u/\partial t=0`. The governing
+equation is then
+
+.. _Eq:diffu:fd2:pde:st:
+
+.. math::
+   :label: diffu:fd2:pde:st
+        
+        \frac{d}{dx}\left(\alpha\frac{du}{dx}\right) =0,
+        
+        
+
+with boundary conditions :math:`u(0)=U_0` and :math:`u(L)=u_L`.
+It is possible to obtain an exact solution of :eq:`diffu:fd2:pde:st`
+for any :math:`\alpha`. Integrating twice and applying the boundary conditions
+to determine the integration constants gives
+
+.. _Eq:diffu:fd2:pde:st:sol:
+
+.. math::
+   :label: diffu:fd2:pde:st:sol
+        
+        u(x) = U_0 + (U_L-U_0)\frac{\int_0^x (\alpha(\xi))^{-1}d\xi}{\int_0^L (\alpha(\xi))^{-1}d\xi}
+        {\thinspace .} 
+        
+        
+
+Piecewise constant medium
+-------------------------
+
+Consider a medium built of :math:`M` layers. The boundaries between the
+layers are denoted by :math:`b_0, \ldots, b_M`,
+where :math:`b_0=0` and :math:`b_M=L`.
+If the material in each layer potentially differs from the others, but
+is otherwise constant, we can express :math:`\alpha` as a
+*piecewise constant function* according to
+
+.. _Eq:diffu:fd2:pde:st:pc:alpha:
+
+.. math::
+   :label: diffu:fd2:pde:st:pc:alpha
+        
+        \alpha (x) = \left\lbrace\begin{array}{ll}
+        \alpha_0,& b_0 \leq x < b_1,\\ 
+        \vdots &\\ 
+        \alpha_i,& b_i \leq x < b_{i+1},\\ 
+        \vdots &\\ 
+        \alpha_0,& b_{M-1} \leq x \leq b_M.
+        \end{array}\right.
+        
+        
+
+The exact solution :eq:`diffu:fd2:pde:st:sol` in case of such a
+piecewise constant :math:`\alpha` function is easy to derive. Assume that
+:math:`x` is in the :math:`m`-th layer: :math:`x\in [b_m, b_{m+1}]`. In the integral
+:math:`\int_0^x (a(\xi))^{-1}d\xi` we must integrate through the first
+:math:`m-1` layers and then add the contribution from the remaining part
+:math:`x-b_m` into the :math:`m`-th layer:
+
+.. _Eq:diffu:fd2:pde:st:sol:pc:
+
+.. math::
+   :label: diffu:fd2:pde:st:sol:pc
+        
+        u(x) = U_0 + (U_L-U_0)
+        \frac{\sum_{j=0}^{m-1} (b_{j+1}-b_j)/\alpha(b_j) + (x-b_m)/\alpha(b_m)}{\sum_{j=0}^{M-1} (b_{j+1}-b_j)/\alpha(b_j)}
+        
+        
+
+**Remark.**
+It may sound strange to have a discontinuous :math:`\alpha` in a differential
+equation where one is to differentiate, but a discontinuous :math:`\alpha`
+is compensated by a discontinuous :math:`u_x` such that :math:`\alpha u_x` is
+continues and therefore can be differentiated as :math:`(\alpha u_x)_x`.
+
+Implementation
+--------------
+
+Programming with piecewise function definition quickly becomes
+cumbersome as the most naive approach is to test for which interval
+:math:`x` lies, and then start evaluating a formula like
+:eq:`diffu:fd2:pde:st:sol:pc`. In Python, vectorized expressions may
+help to speed up the computations.
+The convenience classes ``PiecewiseConstant`` and
+``IntegratedPiecewiseConstant`` were made to simplify programming with
+functions like :eq:`diffu:fd2:pde:st:pc:alpha` and expressions like
+:eq:`diffu:fd2:pde:st:sol:pc`. These utilities not only represent
+piecewise constant functions, but also *smoothed* versions of them
+where the discontinuities can be smoothed out in a controlled fashion.
+This is advantageous in many computational contexts (although seldom
+for pure finite difference computations of the solution :math:`u`).
+
+The ``PiecewiseConstant`` class is created by sending in the domain as a
+2-tuple or 2-list and a ``data`` object describing the boundaries
+:math:`b_0,\ldots,b_M` and the corresponding function values
+:math:`\alpha_0,\ldots,\alpha_{M-1}`. More precisely, ``data`` is a nested
+list, where ``data[i][0]`` holds :math:`b_i` and ``data[i][1]`` holds the
+corresponding value :math:`\alpha_i`, for :math:`i=0,\ldots,M-1`. Given :math:`b_i` and
+:math:`\alpha_i` in arrays ``b`` and ``a``, it is easy to fill out the nested
+list ``data``.
+
+In our application, we want to represent :math:`\alpha` and :math:`1/\alpha`
+as piecewise constant function, in addition to the :math:`u(x)` function
+which involves the integrals of :math:`1/\alpha`. A class creating the
+functions we need and a method for evaluating :math:`u`, can take the
+form
+
+.. code-block:: python
+
+        class SerialLayers:
+            """
+            b: coordinates of boundaries of layers, b[0] is left boundary
+            and b[-1] is right boundary of the domain [0,L].
+            a: values of the functions in each layer (len(a) = len(b)-1).
+            U_0: u(x) value at left boundary x=0=b[0].
+            U_L: u(x) value at right boundary x=L=b[0].
+            """
+        
+            def __init__(self, a, b, U_0, U_L, eps=0):
+                self.a, self.b = np.asarray(a), np.asarray(b)
+                self.eps = eps  # smoothing parameter for smoothed a
+                self.U_0, self.U_L = U_0, U_L
+        
+                a_data = [[bi, ai] for bi, ai in zip(self.b, self.a)]
+                domain = [b[0], b[-1]]
+                self.a_func = PiecewiseConstant(domain, a_data, eps)
+        
+                # inv_a = 1/a is needed in formulas
+                inv_a_data = [[bi, 1./ai] for bi, ai in zip(self.b, self.a)]
+                self.inv_a_func = \ 
+                     PiecewiseConstant(domain, inv_a_data, eps)
+                self.integral_of_inv_a_func = \ 
+                     IntegratedPiecewiseConstant(domain, inv_a_data, eps)
+                # Denominator in the exact formula is constant
+                self.inv_a_0L = self.integral_of_inv_a_func(b[-1])
+        
+            def __call__(self, x):
+                solution = self.U_0 + (self.U_L-self.U_0)*\ 
+                           self.integral_of_inv_a_func(x)/self.inv_a_0L
+                return solution
+
+A visualization method is also convenient to have. Below we plot :math:`u(x)`
+along with :math:`\alpha (x)` (which works well as long as :math:`\max \alpha(x)`
+is of the same size as :math:`\max u = \max(U_0,U_L)`).
+
+.. code-block:: python
+
+        class SerialLayers:
+            ...
+        
+            def plot(self):
+                x, y_a = self.a_func.plot()
+                x = np.asarray(x); y_a = np.asarray(y_a)
+                y_u = self.u_exact(x)
+                import matplotlib.pyplot as plt
+                plt.figure()
+                plt.plot(x, y_u, 'b')
+                plt.hold('on')  # Matlab style
+                plt.plot(x, y_a, 'r')
+                ymin = -0.1
+                ymax = 1.2*max(y_u.max(), y_a.max())
+                plt.axis([x[0], x[-1], ymin, ymax])
+                plt.legend(['solution $u$', 'coefficient $a$'], loc='upper left')
+                if self.eps > 0:
+                    plt.title('Smoothing eps: %s' % self.eps)
+                plt.savefig('tmp.pdf')
+                plt.savefig('tmp.png')
+                plt.show()
+
+Figure :ref:`diffu:fd2:pde:st:sol:pc:fig1` shows the case where
+
+.. code-block:: python
+
+        b = [0, 0.25, 0.5, 1]   # material boundaries
+        a = [0.2, 0.4, 4]       # material values
+        U_0 = 0.5;  U_L = 5     # boundary conditions
+
+.. _diffu:fd2:pde:st:sol:pc:fig1:
+
+.. figure:: flow_in_layers_case1.png
+   :width: 400
+
+   *Solution of the stationary diffusion equation corresponding to a piecewise constant diffusion coefficient*
+
+By adding the ``eps`` parameter to the constructor of the ``SerialLayers``
+class, we can experiment with smoothed versions of :math:`\alpha` and see
+the (small) impact on :math:`u`. Figure :ref:`diffu:fd2:pde:st:sol:pc:fig2`
+shows the result.
+
+.. _diffu:fd2:pde:st:sol:pc:fig2:
+
+.. figure:: flow_in_layers_case1_eps.png
+   :width: 400
+
+   *Solution of the stationary diffusion equation corresponding to a *smoothed* piecewise constant diffusion coefficient*
+
 Exercises
 =========
 
@@ -1435,6 +1909,8 @@ verification of implementations.
 We start with a 1D homogeneous diffusion equation with zero Dirichlet
 conditions:
 
+.. _Eq:diffu:exer:estimates:p1:pdf:
+
 .. math::
    :label: diffu:exer:estimates:p1:pdf
         
@@ -1442,22 +1918,28 @@ conditions:
          
         
 
+.. _Eq:diffu:exer:estimates:p1:bc:
+
 .. math::
    :label: diffu:exer:estimates:p1:bc
-         
+          
         u(0,t) = u(L,t) = 0,  t\in (0,T],
         
         
 
+.. _Eq:diffu:exer:estimates:p1:ic:
+
 .. math::
    :label: diffu:exer:estimates:p1:ic
-         
+          
         u(x,0) = I(x),  x\in [0,L]
         
         {\thinspace .}
         
 
 The energy estimate for this problem reads
+
+.. _Eq:diffu:exer:estimates:p1:result:
 
 .. math::
    :label: diffu:exer:estimates:p1:result
@@ -1467,6 +1949,8 @@ The energy estimate for this problem reads
         
 
 where the :math:`||\cdot ||_{L^2}` norm is defined by
+
+.. _Eq:diffu:exer:estimates:L2:
 
 .. math::
    :label: diffu:exer:estimates:L2
@@ -1498,6 +1982,8 @@ to zero. Integrate this expression and derive
 **b)**
 Now we address a slightly different problem,
 
+.. _Eq:diffu:exer:estimates:p2:pdf:
+
 .. math::
    :label: diffu:exer:estimates:p2:pdf
         
@@ -1505,22 +1991,28 @@ Now we address a slightly different problem,
          
         
 
+.. _Eq:diffu:exer:estimates:p2:bc:
+
 .. math::
    :label: diffu:exer:estimates:p2:bc
-         
+          
         u(0,t) = u(L,t) = 0,  t\in (0,T],
         
         
 
+.. _Eq:diffu:exer:estimates:p2:ic:
+
 .. math::
    :label: diffu:exer:estimates:p2:ic
-         
+          
         u(x,0) = 0,  x\in [0,L]
         
         {\thinspace .}
         
 
 The associated energy estimate is
+
+.. _Eq:diffu:exer:estimates:p2:result:
 
 .. math::
    :label: diffu:exer:estimates:p2:result
@@ -1534,6 +2026,8 @@ The associated energy estimate is
 Now consider the compound problem with an initial condition :math:`I(x)` and
 a right-hand side :math:`f(x,t)`:
 
+.. _Eq:diffu:exer:estimates:p3:pdf:
+
 .. math::
    :label: diffu:exer:estimates:p3:pdf
         
@@ -1541,16 +2035,20 @@ a right-hand side :math:`f(x,t)`:
          
         
 
+.. _Eq:diffu:exer:estimates:p3:bc:
+
 .. math::
    :label: diffu:exer:estimates:p3:bc
-         
+          
         u(0,t) = u(L,t) = 0,  t\in (0,T],
         
         
 
+.. _Eq:diffu:exer:estimates:p3:ic:
+
 .. math::
    :label: diffu:exer:estimates:p3:ic
-         
+          
         u(x,0) = I(x),  x\in [0,L]
         
         {\thinspace .}
@@ -1570,6 +2068,8 @@ Using the triangle inequality for norms,
 show that the energy estimate for
 :eq:`diffu:exer:estimates:p3:pdf`-:eq:`diffu:exer:estimates:p3:ic`
 becomes
+
+.. _Eq:diffu:exer:estimates:p3:result:
 
 .. math::
    :label: diffu:exer:estimates:p3:result
@@ -1618,6 +2118,8 @@ and use Gauss' divergence theorem, :math:`\int_\Omega \nabla\cdot\boldsymbol{q}{
 on the boundary, :math:`\partial u/\partial n=0`, area under the
 :math:`u` surface remains constant in time and
 
+.. _Eq:diffu:exer:estimates:p4:result:
+
 .. math::
    :label: diffu:exer:estimates:p4:result
         
@@ -1652,16 +2154,4 @@ are for pointing out errors in the implementation.
 Filename: ``diffu_energy.pdf``.
 
 .. --- end exercise ---
-
-.. !split
-
-Bibliography
-============
-
-.. [Ref1]
-   **R. Rannacher**. Finite element solution of diffusion problems with irregular data,
-   *Numerische Mathematik*,
-   43,
-   pp. 309-327,
-   1984.
 

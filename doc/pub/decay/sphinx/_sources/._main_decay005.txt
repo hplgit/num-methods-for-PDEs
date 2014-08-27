@@ -465,7 +465,8 @@ can be mathematically expressed as
         
 
 where :math:`T` is the temperature of the body, :math:`T_s` is the temperature
-of the surroundings, :math:`t` is time, and :math:`k` is a positive constant.
+of the surroundings, which may be time-dependent,
+:math:`t` is time, and :math:`k` is a positive constant.
 Equation :eq:`decay:Newton:cooling` is primarily viewed as an
 empirical law, valid when heat is efficiently convected away
 from the surface of the body by a flowing fluid such as air
@@ -474,8 +475,8 @@ The *heat transfer coefficient* :math:`k` reflects the transfer of
 heat from the body to
 the surroundings and must be determined from physical experiments.
 
-We must obviously have an initial condition :math:`T(0)=T_0` in addition
-to the cooling law :eq:`decay:Newton:cooling`.
+The cooling law :eq:`decay:Newton:cooling` needs an initial
+condition :math:`T(0)=T_0`.
 
 .. _decay:app:atm:
 
@@ -1067,7 +1068,7 @@ Exercise 10: Derive schemes for Newton's law of cooling
 -------------------------------------------------------
 
 Show in detail how we can apply the ideas of the Forward Euler,
-Backward Euler, Crank-Nicolson, and :math:`\theta`-rule
+Backward Euler, and Crank-Nicolson
 discretizations to derive explicit
 computational formulas for new temperature values in Newton's law of
 cooling (see the section :ref:`decay:app:Newton:cooling`):
@@ -1079,18 +1080,17 @@ cooling (see the section :ref:`decay:app:Newton:cooling`):
 .. math::
    :label: decay:Newton:cooling
         
-        {dT\over dt} = -k(T-T_s),\quad T(0)=T_0{\thinspace .}
+        {dT\over dt} = -k(T-T_s(t)),\quad T(0)=T_0{\thinspace .}
         
         
 
-Here, :math:`T` is the temperature of the body, :math:`T_s` is the temperature
+Here, :math:`T` is the temperature of the body, :math:`T_s(t)` is the temperature
 of the surroundings, :math:`t` is time, :math:`k` is the heat transfer
 coefficient, and :math:`T_0` is the initial temperature of the body.
+Summarize the discretizations in a :math:`\theta`-rule
+such that you can get the three
+schemes from a single formula by varying the :math:`\theta` parameter.
 Filename: ``schemes_cooling.pdf``.
-
-.. thinking: operate directly on the T equation
-
-.. Can introduce :math:`u=T-T_s`, or much better for illustration of the
 
 .. --- end exercise ---
 
@@ -1101,24 +1101,109 @@ Filename: ``schemes_cooling.pdf``.
 Exercise 11: Implement schemes for Newton's law of cooling
 ----------------------------------------------------------
 
-Formulate a :math:`\theta`-rule for the three schemes in :ref:`decay:app:exer:cooling:schemes` such that you can get the three
-schemes from a single formula by varying the :math:`\theta` parameter.
-Implement the method in a function ``cooling(T0, k, T_s,
-t_end, dt, theta=0.5)``, where ``T0`` is the initial temperature, ``k`` is
-the heat transfer coefficient, ``T_s`` is the temperature of the
+The goal of this exercise is to implement the schemes from
+:ref:`decay:app:exer:cooling:schemes` and investigate
+several approaches for verifying the implementation.
+
+**a)**
+Implement the :math:`\theta`-rule from
+:ref:`decay:app:exer:cooling:schemes`
+``cooling(T0, k, T_s, t_end, dt, theta=0.5)``,
+where ``T0`` is the initial temperature, ``k`` is
+the heat transfer coefficient, ``T_s`` is a function of ``t`` for
+the temperature of the
 surroundings, ``t_end`` is the end time of the simulation, ``dt`` is the
 time step, and ``theta`` corresponds to :math:`\theta`.  The ``cooling``
 function should return the temperature as an array ``T`` of values at
-the mesh points and the time mesh ``t``.  Construct verification
-examples to check that the implementation works.
+the mesh points and the time mesh ``t``.
+
+**b)**
+In the case :math:`\lim_{t\rightarrow\infty}T_s(t)=C=\mbox{const}`,
+explain why :math:`T(t)\rightarrow C`. Construct an example where you
+can illustrate this property in a plot. Implement a corresponding
+test function that checks the correctness of the asymptotic
+value of the solution.
+
+**c)**
+A piecewise constant :math:`T_s(t)`,
+
+.. math::
+         T_s(t) = \left\lbrace\begin{array}{ll} C_0,& 0\leq t\leq t^*\\ 
+        C_1, & t>t^*,\end{array}\right.
+        
+
+corresponds to a sudden change in the environmental temperature
+at :math:`t=t^*`. Choose :math:`C_1=2T_0`, :math:`C_2=\frac{1}{2}T_0`, and
+:math:`t^*=4/k`. Plot the solution and explain why it seems physically
+reasonable.
+
+**d)**
+Find a value of :math:`\Delta t` such that you can illustrate stability
+problems of the Crank-Nicolson scheme in the test case from c).
+
+**e)**
+Find an expression for the exact solution of
+:eq:`decay:Newton:cooling`.  Construct a test case and compare the
+numerical and exact solution in a plot. Find a value of the time step
+:math:`\Delta t` such that the two solution curves cannot (visually) be
+distinguished from each other. Many scientists will claim that such a
+plot provides evidence for a correct implementation, but point out why
+there still may be errors in the code.  Can you introduce bugs in the
+``cooling`` function and still achieve visually coinciding curves?
 
 .. --- begin hint in exercise ---
 
 **Hint.**
-For verification, try to find an exact solution of the
-discrete equations. A trick is to introduce :math:`u=T-T_s`, observe
-that :math:`u^{n}=(T_0-T_s)A^n` for some amplification factor :math:`A`,
-and then express this formula in terms of :math:`T^n`.
+The exact solution can be derived by multiplying :eq:`decay:Newton:cooling`
+by the integrating factor :math:`e^{kt}`.
+
+.. --- end hint in exercise ---
+
+.. --- begin solution of exercise ---
+
+**Solution.**
+Multiplication of :math:`e^{kt}`, using the product rule for differentiation
+``backwards``, and integrating from 0 to :math:`t`, results in
+
+.. math::
+         \int_0^t (e^{kt}T)'dt = k\int_0^t e^{kt}T_sdt{\thinspace .}
+
+The left-hand side becomes :math:`e^{kt}T(t)-T_0`. Multiplying by :math:`e^{-kt}`
+then gives
+
+.. math::
+         T(t) = T_0e^{-kt} + ke^{-kt}\int_0^t e^{kt}T_sdt,
+
+which is the general expression for the exact solution.
+As a check, we consider the case where :math:`T_s` is constant.
+That problem can easily be solved by introducing :math:`u=T-T_s`, resulting in
+:math:`u'=-ku`, :math:`u(0)=T_0-T_s`, with solution :math:`u(t)=(T_0-T_s)e^{-kt}`,
+and consequently :math:`T=T_s + (T_0-T_s)e^{-kt}`. With a constant :math:`T_s` in
+the general solution above, the solution becomes
+
+.. math::
+         T(t) = T_0e^{-kt} + ke^{-kt}\int_0^t e^{kt}T_sdt =
+        T_0e^{-kt} + ke^{-kt}T_sk^{-1}(e^{kt} - 1)
+        = T_0e^{-kt} + T_s - T_se^{-kt} = T_s + (T_0-T_s)e^{-kt},
+
+as desired.
+
+.. --- end solution of exercise ---
+
+**f)**
+Implement a test function for comparing the solution returned by
+the ``cooling`` function is identical to the exact numerical
+solution of the problem (to machine precision) when :math:`T_s` is constant.
+
+.. --- begin hint in exercise ---
+
+**Hint.**
+The exact solution of the
+discrete equations in the case :math:`T_s` is a constant can be found by
+introducing :math:`u=T-T_s` to get a problem :math:`u'=-ku`, :math:`u(0)=T_0-T_s`.
+The solution of the discrete equations is then of the form
+:math:`u^{n}=(T_0-T_s)A^n` for some amplification factor :math:`A`. This
+approach can be used to derive an expression for :math:`T^n`.
 
 .. --- end hint in exercise ---
 

@@ -1,0 +1,1092 @@
+<!--
+Automatically generated HTML file from Doconce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Doconce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Finite difference methods for wave motion">
+<meta name="keywords" content="waves on a string,wave equation 1D,wave equation 1D, finite difference method,mesh finite differences,stencil 1D wave equation,mesh function,wave equation 1D, implementation,unit testing,software testing nose,vectorization,scalar code,array slices,slice,lambda function (Python),Neumann conditions,Dirichlet conditions,homogeneous Neumann conditions,homogeneous Dirichlet conditions,boundary conditions Neumann,boundary conditions Dirichlet,stencil Neumann boundary,index set notation,geometric mean,arithmetic mean,harmonic average,averaging geometric,averaging arithmetic,averaging harmonic,wave equation 1D, analytical properties,Fourier series,Fourier transform,discrete Fourier transform,wave equation 1D, exact numerical solution,Courant number,stability criterion,wave equation 1D, stability,wave equation 2D, implementation,index set notation,Cython,declaration of variables in Cython,C extension module,wrapper code,Fortran subroutine,row-major ordering,column-major ordering,Fortran array storage,C/Python array storage,radiation condition,open boundary condition,boundary condition open (radiation),periodic boundary conditions,boundary conditions periodic">
+
+
+
+
+<link href="https://raw.githubusercontent.com/hplgit/doconce/master/bundled/html_styles/style_solarized_box/css/solarized_light_code.css" rel="stylesheet" type="text/css" title="light"/>
+<script src="http://www.peterhaschke.com/assets/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<link href="http://thomasf.github.io/solarized-css/solarized-light.min.css" rel="stylesheet">
+<style type="text/css">
+h1 {color: #b58900;}  /* yellow */
+/* h1 {color: #cb4b16;}  orange */
+/* h1 {color: #d33682;}  magenta, the original choice of thomasf */
+.alert-text-small   { font-size: 80%;  }
+.alert-text-large   { font-size: 130%; }
+.alert-text-normal  { font-size: 90%;  }
+.alert {
+  padding:8px 35px 8px 14px; margin-bottom:18px;
+  text-shadow:0 1px 0 rgba(255,255,255,0.5);
+  border:1px solid #93a1a1;
+  border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  color: #555;
+  background-color: #eee8d5;
+  background-position: 10px 5px;
+  background-repeat: no-repeat;
+  background-size: 38px;
+  padding-left: 55px;
+  width: 75%;
+ }
+.alert-block {padding-top:14px; padding-bottom:14px}
+.alert-block > p, .alert-block > ul {margin-bottom:1em}
+.alert li {margin-top: 1em}
+.alert-block p+p {margin-top:5px}
+.alert-notice { background-image: url(https://raw.github.com/hplgit/doconce/master/bundled/html_images/small_yellow_notice.png); }
+.alert-summary  { background-image:url(https://raw.github.com/hplgit/doconce/master/bundled/html_images/small_yellow_summary.png); }
+.alert-warning { background-image: url(https://raw.github.com/hplgit/doconce/master/bundled/html_images/small_yellow_warning.png); }
+.alert-question {background-image:url(https://raw.github.com/hplgit/doconce/master/bundled/html_images/small_yellow_question.png); }
+
+div { text-align: justify; text-justify: inter-word; }
+</style>
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [(' Simulation of waves on a string ',
+               1,
+               'wave:string',
+               'wave:string'),
+              (' Discretizing the domain ',
+               2,
+               'wave:string:mesh',
+               'wave:string:mesh'),
+              (' Uniform meshes ', 3, None, '___sec2'),
+              (' The discrete solution ',
+               2,
+               'wave:string:numerical:sol',
+               'wave:string:numerical:sol'),
+              (' Fulfilling the equation at the mesh points ',
+               2,
+               'wave:string:samplingPDE',
+               'wave:string:samplingPDE'),
+              (' Replacing derivatives by finite differences ',
+               2,
+               'wave:string:fd',
+               'wave:string:fd'),
+              (' Algebraic version of the PDE ', 3, None, '___sec6'),
+              (' Algebraic version of the initial conditions ',
+               3,
+               None,
+               '___sec7'),
+              (' Formulating a recursive algorithm ',
+               2,
+               'wave:string:alg',
+               'wave:string:alg'),
+              (' Sketch of an implementation ',
+               2,
+               'wave:string:impl',
+               'wave:string:impl'),
+              (' Verification ', 1, None, '___sec10'),
+              (' A slightly generalized model problem ',
+               2,
+               'wave:pde2:fd',
+               'wave:pde2:fd'),
+              (' Using an analytical solution of physical significance ',
+               2,
+               'wave:pde2:fd:standing:waves',
+               'wave:pde2:fd:standing:waves'),
+              (' Manufactured solution ',
+               2,
+               'wave:pde2:fd:MMS',
+               'wave:pde2:fd:MMS'),
+              (' Constructing an exact solution of the discrete equations ',
+               2,
+               'wave:pde2:fd:verify:quadratic',
+               'wave:pde2:fd:verify:quadratic'),
+              (' Implementation ', 1, 'wave:pde1:impl', 'wave:pde1:impl'),
+              (' Making a solver function ',
+               2,
+               'wave:pde1:impl:solver',
+               'wave:pde1:impl:solver'),
+              (' Verification: exact quadratic solution ',
+               2,
+               'wave:pde1:impl:verify:quadratic',
+               'wave:pde1:impl:verify:quadratic'),
+              (' Visualization: animating the solution ',
+               2,
+               'wave:pde1:impl:animate',
+               'wave:pde1:impl:animate'),
+              (' Visualization via SciTools ', 3, None, '___sec19'),
+              (' Making movie files ', 3, None, '___sec20'),
+              (' Skipping frames for animation speed ', 3, None, '___sec21'),
+              (' Visualization via Matplotlib ', 3, None, '___sec22'),
+              (' Running a case ',
+               2,
+               'wave:pde1:guitar:data',
+               'wave:pde1:guitar:data'),
+              (' The benefits of scaling ', 2, None, '___sec24'),
+              (' Vectorization ',
+               1,
+               'wave:pde1:impl:vec',
+               'wave:pde1:impl:vec'),
+              (' Operations on slices of arrays ',
+               2,
+               'wave:pde1:impl:vec:slices:basics',
+               'wave:pde1:impl:vec:slices:basics'),
+              (' Finite difference schemes expressed as slices ',
+               2,
+               'wave:pde1:impl:vec:slices:fdm',
+               'wave:pde1:impl:vec:slices:fdm'),
+              (' Verification ',
+               2,
+               'wave:pde1:impl:vec:verify:quadratic',
+               'wave:pde1:impl:vec:verify:quadratic'),
+              (' Efficiency measurements ', 2, None, '___sec29'),
+              (' Exercises ', 1, None, '___sec30'),
+              (' Exercise 1: Simulate a standing wave ',
+               2,
+               'wave:exer:standingwave',
+               'wave:exer:standingwave'),
+              (' Remarks ', 3, None, '___sec32'),
+              (' Exercise 2: Add storage of solution in a user action function ',
+               2,
+               'wave:exer:store:list',
+               'wave:exer:store:list'),
+              (' Exercise 3: Use a class for the user action function ',
+               2,
+               'wave:exer:store:list:class',
+               'wave:exer:store:list:class'),
+              (' Exercise 4: Compare several Courant numbers in one movie ',
+               2,
+               'wave:exer:multiple:C',
+               'wave:exer:multiple:C'),
+              (' Project 5: Calculus with 1D mesh functions ',
+               2,
+               'wave:exer:mesh1D:calculus',
+               'wave:exer:mesh1D:calculus'),
+              (' Generalization: reflecting boundaries ',
+               1,
+               'wave:pde2:Neumann',
+               'wave:pde2:Neumann'),
+              (' Neumann boundary condition ',
+               2,
+               'wave:pde2:Neumann:bc',
+               'wave:pde2:Neumann:bc'),
+              (' Discretization of derivatives at the boundary ',
+               2,
+               'wave:pde2:Neumann:discr',
+               'wave:pde2:Neumann:discr'),
+              (' Implementation of Neumann conditions ',
+               2,
+               'wave:pde2:Neumann:impl',
+               'wave:pde2:Neumann:impl'),
+              (' Index set notation ', 2, 'wave:indexset', 'wave:indexset'),
+              (' Alternative implementation via ghost cells ',
+               2,
+               'wave:pde1:Neumann:ghost',
+               'wave:pde1:Neumann:ghost'),
+              (' Idea ', 3, None, '___sec43'),
+              (' Implementation ', 3, None, '___sec44'),
+              (' Generalization: variable wave velocity ',
+               1,
+               'wave:pde2:var:c',
+               'wave:pde2:var:c'),
+              (' The model PDE with a variable coefficient ',
+               2,
+               None,
+               '___sec46'),
+              (' Discretizing the variable coefficient ',
+               2,
+               'wave:pde2:var:c:ideas',
+               'wave:pde2:var:c:ideas'),
+              (' Computing the coefficient between mesh points ',
+               2,
+               'wave:pde2:var:c:means',
+               'wave:pde2:var:c:means'),
+              (' How a variable coefficient affects the stability ',
+               2,
+               'wave:pde2:var:c:stability',
+               'wave:pde2:var:c:stability'),
+              (' Neumann condition and a variable coefficient ',
+               2,
+               'wave:pde2:var:c:Neumann',
+               'wave:pde2:var:c:Neumann'),
+              (' Implementation of variable coefficients ',
+               2,
+               'wave:pde2:var:c:impl',
+               'wave:pde2:var:c:impl'),
+              (' A more general model PDE with variable coefficients ',
+               2,
+               None,
+               '___sec52'),
+              (' Generalization: damping ', 2, None, '___sec53'),
+              (' Building a general 1D wave equation solver ',
+               1,
+               'wave:pde2:software',
+               'wave:pde2:software'),
+              (' User action function as a class ', 2, None, '___sec55'),
+              (' Pulse propagation in two media ', 2, None, '___sec56'),
+              (' Exercises ', 1, None, '___sec57'),
+              (' Exercise 6: Find the analytical solution to a damped wave equation ',
+               2,
+               'wave:exer:standingwave:damped:uex',
+               'wave:exer:standingwave:damped:uex'),
+              (' Problem 7: Explore symmetry boundary conditions ',
+               2,
+               'wave:exer:symmetry:bc',
+               'wave:exer:symmetry:bc'),
+              (' Exercise 8: Send pulse waves through a layered medium ',
+               2,
+               'wave:app:exer:pulse1D',
+               'wave:app:exer:pulse1D'),
+              (' Exercise 9: Compare discretizations of a Neumann condition ',
+               2,
+               None,
+               '___sec61'),
+              (' Exercise 10: Verification by a cubic polynomial in space ',
+               2,
+               'wave:fd2:exer:verify:cubic',
+               'wave:fd2:exer:verify:cubic'),
+              (' Analysis of the difference equations ',
+               1,
+               'wave:pde1:analysis',
+               'wave:pde1:analysis'),
+              (' Properties of the solution of the wave equation ',
+               2,
+               'wave:pde1:properties',
+               'wave:pde1:properties'),
+              (' More precise definition of Fourier representations ',
+               2,
+               'wave:pde1:Fourier',
+               'wave:pde1:Fourier'),
+              (' Stability ',
+               2,
+               'wave:pde1:stability',
+               'wave:pde1:stability'),
+              (' Preliminary results ', 3, None, '___sec67'),
+              (' Numerical wave propagation ', 3, None, '___sec68'),
+              (' Numerical dispersion relation ',
+               2,
+               'wave:pde1:num:dispersion',
+               'wave:pde1:num:dispersion'),
+              (' Extending the analysis to 2D and 3D ',
+               2,
+               'wave:pde1:analysis:2D3D',
+               'wave:pde1:analysis:2D3D'),
+              (' Finite difference methods for 2D and 3D wave equations ',
+               1,
+               'wave:2D3D',
+               'wave:2D3D'),
+              (' Multi-dimensional wave equations ',
+               2,
+               'wave:2D3D:models',
+               'wave:2D3D:models'),
+              (' Mesh ', 2, 'wave:2D3D:mesh', 'wave:2D3D:mesh'),
+              (' Discretization ', 2, 'wave:2D3D:models', 'wave:2D3D:models'),
+              (' Discretizing the PDEs ', 3, None, '___sec75'),
+              (' Handling boundary conditions where is $u$ known ',
+               3,
+               None,
+               '___sec76'),
+              (' Discretizing the Neumann condition ', 3, None, '___sec77'),
+              (' Implementation ', 1, 'wave:2D3D:impl', 'wave:2D3D:impl'),
+              (' Scalar computations ',
+               2,
+               'wave2D3D:impl:scalar',
+               'wave2D3D:impl:scalar'),
+              (' Domain and mesh ', 3, None, '___sec80'),
+              (' Solution arrays ', 3, None, '___sec81'),
+              (' Index sets ', 3, None, '___sec82'),
+              (' Computing the solution ', 3, None, '___sec83'),
+              (' Vectorized computations ',
+               2,
+               'wave2D3D:impl:vectorized',
+               'wave2D3D:impl:vectorized'),
+              (' Verification ',
+               2,
+               'wave2D3D:impl:verify',
+               'wave2D3D:impl:verify'),
+              (' Testing a quadratic solution ', 3, None, '___sec86'),
+              (' Migrating loops to Cython ',
+               1,
+               'wave2D3D:impl:Cython',
+               'wave2D3D:impl:Cython'),
+              (' Declaring variables and annotating the code ',
+               2,
+               None,
+               '___sec88'),
+              (' Visual inspection of the C translation ',
+               2,
+               None,
+               '___sec89'),
+              (' Building the extension module ', 2, None, '___sec90'),
+              (' Calling the Cython function from Python ',
+               2,
+               None,
+               '___sec91'),
+              (' Efficiency ', 3, None, '___sec92'),
+              (' Migrating loops to Fortran ', 1, None, '___sec93'),
+              (' The Fortran subroutine ', 2, None, '___sec94'),
+              (' Building the Fortran module with f2py ',
+               2,
+               None,
+               '___sec95'),
+              (' How to avoid array copying ', 2, None, '___sec96'),
+              (' Efficiency ', 3, None, '___sec97'),
+              (' Migrating loops to C via Cython ', 1, None, '___sec98'),
+              (' Translating index pairs to single indices ',
+               2,
+               None,
+               '___sec99'),
+              (' The complete C code ', 2, None, '___sec100'),
+              (' The Cython interface file ', 2, None, '___sec101'),
+              (' Building the extension module ', 2, None, '___sec102'),
+              (' Efficiency ', 3, None, '___sec103'),
+              (' Migrating loops to C via f2py ', 1, None, '___sec104'),
+              (' Migrating loops to C++ via f2py ', 2, None, '___sec105'),
+              (' Using classes to implement a simulator ',
+               1,
+               None,
+               '___sec106'),
+              (' Exercises ', 1, None, '___sec107'),
+              (' Exercise 11: Check that a solution fulfills the discrete model ',
+               2,
+               'wave:exer:quadratic:2D',
+               'wave:exer:quadratic:2D'),
+              (' Project 12: Calculus with 2D/3D mesh functions ',
+               2,
+               'wave:exer:mesh3D:calculus',
+               'wave:exer:mesh3D:calculus'),
+              (' Exercise 13: Implement Neumann conditions in 2D ',
+               2,
+               'wave:app:exer:wave2D:Neumann',
+               'wave:app:exer:wave2D:Neumann'),
+              (' Exercise 14: Test the efficiency of compiled loops in 3D ',
+               2,
+               'wave:exer:3D:f77:cy:efficiency',
+               'wave:exer:3D:f77:cy:efficiency'),
+              (' Applications of wave equations ', 1, 'wave:app', 'wave:app'),
+              (' Waves on a string ',
+               2,
+               'wave:app:string',
+               'wave:app:string'),
+              (' Damping ', 3, None, '___sec114'),
+              (' External forcing ', 3, None, '___sec115'),
+              (' Modeling the tension via springs ', 3, None, '___sec116'),
+              (' Waves on a membrane ',
+               2,
+               'wave:app:membrane',
+               'wave:app:membrane'),
+              (' Elastic waves in a rod ',
+               2,
+               'wave:app:elastic:rod',
+               'wave:app:elastic:rod'),
+              (' The acoustic model for seismic waves ',
+               2,
+               'wave:app:acoustic:seismic',
+               'wave:app:acoustic:seismic'),
+              (' Anisotropy ', 3, None, '___sec120'),
+              (' Sound waves in liquids and gases ',
+               2,
+               'wave:app:sound',
+               'wave:app:sound'),
+              (' Spherical waves ',
+               2,
+               'wave:app:spherical',
+               'wave:app:spherical'),
+              (' The linear shallow water equations ',
+               2,
+               'wave:app:sw:2D',
+               'wave:app:sw:2D'),
+              (' Wind drag on the surface ', 3, None, '___sec124'),
+              (' Bottom drag ', 3, None, '___sec125'),
+              (" Effect of the Earth's rotation ", 3, None, '___sec126'),
+              (' Waves in blood vessels ',
+               2,
+               'wave:app:blood',
+               'wave:app:blood'),
+              (' Electromagnetic waves ',
+               2,
+               'wave:app:light',
+               'wave:app:light'),
+              (' Exercises ', 1, 'wave:app:exer', 'wave:app:exer'),
+              (' Exercise 15: Simulate waves on a non-homogeneous string ',
+               2,
+               'wave:app:exer:string:discont',
+               'wave:app:exer:string:discont'),
+              (' Exercise 16: Simulate damped waves on a string ',
+               2,
+               'wave:app:exer:string:damping',
+               'wave:app:exer:string:damping'),
+              (' Exercise 17: Simulate elastic waves in a rod ',
+               2,
+               'wave:app:exer:rod',
+               'wave:app:exer:rod'),
+              (' Exercise 18: Simulate spherical waves ',
+               2,
+               'wave:app:exer:spherical',
+               'wave:app:exer:spherical'),
+              (' Exercise 19: Explain why numerical noise occurs ',
+               2,
+               'wave:app:exer:pulse1D:analysis',
+               'wave:app:exer:pulse1D:analysis'),
+              (' Exercise 20: Investigate harmonic averaging in a 1D model ',
+               2,
+               'wave:app:exer:pulse1D:harmonic',
+               'wave:app:exer:pulse1D:harmonic'),
+              (' Problem 21: Implement open boundary conditions ',
+               2,
+               'wave:app:exer:radiationBC',
+               'wave:app:exer:radiationBC'),
+              (' Remarks ', 3, None, '___sec137'),
+              (' Exercise 22: Implement periodic boundary conditions ',
+               2,
+               'wave:exer:periodic',
+               'wave:exer:periodic'),
+              (' Problem 23: Earthquake-generated tsunami over a subsea hill ',
+               2,
+               'wave:app:exer:tsunami1D:hill',
+               'wave:app:exer:tsunami1D:hill'),
+              (' Problem 24: Earthquake-generated tsunami over a 3D hill ',
+               2,
+               'wave:app:exer:tsunami2D:hill',
+               'wave:app:exer:tsunami2D:hill'),
+              (' Problem 25: Investigate Matplotlib for visualization ',
+               2,
+               'wave:app:exer:tsunami:hill:viz:matplotlib',
+               'wave:app:exer:tsunami:hill:viz:matplotlib'),
+              (' Problem 26: Investigate visualization packages ',
+               2,
+               'wave:app:exer:tsunami:hill:viz:packages',
+               'wave:app:exer:tsunami:hill:viz:packages'),
+              (' Problem 27: Implement loops in compiled languages ',
+               2,
+               'wave:app:exer:tsunami2D:hill:compiled',
+               'wave:app:exer:tsunami2D:hill:compiled'),
+              (' Exercise 28: Simulate seismic waves in 2D ',
+               2,
+               'wave:app:exer:seismic2D',
+               'wave:app:exer:seismic2D'),
+              (' Project 29: Model 3D acoustic waves in a room ',
+               2,
+               'wave:app:exer:acoustics',
+               'wave:app:exer:acoustics'),
+              (' Project 30: Solve a 1D transport equation ',
+               2,
+               'wave:app:exer:advec1D',
+               'wave:app:exer:advec1D'),
+              (' Problem 31: General analytical solution of a 1D damped wave equation ',
+               2,
+               'wave:app:exer:anal:damped:wave1D',
+               'wave:app:exer:anal:damped:wave1D'),
+              (' Problem 32: General analytical solution of a 2D damped wave equation ',
+               2,
+               'wave:app:exer:anal:damped:wave2D',
+               'wave:app:exer:anal:damped:wave2D')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\uex}{{u_{\small\mbox{e}}}}
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\halfi}{{1/2}}
+\newcommand{\tp}{\thinspace .}
+\newcommand{\xpoint}{\boldsymbol{x}}
+\newcommand{\normalvec}{\boldsymbol{n}}
+\newcommand{\Oof}[1]{\mathcal{O}(#1)}
+\renewcommand{\u}{\boldsymbol{u}}
+\newcommand{\f}{\boldsymbol{f}}
+\newcommand{\stress}{\boldsymbol{\sigma}}
+\newcommand{\I}{\boldsymbol{I}}
+\newcommand{\T}{\boldsymbol{T}}
+\newcommand{\ii}{\boldsymbol{i}}
+\newcommand{\jj}{\boldsymbol{j}}
+\newcommand{\kk}{\boldsymbol{k}}
+\newcommand{\Ix}{\mathcal{I}_x}
+\newcommand{\Iy}{\mathcal{I}_y}
+\newcommand{\Iz}{\mathcal{I}_z}
+\newcommand{\It}{\mathcal{I}_t}
+\newcommand{\setb}[1]{#1^0}    % set begin
+\newcommand{\sete}[1]{#1^{-1}} % set end
+\newcommand{\setl}[1]{#1^-}
+\newcommand{\setr}[1]{#1^+}
+\newcommand{\seti}[1]{#1^i}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Integer}{\mathbb{Z}}
+$$
+
+
+
+
+    
+<a name="part0007"></a>
+<p>
+<!-- begin top navigation -->
+<table style="width: 100%"><tr><td>
+<div style="text-align: left;"><a href="._main_wave-solarized006.html">&laquo; Previous</a></div>
+</td><td>
+<div style="text-align: right;"><a href="._main_wave-solarized008.html">Next &raquo;</a></div>
+</td></tr></table>
+<!-- end top navigation -->
+</p>
+
+<p>
+<!-- !split -->
+
+<h1>Applications of wave equations <a name="wave:app"></a></h1>
+
+This section presents a range of wave equation models
+for different physical phenomena. Although many wave motion problems
+in physics can be modeled by the standard linear wave equation, or a similar
+formulation with a system of first-order equations, there are some
+exceptions. Perhaps the most important is water waves: these are modeled by
+the Laplace equation with time-dependent boundary conditions at
+the water surface (long water waves, however, can be approximated
+by a standard wave equation, see the section <a href="._main_wave-solarized008.html#wave:app:sw:2D">The linear shallow water equations</a>).
+Quantum mechanical waves constitute another example where the waves
+are governed by the
+Schrodinger
+equation and not a standard wave equation.
+Many wave phenomena also need to take nonlinear effects into account
+when the wave amplitude is significant. Shock waves in the air is
+a primary example.
+
+<p>
+The derivations in the following are very brief. Those with a firm
+background in continuum mechanics will probably have enough
+information to fill in the details, while other readers will hopefully
+get some impression of the physics and approximations involved when
+establishing wave equation models.
+
+<h2>Waves on a string <a name="wave:app:string"></a></h2>
+
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 9:  Discrete string model with point masses connected by elastic strings. <a name="wave:app:string:fig"></a> </p></center>
+<p><img src="fig-wave/wave_on_string.png" align="bottom" width=800,></p>
+</center>
+
+<p>
+Figure <a href="#wave:app:string:fig">9</a> shows a model we may use to derive
+the equation for waves on a string. The string is modeled as a
+set of discrete point masses (at mesh points) with
+elastic strings in between. The strings are at a high constant tension \( T \).
+We let the mass at mesh point \( x_i \) be \( m_i \). The displacement of
+this mass point in \( y \) direction is denoted by \( u_i(t) \).
+
+<p>
+The motion of mass \( m_i \) is governed by Newton's second law of motion.
+The position of the mass at time \( t \) is \( x_i\ii + u_i(t)\jj \), where
+\( \ii \) and \( \jj \) are unit vectors in the \( x \) and \( y \) direction, respectively.
+The acceleration is then \( u_i''(t)\jj \). Two forces are acting
+on the mass as indicated in Figure <a href="#wave:app:string:fig">9</a>.
+The force \( \T^{-} \) acting toward the point \( x_{i-1} \) can be decomposed
+as
+
+$$ \T^{-} = -T\sin\phi\ii -T\cos\phi\jj, $$
+
+where \( \phi \) is the angle between the force and the
+line \( x=x_i \). Let \( \Delta u_i = u_i - u_{i-1} \) and let
+\( \Delta s_i = \sqrt{\Delta u_i^2 + (x_i - x_{i-1})^2} \)
+be the distance from mass \( m_{i-1} \) to mass \( m_i \).
+It is seen that \( \cos\phi = \Delta u_i/\Delta s_i \) and \( \sin\phi =
+(x_{i}-x_{i-1})/\Delta s \) or \( \Delta x/\Delta s_i \) if we
+introduce a constant mesh spacing \( \Delta x = x_i - x_{i-1} \).
+The force can then be written
+
+$$ \T^{-} = -T\frac{\Delta x}{\Delta s_i}\ii - T\frac{\Delta u_i}{\Delta s_i}\jj
+\tp 
+$$
+
+The force \( \T^{+} \) acting toward \( x_{i+1} \) can be calculated in a similar way:
+
+$$ \T^{+} = T\frac{\Delta x}{\Delta s_{i+1}}\ii +
+            T\frac{\Delta u_{i+1}}{\Delta s_{i+1}}\jj
+\tp 
+$$
+
+Newton's second law becomes
+
+$$ m_iu_i''(t)\jj = \T^{+} + \T^{-},$$
+
+which gives the component equations
+
+$$
+\begin{align}
+T\frac{\Delta x}{\Delta s_i} &= T\frac{\Delta x}{\Delta s_{i+1}},
+\tag{69}\\ 
+m_iu_i''(t) &= T\frac{\Delta u_{i+1}}{\Delta s_{i+1}} -
+               T\frac{\Delta u_i}{\Delta s_i}
+\tag{70}
+\tp 
+\end{align}
+$$
+
+
+<p>
+A basic reasonable assumption for a string
+is small displacements \( u_i \) and small
+displacement gradients \( \Delta u_i/\Delta x \). For small \( g=\Delta u_i/\Delta x \)
+we have that
+
+$$ \Delta s_i = \sqrt{\Delta u_i^2 + \Delta x^2} = \Delta x\sqrt{1 + g^2}
++ \Delta x (1 + {\half}g^2 + {\cal O}(g^4) \approx \Delta x
+\tp 
+$$
+
+Equation <a href="#mjx-eqn-69">(69)</a> is then simply the identity \( T=T \), while
+<a href="#mjx-eqn-70">(70)</a> can be written as
+
+$$
+m_iu_i''(t) = T\frac{\Delta u_{i+1}}{\Delta x} - T\frac{\Delta u_i}{\Delta x},
+$$
+
+which upon division by \( \Delta x \) and introducing the density
+\( \varrho_i = m_i/\Delta x \) becomes
+
+$$
+\begin{equation}
+\varrho_i u_i''(t) = T\frac{1}{\Delta x^2}
+\left( u_{i+1} - 2u_i + u_{i-1}\right)
+\tag{71}
+\tp 
+\end{equation}
+$$
+
+We can now choose to approximate \( u_i'' \) by a finite difference in time
+and get the discretized wave equation,
+
+$$
+\begin{equation}
+\varrho_i \frac{1}{\Delta t^2}
+\left(u^{n+1}_i - 2u^n_i - u^{n-1}_i\right) =
+T\frac{1}{\Delta x^2}
+\left( u_{i+1} - 2u_i + u_{i-1}\right)\tp
+\end{equation}
+$$
+
+On the other hand, we may go to the continuum limit \( \Delta x\rightarrow 0 \) and
+replace \( u_i(t) \) by \( u(x,t) \), \( \varrho_i \) by \( \varrho(x) \), and
+recognize that the right-hand side of <a href="#mjx-eqn-71">(71)</a>
+approaches \( \partial^2 u/\partial x^2 \) as \( \Delta x\rightarrow 0 \).
+We end up with the continuous model for waves on a string:
+
+$$
+\begin{equation}
+\varrho\frac{\partial^2 u}{\partial t^2} = T\frac{\partial^2 u}{\partial x^2}
+\tag{72}
+\tp 
+\end{equation}
+$$
+
+Note that the density \( \varrho \) may change along the string, while the
+tension \( T \) is a constant. With variable wave velocity \( c(x) = \sqrt{T/\varrho(x)} \) we can write the wave equation in the more standard form
+
+$$
+\begin{equation}
+\frac{\partial^2 u}{\partial t^2} = c^2(x)\frac{\partial^2 u}{\partial x^2}
+\tag{73}
+\tp 
+\end{equation}
+$$
+
+Because of the way \( \varrho \) enters the equations, the variable wave
+velocity does <em>not</em> appear inside the derivatives as in many other
+versions of the wave equation. However, most strings of interest have
+constant \( \varrho \).
+
+<p>
+The end point of a string are fixed so that the displacement
+\( u \) is zero. The boundary conditions are therefore \( u=0 \).
+
+<h3>Damping  <a name="___sec114"></a></h3>
+
+Air resistance and non-elastic effects in the string will contribute
+to reduce the amplitudes of the waves so that the motion dies out
+after some time. This damping effect can be modeled by a term
+\( bu_t \) on the left-hand side of the equation
+
+$$
+\begin{equation}
+\varrho\frac{\partial^2 u}{\partial t^2}
++ b\frac{\partial u}{\partial t}  =  T\frac{\partial^2 u}{\partial x^2}
+\tag{74}
+\tp 
+\end{equation}
+$$
+
+The parameter \( b \) must normally be determined from physical experiments.
+
+<h3>External forcing  <a name="___sec115"></a></h3>
+
+It is easy to include an external force acting on the string.
+Say we have a vertical force \( \tilde f_i\jj \) acting on mass \( m_i \).
+This force affects the vertical component of Newton's law
+and gives rise to an extra term \( \tilde f(x,t) \) on the right-hand side of
+<a href="#mjx-eqn-72">(72)</a>. In the model
+<a href="#mjx-eqn-73">(73)</a> we would add a term
+\( f(x,t) = \tilde f(x,y)/\varrho(x) \).
+
+<h3>Modeling the tension via springs  <a name="___sec116"></a></h3>
+
+We assumed, in the derivation above, that the tension in the string, \( T \),
+was constant. It is easy to check this assumption by modeling the
+string segments between the masses as standard springs, where the
+force (tension \( T \)) is proportional to the elongation of the spring segment.
+Let \( k \) be the spring constant, and set \( T_i=k\Delta \ell \) for the
+tension in the spring segment between \( x_{i-1} \) and \( x_i \), where
+\( \Delta\ell \) is the elongation of this segment from the tension-free state.
+A basic feature of a string is that it has high tension in the
+equilibrium position \( u=0 \). Let the string segment have an elongation
+\( \Delta\ell_0 \) in the equilibrium position. After deformation of the
+string, the elongation is \( \Delta \ell = \Delta \ell_0 + \Delta s_i \):
+\( T_i = k(\Delta \ell_0 + \Delta s_i)\approx k(\Delta \ell_0 + \Delta x) \).
+This shows that \( T_i \) is independent of \( i \). Moreover, the extra
+approximate elongation \( \Delta x \) is very small compared to \( \Delta\ell_0 \),
+so we may well set \( T_i = T = k\Delta\ell_0 \). This means that
+the tension is completely dominated by the initial tension determined
+by the tuning of the string. The additional deformations of the
+spring during the vibrations do not introduce significant changes in the
+tension.
+
+<h2>Waves on a membrane <a name="wave:app:membrane"></a></h2>
+
+<h2>Elastic waves in a rod <a name="wave:app:elastic:rod"></a></h2>
+
+Consider an elastic rod subject to a hammer impact at the end.
+This experiment will give rise to an elastic deformation pulse that travels
+through the rod. A mathematical model for longitudinal waves along
+an elastic rod starts with the general equation for deformations
+and stresses in an elastic medium,
+
+$$
+\begin{equation}
+\varrho\u_{tt} = \nabla\cdot\stress + \varrho\f,
+\tag{75}
+\end{equation}
+$$
+
+where \( \varrho \) is the density, \( \u \) the displacement field, \( \stress \) the
+stress tensor, and \( \f \) body forces. The latter has normally no impact
+on elastic waves.
+
+<p>
+For stationary deformation of an elastic rod, one has that
+\( \sigma_{xx} = Eu_x \), with all other
+stress components being zero. Moreover, \( \u = u(x)\ii \).
+The parameter \( E \) is known as Young's modulus.
+Assuming that this simple stress and deformation field, which is exact
+in the stationary case, is a good approximation in the transient
+case with wave motion, <a href="#mjx-eqn-75">(75)</a> simplifies
+to
+
+$$
+\begin{equation}
+\varrho\frac{\partial^2 u}{\partial t^2} = \frac{\partial}{\partial x}
+\left( E\frac{\partial u}{\partial x}\right)
+\tag{76}
+\tp 
+\end{equation}
+$$
+
+
+<p>
+The associated boundary conditions are \( u \) or \( \sigma_{xx}=Eu_x \) known,
+typically
+\( u=0 \) for a clamped end and \( \sigma_{xx}=0 \) for a free end.
+
+<h2>The acoustic model for seismic waves <a name="wave:app:acoustic:seismic"></a></h2>
+
+Seismic waves are used to infer properties of subsurface
+geological structures. The physical model is a heterogeneous
+elastic medium where sound is propagated by small elastic
+vibrations. The general mathematical model for deformations
+in an elastic medium is based on Newton's second law,
+
+$$
+\begin{equation}
+\varrho\u_{tt} = \nabla\cdot\stress + \varrho\f,
+\tag{77}
+\end{equation}
+$$
+
+and a constitutive law relating \( \stress \) to \( \u \), often Hooke's
+generalized law,
+
+$$
+\begin{equation}
+\stress = K\nabla\cdot\u\, \I  + G(\nabla\u + (\nabla\u)^T - \frac{2}{3}\nabla\cdot\u\, \I)
+\tag{78}
+\tp 
+\end{equation}
+$$
+
+Here, \( \u \) is the displacement field, \( \stress \) is the stress tensor,
+\( \I \) is the identity tensor,
+\( \varrho \) is the medium's density, \( \f \) are body forces (such as gravity),
+\( K \) is the medium's bulk modulus and \( G \) is the shear modulus.
+All these quantities may vary in space, while \( \u \) and \( \stress \) will
+also show significant variation in time during wave motion.
+
+<p>
+The acoustic approximation to elastic waves arises from a basic
+assumption that the second term in Hooke's law, representing the
+deformations that give rise to shear stresses, can be neglected.
+This assumption can be interpreted as approximating the geological
+medium by a fluid.
+Neglecting also the body forces \( \f \),
+<a href="#mjx-eqn-77">(77)</a> becomes
+
+$$
+\begin{equation}
+\varrho\u_{tt} = \nabla (K\nabla\cdot\u )
+\tag{79}
+\end{equation}
+$$
+
+Introducing \( p \) as a pressure via
+
+$$
+\begin{equation}
+p=-K\nabla\cdot\u,
+\tag{80}
+\end{equation}
+$$
+
+and dividing <a href="#mjx-eqn-79">(79)</a> by \( \varrho \),
+we get
+
+$$
+\begin{equation}
+\u_{tt} = -\frac{1}{\varrho}\nabla p
+\tp 
+\end{equation}
+$$
+
+Taking the divergence of this equation, using \( \nabla\cdot\u = -p/K \)
+from <a href="#mjx-eqn-80">(80)</a>,
+gives the <em>acoustic approximation to elastic waves</em>:
+
+$$
+\begin{equation}
+p_{tt} = K\nabla\cdot\left(\frac{1}{\varrho}\nabla p\right)
+\tp 
+\tag{83}
+\end{equation}
+$$
+
+This is a standard, linear wave equation with variable coefficients.
+It is common to add a source term \( s(x,y,z,t) \)
+to model the generation of sound waves:
+
+$$
+\begin{equation}
+p_{tt} = K\nabla\cdot\left(\frac{1}{\varrho}\nabla p\right) + s
+\tp 
+\tag{82}
+\end{equation}
+$$
+
+
+<p>
+A common additional approximation of <a href="#mjx-eqn-82">(82)</a>
+is based on using the chain rule on the right-hand side,
+
+$$
+K\nabla\cdot\left(\frac{1}{\varrho}\nabla p\right)
+= \frac{K}{\varrho}\nabla^2 p + K\nabla\left(\frac{1}{\varrho}\right)\cdot
+\nabla p \approx \frac{K}{\varrho}\nabla^2 p,
+$$
+
+under the assumption that
+the relative spatial gradient \( \nabla\varrho^{-1}
+= -\varrho^{-2}\nabla\varrho \) is small. This approximation results
+in the simplified equation
+
+$$
+\begin{equation}
+p_{tt} = \frac{K}{\varrho}\nabla^2 p + s
+\tp 
+\tag{83}
+\end{equation}
+$$
+
+
+<p>
+The acoustic approximations to seismic waves are used for sound
+waves in the ground, and the Earth's surface is then a boundary
+where \( p \) equals the atmospheric pressure \( p_0 \) such that the
+boundary condition becomes \( p=p_0 \).
+
+<h3>Anisotropy  <a name="___sec120"></a></h3>
+
+Quite often in geological materials,
+the effective wave velocity \( c=\sqrt{K/\varrho} \) is different
+in different spatial directions because geological layers are
+compacted such that the properties in the horizontal and vertical
+direction differ. With \( z \) as the vertical coordinate, we can
+introduce a vertical wave velocity \( c_z \) and a horizontal
+wave velocity \( c_h \), and
+generalize <a href="#mjx-eqn-83">(83)</a> to
+
+$$
+\begin{equation}
+p_{tt} = c_z^2 p_{zz} + c_h^2 (p_{xx} + p_{yy}) + s
+\tp 
+\tag{84}
+\end{equation}
+$$
+
+<h2>Sound waves in liquids and gases <a name="wave:app:sound"></a></h2>
+
+Sound waves arise from pressure and density variations in fluids.
+The starting point of modeling sound waves is the basic
+equations for a compressible fluid where we omit viscous (frictional)
+forces, body forces (gravity, for instance), and temperature effects:
+
+$$
+\begin{align}
+\varrho_t + \nabla\cdot (\varrho \u) &= 0,
+\tag{85}\\ 
+\varrho \u_{t} + \varrho \u\cdot\nabla\u &= -\nabla p,
+\tag{86}\\ 
+\varrho &= \varrho (p)
+\tp 
+\tag{87}
+\end{align}
+$$
+
+These equations are often referred to as the Euler equations for the motion
+of a fluid. The parameters involved are the density \( \varrho \),
+the velocity \( \u \),
+and the pressure \( p \). Equation <a href="#mjx-eqn-86">(86)</a> reflects
+mass balance, <a href="#mjx-eqn-85">(85)</a> is Newton's second law for
+a fluid, with frictional and body forces omitted, and
+<a href="#mjx-eqn-87">(87)</a> is a constitutive law relating
+density to pressure by thermodynamics considerations.
+A typical model
+for <a href="#mjx-eqn-87">(87)</a> is the so-called <a href="http://en.wikipedia.org/wiki/Isentropic_process" target="_self">isentropic relation</a>, valid for
+adiabatic processes where there is no heat transfer:
+
+$$
+\begin{equation}
+\varrho = \varrho_0\left(\frac{p}{p_0}\right)^{1/\gamma}
+\tp 
+\tag{88}
+\end{equation}
+$$
+
+Here, \( p_0 \) and \( \varrho_0 \) are references values for \( p \) and \( 
+\varrho \) when the fluid is at rest, and
+\( \gamma \) is the ratio of specific heat at constant pressure and
+constant volume (\( \gamma = 5/3 \) for air).
+
+<p>
+The key approximation in a mathematical model for sound waves is to
+assume that these waves are small perturbations to the density, pressure,
+and velocity. We therefore write
+
+$$
+\begin{align*}
+p &= p_0 + \hat p,\\ 
+\varrho &= \varrho_0 + \hat\varrho,\\ 
+\u &= \hat\u,
+\end{align*}
+$$
+
+where we have decomposed the fields in a constant
+equilibrium value, corresponding
+to \( \u=0 \), and a small perturbation marked with a hat symbol.
+By inserting these decompositions in <a href="#mjx-eqn-85">(85)</a> and
+<a href="#mjx-eqn-86">(86)</a>, neglecting all product terms of small
+perturbations and/or their derivatives, and dropping the hat symbols,
+one gets the following linearized PDE system for the small perturbations in
+density, pressure, and velocity:
+
+$$
+\begin{align}
+\varrho_t + \varrho_0\nabla\cdot\u &= 0,\\ 
+\varrho_0\u_t &= -\nabla p
+\tp 
+\end{align}
+$$
+
+Now we can eliminate \( \varrho_t \) by differentiating the relation \( \varrho(p) \),
+
+$$ \varrho_t = \varrho_0 \frac{1}{\gamma}\left(\frac{p}{p_0}\right)^{1/\gamma-1}
+\frac{1}{p_0}p_t = \frac{\varrho_0}{\gamma p_0}
+\left(\frac{p}{p_0}\right)^{1/\gamma-1}p_t
+\tp 
+$$
+
+The product term \( p^{1/\gamma -1}p_t \) can be linearized as
+\( p_0^{1/\gamma -1}p_t \), resulting in
+
+$$ \varrho_t \approx \frac{\varrho_0}{\gamma p_0} p_t
+\tp  $$
+
+We then get
+
+$$
+\begin{align}
+p_t + \gamma p_0\nabla\cdot\u &= 0,
+\tag{89}\\ 
+\u_t &= -\frac{1}{\varrho_0}\nabla p,
+\tag{90}
+\tp 
+\end{align}
+$$
+
+Taking the divergence of <a href="#mjx-eqn-90">(90)</a> and
+differentiating <a href="#mjx-eqn-89">(89)</a> with respect to time
+gives the possibility to easily eliminate \( \nabla\cdot\u_t \) and
+arrive at a standard, linear wave equation for \( p \):
+
+$$
+\begin{equation}
+p_{tt} = c^2\nabla^2 p,
+\end{equation}
+$$
+
+where \( c = \sqrt{\gamma p_0/\varrho_0} \) is the speed of sound in the fluid.
+
+<p>
+<!-- Challenge: have p_0(z) and varrho_0(z) and gravity - perhaps exercise? -->
+
+<p>
+<p>
+<!-- begin bottom navigation -->
+<table style="width: 100%"><tr><td>
+<div style="text-align: left;"><a href="._main_wave-solarized006.html">&laquo; Previous</a></div>
+</td><td>
+<div style="text-align: right;"><a href="._main_wave-solarized008.html">Next &raquo;</a></div>
+</td></tr></table>
+<!-- end bottom navigation -->
+</p>
+
+<!-- ------------------- end of main content --------------- -->
+
+
+</body>
+</html>
+    
+

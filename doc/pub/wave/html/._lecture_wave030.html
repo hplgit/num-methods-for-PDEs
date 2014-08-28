@@ -1,0 +1,514 @@
+<!--
+Automatically generated HTML file from Doconce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Doconce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Study guide: Finite difference methods for wave motion">
+<meta name="keywords" content="waves on a string,wave equation 1D,mesh finite differences,stencil 1D wave equation,mesh function,wave equation 1D, implementation,unit testing,software testing nose,vectorization,scalar code,array slices,slice,lambda function (Python),Neumann conditions,Dirichlet conditions,homogeneous Neumann conditions,homogeneous Dirichlet conditions,stencil Neumann boundary,index set notation,wave equation 2D, implementation,Cython,C extension module,wrapper code,Fortran subroutine,row-major ordering,column-major ordering,Fortran array storage,C/Python array storage,wave equation 1D, analytical properties,wave equation 1D, exact numerical solution,stability criterion,wave equation 1D, stability">
+
+
+
+
+<style type="text/css">
+/* bloodish style */
+
+body {
+  font-family: Helvetica, Verdana, Arial, Sans-serif;
+  color: #404040;
+  background: #ffffff;
+}
+h1 { font-size: 1.8em;  color: #8A0808; }
+h2 { font-size: 1.6em;  color: #8A0808; }
+h3 { font-size: 1.4em;  color: #8A0808; }
+h4 { color: #8A0808; }
+a { color: #8A0808; text-decoration:none; }
+tt { font-family: "Courier New", Courier; }
+
+p { text-indent: 0px; }
+hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+p.caption { width: 80%; font-style: normal; text-align: left; }
+hr.figure { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+.alert-text-small   { font-size: 80%;  }
+.alert-text-large   { font-size: 130%; }
+.alert-text-normal  { font-size: 90%;  }
+.alert {
+  padding:8px 35px 8px 14px; margin-bottom:18px;
+  text-shadow:0 1px 0 rgba(255,255,255,0.5);
+  border:1px solid #bababa;
+  border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  color: #555;
+  background-color: #f8f8f8;
+  background-position: 10px 5px;
+  background-repeat: no-repeat;
+  background-size: 38px;
+  padding-left: 55px;
+  width: 75%;
+ }
+.alert-block {padding-top:14px; padding-bottom:14px}
+.alert-block > p, .alert-block > ul {margin-bottom:1em}
+.alert li {margin-top: 1em}
+.alert-block p+p {margin-top:5px}
+.alert-notice { background-image: url(https://raw.github.com/hplgit/doconce/master/bundled/html_images/small_gray_notice.png); }
+.alert-summary  { background-image:url(https://raw.github.com/hplgit/doconce/master/bundled/html_images/small_gray_summary.png); }
+.alert-warning { background-image: url(https://raw.github.com/hplgit/doconce/master/bundled/html_images/small_gray_warning.png); }
+.alert-question {background-image:url(https://raw.github.com/hplgit/doconce/master/bundled/html_images/small_gray_question.png); }
+
+div { text-align: justify; text-justify: inter-word; }
+</style>
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [(' Finite difference methods for waves on a string ',
+               1,
+               'wave:string',
+               'wave:string'),
+              (' The complete initial-boundary value problem ',
+               2,
+               None,
+               '___sec1'),
+              (' Input data in the problem ', 2, None, '___sec2'),
+              (' Demo of a vibrating string ($C=0.8$) ', 2, None, '___sec3'),
+              (' Demo of a vibrating string ($C=1.0012$) ',
+               2,
+               None,
+               '___sec4'),
+              (' Step 1: Discretizing the domain ',
+               2,
+               'wave:string:mesh',
+               'wave:string:mesh'),
+              (' The discrete solution ',
+               2,
+               'wave:string:numerical:sol',
+               'wave:string:numerical:sol'),
+              (' Step 2: Fulfilling the equation at the mesh points ',
+               2,
+               'wave:string:samplingPDE',
+               'wave:string:samplingPDE'),
+              (' Step 3: Replacing derivatives by finite differences ',
+               2,
+               'wave:string:fd',
+               'wave:string:fd'),
+              (' Step 3: Algebraic version of the PDE ', 2, None, '___sec9'),
+              (' Step 3: Algebraic version of the initial conditions ',
+               2,
+               None,
+               '___sec10'),
+              (' Step 4: Formulating a recursive algorithm ',
+               2,
+               'wave:string:alg',
+               'wave:string:alg'),
+              (' The Courant number ', 2, None, '___sec12'),
+              (' The finite difference stencil ', 2, None, '___sec13'),
+              (' The stencil for the first time level ', 2, None, '___sec14'),
+              (' The algorithm ', 2, None, '___sec15'),
+              (' Moving finite difference stencil ', 2, None, '___sec16'),
+              (' Sketch of an implementation (1) ',
+               2,
+               'wave:string:impl',
+               'wave:string:impl'),
+              (' PDE solvers should save memory ', 2, None, '___sec18'),
+              (' Sketch of an implementation (2) ', 2, None, '___sec19'),
+              (' Verification ', 1, None, '___sec20'),
+              (' A slightly generalized model problem ',
+               2,
+               'wave:pde2:fd',
+               'wave:pde2:fd'),
+              (' Discrete model for the generalized model problem ',
+               2,
+               None,
+               '___sec22'),
+              (' Modified equation for the first time level ',
+               2,
+               None,
+               '___sec23'),
+              (' Using an analytical solution of physical significance ',
+               2,
+               None,
+               '___sec24'),
+              (' Manufactured solution: principles ', 2, None, '___sec25'),
+              (' Manufactured solution: example ', 2, None, '___sec26'),
+              (' Testing a manufactured solution ', 2, None, '___sec27'),
+              (' Constructing an exact solution of the discrete equations ',
+               2,
+               None,
+               '___sec28'),
+              (' Analytical work with the PDE problem ', 2, None, '___sec29'),
+              (' Analytical work with the discrete equations (1) ',
+               2,
+               None,
+               '___sec30'),
+              (' Analytical work with the discrete equations (1) ',
+               2,
+               None,
+               '___sec31'),
+              (' Testing with the exact discrete solution ',
+               2,
+               None,
+               '___sec32'),
+              (' Implementation ', 1, 'wave:pde1:impl', 'wave:pde1:impl'),
+              (' The algorithm ', 2, None, '___sec34'),
+              (' What do to with the solution? ', 2, None, '___sec35'),
+              (' Making a solver function ', 2, None, '___sec36'),
+              (' Verification: exact quadratic solution ',
+               2,
+               None,
+               '___sec37'),
+              (' Visualization: animating $u(x,t)$ ', 2, None, '___sec38'),
+              (' Making movie files ', 2, None, '___sec39'),
+              (' Running a case ',
+               2,
+               'wave:pde1:guitar:data',
+               'wave:pde1:guitar:data'),
+              (' Implementation of the case ', 2, None, '___sec41'),
+              (' Resulting movie for $C=0.8$ ', 2, None, '___sec42'),
+              (' The benefits of scaling ', 2, None, '___sec43'),
+              (' Vectorization ',
+               1,
+               'wave:pde1:impl:vec',
+               'wave:pde1:impl:vec'),
+              (' Operations on slices of arrays ', 2, None, '___sec45'),
+              (' Test the understanding ', 2, None, '___sec46'),
+              (' Vectorization of finite difference schemes (1) ',
+               2,
+               None,
+               '___sec47'),
+              (' Vectorization of finite difference schemes (2) ',
+               2,
+               None,
+               '___sec48'),
+              (' Vectorized implementation in the solver function ',
+               2,
+               None,
+               '___sec49'),
+              (' Verification of the vectorized version ',
+               2,
+               None,
+               '___sec50'),
+              (' Efficiency measurements ', 2, None, '___sec51'),
+              (' Generalization: reflecting boundaries ',
+               1,
+               None,
+               '___sec52'),
+              (' Neumann boundary condition ',
+               2,
+               'wave:pde2:Neumann',
+               'wave:pde2:Neumann'),
+              (' Discretization of derivatives at the boundary (1) ',
+               2,
+               'wave:pde2:Neumann:discr',
+               'wave:pde2:Neumann:discr'),
+              (' Discretization of derivatives at the boundary (2) ',
+               2,
+               None,
+               '___sec55'),
+              (' Visualization of modified boundary stencil ',
+               2,
+               None,
+               '___sec56'),
+              (' Implementation of Neumann conditions ',
+               2,
+               'wave:pde2:Neumann:impl',
+               'wave:pde2:Neumann:impl'),
+              (' Moving finite difference stencil ', 2, None, '___sec58'),
+              (' Index set notation ', 2, 'wave:indexset', 'wave:indexset'),
+              (' Index set notation in code ', 2, None, '___sec60'),
+              (' Index sets in action (1) ', 2, None, '___sec61'),
+              (' Index sets in action (2) ', 2, None, '___sec62'),
+              (' Alternative implementation via ghost cells ',
+               2,
+               'wave:pde1:Neumann:ghost',
+               'wave:pde1:Neumann:ghost'),
+              (' Implementation of ghost cells (1) ', 2, None, '___sec64'),
+              (' Implementation of ghost cells (2) ', 2, None, '___sec65'),
+              (' Generalization: variable wave velocity ',
+               1,
+               'wave:pde2:var:c',
+               'wave:pde2:var:c'),
+              (' The model PDE with a variable coefficient ',
+               2,
+               None,
+               '___sec67'),
+              (' Discretizing the variable coefficient (1) ',
+               2,
+               'wave:pde2:var:c:ideas',
+               'wave:pde2:var:c:ideas'),
+              (' Discretizing the variable coefficient (2) ',
+               2,
+               None,
+               '___sec69'),
+              (' Discretizing the variable coefficient (3) ',
+               2,
+               None,
+               '___sec70'),
+              (' Computing the coefficient between mesh points ',
+               2,
+               'wave:pde2:var:c:means',
+               'wave:pde2:var:c:means'),
+              (' Discretization of variable-coefficient wave equation in operator notation ',
+               2,
+               None,
+               '___sec72'),
+              (' Neumann condition and a variable coefficient ',
+               2,
+               'wave:pde2:var:c:Neumann',
+               'wave:pde2:var:c:Neumann'),
+              (' Implementation of variable coefficients ',
+               2,
+               'wave:pde2:var:c:impl',
+               'wave:pde2:var:c:impl'),
+              (' A more general model PDE with variable coefficients ',
+               2,
+               None,
+               '___sec75'),
+              (' Generalization: damping ', 2, None, '___sec76'),
+              (' Building a general 1D wave equation solver ',
+               1,
+               'wave:pde2:software',
+               'wave:pde2:software'),
+              (' Collection of initial conditions ', 2, None, '___sec78'),
+              (' Finite difference methods for 2D and 3D wave equations ',
+               1,
+               'wave:2D3D',
+               'wave:2D3D'),
+              (' Examples on wave equations written out in 2D/3D ',
+               2,
+               'wave:2D3D:models',
+               'wave:2D3D:models'),
+              (' Boundary and initial conditions ', 2, None, '___sec81'),
+              (' Example: 2D propagation of Gaussian function ',
+               2,
+               None,
+               '___sec82'),
+              (' Mesh ', 2, 'wave:2D3D:mesh', 'wave:2D3D:mesh'),
+              (' Discretization ', 2, 'wave:2D3D:models', 'wave:2D3D:models'),
+              (' Special stencil for the first time step ',
+               2,
+               None,
+               '___sec85'),
+              (' Variable coefficients (1) ', 2, None, '___sec86'),
+              (' Variable coefficients (2) ', 2, None, '___sec87'),
+              (' Neumann boundary condition in 2D ', 2, None, '___sec88'),
+              (' Implementation of 2D/3D problems ',
+               1,
+               'wave:2D3D:impl',
+               'wave:2D3D:impl'),
+              (' Algorithm ', 2, None, '___sec90'),
+              (' Scalar computations: mesh ',
+               2,
+               'wave2D3D:impl:scalar',
+               'wave2D3D:impl:scalar'),
+              (' Scalar computations: arrays ', 2, None, '___sec92'),
+              (' Scalar computations: initial condition ',
+               2,
+               None,
+               '___sec93'),
+              (' Scalar computations: primary stencil ', 2, None, '___sec94'),
+              (' Vectorized computations: mesh coordinates ',
+               2,
+               'wave2D3D:impl:vectorized',
+               'wave2D3D:impl:vectorized'),
+              (' Vectorized computations: stencil ', 2, None, '___sec96'),
+              (' Verification: quadratic solution (1) ',
+               2,
+               'wave2D3D:impl:verify',
+               'wave2D3D:impl:verify'),
+              (' Verification: quadratic solution (2) ', 2, None, '___sec98'),
+              (' Migrating loops to Cython ',
+               1,
+               'wave2D3D:impl:Cython',
+               'wave2D3D:impl:Cython'),
+              (' Declaring variables and annotating the code ',
+               2,
+               None,
+               '___sec100'),
+              (' Cython version of the functions ', 2, None, '___sec101'),
+              (' Visual inspection of the C translation ',
+               2,
+               None,
+               '___sec102'),
+              (' Building the extension module ', 2, None, '___sec103'),
+              (' Calling the Cython function from Python ',
+               2,
+               None,
+               '___sec104'),
+              (' Migrating loops to Fortran ', 1, None, '___sec105'),
+              (' The Fortran subroutine ', 2, None, '___sec106'),
+              (' Building the Fortran module with f2py ',
+               2,
+               None,
+               '___sec107'),
+              (' How to avoid array copying ', 2, None, '___sec108'),
+              (' Efficiency of translating to Fortran ',
+               2,
+               None,
+               '___sec109'),
+              (' Migrating loops to C via Cython ', 1, None, '___sec110'),
+              (' The C code ', 2, None, '___sec111'),
+              (' The Cython interface file ', 2, None, '___sec112'),
+              (' Building the extension module ', 2, None, '___sec113'),
+              (' Migrating loops to C via f2py ', 1, None, '___sec114'),
+              (' The C code and the Fortran interface file ',
+               2,
+               None,
+               '___sec115'),
+              (' Building the extension module ', 2, None, '___sec116'),
+              (' Migrating loops to C++ via f2py ', 2, None, '___sec117'),
+              (' Analysis of the difference equations ',
+               1,
+               'wave:pde1:analysis',
+               'wave:pde1:analysis'),
+              (' Properties of the solution of the wave equation ',
+               2,
+               'wave:pde1:properties',
+               'wave:pde1:properties'),
+              (' Demo of the splitting of $I(x)$ into two waves ',
+               2,
+               None,
+               '___sec120'),
+              (' Effect of variable wave velocity ', 2, None, '___sec121'),
+              (' What happens here? ', 2, None, '___sec122'),
+              (' Representation of waves as sum of sine/cosine waves ',
+               2,
+               None,
+               '___sec123'),
+              (' Analysis of the finite difference scheme ',
+               2,
+               'wave:pde1:analysis',
+               'wave:pde1:analysis'),
+              (' Preliminary results ', 2, None, '___sec125'),
+              (' Numerical wave propagation (1) ', 2, None, '___sec126'),
+              (' Numerical wave propagation (2) ', 2, None, '___sec127'),
+              (' Numerical wave propagation (3) ', 2, None, '___sec128'),
+              (' Why $C\\leq 1$ is a stability criterion ',
+               2,
+               None,
+               '___sec129'),
+              (' Numerical dispersion relation ', 2, None, '___sec130'),
+              (' The special case $C=1$ ', 2, None, '___sec131'),
+              (' Computing the error in wave velocity ',
+               2,
+               None,
+               '___sec132'),
+              (' Visualizing the error in wave velocity ',
+               2,
+               None,
+               '___sec133'),
+              (' Taylor expanding the error in wave velocity ',
+               2,
+               None,
+               '___sec134'),
+              (' Example on effect of wrong wave velocity (1) ',
+               2,
+               None,
+               '___sec135'),
+              (' Example on effect of wrong wave velocity (1) ',
+               2,
+               None,
+               '___sec136'),
+              (' Extending the analysis to 2D (and 3D) ',
+               2,
+               'wave:pde1:analysis:2D3D',
+               'wave:pde1:analysis:2D3D'),
+              (' Discrete wave components in 2D ', 2, None, '___sec138'),
+              (' Stability criterion in 2D ', 2, None, '___sec139'),
+              (' Stability criterion in 3D ', 2, None, '___sec140'),
+              (' Numerical dispersion relation in 2D (1) ',
+               2,
+               None,
+               '___sec141'),
+              (' Numerical dispersion relation in 2D (2) ',
+               2,
+               None,
+               '___sec142'),
+              (' Numerical dispersion relation in 2D (3) ',
+               2,
+               None,
+               '___sec143')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\uex}{{u_{\small\mbox{e}}}}
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\halfi}{{1/2}}
+\newcommand{\xpoint}{\boldsymbol{x}}
+\newcommand{\normalvec}{\boldsymbol{n}}
+\newcommand{\Oof}[1]{\mathcal{O}(#1)}
+\newcommand{\Ix}{\mathcal{I}_x}
+\newcommand{\Iy}{\mathcal{I}_y}
+\newcommand{\It}{\mathcal{I}_t}
+\newcommand{\setb}[1]{#1^0}    % set begin
+\newcommand{\sete}[1]{#1^{-1}} % set end
+\newcommand{\setl}[1]{#1^-}
+\newcommand{\setr}[1]{#1^+}
+\newcommand{\seti}[1]{#1^i}
+\newcommand{\Real}{\mathbb{R}}
+$$
+
+
+
+
+    
+<a name="part0030"></a>
+<p>
+<!-- begin top navigation -->
+<table style="width: 100%"><tr><td>
+<div style="text-align: left;"><a href="._lecture_wave029.html"><img src="http://hplgit.github.io/doconce/bundled/html_images/prev1.png" border=0 alt="&laquo; Previous"></a></div>
+</td><td>
+<div style="text-align: right;"><a href="._lecture_wave031.html"><img src="http://hplgit.github.io/doconce/bundled/html_images/next1.png" border=0 alt="Next &raquo;"></a></div>
+</td></tr></table>
+<!-- end top navigation -->
+</p>
+
+<p>
+<!-- !split -->
+
+<h2>Constructing an exact solution of the discrete equations  <a name="___sec28"></a></h2>
+
+<ul>
+ <p><li> Manufactured solution with computation of
+   convergence rates: much manual work</li>
+ <p><li> Simpler and more powerful: use an exact solution for \( u^{n}_i \)</li>
+ <p><li> A linear or quadratic \( \uex \) in \( x \) and \( t \) is often a good candidate</li>
+</ul>
+
+<p>
+<!-- begin bottom navigation -->
+<table style="width: 100%"><tr><td>
+<div style="text-align: left;"><a href="._lecture_wave029.html"><img src="http://hplgit.github.io/doconce/bundled/html_images/prev1.png" border=0 alt="&laquo; Previous"></a></div>
+</td><td>
+<div style="text-align: right;"><a href="._lecture_wave031.html"><img src="http://hplgit.github.io/doconce/bundled/html_images/next1.png" border=0 alt="Next &raquo;"></a></div>
+</td></tr></table>
+<!-- end bottom navigation -->
+</p>
+
+<!-- ------------------- end of main content --------------- -->
+
+
+</body>
+</html>
+    
+

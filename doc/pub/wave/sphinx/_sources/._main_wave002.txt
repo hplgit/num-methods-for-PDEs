@@ -1,0 +1,1016 @@
+.. !split
+
+.. _wave:pde1:impl:
+
+Implementation  (1)
+===================
+
+.. index::
+   single: wave equation; 1D, implementation
+
+This section present the complete computational algorithm, its
+implementation in Python code, animation of the solution,
+and verification of the implementation.
+
+A real implementation of the basic computational algorithm
+from the sections :ref:`wave:string:alg` and :ref:`wave:string:impl` can be
+encapsulated in a function,
+taking all the input data for the problem as arguments.  The physical
+input data consists of :math:`c`, :math:`I(x)`, :math:`V(x)`, :math:`f(x,t)`, :math:`L`, and :math:`T`.
+The numerical input is the mesh parameters :math:`\Delta t` and :math:`\Delta x`.
+
+Instead of specifying :math:`\Delta t` *and* :math:`\Delta x`, we can specify
+one of them and the Courant number :math:`C` instead, since having
+explicit control of the Courant number is convenient when investigating
+the numerical method. Many find it natural to prescribe the
+resolution of the spatial grid and set :math:`N_x`. The solver function
+can then compute :math:`\Delta t = CL/(cN_x)`. However, for comparing
+:math:`u(x,t)` curves (as functions of :math:`x`) for various Courant numbers,
+especially in animations in time,
+it is more convenient to keep :math:`\Delta t` fixed for all :math:`C` and
+let :math:`\Delta x` vary according to :math:`\Delta x = c\Delta t/C`.
+(With :math:`\Delta t` fixed, all frames correspond to the same time :math:`t`,
+and plotting curves with different spatial resolution is trivial.)
+
+The solution at all spatial points at a new time level is stored in an
+array ``u`` (of length :math:`N_x+1`). We need to decide what do to with
+this solution, e.g., visualize the curve, analyze the values, or write
+the array to file for later use. The decision what to do is left to
+the user in a suppled function
+
+.. code-block:: python
+
+        def user_action(u, x, t, n):
+
+where ``u`` is the solution at the spatial points ``x`` at time ``t[n]``.
+
+.. _wave:pde1:impl:solver:
+
+Making a solver function
+------------------------
+
+A first attempt at a solver function is listed below.
+
+.. code-block:: python
+
+        from numpy import *
+        
+        def solver(I, V, f, c, L, dt, C, T, user_action=None):
+            """Solve u_tt=c^2*u_xx + f on (0,L)x(0,T]."""
+            Nt = int(round(T/dt))
+            t = linspace(0, Nt*dt, Nt+1)   # Mesh points in time
+            dx = dt*c/float(C)
+            Nx = int(round(L/dx))
+            x = linspace(0, L, Nx+1)       # Mesh points in space
+            C2 = C**2                      # Help variable in the scheme
+            if f is None or f == 0 :
+                f = lambda x, t: 0
+            if V is None or V == 0:
+                V = lambda x: 0
+        
+            u   = zeros(Nx+1)   # Solution array at new time level
+            u_1 = zeros(Nx+1)   # Solution at 1 time level back
+            u_2 = zeros(Nx+1)   # Solution at 2 time levels back
+        
+            import time;  t0 = time.clock()  # for measuring CPU time
+        
+            # Load initial condition into u_1
+            for i in range(0,Nx+1):
+                u_1[i] = I(x[i])
+        
+            if user_action is not None:
+                user_action(u_1, x, t, 0)
+        
+            # Special formula for first time step
+            n = 0
+            for i in range(1, Nx):
+                u[i] = u_1[i] + dt*V(x[i]) + \ 
+                       0.5*C2*(u_1[i-1] - 2*u_1[i] + u_1[i+1]) + \ 
+                       0.5*dt**2*f(x[i], t[n])
+            u[0] = 0;  u[Nx] = 0
+        
+            if user_action is not None:
+                user_action(u, x, t, 1)
+        
+            # Switch variables before next step
+            u_2[:], u_1[:] = u_1, u
+        
+            for n in range(1, Nt):
+                # Update all inner points at time t[n+1]
+                for i in range(1, Nx):
+                    u[i] = - u_2[i] + 2*u_1[i] + \ 
+                             C2*(u_1[i-1] - 2*u_1[i] + u_1[i+1]) + \ 
+                             dt**2*f(x[i], t[n])
+        
+                # Insert boundary conditions
+                u[0] = 0;  u[Nx] = 0
+                if user_action is not None:
+                    if user_action(u, x, t, n+1):
+                        break
+        
+                # Switch variables before next step
+                u_2[:], u_1[:] = u_1, u
+        
+            cpu_time = t0 - time.clock()
+            return u, x, t, cpu_time
+
+.. Too trivial here:
+
+.. Checking that a solution :math:`u^n_i` stays constant throughout some
+
+.. time steps is often of considerable help in tracking down bugs
+
+.. in an implementation. A constant solution :math:`{u_{\small\mbox{e}}} = Q` fulfills
+
+.. the PDE problem :ref:`(2.12) <Eq:wave:pde2>`-:ref:`(2.16) <Eq:wave:pde2:bc:L>`
+
+.. if :math:`I(x)=Q`, :math:`V=0`, :math:`u(0,t)=u(L,t)=Q`, and :math:`f=0`
+
+.. _wave:pde1:impl:verify:quadratic:
+
+Verification: exact quadratic solution
+--------------------------------------
+
+.. index:: nose tests
+
+.. index:: unit testing
+
+.. index::
+   single: software testing; nose
+
+We use the test problem derived in the section :ref:`wave:pde2:fd` for
+verification. Here is a function realizing this verification as a
+
+.. cite
+
+nose test:
+
+.. code-block:: python
+
+        import nose.tools as nt
+        
+        def test_quadratic():
+            """Check that u(x,t)=x(L-x)(1+t/2) is exactly reproduced."""
+            def u_exact(x, t):
+                return x*(L-x)*(1 + 0.5*t)
+        
+            def I(x):
+                return u_exact(x, 0)
+        
+            def V(x):
+                return 0.5*u_exact(x, 0)
+        
+            def f(x, t):
+                return 2*(1 + 0.5*t)*c**2
+        
+            L = 2.5
+            c = 1.5
+            C = 0.75
+            Nx = 3  # Very coarse mesh for this exact test
+            dt = C*(L/Nx)/c
+            T = 18
+        
+            u, x, t, cpu = solver(I, V, f, c, L, dt, C, T)
+            u_e = u_exact(x, t[-1])
+            diff = abs(u - u_e).max()
+            nt.assert_almost_equal(diff, 0, places=14)
+
+.. _wave:pde1:impl:animate:
+
+Visualization: animating the solution
+-------------------------------------
+
+Now that we have verified the implementation it is time to do a
+real computation where we also display the evolution of the waves
+on the screen.
+
+Visualization via SciTools
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following ``viz`` function defines a ``user_action``
+callback function for plotting the solution at each time level:
+
+.. code-block:: python
+
+        def viz(I, V, f, c, L, dt, C, T, umin, umax, animate=True):
+            """Run solver and visualize u at each time level."""
+            import scitools.std as plt
+            import time, glob, os
+        
+            def plot_u(u, x, t, n):
+                """user_action function for solver."""
+                plt.plot(x, u, 'r-',
+                         xlabel='x', ylabel='u',
+                         axis=[0, L, umin, umax],
+                         title='t=%f' % t[n], show=True)
+                # Let the initial condition stay on the screen for 2
+                # seconds, else insert a pause of 0.2 s between each plot
+                time.sleep(2) if t[n] == 0 else time.sleep(0.2)
+                plt.savefig('frame_%04d.png' % n)  # for movie making
+        
+            # Clean up old movie frames
+            for filename in glob.glob('frame_*.png'):
+                os.remove(filename)
+        
+            user_action = plot_u if animate else None
+            u, x, t, cpu = solver(I, V, f, c, L, dt, C, T, user_action)
+        
+            # Make movie files
+            fps = 4  # Frames per second
+            plt.movie('frame_*.png', encoder='html', fps=fps,
+                      output_file='movie.html')
+            codec2ext = dict(flv='flv', libx264='mp4', libvpx='webm',
+                             libtheora='ogg')
+            filespec = 'frame_%04d.png'
+            movie_program = 'avconv'  # or 'ffmpeg'
+            for codec in codec2ext:
+                ext = codec2ext[codec]
+                cmd = '%(movie_program)s -r %(fps)d -i %(filespec)s '\ 
+                      '-vcodec %(codec)s movie.%(ext)s' % vars()
+                os.system(cmd)
+
+A function inside another function, like ``plot_u`` in the above code
+segment, has access to *and remembers* all the local variables
+in the surrounding code inside the ``viz`` function (!). This is known
+in computer science as a *closure* and is very convenient to
+program with. For example,
+the ``plt`` and ``time`` modules defined outside ``plot_u`` are accessible for
+``plot_u`` when
+the function is called (as ``user_action``) in the ``solver`` function.
+Some may think, however, that a class instead of a closure is a cleaner
+and easier-to-understand implementation of
+the user action function, see the section :ref:`wave:pde2:software`.
+
+Making movie files
+~~~~~~~~~~~~~~~~~~
+
+Several hardcopies of the animation are made from the
+``frame_*.png`` files. We use
+the ``avconv`` (or ``ffmpeg``) programs to combine individual
+plot files to movies in modern
+formats: Flash, MP4, Webm, and Ogg.
+A typical ``avconv`` (or ``ffmpeg``) command for creating a movie file
+in Ogg format
+with 4 frames per second built from a collection of
+plot files with names generated by ``frame_%04d.png``,
+look like
+
+.. code-block:: text
+
+        Terminal> avconv -r 4 -i frame_%04d.png -c:v libtheora movie.ogg
+
+The different formats require different video encoders (``-c:v``) to
+be installed: Flash applies ``flv``, WebM applies ``libvpx``, and MP4
+applies ``libx264``:
+
+.. code-block:: text
+
+        Terminal> avconv -r 4 -i frame_%04d.png -c:v flv movie.flv
+        Terminal> avconv -r 4 -i frame_%04d.png -c:v libvpx movie.webm
+        Terminal> avconv -r 4 -i frame_%04d.png -c:v libx264 movie.mp4
+
+Players like ``vlc``, ``mplayer``, ``gxine``, and ``totem``
+can be used to play these movie files.
+
+Note that padding the frame counter with zeros in the ``frame_*.png``
+files, as specified by the ``%04d`` format, is essential so that the wildcard
+notation ``frame_*.png`` expands to the correct set of files.
+
+The
+``plt.movie`` function also creates a ``movie.html`` file with a movie player
+for displaying the ``frame_*.png`` files in a web browser.
+This movie player can
+be generated from the command line too
+
+.. code-block:: text
+
+        Terminal> scitools movie encoder=html output_file=movie.html \ 
+                  fps=4 frame_*.png
+
+Skipping frames for animation speed
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sometimes the time step is small and :math:`T` is large, leading to an
+inconveniently large number of plot files and a slow animation on the
+screen. The solution to such a problem is to decide on a total number
+of frames in the animation, ``num_frames``, and plot the solution only at
+every ``every`` frame. The total number of time levels (i.e., maximum
+possible number of frames) is the length of ``t``, ``t.size``, and if we
+want ``num_frames``, we need to plot every ``t.size/num_frames`` frame:
+
+.. code-block:: python
+
+        every = int(t.size/float(num_frames))
+        if n % every == 0 or n == t.size-1:
+            st.plot(x, u, 'r-', ...)
+
+The initial condition (``n=0``) is natural to include,
+and as ``n % every == 0`` will very seldom be true for the
+very final frame, we also ensure that ``n == t.size-1`` and hence
+the final frame is included.
+
+A simple choice of numbers may illustrate the formulas: say we have
+801 frames in total (``t.size``) and we allow only 60 frames to be
+plotted. Then we need to plot every 801/60 frame, which with integer
+division yields 13 as ``every``. Using the mod function, ``n % every``,
+this operation is zero every time ``n`` can be divided by 13 without a
+remainder. That is, the ``if`` test is true when ``n`` equals :math:`0, 13, 26,
+39, ..., 780, 801`. The associated code is included in the ``plot_u``
+function in the file `wave1D_u0v.py <http://tinyurl.com/jvzzcfn/wave/wave1D/wave1D_u0v.py>`__.
+
+Visualization via Matplotlib
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The previous code based on the ``plot`` interface from ``scitools.std``
+can be run with Matplotlib as the visualization backend, but if one
+desires to program directly with Matplotlib, quite different code
+is needed. Matplotlib's interactive mode must be turned on:
+
+.. code-block:: python
+
+        import matplotlib.pyplot as plt
+        plt.ion()  # interactive mode on
+
+The most
+commonly used animation technique with Matplotlib
+is to update the data in the plot at each time level:
+
+.. code-block:: python
+
+        # Make a first plot
+        lines = plt.plot(t, u)
+        # call plt.axis, plt.xlabel, plt.ylabel, etc. as desired
+        
+        # At later time levels
+        lines[0].set_ydata(u)
+        plt.legend('t=%g' % t[n])
+        plt.draw()  # make updated plot
+        plt.savefig(...)
+
+An alternative is to rebuild the plot at every time level:
+
+.. code-block:: python
+
+        plt.clf()        # delete any previous curve(s)
+        plt.axis([...])
+        plt.plot(t, u)
+        # plt.xlabel, plt.legend and other decorations
+        plt.draw()
+        plt.savefig(...)
+
+Many prefer to work with figure and axis objects as in MATLAB:
+
+.. code-block:: python
+
+        fig = plt.figure()
+        ...
+        fig.clf()
+        ax = fig.gca()
+        ax.axis(...)
+        ax.plot(t, u)
+        # ax.set_xlabel, ax.legend and other decorations
+        plt.draw()
+        fig.savefig(...)
+
+[**hpl 1**: hardcopies via scitools movie or mencoder directly]
+
+[**hpl 2**: need implementations!]
+
+.. _wave:pde1:guitar:data:
+
+Running a case
+--------------
+
+The first demo of our 1D wave equation solver concerns vibrations of a
+string that is initially deformed to a triangular shape, like when picking
+a guitar string:
+
+.. _Eq:wave:pde1:guitar:I:
+
+.. math::
+   :label: wave:pde1:guitar:I
+        
+        I(x) = \left\lbrace
+        \begin{array}{ll}
+        ax/x_0, & x < x_0,\\ 
+        a(L-x)/(L-x_0), & \hbox{otherwise}
+        \end{array}\right.
+        
+        
+
+We choose :math:`L=75` cm, :math:`x_0=0.8L`, :math:`a=5` mm, and a time frequency
+:math:`\nu = 440` Hz. The relation between the wave speed :math:`c` and :math:`\nu` is
+:math:`c=\nu\lambda`, where :math:`\lambda` is the wavelength, taken as :math:`2L` because
+the longest wave on the string form half a wavelength. There is no
+external force, so :math:`f=0`, and the string is at rest initially so
+that :math:`V=0`.
+
+Regarding numerical parameters, we need to specify a :math:`\Delta t`.
+Sometimes it is more natural to think of a spatial resolution instead
+of a time step. A natural semi-coarse spatial resolution in the present
+problem is :math:`N_x=50`. We can then choose the associated :math:`\Delta t` (as required
+by the ``viz`` and ``solver`` functions) as the stability limit:
+:math:`\Delta t = L/(N_xc)`. This is the :math:`\Delta t` to be specified,
+but notice that if :math:`C<1`, the actual :math:`\Delta x` computed in ``solver`` gets
+larger than :math:`L/N_x`: :math:`\Delta x = c\Delta t/C = L/(N_xC)`. (The reason
+is that we fix :math:`\Delta t` and adjust :math:`\Delta x`, so if :math:`C` gets
+smaller, the code implements this effect in terms of a larger :math:`\Delta x`.)
+
+A function for setting the physical and numerical parameters and
+calling ``viz`` in this application goes as follows:
+
+.. code-block:: python
+
+        def guitar(C):
+            """Triangular wave (pulled guitar string)."""
+            L = 0.75
+            x0 = 0.8*L
+            a = 0.005
+            freq = 440
+            wavelength = 2*L
+            c = freq*wavelength
+            omega = 2*pi*freq
+            num_periods = 1
+            T = 2*pi/omega*num_periods
+            # Choose dt the same as the stability limit for Nx=50
+            dt = L/50./c
+        
+            def I(x):
+                return a*x/x0 if x < x0 else a/(L-x0)*(L-x)
+        
+            umin = -1.2*a;  umax = -umin
+            cpu = viz(I, 0, 0, c, L, dt, C, T, umin, umax, animate=True)
+
+The associated program has the name `wave1D_u0.py <http://tinyurl.com/jvzzcfn/wave/wave1D/wave1D_u0.py>`__. Run
+the program and watch the `movie of the vibrating string <http://tinyurl.com/k3sdbuv/pub/mov-wave/guitar_C0.8/index.html>`__.
+
+[**hpl 3**: Must recompute these movies as :math:`\Delta t` is different when :math:`C<1`.]
+
+The benefits of scaling
+-----------------------
+
+The previous example demonstrated that quite some work is needed
+with establishing relevant physical parameters for a case. By *scaling*
+the mathematical problem we can often reduce the need to estimate
+physical parameters dramatically. A scaling consists of introducing new
+independent and dependent variables, with the aim that the absolute
+value of these vary between 0 and 1:
+
+.. math::
+         \bar x = \frac{x}{L},\quad \bar t = \frac{c}{L}t,\quad
+        \bar u = \frac{u}{a}
+        {\thinspace .}
+        
+
+Replacing old by new variables in the PDE, using :math:`f=0`,
+and dropping the bars, results in the *scaled equation*
+:math:`u_{tt} = u_{xx}`. This equation has no physical parameter (!).
+
+If we have a program implemented for the physical wave equation with
+dimensions, we can obtain the dimensionless, scaled version by
+setting :math:`c=1`. The initial condition
+corresponds to :ref:`(11.19) <Eq:wave:pde1:guitar:I>`, but with setting
+:math:`a=1`, :math:`L=1`, and :math:`x_0\in [0,1]`. This means that we only need to
+decide on the :math:`x_0` value as a fraction of unity, because
+the scaled problem corresponds to setting all
+other parameters to unity! In the code we can just set
+``a=c=L=1``, ``x0=0.8``, and there is no need to calculate with
+wavelengths and frequencies to estimate :math:`c`.
+
+The only non-trivial parameter to estimate in the scaled problem
+is the final end time of the simulation, or more precisely, how it relates
+to periods in periodic solutions in time, since we often want to
+express the end time as a certain number of periods.
+Suppose as :math:`u` behaves as :math:`\sin (\omega t)` in time in variables
+with dimension. The corresponding period is :math:`P=2\pi/\omega`.
+The frequency :math:`\omega` is related to the wavelength :math:`\lambda` of the waves
+through the relations :math:`\omega = kc` and :math:`k=2\pi/\lambda`, giving
+:math:`\omega = 2\pi c/\lambda` and :math:`P=\lambda/c`. It remains to estimate :math:`\lambda`.
+With :math:`u(x,t)=F(x)\sin\omega t` we find from :math:`u_{tt}=c^2u_{xx}`
+that :math:`c^2F'' + \omega^2F=0`, and the boundary conditions demand
+:math:`F(0)=F(L)=0`. The solution is :math:`F(x)=\sin(x\pi/L)`, which has
+wavelength :math:`\lambda = 2\pi/(\pi/L)=2L`. One period is therefore
+given by :math:`P=2L/c`. The dimensionless period is :math:`\bar P=Pc/L = 2`.
+
+.. _wave:pde1:impl:vec:
+
+Vectorization
+=============
+
+.. index:: vectorization
+
+The computational algorithm for solving the wave equation visits one
+mesh point at a time and evaluates a formula for the new value :math:`u_i^{n+1}`
+at
+that point. Technically, this is implemented by a loop over array
+elements in a program. Such loops may run slowly in Python (and
+similar interpreted languages such as R and MATLAB).
+One technique for speeding up loops is to
+perform operations on entire arrays instead of working with one element
+at a time. This is referred to as *vectorization*, *vector computing*,
+or *array computing*.
+Operations on whole arrays are possible if the computations
+involving each element is independent of each other and therefore can,
+at least in principle, be performed simultaneously.
+Vectorization not only speeds up the code on serial computers, but it
+also makes it easy to exploit parallel computing.
+
+.. _wave:pde1:impl:vec:slices:basics:
+
+Operations on slices of arrays
+------------------------------
+
+.. index:: scalar code
+
+.. index:: array slices
+
+.. index:: slice
+
+Efficient computing with ``numpy`` arrays demands that we avoid loops
+and compute with entire arrays at once (or at least large portions of them).
+Consider this calculation of differences :math:`d_i = u_{i+1}-u_i`:
+
+.. code-block:: python
+
+        n = u.size
+        for i in range(0, n-1):
+            d[i] = u[i+1] - u[i]
+
+All the differences here are independent of each other.
+The computation of ``d`` can therefore alternatively be done by
+subtracting the array :math:`(u_0,u_1,\ldots,u_{n-1})` from
+the array where the elements are shifted one index upwards:
+:math:`(u_1,u_2,\ldots,u_n)`, see Figure :ref:`wave:pde1:vec:fig1`.
+The former subset of the array can be
+expressed by ``u[0:n-1]``,
+``u[0:-1]``, or just
+``u[:-1]``, meaning from index 0 up to,
+but not including, the last element (``-1``). The latter subset
+is obtained by ``u[1:n]`` or ``u[1:]``,
+meaning from index 1 and the rest of the array.
+The computation of ``d`` can now be done without an explicit Python loop:
+
+.. code-block:: python
+
+        d = u[1:] - u[:-1]
+
+or with explicit limits if desired:
+
+.. code-block:: python
+
+        d = u[1:n] - u[0:n-1]
+
+Indices with a colon, going from an index to (but not including) another
+index are called *slices*. With ``numpy`` arrays, the computations
+are still done by loops, but in efficient, compiled, highly optimized code
+in C or Fortran. Such array operations can also easily be distributed
+among many processors on parallel computers. We say that the *scalar code*
+above, working on an element (a scalar) at a time, has been replaced by
+an equivalent *vectorized code*. The process of vectorizing code is called
+*vectorization*.
+
+.. _wave:pde1:vec:fig1:
+
+.. figure:: vectorized_diff.png
+   :width: 400
+
+   *Illustration of subtracting two slices of two arrays*
+
+
+.. admonition:: Test the understanding
+
+   Newcomers to vectorization are encouraged to choose
+   a small array ``u``, say with five elements,
+   and simulate with pen and paper
+   both the loop version and the vectorized version.
+
+
+
+
+Finite difference schemes basically contains differences between array
+elements with shifted indices. Consider the updating formula
+
+.. code-block:: python
+
+        for i in range(1, n-1):
+            u2[i] = u[i-1] - 2*u[i] + u[i+1]
+
+The vectorization consists of replacing the loop by arithmetics on
+slices of arrays of length ``n-2``:
+
+.. code-block:: python
+
+        u2 = u[:-2] - 2*u[1:-1] + u[2:]
+        u2 = u[0:n-2] - 2*u[1:n-1] + u[2:n]   # alternative
+
+Note that ``u2`` here gets length ``n-2``. If ``u2`` is already an array of
+length ``n`` and we want to use the formula to update all the "inner"
+elements of ``u2``, as we will when solving a 1D wave equation, we can write
+
+.. code-block:: python
+
+        u2[1:-1]  = u[:-2] - 2*u[1:-1] + u[2:]
+        u2[1:n-1] = u[0:n-2] - 2*u[1:n-1] + u[2:n]   # alternative
+
+Pen and paper calculations with a small array will demonstrate what is
+actually going on. The expression on the right-hand side are done in the
+following steps, involving temporary arrays with intermediate results,
+since we can only work with two arrays at a time in
+arithmetic expressions:
+
+.. code-block:: python
+
+        temp1 = 2*u[1:-1]
+        temp2 = u[0:-2] - temp1
+        temp3 = temp2 + u[2:]
+        u2[1:-1] = temp3
+
+We can extend the previous example to a formula with an additional term computed
+by calling a function:
+
+.. code-block:: python
+
+        def f(x):
+            return x**2 + 1
+        
+        for i in range(1, n-1):
+            u2[i] = u[i-1] - 2*u[i] + u[i+1] + f(x[i])
+
+Assuming ``u2``, ``u``, and ``x`` all have length ``n``, the vectorized
+version becomes
+
+.. code-block:: python
+
+        u2[1:-1] = u[:-2] - 2*u[1:-1] + u[2:] + f(x[1:-1])
+
+.. _wave:pde1:impl:vec:slices:fdm:
+
+Finite difference schemes expressed as slices
+---------------------------------------------
+
+We now have the necessary tools to vectorize the algorithm for
+the wave equation. There are three loops: one for the initial condition,
+one for the first time step, and finally the loop that is repeated for
+all subsequent time levels. Since only the latter is repeated a potentially
+large number of times, we limit the efforts of vectorizing the code
+to this loop:
+
+.. code-block:: python
+
+        for i in range(1, Nx):
+            u[i] = 2*u_1[i] - u_2[i] + \ 
+                   C2*(u_1[i-1] - 2*u_1[i] + u_1[i+1])
+
+The vectorized version becomes
+
+.. code-block:: python
+
+        u[1:-1] = - u_2[1:-1] + 2*u_1[1:-1] + \ 
+                  C2*(u_1[:-2] - 2*u_1[1:-1] + u_1[2:])
+
+or
+
+.. code-block:: python
+
+        u[1:Nx] = 2*u_1[1:Nx]- u_2[1:Nx] + \ 
+                  C2*(u_1[0:Nx-1] - 2*u_1[1:Nx] + u_1[2:Nx+1])
+
+.. We may vectorize the other loops regarding the initial condition and
+
+.. the first time step, but the effect will hardly be
+
+.. noticeable in long time simulations.
+
+The program
+`wave1D_u0v.py <http://tinyurl.com/jvzzcfn/wave/wave1D/wave1D_u0v.py>`__
+contains a new version of the function ``solver`` where both the scalar
+and the vectorized loops are included (the argument ``version`` is
+set to ``scalar`` or ``vectorized``, respectively).
+
+.. _wave:pde1:impl:vec:verify:quadratic:
+
+Verification  (2)
+-----------------
+
+.. index:: lambda function (Python)
+
+We may reuse the quadratic solution :math:`{u_{\small\mbox{e}}}(x,t)=x(L-x)(1+{\frac{1}{2}}t)` for
+verifying also the vectorized code. A nose test can now test
+both the scalar and the vectorized version. Moreover, we may
+use a ``user_action`` function that compares the computed and exact
+solution at each time level and performs a test:
+
+.. code-block:: python
+
+        def test_quadratic():
+            """
+            Check the scalar and vectorized versions work for
+            a quadratic u(x,t)=x(L-x)(1+t/2) that is exactly reproduced.
+            """
+            # The following function must work for x as array or scalar
+            u_exact = lambda x, t: x*(L - x)*(1 + 0.5*t)
+            I = lambda x: u_exact(x, 0)
+            V = lambda x: 0.5*u_exact(x, 0)
+            # f is a scalar (zeros_like(x) works for scalar x too)
+            f = lambda x, t: zeros_like(x) + 2*c**2*(1 + 0.5*t)
+        
+            L = 2.5
+            c = 1.5
+            C = 0.75
+            Nx = 3  # Very coarse mesh for this exact test
+            dt = C*(L/Nx)/c
+            T = 18
+        
+            def assert_no_error(u, x, t, n):
+                u_e = u_exact(x, t[n])
+                diff = abs(u - u_e).max()
+                nt.assert_almost_equal(diff, 0, places=13)
+        
+            solver(I, V, f, c, L, dt, C, T,
+                   user_action=assert_no_error, version='scalar')
+            solver(I, V, f, c, L, dt, C, T,
+                   user_action=assert_no_error, version='vectorized')
+
+
+.. admonition:: Lambda functions
+
+   The code segment above demonstrates how to achieve very
+   compact code with the use of lambda functions for the various
+   input parameters that require a Python function. In essence,
+   
+   .. code-block:: python
+   
+           f = lambda x, t: L*(x-t)**2
+   
+   is equivalent to
+   
+   .. code-block:: python
+   
+           def f(x, t):
+               return L(x-t)**2
+   
+   Note that lambda functions can just contain a single expression and no
+   statements.
+   
+   One advantage with lambda functions is that they can be used directly
+   in calls:
+   
+   .. code-block:: python
+   
+           solver(I=lambda x: sin(pi*x/L), V=0, f=0, ...)
+
+
+
+
+Efficiency measurements
+-----------------------
+
+Running the ``wave1D_u0v.py`` code with the previous string vibration example
+for :math:`N_x=50,100,200,400,800`, and measuring the CPU time
+(see the ``run_efficiency_experiments`` function), shows that the vectorized
+code runs substantially faster: the scalar code uses approximately
+a factor :math:`N_x/5` more time!
+
+.. ===== Profiling code ===== better in 2D
+
+.. ======= Storing simulation data =======
+
+.. plain files, NUumPyDB, XDMF, joblib, exercises with retrieval and comparison
+
+.. ======= Programming with classes =======
+
+.. can integrate data storage and check pointing, or maybe do it later in 2D
+
+.. with Cython, Fortran and C? Might have a very simple version here and
+
+.. then a new, more sophisticated version in 2D.
+
+.. Think about grabbing out all soft eng and
+
+.. present in short course. Need to be self-contained.
+
+Exercises  (1)
+==============
+
+.. --- begin exercise ---
+
+.. _wave:exer:standingwave:
+
+Exercise 1: Simulate a standing wave
+------------------------------------
+
+The purpose of this exercise is to simulate standing waves on :math:`[0,L]`
+and illustrate the error in the simulation.
+Standing waves arise from an initial condition
+
+.. math::
+         u(x,0)= A \sin\left(\frac{\pi}{L}mx\right),
+
+where :math:`m` is an integer and :math:`A` is a freely chosen amplitude.
+The corresponding exact solution can be computed and reads
+
+.. math::
+         {u_{\small\mbox{e}}}(x,t) =  A\sin\left(\frac{\pi}{L}mx\right)
+        \cos\left(\frac{\pi}{L}mct\right){\thinspace .}
+        
+
+**a)**
+Explain that for a function :math:`\sin kx\cos \omega t` the wave length
+in space is :math:`\lambda = 2\pi /k` and the period in time is :math:`P=2\pi/\omega`.
+Use these expressions to find the wave length in space and period in
+time of :math:`{u_{\small\mbox{e}}}` above.
+
+**b)**
+Import the ``solver`` function ``wave1D_u0.py`` into a new file
+where the ``viz`` function is reimplemented such that it
+plots either the numerical *and* the exact solution, *or* the error.
+
+**c)**
+Make animations where you illustrate how the error
+:math:`e^n_i ={u_{\small\mbox{e}}}(x_i, t_n)- u^n_i`
+develops and increases in time. Also make animations of
+:math:`u` and :math:`{u_{\small\mbox{e}}}` simultaneously.
+
+.. --- begin hint in exercise ---
+
+**Hint 1.**
+Quite long time simulations are needed in order to display significant
+discrepancies between the numerical and exact solution.
+
+.. --- end hint in exercise ---
+
+.. --- begin hint in exercise ---
+
+**Hint 2.**
+A possible set of parameters is :math:`L=12`, :math:`m=9`, :math:`c=2`, :math:`A=1`, :math:`N_x=80`,
+:math:`C=0.8`. The error mesh function :math:`e^n` can be simulated for 10 periods,
+while 20-30 periods are needed to show significant differences between
+the curves for the numerical and exact solution.
+
+.. --- end hint in exercise ---
+
+Filename: ``wave_standing.py``.
+
+.. Closing remarks for this Exercise
+
+Remarks  (1)
+~~~~~~~~~~~~
+
+The important
+parameters for numerical quality are :math:`C` and :math:`k\Delta x`, where
+:math:`C=c\Delta t/\Delta x` is the Courant number and :math:`k` is defined above
+(:math:`k\Delta x` is proportional to how many mesh points we have per wave length
+in space, see the section :ref:`wave:pde1:num:dispersion` for explanation).
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _wave:exer:store:list:
+
+Exercise 2: Add storage of solution in a user action function
+-------------------------------------------------------------
+
+Extend the ``plot_u`` function in the file ``wave1D_u0.py`` to also store
+the solutions ``u`` in a list.
+To this end, declare ``all_u`` as
+an empty list in the ``viz`` function, outside ``plot_u``, and perform
+an append operation inside the ``plot_u`` function. Note that a
+function, like ``plot_u``, inside another function, like ``viz``,
+remembers all local variables in ``viz`` function, including ``all_u``,
+even when ``plot_u`` is called (as ``user_action``) in the ``solver`` function.
+Test both ``all_u.append(u)`` and ``all_u.append(u.copy())``.
+Why does one of these constructions fail to store the solution correctly?
+Let the ``viz`` function return the ``all_u`` list
+converted to a two-dimensional ``numpy`` array.
+Filename: ``wave1D_u0_s_store.py``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _wave:exer:store:list:class:
+
+Exercise 3: Use a class for the user action function
+----------------------------------------------------
+
+Redo :ref:`wave:exer:store:list` using a class for the
+user action function. That is, define a class ``Action`` where
+the ``all_u`` list is an attribute, and implement the user action
+function as a method (the special method ``__call__`` is a natural
+choice). The class versions avoids that the user action function
+depends on parameters defined outside the function (such as ``all_u``
+in :ref:`wave:exer:store:list`).
+Filename: ``wave1D_u0_s2c.py``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _wave:exer:multiple:C:
+
+Exercise 4: Compare several Courant numbers in one movie
+--------------------------------------------------------
+
+The goal of this exercise is to make movies where several curves,
+corresponding to different Courant numbers, are visualized.
+Import the ``solver`` function from the ``wave1D_u0_s`` movie
+in a new file ``wave_compare.py``. Reimplement the ``viz`` function
+such that it can take a list of ``C`` values as argument
+and create a movie with solutions corresponding to the given ``C``
+values. The ``plot_u`` function must be changed to store the solution
+in an array (see :ref:`wave:exer:store:list` or
+:ref:`wave:exer:store:list:class` for details), ``solver`` must be
+computed for each value of the Courant number, and finally
+one must run through each time step and plot all the spatial
+solution curves in one figure and store it in a file.
+
+The challenge in such a visualization is to ensure that the curves in
+one plot corresponds to the same time point. The easiest remedy is to
+keep the time and space resolution constant and change the wave
+velocity :math:`c` to change the Courant number.
+Filename: ``wave_numerics_comparison.py``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _wave:exer:mesh1D:calculus:
+
+Project 5: Calculus with 1D mesh functions
+------------------------------------------
+
+This project explores integration and differentiation of
+mesh functions, both with scalar and vectorized implementations.
+We are given a mesh function :math:`f_i` on a spatial one-dimensional
+mesh :math:`x_i=i\Delta x`, :math:`i=0,\ldots,N_x`, over the interval :math:`[a,b]`.
+
+**a)**
+Define the discrete derivative of :math:`f_i` by using centered
+differences at internal mesh points and one-sided differences
+at the end points. Implement a scalar version of
+the computation in a Python function and supply a nose test
+for the linear case :math:`f(x)=4x-2.5` where the discrete derivative should
+be exact.
+
+**b)**
+Vectorize the implementation of the discrete derivative.
+Extend the nose test to check the validity of the implementation.
+
+**c)**
+To compute the discrete integral :math:`F_i` of :math:`f_i`, we assume that
+the mesh function :math:`f_i` varies linearly between the mesh points.
+Let :math:`f(x)` be such a linear interpolant of :math:`f_i`. We then
+have
+
+.. math::
+         F_i = \int_{x_0}^{x_i} f(x) dx{\thinspace .}
+
+The exact integral of a piecewise linear function :math:`f(x)` is
+given by the Trapezoidal rule. S
+how that if :math:`F_{i}` is already computed, we can find :math:`F_{i+1}`
+from
+
+.. math::
+         F_{i+1} = F_i + \frac{1}{2}(f_i + f_{i+1})\Delta x{\thinspace .}
+
+Make a function for a scalar implementation of the discrete integral
+as a mesh function. That is, the function should return
+:math:`F_i` for :math:`i=0,\ldots,N_x`.
+For a nose test one can use the fact that the above defined
+discrete integral of a linear
+function (say :math:`f(x)=4x-2.5`) is exact.
+
+**d)**
+Vectorize the implementation of the discrete integral.
+Extend the nose test to check the validity of the implementation.
+
+.. --- begin hint in exercise ---
+
+**Hint.**
+Interpret the recursive formula for :math:`F_{i+1}` as a sum.
+Make an array with each element of the sum and use the "cumsum"
+(``numpy.cumsum``) operation to compute the accumulative sum:
+``numpy.cumsum([1,3,5])`` is ``[1,4,9]``.
+
+.. --- end hint in exercise ---
+
+**e)**
+Create a class ``MeshCalculus`` that can integrate and differentiate
+mesh functions. The class can just define some methods that call
+the previously implemented Python functions. Here is an example
+on the usage:
+
+.. code-block:: python
+
+        import numpy as np
+        calc = MeshCalculus(vectorized=True)
+        x = np.linspace(0, 1, 11)        # mesh
+        f = np.exp(x)                    # mesh function
+        df = calc.differentiate(f, x)    # discrete derivative
+        F = calc.integrate(f, x)         # discrete anti-derivative
+
+Filename: ``mesh_calculus_1D.py``.
+
+.. --- end exercise ---
+

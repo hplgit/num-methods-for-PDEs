@@ -1,0 +1,1345 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Generalization: reflecting boundaries</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Finite difference methods for wave motion" href="index.html" />
+    <link rel="next" title="Analysis of the difference equations" href="._main_wave004.html" />
+    <link rel="prev" title="Implementation (1)" href="._main_wave002.html" />
+ 
+  
+   <style type="text/css">
+     div.admonition {
+       background-color: whiteSmoke;
+       border: 1px solid #bababa;
+     }
+   </style>
+  </head>
+
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_wave004.html" title="Analysis of the difference equations"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="._main_wave002.html" title="Implementation (1)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Finite difference methods for wave motion</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="generalization-reflecting-boundaries">
+<span id="wave-pde2-neumann"></span><h1>Generalization: reflecting boundaries<a class="headerlink" href="#generalization-reflecting-boundaries" title="Permalink to this headline">¶</a></h1>
+<p>The boundary condition <span class="math">\(u=0\)</span> makes <span class="math">\(u\)</span> change sign at the boundary,
+while the condition <span class="math">\(u_x=0\)</span> perfectly reflects the wave, see
+a <a class="reference external" href="http://tinyurl.com/k3sdbuv/pub/mov-wave/demo_BC_gaussian/index.html">web page</a>
+or a <a class="reference external" href="http://tinyurl.com/k3sdbuv/pub/mov-wave/demo_BC_gaussian/movie.flv">movie file</a>
+for demonstration.
+Our next task is to explain how to implement the boundary
+condition <span class="math">\(u_x=0\)</span>, which is
+more complicated to express numerically and also to implement than
+a given value of <span class="math">\(u\)</span>.
+We shall present two methods for implementing <span class="math">\(u_x=0\)</span>
+in a finite difference scheme, one based on deriving a modified
+stencil at the boundary, and another one based on extending the mesh
+with ghost cells and ghost points.</p>
+<div class="section" id="neumann-boundary-condition">
+<span id="wave-pde2-neumann-bc"></span><h2>Neumann boundary condition<a class="headerlink" href="#neumann-boundary-condition" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><p id="index-5">When a wave hits a boundary and is to be reflected back, one applies
+the condition</p>
+<div class="math" id="equation-wave:pde1:Neumann:0">
+<span id="eq-wave-pde1-neumann-0"></span><span class="eqno">(1)</span>\[      \frac{\partial u}{\partial n} \equiv \boldsymbol{n}\cdot\nabla u = 0\]\[     {\thinspace .}\]</div>
+<p>The derivative <span class="math">\(\partial /\partial n\)</span> is in the
+outward normal direction from a general boundary.
+For a 1D domain <span class="math">\([0,L]\)</span>,
+we have that</p>
+<div class="math">
+\[\left.\frac{\partial}{\partial n}\right\vert_{x=L} =
+\frac{\partial}{\partial x},\quad
+\left.\frac{\partial}{\partial n}\right\vert_{x=0} = -
+\frac{\partial}{\partial x}{\thinspace .}\]</div>
+<div class="admonition-boundary-condition-terminology admonition">
+<p class="first admonition-title">Boundary condition terminology</p>
+<p class="last">Boundary conditions
+that specify the value of <span class="math">\(\partial u/\partial n\)</span>,
+or shorter <span class="math">\(u_n\)</span>, are known as
+<a class="reference external" href="http://en.wikipedia.org/wiki/Neumann_boundary_condition">Neumann</a> conditions, while <a class="reference external" href="http://en.wikipedia.org/wiki/Dirichlet_conditions">Dirichlet conditions</a>
+refer to specifications of <span class="math">\(u\)</span>.
+When the values are zero (<span class="math">\(\partial u/\partial n=0\)</span> or <span class="math">\(u=0\)</span>) we speak
+about <em>homogeneous</em> Neumann or Dirichlet conditions.</p>
+</div>
+</div>
+<div class="section" id="discretization-of-derivatives-at-the-boundary">
+<span id="wave-pde2-neumann-discr"></span><h2>Discretization of derivatives at the boundary<a class="headerlink" href="#discretization-of-derivatives-at-the-boundary" title="Permalink to this headline">¶</a></h2>
+<p>How can we incorporate the condition <a href="#equation-wave:pde1:Neumann:0">(1)</a>
+in the finite difference scheme?  Since we have used central
+differences in all the other approximations to derivatives in the
+scheme, it is tempting to implement <a href="#equation-wave:pde1:Neumann:0">(1)</a> at
+<span class="math">\(x=0\)</span> and <span class="math">\(t=t_n\)</span> by the difference</p>
+<div class="math" id="equation-wave:pde1:Neumann:0:cd">
+<span id="eq-wave-pde1-neumann-0-cd"></span><span class="eqno">(2)</span>\[     \frac{u_{-1}^n - u_1^n}{2\Delta x} = 0
+     {\thinspace .}\]</div>
+<p>The problem is that <span class="math">\(u_{-1}^n\)</span> is not a <span class="math">\(u\)</span> value that is being
+computed since the point is outside the mesh. However, if we combine
+<a href="#equation-wave:pde1:Neumann:0:cd">(2)</a> with the scheme</p>
+<p>for <span class="math">\(i=0\)</span>,</p>
+<div class="math" id="equation-wave:pde1:Neumann:0:scheme">
+<span id="eq-wave-pde1-neumann-0-scheme"></span><span class="eqno">(3)</span>\[     u^{n+1}_i = -u^{n-1}_i + 2u^n_i + C^2
+     \left(u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}\right),\]</div>
+<p>we can eliminate the fictitious value <span class="math">\(u_{-1}^n\)</span>. We see that
+<span class="math">\(u_{-1}^n=u_1^n\)</span> from <a href="#equation-wave:pde1:Neumann:0:cd">(2)</a>, which
+can be used in <a href="#equation-wave:pde1:Neumann:0:scheme">(3)</a> to
+arrive at a modified scheme for the boundary point <span class="math">\(u_0^{n+1}\)</span>:</p>
+<div class="math">
+\[u^{n+1}_i = -u^{n-1}_i  + 2u^n_i + 2C^2
+\left(u^{n}_{i+1}-u^{n}_{i}\right),\quad i=0 {\thinspace .}\]</div>
+<p>Figure <a class="reference internal" href="#wave-pde1-fig-neumann-stencil"><em>Modified stencil at a boundary with a Neumann condition</em></a> visualizes this equation
+for computing <span class="math">\(u^3_0\)</span> in terms of <span class="math">\(u^2_0\)</span>, <span class="math">\(u^1_0\)</span>, and
+<span class="math">\(u^2_1\)</span>.</p>
+<div class="figure" id="wave-pde1-fig-neumann-stencil">
+<span id="index-6"></span><a class="reference internal image-reference" href="_images/stencil_n_left.png"><img alt="_images/stencil_n_left.png" src="_images/stencil_n_left.png" style="width: 500px;" /></a>
+<p class="caption"><em>Modified stencil at a boundary with a Neumann condition</em></p>
+</div>
+<p>Similarly, <a href="#equation-wave:pde1:Neumann:0">(1)</a> applied at <span class="math">\(x=L\)</span>
+is discretized by a central difference</p>
+<div class="math" id="equation-wave:pde1:Neumann:0:cd2">
+<span id="eq-wave-pde1-neumann-0-cd2"></span><span class="eqno">(4)</span>\[     \frac{u_{N_x+1}^n - u_{N_x-1}^n}{2\Delta x} = 0
+     {\thinspace .}\]</div>
+<p>Combined with the scheme for <span class="math">\(i=N_x\)</span> we get a modified scheme for
+the boundary value <span class="math">\(u_{N_x}^{n+1}\)</span>:</p>
+<div class="math">
+\[u^{n+1}_i = -u^{n-1}_i + 2u^n_i + 2C^2
+\left(u^{n}_{i-1}-u^{n}_{i}\right),\quad i=N_x {\thinspace .}\]</div>
+<p>The modification of the scheme at the boundary is also required for
+the special formula for the first time step. How the stencil moves
+through the mesh and is modified at the boundary can be illustrated
+by an animation
+in a <a class="reference external" href="http://tinyurl.com/k3sdbuv/pub/mov-wave/wave1D_PDE_Neumann_stencil_gpl/index.html">web page</a>
+or a <a class="reference external" href="http://tinyurl.com/k3sdbuv/pub/mov-wave/wave1D_PDE_Neumann_stencil_gpl/movie.ogg">movie file</a>.</p>
+</div>
+<div class="section" id="implementation-of-neumann-conditions">
+<span id="wave-pde2-neumann-impl"></span><h2>Implementation of Neumann conditions<a class="headerlink" href="#implementation-of-neumann-conditions" title="Permalink to this headline">¶</a></h2>
+<p>The implementation of the special formulas for the boundary points
+can benefit from using the general formula for the interior points
+also at the boundaries,
+but replacing <span class="math">\(u_{i-1}^n\)</span> by <span class="math">\(u_{i+1}^n\)</span> when computing
+<span class="math">\(u_i^{n+1}\)</span> for <span class="math">\(i=0\)</span> and
+<span class="math">\(u_{i+1}^n\)</span> by <span class="math">\(u_{i-1}^n\)</span> for <span class="math">\(i=N_x\)</span>. This is achieved by
+just replacing the index
+<span class="math">\(i-1\)</span> by <span class="math">\(i+1\)</span> for <span class="math">\(i=0\)</span> and <span class="math">\(i+1\)</span> by <span class="math">\(i-1\)</span> for
+<span class="math">\(i=N_x\)</span>. In a program, we introduce variables to hold the value of
+the offset indices: <tt class="docutils literal"><span class="pre">im1</span></tt> for <tt class="docutils literal"><span class="pre">i-1</span></tt> and <tt class="docutils literal"><span class="pre">ip1</span></tt> for <tt class="docutils literal"><span class="pre">i+1</span></tt>.
+It is now just a manner of defining <tt class="docutils literal"><span class="pre">im1</span></tt> and <tt class="docutils literal"><span class="pre">ip1</span></tt> properly
+for the internal points and the boundary points.
+The coding for the latter reads</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">ip1</span> <span class="o">=</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span>
+<span class="n">im1</span> <span class="o">=</span> <span class="n">ip1</span>  <span class="c"># i-1 -&gt; i+1</span>
+<span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">C2</span><span class="o">*</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="n">im1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">u_1</span><span class="p">[</span><span class="n">ip1</span><span class="p">])</span>
+
+<span class="n">i</span> <span class="o">=</span> <span class="n">Nx</span>
+<span class="n">im1</span> <span class="o">=</span> <span class="n">i</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">ip1</span> <span class="o">=</span> <span class="n">im1</span>  <span class="c"># i+1 -&gt; i-1</span>
+<span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">C2</span><span class="o">*</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="n">im1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">u_1</span><span class="p">[</span><span class="n">ip1</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>We can in fact create one loop over both the internal and boundary
+points and use only one updating formula:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Nx</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">ip1</span> <span class="o">=</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">Nx</span> <span class="k">else</span> <span class="n">i</span><span class="o">-</span><span class="mi">1</span>
+    <span class="n">im1</span> <span class="o">=</span> <span class="n">i</span><span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span>  <span class="k">else</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span>
+    <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">C2</span><span class="o">*</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="n">im1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">u_1</span><span class="p">[</span><span class="n">ip1</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>The program <a class="reference external" href="http://tinyurl.com/jvzzcfn/wave/wave1D/wave1D_n0.py">wave1D_n0.py</a>
+contains a complete implementation of the 1D wave equation with
+boundary conditions <span class="math">\(u_x = 0\)</span> at <span class="math">\(x=0\)</span> and <span class="math">\(x=L\)</span>.</p>
+<p>It would be nice to modify the <tt class="docutils literal"><span class="pre">test_quadratic</span></tt> test case from the
+<tt class="docutils literal"><span class="pre">wave1D_u0.py</span></tt> with Dirichlet conditions, described in the section <a class="reference internal" href="._main_wave002.html#wave-pde1-impl-vec-verify-quadratic"><em>Verification  (2)</em></a>. However, the Neumann
+conditions requires the polynomial variation in <span class="math">\(x\)</span> directory to
+be of third degree, which causes challenging problems with
+designing a test where the numerical solution is known exactly.
+<a class="reference internal" href="#wave-fd2-exer-verify-cubic"><em>Exercise 10: Verification by a cubic polynomial in space</em></a> outlines ideas and code
+for this purpose. The only test in <tt class="docutils literal"><span class="pre">wave1D_n0.py</span></tt> is to start
+with a plug wave at rest and see that the initial condition is
+reached again perfectly after one period of motion, if <span class="math">\(C=1\)</span>.</p>
+</div>
+<div class="section" id="index-set-notation">
+<span id="wave-indexset"></span><h2>Index set notation<a class="headerlink" href="#index-set-notation" title="Permalink to this headline">¶</a></h2>
+<p id="index-7">We shall introduce a special notation for index sets, consisting of
+writing <span class="math">\(x_i\)</span>, <span class="math">\(i\in{\mathcal{I}_x}\)</span>, instead of <span class="math">\(i=0,\ldots,N_x\)</span>.
+Obviously, <span class="math">\({\mathcal{I}_x}\)</span> must be the set <span class="math">\({\mathcal{I}_x} =\{0,\ldots,N_x\}\)</span>, but it
+is often advantageous to have a symbol for this set rather than
+specifying all its elements. This saves writing and makes
+specification of algorithms and implementation of computer code easier.</p>
+<p>The first index in the set will be denoted <span class="math">\({{\mathcal{I^0}_x}}\)</span>
+and the last <span class="math">\({\mathcal{I^{-1}_x}}\)</span>. Sometimes we need to count from the second
+element in the set, and the notation <span class="math">\({{\mathcal{I^+}_x}}\)</span> is then used.
+Correspondingly, <span class="math">\({{\mathcal{I^-}_x}}\)</span> means <span class="math">\(\{0,\ldots,N_x-1\}\)</span>.  All the
+indices corresponding to inner grid points are
+<span class="math">\({{\mathcal{I^i}_x}}=\{1,\ldots,N_x-1\}\)</span>.  For the time domain we find it
+natural to explicitly use 0 as the first index, so we will usually
+write <span class="math">\(n=0\)</span> and <span class="math">\(t_0\)</span> rather than <span class="math">\(n={\mathcal{I}_t}^0\)</span>. We also avoid notation
+like <span class="math">\(x_{{\mathcal{I^{-1}_x}}}\)</span> and will instead use <span class="math">\(x_i\)</span>, <span class="math">\(i={\mathcal{I^{-1}_x}}\)</span>.</p>
+<p>The Python code associated with index sets applies the following
+conventions:</p>
+<p>An important feature of the index set notation is that it
+keeps our formulas and code independent of how
+we count mesh points. For example, the notation <span class="math">\(i\in{\mathcal{I}_x}\)</span> or <span class="math">\(i={{\mathcal{I^0}_x}}\)</span>
+remains the same whether <span class="math">\({\mathcal{I}_x}\)</span> is defined as above or as starting at 1,
+i.e., <span class="math">\({\mathcal{I}_x}=\{1,\ldots,Q\}\)</span>. Similarly, we can in the code define
+<tt class="docutils literal"><span class="pre">Ix=range(Nx+1)</span></tt> or <tt class="docutils literal"><span class="pre">Ix=range(1,Q)</span></tt>, and expressions
+like <tt class="docutils literal"><span class="pre">Ix[0]</span></tt> and <tt class="docutils literal"><span class="pre">Ix[1:-1]</span></tt> remain correct. One application where
+the index set notation is convenient is
+conversion of code from a language where arrays has base index 0 (e.g.,
+Python and C) to languages where the base index is 1 (e.g., MATLAB and
+Fortran). Another important application is implementation of
+Neumann conditions via ghost points (see next section).</p>
+<p>For the current problem setting in the <span class="math">\(x,t\)</span> plane, we work with
+the index sets</p>
+<div class="math">
+\[{\mathcal{I}_x} = \{0,\ldots,N_x\},\quad {\mathcal{I}_t} = \{0,\ldots,N_t\},\]</div>
+<p>defined in Python as</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">Ix</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Nx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">It</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A finite difference scheme can with the index set notation be specified as</p>
+<div class="math">
+\[\begin{split}u^{n+1}_i &amp;= -u^{n-1}_i  + 2u^n_i + C^2
+\left(u^{n}_{i+1}-2u^{n}_{i}+u^{n}_{i-1}\right),
+\quad i\in{{\mathcal{I^i}_x}},\ n\in{{\mathcal{I^i}_t}},\\
+u_i &amp;= 0,
+\quad i={{\mathcal{I^0}_x}},\ n\in{{\mathcal{I^i}_t}},\\
+u_i &amp;= 0,
+\quad i={\mathcal{I^{-1}_x}},\ n\in{{\mathcal{I^i}_t}},\end{split}\]</div>
+<p>and implemented by code like</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">It</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">Ix</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span> <span class="n">u_2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> \
+               <span class="n">C2</span><span class="o">*</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="n">Ix</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>  <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="n">Ix</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">];</span> <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>The program <a class="reference external" href="http://tinyurl.com/jvzzcfn/wave/wave1D/wave1D_dn.py">wave1D_dn.py</a>
+applies the index set notation and
+solves the 1D wave equation <span class="math">\(u_{tt}=c^2u_{xx}+f(x,t)\)</span> with
+quite general boundary and initial conditions:</p>
+<blockquote>
+<div><ul class="simple">
+<li><span class="math">\(x=0\)</span>: <span class="math">\(u=U_0(t)\)</span> or <span class="math">\(u_x=0\)</span></li>
+<li><span class="math">\(x=L\)</span>: <span class="math">\(u=U_L(t)\)</span> or <span class="math">\(u_x=0\)</span></li>
+<li><span class="math">\(t=0\)</span>: <span class="math">\(u=I(x)\)</span></li>
+<li><span class="math">\(t=0\)</span>: <span class="math">\(u_t=I(x)\)</span></li>
+</ul>
+</div></blockquote>
+<p>The program combines Dirichlet and Neumann conditions, scalar and vectorized
+implementation of schemes, and the index notation into one piece of code.
+A lot of test examples are also included in the program:</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>A rectangular plug profile as initial condition (easy to use as
+test example as the rectangle should jump one cell per time
+step when <span class="math">\(C=1\)</span>, without any numerical errors).</li>
+<li>A Gaussian function as initial condition.</li>
+<li>A triangular profile as initial condition, which resembles the
+typical initial shape of a guitar string.</li>
+<li>A sinusoidal variation of <span class="math">\(u\)</span> at <span class="math">\(x=0\)</span> and either <span class="math">\(u=0\)</span> or
+<span class="math">\(u_x=0\)</span> at <span class="math">\(x=L\)</span>.</li>
+<li>An exact analytical solution <span class="math">\(u(x,t)=\cos(m\pi t/L)\sin({\frac{1}{2}}m\pi x/L)\)</span>, which can be used for convergence rate tests.</li>
+</ul>
+</div></blockquote>
+</div>
+<p>[<strong>hpl 4</strong>: Should include some experiments here or make exercises. Qualitative behavior of the wave equation can be exemplified.]</p>
+</div>
+<div class="section" id="alternative-implementation-via-ghost-cells">
+<span id="wave-pde1-neumann-ghost"></span><h2>Alternative implementation via ghost cells<a class="headerlink" href="#alternative-implementation-via-ghost-cells" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="idea">
+<h3>Idea<a class="headerlink" href="#idea" title="Permalink to this headline">¶</a></h3>
+<p>Instead of modifying the scheme at the boundary, we can introduce
+extra points outside the domain such that the fictitious values
+<span class="math">\(u_{-1}^n\)</span> and <span class="math">\(u_{N_x+1}^n\)</span>
+are defined in the mesh.
+Adding the intervals <span class="math">\([-\Delta x,0]\)</span> and <span class="math">\([L, L+\Delta x]\)</span>,
+often referred to as <em>ghost cells</em>, to the mesh gives us all the
+needed mesh points, corresponding to <span class="math">\(i=-1,0,\ldots,N_x,N_x+1\)</span>.
+The extra points <span class="math">\(i=-1\)</span> and <span class="math">\(i=N_x+1\)</span> are known as <em>ghost points</em>,
+and values at these points, <span class="math">\(u_{-1}^n\)</span> and <span class="math">\(u_{N_x+1}^n\)</span>, are
+called <em>ghost values</em>.</p>
+<p>The important idea is
+to ensure that we always have</p>
+<div class="math">
+\[u_{-1}^n = u_{1}^n\hbox{ and } u_{N_x+1}^n = u_{N_x-1}^n,\]</div>
+<p>because then
+the application of the standard scheme at a boundary point <span class="math">\(i=0\)</span> or <span class="math">\(i=N_x\)</span>
+will be correct and guarantee that the solution is compatible with the
+boundary condition <span class="math">\(u_x=0\)</span>.</p>
+</div>
+<div class="section" id="implementation-2">
+<h3>Implementation  (2)<a class="headerlink" href="#implementation-2" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">u</span></tt> array now needs extra elements corresponding to the ghost cells
+and points. Two new point values are needed:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">u</span>   <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">Nx</span><span class="o">+</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The arrays <tt class="docutils literal"><span class="pre">u_1</span></tt> and <tt class="docutils literal"><span class="pre">u_2</span></tt> must be defined accordingly.</p>
+<p>Unfortunately, a major indexing problem arises with ghost cells.
+The reason is that Python indices <em>must</em> start
+at 0 and <tt class="docutils literal"><span class="pre">u[-1]</span></tt> will always mean the last element in <tt class="docutils literal"><span class="pre">u</span></tt>.
+This fact gives, apparently, a mismatch between the mathematical
+indices <span class="math">\(i=-1,0,\ldots,N_x+1\)</span> and the Python indices running over
+<tt class="docutils literal"><span class="pre">u</span></tt>: <tt class="docutils literal"><span class="pre">0,..,Nx+2</span></tt>. One remedy is to change the mathematical notation
+of the scheme, as in</p>
+<div class="math">
+\[u^{n+1}_i = \cdots,\quad i=1,\ldots,N_x+1,\]</div>
+<p>meaning that the ghost points correspond to <span class="math">\(i=0\)</span> and <span class="math">\(i=N_x+1\)</span>.
+A better solution is to use the ideas of the section <a class="reference internal" href="#wave-indexset"><em>Index set notation</em></a>:
+we hide the specific index value in an index set and operate with
+inner and boundary points using the index set notation.</p>
+<p>To this end, we define <tt class="docutils literal"><span class="pre">u</span></tt> with proper length and <tt class="docutils literal"><span class="pre">Ix</span></tt> to be the corresponding
+indices for the real physical points (<span class="math">\(1,2,\ldots,N_x+1\)</span>):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">u</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">Nx</span><span class="o">+</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">Ix</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>That is, the boundary points have indices <tt class="docutils literal"><span class="pre">Ix[0]</span></tt> and <tt class="docutils literal"><span class="pre">Ix[-1]</span></tt> (as before).
+We first update the solution at all physical mesh points (i.e., interior
+points in the mesh extended with ghost cells):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">Ix</span><span class="p">:</span>
+    <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span> <span class="n">u_2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> \
+           <span class="n">C2</span><span class="o">*</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>It remains to update the ghost points. For a boundary condition <span class="math">\(u_x=0\)</span>,
+the ghost value must equal to the value at the associated inner mesh
+point. Computer code makes this statement precise:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">i</span> <span class="o">=</span> <span class="n">Ix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>          <span class="c"># x=0 boundary</span>
+<span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">i</span> <span class="o">=</span> <span class="n">Ix</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>         <span class="c"># x=L boundary</span>
+<span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The physical solution to be plotted is now in <tt class="docutils literal"><span class="pre">u[1:-1]</span></tt>, or
+equivalently <tt class="docutils literal"><span class="pre">u[Ix[0]:Ix[-1]+1]</span></tt>, so this slice is
+the quantity to be returned from a solver function.
+A complete implementation appears in the program
+<a class="reference external" href="http://tinyurl.com/jvzzcfn/wave/wave1D/wave1D_n0_ghost.py">wave1D_n0_ghost.py</a>.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>We have to be careful with how the spatial and temporal mesh
+points are stored. Say we let <tt class="docutils literal"><span class="pre">x</span></tt> be the physical mesh points,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">x</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">Nx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>&#8220;Standard coding&#8221; of the initial condition,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">Ix</span><span class="p">:</span>
+    <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">I</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>becomes wrong, since <tt class="docutils literal"><span class="pre">u_1</span></tt> and <tt class="docutils literal"><span class="pre">x</span></tt> have different lengths and the index <tt class="docutils literal"><span class="pre">i</span></tt>
+corresponds to two different mesh points. In fact, <tt class="docutils literal"><span class="pre">x[i]</span></tt> corresponds
+to <tt class="docutils literal"><span class="pre">u[1+i]</span></tt>. A correct implementation is</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">Ix</span><span class="p">:</span>
+    <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">I</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="n">Ix</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+</pre></div>
+</div>
+<p>Similarly, a source term usually coded as <tt class="docutils literal"><span class="pre">f(x[i],</span> <span class="pre">t[n])</span></tt> is incorrect
+if <tt class="docutils literal"><span class="pre">x</span></tt> is defined to be the physical points, so <tt class="docutils literal"><span class="pre">x[i]</span></tt> must be
+replaced by <tt class="docutils literal"><span class="pre">x[i-Ix[0]]</span></tt>.</p>
+<p class="last">An alternative remedy is to let <tt class="docutils literal"><span class="pre">x</span></tt> also cover the ghost points such that
+<tt class="docutils literal"><span class="pre">u[i]</span></tt> is the value at <tt class="docutils literal"><span class="pre">x[i]</span></tt>.</p>
+</div>
+<p>The ghost cell is only added to the boundary where we have a Neumann
+condition. Suppose we have a Dirichlet condition at <span class="math">\(x=L\)</span> and
+a homogeneous Neumann condition at <span class="math">\(x=0\)</span>. One ghost cell <span class="math">\([-\Delta x,0]\)</span>
+is added to the mesh, so the index set for the physical points
+becomes <span class="math">\(\{1,\ldots,N_x+1\}\)</span>. A relevant implementation
+is</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">u</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">Nx</span><span class="o">+</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">Ix</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="o">...</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">Ix</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+    <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span> <span class="n">u_2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> \
+           <span class="n">C2</span><span class="o">*</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> \
+           <span class="n">dt2</span><span class="o">*</span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="n">Ix</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">])</span>
+<span class="n">i</span> <span class="o">=</span> <span class="n">Ix</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">U_0</span>       <span class="c"># set Dirichlet value</span>
+<span class="n">i</span> <span class="o">=</span> <span class="n">Ix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>  <span class="c"># update ghost value</span>
+</pre></div>
+</div>
+<p>The physical solution to be plotted is now in <tt class="docutils literal"><span class="pre">u[1:]</span></tt>
+or (as always) <tt class="docutils literal"><span class="pre">u[Ix[0]:Ix[-1]+1]</span></tt>.</p>
+</div>
+</div>
+</div>
+<div class="section" id="generalization-variable-wave-velocity">
+<span id="wave-pde2-var-c"></span><h1>Generalization: variable wave velocity<a class="headerlink" href="#generalization-variable-wave-velocity" title="Permalink to this headline">¶</a></h1>
+<p>Our next generalization of the 1D wave equation <a class="reference internal" href="._main_wave001.html#eq-wave-pde1"><em>(2.1)</em></a> or
+<a class="reference internal" href="._main_wave001.html#eq-wave-pde2"><em>(2.12)</em></a> is to allow for a variable wave velocity <span class="math">\(c\)</span>:
+<span class="math">\(c=c(x)\)</span>, usually motivated by wave motion in a domain composed of
+different physical media with different properties for
+propagating waves and hence different wave velocities <span class="math">\(c\)</span>.
+Figure</p>
+<div class="figure" id="wave-pde1-fig-pulse1-two-media">
+<a class="reference internal image-reference" href="_images/pulse1_in_two_media.png"><img alt="_images/pulse1_in_two_media.png" src="_images/pulse1_in_two_media.png" style="width: 800px;" /></a>
+<p class="caption"><em>Left: wave entering another medium; right: transmitted and reflected wave</em></p>
+</div>
+<div class="section" id="the-model-pde-with-a-variable-coefficient">
+<h2>The model PDE with a variable coefficient<a class="headerlink" href="#the-model-pde-with-a-variable-coefficient" title="Permalink to this headline">¶</a></h2>
+<p>Instead of working with the squared quantity <span class="math">\(c^2(x)\)</span> we
+shall for notational convenience introduce <span class="math">\(q(x) = c^2(x)\)</span>.
+A 1D wave equation with variable wave velocity often takes the form</p>
+<div class="math" id="equation-wave:pde2:var:c:pde">
+<span id="eq-wave-pde2-var-c-pde"></span><span class="eqno">(5)</span>\[     \frac{\partial^2 u}{\partial t^2} =
+     \frac{\partial}{\partial x}\left( q(x)
+     \frac{\partial u}{\partial x}\right) + f(x,t)\]\[     {\thinspace .}\]</div>
+<p>This equation sampled at a mesh point <span class="math">\((x_i,t_n)\)</span> reads</p>
+<div class="math">
+\[\frac{\partial^2 }{\partial t^2} u(x_i,t_n) =
+\frac{\partial}{\partial x}\left( q(x_i)
+\frac{\partial}{\partial x} u(x_i,t_n)\right) + f(x_i,t_n),\]</div>
+<p>where the only new term is</p>
+<div class="math">
+\[\frac{\partial}{\partial x}\left( q(x_i)
+\frac{\partial}{\partial x} u(x_i,t_n)\right) = \left[
+\frac{\partial}{\partial x}\left( q(x)
+\frac{\partial u}{\partial x}\right)\right]^n_i
+{\thinspace .}\]</div>
+</div>
+<div class="section" id="discretizing-the-variable-coefficient">
+<span id="wave-pde2-var-c-ideas"></span><h2>Discretizing the variable coefficient<a class="headerlink" href="#discretizing-the-variable-coefficient" title="Permalink to this headline">¶</a></h2>
+<p>The principal idea is to first discretize the outer derivative.
+Define</p>
+<div class="math">
+\[\phi = q(x)
+\frac{\partial u}{\partial x},\]</div>
+<p>and use a centered derivative around <span class="math">\(x=x_i\)</span> for the derivative of <span class="math">\(\phi\)</span>:</p>
+<div class="math">
+\[\left[\frac{\partial\phi}{\partial x}\right]^n_i
+\approx \frac{\phi_{i+\frac{1}{2}} - \phi_{i-\frac{1}{2}}}{\Delta x}
+= [D_x\phi]^n_i
+{\thinspace .}\]</div>
+<p>Then discretize</p>
+<div class="math">
+\[\phi_{i+\frac{1}{2}}  = q_{i+\frac{1}{2}}
+\left[\frac{\partial u}{\partial x}\right]^n_{i+\frac{1}{2}}
+\approx q_{i+\frac{1}{2}} \frac{u^n_{i+1} - u^n_{i}}{\Delta x}
+= [q D_x u]_{i+\frac{1}{2}}^n
+{\thinspace .}\]</div>
+<p>Similarly,</p>
+<div class="math">
+\[\phi_{i-\frac{1}{2}}  = q_{i-\frac{1}{2}}
+\left[\frac{\partial u}{\partial x}\right]^n_{i-\frac{1}{2}}
+\approx q_{i-\frac{1}{2}} \frac{u^n_{i} - u^n_{i-1}}{\Delta x}
+= [q D_x u]_{i-\frac{1}{2}}^n
+{\thinspace .}\]</div>
+<p>These intermediate results are now combined to</p>
+<div class="math" id="equation-wave:pde2:var:c:formula">
+<span id="eq-wave-pde2-var-c-formula"></span><span class="eqno">(6)</span>\[     \left[
+     \frac{\partial}{\partial x}\left( q(x)
+     \frac{\partial u}{\partial x}\right)\right]^n_i
+     \approx \frac{1}{\Delta x^2}
+     \left( q_{i+\frac{1}{2}} \left({u^n_{i+1} - u^n_{i}}\right)
+     - q_{i-\frac{1}{2}} \left({u^n_{i} - u^n_{i-1}}\right)\right)\]\[     {\thinspace .}\]</div>
+<p>With operator notation we can write the discretization as</p>
+<div class="math" id="equation-wave:pde2:var:c:formula:op">
+<span id="eq-wave-pde2-var-c-formula-op"></span><span class="eqno">(7)</span>\[     \left[
+     \frac{\partial}{\partial x}\left( q(x)
+     \frac{\partial u}{\partial x}\right)\right]^n_i
+     \approx [D_xq D_x u]^n_i\]\[     {\thinspace .}\]</div>
+<div class="admonition-remark admonition">
+<p class="first admonition-title">Remark</p>
+<p class="last">Many are tempted to use the chain rule on the
+term <span class="math">\(\frac{\partial}{\partial x}\left( q(x)
+\frac{\partial u}{\partial x}\right)\)</span>, but this is not a good idea
+when discretizing such a term.</p>
+</div>
+</div>
+<div class="section" id="computing-the-coefficient-between-mesh-points">
+<span id="wave-pde2-var-c-means"></span><h2>Computing the coefficient between mesh points<a class="headerlink" href="#computing-the-coefficient-between-mesh-points" title="Permalink to this headline">¶</a></h2>
+<p>If <span class="math">\(q\)</span> is a known function of <span class="math">\(x\)</span>, we can easily evaluate
+<span class="math">\(q_{i+\frac{1}{2}}\)</span> simply as <span class="math">\(q(x_{i+\frac{1}{2}})\)</span> with
+<span class="math">\(x_{i+\frac{1}{2}} = x_i + \frac{1}{2}\Delta x\)</span>.
+However, in many cases <span class="math">\(c\)</span>, and hence <span class="math">\(q\)</span>,
+is only known as a discrete function, often at the mesh points <span class="math">\(x_i\)</span>.
+Evaluating <span class="math">\(q\)</span> between two mesh points <span class="math">\(x_i\)</span> and <span class="math">\(x_{i+1}\)</span> can then
+be done by averaging in three ways:</p>
+<span class="target" id="index-8"></span><span class="target" id="index-9"></span><span class="target" id="index-10"></span><span class="target" id="index-11"></span><span class="target" id="index-12"></span><div class="math" id="equation-wave:pde2:var:c:mean:arithmetic">
+<span id="eq-wave-pde2-var-c-mean-arithmetic"></span><span id="index-13"></span><span class="eqno">(8)</span>\[     q_{i+\frac{1}{2}} \approx
+     \frac{1}{2}\left( q_{i} + q_{i+1}\right) =
+     [\overline{q}^{x}]_i,
+     \quad \hbox{(arithmetic mean)}\]</div>
+<div class="math" id="equation-wave:pde2:var:c:mean:harmonic">
+<span id="eq-wave-pde2-var-c-mean-harmonic"></span><span class="eqno">(9)</span>\[     q_{i+\frac{1}{2}} \approx
+     2\left( \frac{1}{q_{i}} + \frac{1}{q_{i+1}}\right)^{-1},
+     \quad \hbox{(harmonic mean)}\]</div>
+<div class="math" id="equation-wave:pde2:var:c:mean:geometric">
+<span id="eq-wave-pde2-var-c-mean-geometric"></span><span class="eqno">(10)</span>\[     q_{i+\frac{1}{2}} \approx
+     \left(q_{i}q_{i+1}\right)^{1/2},
+     \quad \hbox{(geometric mean)}\]</div>
+<p>The arithmetic mean in <a href="#equation-wave:pde2:var:c:mean:arithmetic">(8)</a> is by
+far the most commonly used averaging technique.</p>
+<p>With the operator notation from <a href="#equation-wave:pde2:var:c:mean:arithmetic">(8)</a>
+we can specify the discretization of the complete variable-coefficient
+wave equation in a compact way:</p>
+<div class="math" id="equation-wave:pde2:var:c:scheme:op">
+<span id="eq-wave-pde2-var-c-scheme-op"></span><span class="eqno">(11)</span>\[     \lbrack D_tD_t u = D_x\overline{q}^{x}D_x u + f\rbrack^{n}_i
+     {\thinspace .}\]</div>
+<p>From this notation we immediately see what kind of differences that
+each term is approximated with. The notation <span class="math">\(\overline{q}^{x}\)</span>
+also specifies that the variable coefficient is approximated by
+an arithmetic mean, the definition being
+<span class="math">\([\overline{q}^{x}]_{i+\frac{1}{2}}=(q_i+q_{i+1})/2\)</span>.
+With the notation <span class="math">\([D_xq D_x u]^n_i\)</span>,
+we specify that <span class="math">\(q\)</span> is evaluated directly, as a function,
+between the mesh points:
+<span class="math">\(q(x_{i-\frac{1}{2}})\)</span> and <span class="math">\(q(x_{i+\frac{1}{2}})\)</span>.</p>
+<p>Before any implementation, it remains to solve
+<a href="#equation-wave:pde2:var:c:scheme:op">(11)</a> with respect to <span class="math">\(u_i^{n+1}\)</span>:</p>
+<div class="math">
+\[u^{n+1}_i = - u_i^{n-1}  + 2u_i^n + \nonumber\]</div>
+<div class="math">
+\[\quad \left(\frac{\Delta x}{\Delta t}\right)^2 \left(
+\frac{1}{2}(q_{i} + q_{i+1})(u_{i+1}^n - u_{i}^n) -
+\frac{1}{2}(q_{i} + q_{i-1})(u_{i}^n - u_{i-1}^n)\right)
++ \nonumber\]</div>
+<div class="math" id="equation-wave:pde2:var:c:scheme:impl">
+<span id="eq-wave-pde2-var-c-scheme-impl"></span><span class="eqno">(12)</span>\[      \quad \Delta t^2 f^n_i
+     {\thinspace .}\]</div>
+</div>
+<div class="section" id="how-a-variable-coefficient-affects-the-stability">
+<span id="wave-pde2-var-c-stability"></span><h2>How a variable coefficient affects the stability<a class="headerlink" href="#how-a-variable-coefficient-affects-the-stability" title="Permalink to this headline">¶</a></h2>
+<p>The stability criterion derived in the section <a class="reference internal" href="._main_wave004.html#wave-pde1-stability"><em>Stability</em></a>
+reads <span class="math">\(\Delta t\leq \Delta x/c\)</span>. If <span class="math">\(c=c(x)\)</span>, the criterion will depend
+on the spatial location. We must therefore choose a <span class="math">\(\Delta t\)</span> that
+is small enough such that no mesh cell has <span class="math">\(\Delta x/c(x) &gt;\Delta t\)</span>.
+That is, we must use the largest <span class="math">\(c\)</span> value in the criterion:</p>
+<div class="math">
+\[\Delta t \leq \beta \frac{\Delta x}{\max_{x\in [0,L]}c(x)}
+{\thinspace .}\]</div>
+<p>The parameter <span class="math">\(\beta\)</span> is included as a safety factor: in some problems with a
+significantly varying <span class="math">\(c\)</span> it turns out that one must choose <span class="math">\(\beta &lt;1\)</span> to
+have stable solutions (<span class="math">\(\beta =0.9\)</span> may act as an all-round value).</p>
+</div>
+<div class="section" id="neumann-condition-and-a-variable-coefficient">
+<span id="wave-pde2-var-c-neumann"></span><h2>Neumann condition and a variable coefficient<a class="headerlink" href="#neumann-condition-and-a-variable-coefficient" title="Permalink to this headline">¶</a></h2>
+<p>Consider a Neumann condition <span class="math">\(\partial u/\partial x=0\)</span> at <span class="math">\(x=L=N_x\Delta x\)</span>,
+discretized as</p>
+<div class="math">
+\[\frac{u_{i+1}^{n} - u_{i-1}^n}{2\Delta x} = 0\quad u_{i+1}^n = u_{i-1}^n,\]</div>
+<p>for <span class="math">\(i=N_x\)</span>. Using the scheme <a href="#equation-wave:pde2:var:c:scheme:impl">(12)</a>
+at the end point <span class="math">\(i=N_x\)</span> with <span class="math">\(u_{i+1}^n=u_{i-1}^n\)</span> results in</p>
+<div class="math">
+\[u^{n+1}_i = - u_i^{n-1}  + 2u_i^n + \nonumber\]</div>
+<div class="math">
+\[\quad \left(\frac{\Delta x}{\Delta t}\right)^2 \left(
+q_{i+\frac{1}{2}}(u_{i-1}^n - u_{i}^n) -
+q_{i-\frac{1}{2}}(u_{i}^n - u_{i-1}^n)\right)
++ \nonumber\]</div>
+<div class="math">
+\[\quad \Delta t^2 f^n_i\]</div>
+<div class="math">
+\[= - u_i^{n-1}  + 2u_i^n + \left(\frac{\Delta x}{\Delta t}\right)^2
+(q_{i+\frac{1}{2}} + q_{i-\frac{1}{2}})(u_{i-1}^n - u_{i}^n) +
+\Delta t^2 f^n_i\]</div>
+<div class="math" id="equation-wave:pde2:var:c:scheme:impl:Neumann">
+<span id="eq-wave-pde2-var-c-scheme-impl-neumann"></span><span class="eqno">(13)</span>\[     \approx - u_i^{n-1}  + 2u_i^n + \left(\frac{\Delta x}{\Delta t}\right)^2
+     2q_{i}(u_{i-1}^n - u_{i}^n) + \Delta t^2 f^n_i
+     {\thinspace .}\]</div>
+<p>Here we used the approximation</p>
+<div class="math">
+\[q_{i+\frac{1}{2}} + q_{i-\frac{1}{2}} =
+q_i + \left(\frac{dq}{dx}\right)_i \Delta x
++ \left(\frac{d^2q}{dx^2}\right)_i \Delta x^2 + \cdots
++\nonumber\]</div>
+<div class="math">
+\[\quad q_i - \left(\frac{dq}{dx}\right)_i \Delta x
++ \left(\frac{d^2q}{dx^2}\right)_i \Delta x^2 + \cdots\nonumber\]</div>
+<div class="math">
+\[= 2q_i + 2\left(\frac{d^2q}{dx^2}\right)_i \Delta x^2 + {\cal O}(\Delta x^4)
+\nonumber\]</div>
+<div class="math">
+\[\approx 2q_i
+{\thinspace .}\]</div>
+<p>An alternative derivation may apply the arithmetic mean of <span class="math">\(q\)</span> in
+<a href="#equation-wave:pde2:var:c:scheme:impl">(12)</a>, leading to the term</p>
+<div class="math">
+\[(q_i + \frac{1}{2}(q_{i+1}+q_{i-1}))(u_{i-1}^n-u_i^n){\thinspace .}\]</div>
+<p>Since <span class="math">\(\frac{1}{2}(q_{i+1}+q_{i-1}) = q_i + {\cal O}(\Delta x^2)\)</span>,
+we end up with <span class="math">\(2q_i(u_{i-1}^n-u_i^n)\)</span> for <span class="math">\(i=N_x\)</span> as we did above.</p>
+<p>A common technique in implementations of <span class="math">\(\partial u/\partial x=0\)</span>
+boundary conditions is to assume <span class="math">\(dq/dx=0\)</span> as well. This implies
+<span class="math">\(q_{i+1}=q_{i-1}\)</span> and <span class="math">\(q_{i+1/2}=q_{i-1/2}\)</span> for <span class="math">\(i=N_x\)</span>.
+The implications for the scheme are</p>
+<div class="math">
+\[u^{n+1}_i = - u_i^{n-1}  + 2u_i^n + \nonumber\]</div>
+<div class="math">
+\[\quad \left(\frac{\Delta x}{\Delta t}\right)^2 \left(
+q_{i+\frac{1}{2}}(u_{i-1}^n - u_{i}^n) -
+q_{i-\frac{1}{2}}(u_{i}^n - u_{i-1}^n)\right)
++ \nonumber\]</div>
+<div class="math">
+\[\quad \Delta t^2 f^n_i\]</div>
+<div class="math" id="equation-wave:pde2:var:c:scheme:impl:Neumann2">
+<span id="eq-wave-pde2-var-c-scheme-impl-neumann2"></span><span class="eqno">(14)</span>\[     = - u_i^{n-1}  + 2u_i^n + \left(\frac{\Delta x}{\Delta t}\right)^2
+     2q_{i-\frac{1}{2}}(u_{i-1}^n - u_{i}^n) +
+     \Delta t^2 f^n_i
+     {\thinspace .}\]</div>
+</div>
+<div class="section" id="implementation-of-variable-coefficients">
+<span id="wave-pde2-var-c-impl"></span><h2>Implementation of variable coefficients<a class="headerlink" href="#implementation-of-variable-coefficients" title="Permalink to this headline">¶</a></h2>
+<p>The implementation of the scheme with a variable wave velocity
+may assume that <span class="math">\(c\)</span> is available as an array <tt class="docutils literal"><span class="pre">c[i]</span></tt> at
+the spatial mesh points. The following loop is a straightforward
+implementation of the scheme <a href="#equation-wave:pde2:var:c:scheme:impl">(12)</a>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Nx</span><span class="p">):</span>
+    <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span> <span class="n">u_2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> \
+           <span class="n">C2</span><span class="o">*</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">q</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>  <span class="o">-</span> \
+               <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">q</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span> <span class="o">+</span> \
+           <span class="n">dt2</span><span class="o">*</span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>The coefficient <tt class="docutils literal"><span class="pre">C2</span></tt> is now defined as <tt class="docutils literal"><span class="pre">(dt/dx)**2</span></tt> and <em>not</em> as the
+squared Courant number since the wave velocity is variable and appears
+inside the parenthesis.</p>
+<p>With Neumann conditions <span class="math">\(u_x=0\)</span> at the
+boundary, we need to combine this scheme with the discrete
+version of the boundary condition, as shown in the section <a class="reference internal" href="#wave-pde2-var-c-neumann"><em>Neumann condition and a variable coefficient</em></a>.
+Nevertheless, it would be convenient to reuse the formula for the
+interior points and just modify the indices <tt class="docutils literal"><span class="pre">ip1=i+1</span></tt> and <tt class="docutils literal"><span class="pre">im1=i-1</span></tt>
+as we did in the section <a class="reference internal" href="#wave-pde2-neumann-impl"><em>Implementation of Neumann conditions</em></a>. Assuming
+<span class="math">\(dq/dx=0\)</span> at the boundaries, we can implement the scheme at
+the boundary with the following code.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">ip1</span> <span class="o">=</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span>
+<span class="n">im1</span> <span class="o">=</span> <span class="n">ip1</span>
+<span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span> <span class="n">u_2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> \
+       <span class="n">C2</span><span class="o">*</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">q</span><span class="p">[</span><span class="n">ip1</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="n">ip1</span><span class="p">]</span> <span class="o">-</span> <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>  <span class="o">-</span> \
+           <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">q</span><span class="p">[</span><span class="n">im1</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">u_1</span><span class="p">[</span><span class="n">im1</span><span class="p">]))</span> <span class="o">+</span> \
+       <span class="n">dt2</span><span class="o">*</span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>With ghost cells we can just reuse the formula for the interior
+points also at the boundary, provided that the ghost values of both
+<span class="math">\(u\)</span> and <span class="math">\(q\)</span> are correctly updated to ensure <span class="math">\(u_x=0\)</span> and <span class="math">\(q_x=0\)</span>.</p>
+<p>A vectorized version of the scheme with a variable coefficient
+at internal points in the mesh becomes</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span> <span class="n">u_2</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> \
+          <span class="n">C2</span><span class="o">*</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">q</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span><span class="o">*</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span> <span class="o">-</span> <span class="n">u_1</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span>
+              <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">q</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">u_1</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]))</span> <span class="o">+</span> \
+          <span class="n">dt2</span><span class="o">*</span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="a-more-general-model-pde-with-variable-coefficients">
+<h2>A more general model PDE with variable coefficients<a class="headerlink" href="#a-more-general-model-pde-with-variable-coefficients" title="Permalink to this headline">¶</a></h2>
+<p>Sometimes a wave PDE has a variable coefficient also in front of
+the time-derivative term:</p>
+<div class="math" id="equation-wave:pde2:var:c:pde2">
+<span id="eq-wave-pde2-var-c-pde2"></span><span class="eqno">(15)</span>\[     \varrho(x)\frac{\partial^2 u}{\partial t^2} =
+     \frac{\partial}{\partial x}\left( q(x)
+     \frac{\partial u}{\partial x}\right) + f(x,t)\]\[     {\thinspace .}\]</div>
+<p>A natural scheme is</p>
+<div class="math">
+\[[\varrho D_tD_t u = D_x\overline{q}^xD_x u + f]^n_i
+{\thinspace .}\]</div>
+<p>We realize that the <span class="math">\(\varrho\)</span> coefficient poses no particular
+difficulty because the only value <span class="math">\(\varrho_i^n\)</span> enters the formula
+above (when written out). There is hence no need for any averaging
+of <span class="math">\(\varrho\)</span>. Often, <span class="math">\(\varrho\)</span> will be moved to the right-hand side,
+also without any difficulty:</p>
+<div class="math">
+\[[D_tD_t u = \varrho^{-1}D_x\overline{q}^xD_x u + f]^n_i
+{\thinspace .}\]</div>
+</div>
+<div class="section" id="generalization-damping">
+<h2>Generalization: damping<a class="headerlink" href="#generalization-damping" title="Permalink to this headline">¶</a></h2>
+<p>Waves die out by two mechanisms. In 2D and 3D the energy of the wave
+spreads out in space, and energy conservation then requires
+the amplitude to decrease. This effect is not present in 1D.
+Damping is another cause of amplitude reduction. For example,
+the vibrations of a string die out because of damping due to
+air resistance and non-elastic effects in the string.</p>
+<p>The simplest way of including damping is to add a first-order derivative
+to the equation (in the same way as friction forces enter a vibrating
+mechanical system):</p>
+<div class="math" id="equation-wave:pde3">
+<span id="eq-wave-pde3"></span><span class="eqno">(16)</span>\[     \frac{\partial^2 u}{\partial t^2} + b\frac{\partial u}{\partial t} =
+     c^2\frac{\partial^2 u}{\partial x^2}
+      + f(x,t),\]</div>
+<p>where <span class="math">\(b \geq 0\)</span> is a prescribed damping coefficient.</p>
+<p>A typical discretization of <a href="#equation-wave:pde3">(16)</a> in terms of centered
+differences reads</p>
+<div class="math" id="equation-wave:pde3:fd">
+<span id="eq-wave-pde3-fd"></span><span class="eqno">(17)</span>\[     [D_tD_t u + bD_{2t}u = c^2D_xD_x u + f]^n_i
+     {\thinspace .}\]</div>
+<p>Writing out the equation and solving for the unknown <span class="math">\(u^{n+1}_i\)</span>
+gives the scheme</p>
+<div class="math" id="equation-wave:pde3:fd2">
+<span id="eq-wave-pde3-fd2"></span><span class="eqno">(18)</span>\[     u^{n+1}_i = (1 + {\frac{1}{2}}b\Delta t)^{-1}(({\frac{1}{2}}b\Delta t -1)
+     u^{n-1}_i + 2u^n_i + C^2
+     \left(u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}\right) + \Delta t^2 f^n_i),\]</div>
+<p>for <span class="math">\(i\in{{\mathcal{I^i}_x}}\)</span> and <span class="math">\(n\geq 1\)</span>.
+New equations must be derived for <span class="math">\(u^1_i\)</span>, and for boundary points in case
+of Neumann conditions.</p>
+<p>The damping is very small in many wave phenomena and then only evident
+for very long time simulations. This makes the standard wave equation
+without damping relevant for a lot of applications.</p>
+</div>
+</div>
+<div class="section" id="building-a-general-1d-wave-equation-solver">
+<span id="wave-pde2-software"></span><h1>Building a general 1D wave equation solver<a class="headerlink" href="#building-a-general-1d-wave-equation-solver" title="Permalink to this headline">¶</a></h1>
+<p>The program <a class="reference external" href="http://tinyurl.com/jvzzcfn/wave/wave1D/wave1D_dn_vc.py">wave1D_dn_vc.py</a>
+is a fairly general code for 1D wave propagation problems that
+targets the following initial-boundary value problem</p>
+<div class="math" id="equation-wave:pde2:software:ueq">
+<span id="eq-wave-pde2-software-ueq"></span><span class="eqno">(19)</span>\[     u_t = (c^2(x)u_x)_x + f(x,t),\quad x\in (0,L),\ t\in (0,T]\]</div>
+<div class="math">
+\[u(x,0) = I(x),\quad x\in [0,L]\]</div>
+<div class="math">
+\[u_t(x,0) = V(t),\quad x\in [0,L]\]</div>
+<div class="math">
+\[u(0,t) = U_0(t)\hbox{ or } u_x(0,t)=0,\quad t\in (0,T]\]</div>
+<div class="math" id="equation-wave:pde2:software:bcL">
+<span id="eq-wave-pde2-software-bcl"></span><span class="eqno">(20)</span>\[     u(L,t) = U_L(t)\hbox{ or } u_x(L,t)=0,\quad t\in (0,T]\]</div>
+<p>The <tt class="docutils literal"><span class="pre">solver</span></tt> function is a natural extension of the simplest
+<tt class="docutils literal"><span class="pre">solver</span></tt> function in the initial <tt class="docutils literal"><span class="pre">wave1D_u0.py</span></tt> program,
+extended with Neumann boundary conditions (<span class="math">\(u_x=0\)</span>),
+a possibly time-varying boundary condition on <span class="math">\(u\)</span> (<span class="math">\(U_0(t)\)</span>, <span class="math">\(U_L(t)\)</span>),
+and a variable wave velocity. The different code segments needed
+to make these extensions are shown and commented upon in the
+preceding text.</p>
+<p>The vectorization is only applied inside the time loop, not for the
+initial condition or the first time steps, since this initial work
+is negligible for long time simulations in 1D problems.</p>
+<p>The following sections explain various more advanced programming
+techniques applied in the general 1D wave equation solver.</p>
+<div class="section" id="user-action-function-as-a-class">
+<h2>User action function as a class<a class="headerlink" href="#user-action-function-as-a-class" title="Permalink to this headline">¶</a></h2>
+<p>A useful feature in the <tt class="docutils literal"><span class="pre">wave1D_dn_vc.py</span></tt> program is the specification of
+the <tt class="docutils literal"><span class="pre">user_action</span></tt> function as a class. Although the <tt class="docutils literal"><span class="pre">plot_u</span></tt>
+function in the <tt class="docutils literal"><span class="pre">viz</span></tt> function of previous <tt class="docutils literal"><span class="pre">wave1D*.py</span></tt> programs
+remembers the local variables in the <tt class="docutils literal"><span class="pre">viz</span></tt> function, it is a
+cleaner solution to store the needed variables together with
+the function, which is exactly what a class offers.</p>
+<p>A class for flexible plotting, cleaning up files, and making a movie
+files like function <tt class="docutils literal"><span class="pre">viz</span></tt> and <tt class="docutils literal"><span class="pre">plot_u</span></tt> did can be coded as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">PlotSolution</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for the user_action function in solver.</span>
+<span class="sd">    Visualizes the solution only.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">casename</span><span class="o">=</span><span class="s">&#39;tmp&#39;</span><span class="p">,</span>    <span class="c"># Prefix in filenames</span>
+                 <span class="n">umin</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">umax</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>   <span class="c"># Fixed range of y axis</span>
+                 <span class="n">pause_between_frames</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>  <span class="c"># Movie speed</span>
+                 <span class="n">backend</span><span class="o">=</span><span class="s">&#39;matplotlib&#39;</span><span class="p">,</span>       <span class="c"># or &#39;gnuplot&#39;</span>
+                 <span class="n">screen_movie</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="c"># Show movie on screen?</span>
+                 <span class="n">title</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span>          <span class="c"># Extra message in title</span>
+                 <span class="n">every_frame</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>    <span class="c"># Show every_frame frame</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">casename</span> <span class="o">=</span> <span class="n">casename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yaxis</span> <span class="o">=</span> <span class="p">[</span><span class="n">umin</span><span class="p">,</span> <span class="n">umax</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pause</span> <span class="o">=</span> <span class="n">pause_between_frames</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="s">&#39;scitools.easyviz.&#39;</span> <span class="o">+</span> <span class="n">backend</span> <span class="o">+</span> <span class="s">&#39;_&#39;</span>
+        <span class="k">exec</span><span class="p">(</span><span class="s">&#39;import </span><span class="si">%s</span><span class="s"> as plt&#39;</span> <span class="o">%</span> <span class="n">module</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plt</span> <span class="o">=</span> <span class="n">plt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">screen_movie</span> <span class="o">=</span> <span class="n">screen_movie</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">title</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">every_frame</span> <span class="o">=</span> <span class="n">every_frame</span>
+
+        <span class="c"># Clean up old movie frames</span>
+        <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">glob</span><span class="p">(</span><span class="s">&#39;frame_*.png&#39;</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">every_frame</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="s">&#39;t=</span><span class="si">%.3g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">title</span><span class="p">:</span>
+            <span class="n">title</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">title</span> <span class="o">+</span> <span class="s">&#39; &#39;</span> <span class="o">+</span> <span class="n">title</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="s">&#39;r-&#39;</span><span class="p">,</span>
+                     <span class="n">xlabel</span><span class="o">=</span><span class="s">&#39;x&#39;</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s">&#39;u&#39;</span><span class="p">,</span>
+                     <span class="n">axis</span><span class="o">=</span><span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">yaxis</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">yaxis</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+                     <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+                     <span class="n">show</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">screen_movie</span><span class="p">)</span>
+        <span class="c"># pause</span>
+        <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>  <span class="c"># let initial condition stay 2 s</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pause</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">pause</span> <span class="o">=</span> <span class="mf">0.2</span> <span class="k">if</span> <span class="n">u</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">100</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">pause</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">_frame_</span><span class="si">%04d</span><span class="s">.png&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">casename</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Understanding this class requires quite some familiarity with Python
+in general and class programming in particular.</p>
+<p>The constructor shows how we can flexibly import the plotting engine
+as (typically) <tt class="docutils literal"><span class="pre">scitools.easyviz.gnuplot_</span></tt> or
+<tt class="docutils literal"><span class="pre">scitools.easyviz.matplotlib_</span></tt> (note the trailing underscore).
+With the <tt class="docutils literal"><span class="pre">screen_movie</span></tt> parameter
+we can suppress displaying each movie frame on the screen.
+Alternatively, for slow movies associated with
+fine meshes, one can set
+<tt class="docutils literal"><span class="pre">every_frame</span></tt> to, e.g., 10, causing every 10 frames to be shown.</p>
+<p>The <tt class="docutils literal"><span class="pre">__call__</span></tt> method makes <tt class="docutils literal"><span class="pre">PlotSolution</span></tt> instances behave like
+functions, so we can just pass an instance, say <tt class="docutils literal"><span class="pre">p</span></tt>, as the
+<tt class="docutils literal"><span class="pre">user_action</span></tt> argument in the <tt class="docutils literal"><span class="pre">solver</span></tt> function, and any call to
+<tt class="docutils literal"><span class="pre">user_action</span></tt> will be a call to <tt class="docutils literal"><span class="pre">p.__call__</span></tt>.</p>
+</div>
+<div class="section" id="pulse-propagation-in-two-media">
+<h2>Pulse propagation in two media<a class="headerlink" href="#pulse-propagation-in-two-media" title="Permalink to this headline">¶</a></h2>
+<p>The function <tt class="docutils literal"><span class="pre">pulse</span></tt> in <tt class="docutils literal"><span class="pre">wave1D_dn_vc.py</span></tt> demonstrates wave motion in
+heterogeneous media where <span class="math">\(c\)</span> varies. One can specify an interval
+where the wave velocity is decreased by a factor <tt class="docutils literal"><span class="pre">slowness_factor</span></tt>
+(or increased by making this factor less than one).
+Four types of initial conditions are available: a rectangular pulse (<tt class="docutils literal"><span class="pre">plug</span></tt>),
+a Gaussian function (<tt class="docutils literal"><span class="pre">gaussian</span></tt>), a &#8220;cosine hat&#8221; consisting of one
+period of the cosine function (<tt class="docutils literal"><span class="pre">cosinehat</span></tt>), and half a period of
+a &#8220;cosine hat&#8221; (<tt class="docutils literal"><span class="pre">half-cosinehat</span></tt>). These peak-shaped initial
+conditions can be placed in the middle (<tt class="docutils literal"><span class="pre">loc='center'</span></tt>) or at
+the left end (<tt class="docutils literal"><span class="pre">loc='left'</span></tt>) of the domain. The <tt class="docutils literal"><span class="pre">pulse</span></tt>
+function is a flexible tool for playing around with various wave
+shapes and location of a medium with a different wave velocity:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">pulse</span><span class="p">(</span><span class="n">C</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">animate</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s">&#39;vectorized&#39;</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+          <span class="n">loc</span><span class="o">=</span><span class="s">&#39;center&#39;</span><span class="p">,</span> <span class="n">pulse_tp</span><span class="o">=</span><span class="s">&#39;gaussian&#39;</span><span class="p">,</span> <span class="n">slowness_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+          <span class="n">medium</span><span class="o">=</span><span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">],</span> <span class="n">every_frame</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.05</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Various peaked-shaped initial conditions on [0,1].</span>
+<span class="sd">    Wave velocity is decreased by the slowness_factor inside</span>
+<span class="sd">    medium. The loc parameter can be &#39;center&#39; or &#39;left&#39;,</span>
+<span class="sd">    depending on where the initial pulse is to be located.</span>
+<span class="sd">    The sigma parameter governs the width of the pulse.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># Use scaled parameters: L=1 for domain length, c_0=1</span>
+    <span class="c"># for wave velocity outside the domain.</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">c_0</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="k">if</span> <span class="n">loc</span> <span class="o">==</span> <span class="s">&#39;center&#39;</span><span class="p">:</span>
+        <span class="n">xc</span> <span class="o">=</span> <span class="n">L</span><span class="o">/</span><span class="mi">2</span>
+    <span class="k">elif</span> <span class="n">loc</span> <span class="o">==</span> <span class="s">&#39;left&#39;</span><span class="p">:</span>
+        <span class="n">xc</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">if</span> <span class="n">pulse_tp</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;gaussian&#39;</span><span class="p">,</span><span class="s">&#39;Gaussian&#39;</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">I</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="p">((</span><span class="n">x</span><span class="o">-</span><span class="n">xc</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">pulse_tp</span> <span class="o">==</span> <span class="s">&#39;plug&#39;</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">I</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="mi">0</span> <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">xc</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">sigma</span> <span class="k">else</span> <span class="mi">1</span>
+    <span class="k">elif</span> <span class="n">pulse_tp</span> <span class="o">==</span> <span class="s">&#39;cosinehat&#39;</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">I</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="c"># One period of a cosine</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="mi">2</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="n">w</span><span class="o">*</span><span class="n">sigma</span>
+            <span class="k">return</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">cos</span><span class="p">(</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">xc</span><span class="p">)</span><span class="o">/</span><span class="n">a</span><span class="p">))</span> \
+                   <span class="k">if</span> <span class="n">xc</span> <span class="o">-</span> <span class="n">a</span> <span class="o">&lt;=</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="n">xc</span> <span class="o">+</span> <span class="n">a</span> <span class="k">else</span> <span class="mi">0</span>
+
+    <span class="k">elif</span> <span class="n">pulse_tp</span> <span class="o">==</span> <span class="s">&#39;half-cosinehat&#39;</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">I</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="c"># Half a period of a cosine</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="mi">4</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="n">w</span><span class="o">*</span><span class="n">sigma</span>
+            <span class="k">return</span> <span class="n">cos</span><span class="p">(</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">xc</span><span class="p">)</span><span class="o">/</span><span class="n">a</span><span class="p">)</span> \
+                   <span class="k">if</span> <span class="n">xc</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">a</span> <span class="o">&lt;=</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="n">xc</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">a</span> <span class="k">else</span> <span class="mi">0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Wrong pulse_tp=&quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="n">pulse_tp</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">c</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">c_0</span><span class="o">/</span><span class="n">slowness_factor</span> \
+               <span class="k">if</span> <span class="n">medium</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="n">medium</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">else</span> <span class="n">c_0</span>
+
+    <span class="n">umin</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">;</span> <span class="n">umax</span><span class="o">=</span><span class="mf">1.5</span><span class="o">*</span><span class="n">I</span><span class="p">(</span><span class="n">xc</span><span class="p">)</span>
+    <span class="n">casename</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">_Nx</span><span class="si">%s</span><span class="s">_sf</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> \
+               <span class="p">(</span><span class="n">pulse_tp</span><span class="p">,</span> <span class="n">Nx</span><span class="p">,</span> <span class="n">slowness_factor</span><span class="p">)</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="n">PlotMediumAndSolution</span><span class="p">(</span>
+        <span class="n">medium</span><span class="p">,</span> <span class="n">casename</span><span class="o">=</span><span class="n">casename</span><span class="p">,</span> <span class="n">umin</span><span class="o">=</span><span class="n">umin</span><span class="p">,</span> <span class="n">umax</span><span class="o">=</span><span class="n">umax</span><span class="p">,</span>
+        <span class="n">every_frame</span><span class="o">=</span><span class="n">every_frame</span><span class="p">,</span> <span class="n">screen_movie</span><span class="o">=</span><span class="n">animate</span><span class="p">)</span>
+
+    <span class="n">dt</span> <span class="o">=</span> <span class="p">(</span><span class="n">L</span><span class="o">/</span><span class="n">Nx</span><span class="p">)</span><span class="o">/</span><span class="n">c</span>  <span class="c"># choose the stability limit with given Nx</span>
+    <span class="c"># Lower C will then use this dt, but smaller Nx</span>
+    <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="n">I</span><span class="p">,</span> <span class="n">V</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">U_0</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">U_L</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+           <span class="n">L</span><span class="o">=</span><span class="n">L</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">C</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span>
+           <span class="n">user_action</span><span class="o">=</span><span class="n">action</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span>
+           <span class="n">stability_safety_factor</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">PlotMediumAndSolution</span></tt> class used here is a subclass of
+<tt class="docutils literal"><span class="pre">PlotSolution</span></tt> where the medium with reduced <span class="math">\(c\)</span> value,
+as specified by the <tt class="docutils literal"><span class="pre">medium</span></tt> interval,
+is visualized in the plots.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The argument <span class="math">\(N_x\)</span> in the <tt class="docutils literal"><span class="pre">pulse</span></tt> function does not correspond to
+the actual spatial resolution of <span class="math">\(C&lt;1\)</span>, since the <tt class="docutils literal"><span class="pre">solver</span></tt>
+function takes a fixed <span class="math">\(\Delta t\)</span> and <span class="math">\(C\)</span>, and adjusts <span class="math">\(\Delta x\)</span>
+accordingly. As seen in the <tt class="docutils literal"><span class="pre">pulse</span></tt> function,
+the specified <span class="math">\(\Delta t\)</span> is chosen according to the
+limit <span class="math">\(C=1\)</span>, so if <span class="math">\(C&lt;1\)</span>, <span class="math">\(\Delta t\)</span> remains the same, but the
+<tt class="docutils literal"><span class="pre">solver</span></tt> function operates with a larger <span class="math">\(\Delta x\)</span> and smaller
+<span class="math">\(N_x\)</span> than was specified in the call to <tt class="docutils literal"><span class="pre">pulse</span></tt>. The practical reason
+is that we always want to keep <span class="math">\(\Delta t\)</span> fixed such that
+plot frames and movies are synchronized in time regardless of the
+value of <span class="math">\(C\)</span> (i.e., <span class="math">\(\Delta x\)</span> is varies when the
+Courant number varies).</p>
+</div>
+<p>The reader is encouraged to play around with the <tt class="docutils literal"><span class="pre">pulse</span></tt> function:</p>
+<div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span> <span class="nn">wave1D_dn_vc</span> <span class="kn">as</span> <span class="nn">w</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">w</span><span class="o">.</span><span class="n">pulse</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s">&#39;left&#39;</span><span class="p">,</span> <span class="n">pulse_tp</span><span class="o">=</span><span class="s">&#39;cosinehat&#39;</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">every_frame</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To easily kill the graphics by Ctrl-C and restart a new simulation it might be
+easier to run the above two statements from the command line
+with</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python -c &#39;import wave1D_dn_vc as w; w.pulse(...)&#39;
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="exercises-2">
+<h1>Exercises  (2)<a class="headerlink" href="#exercises-2" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="exercise-6-find-the-analytical-solution-to-a-damped-wave-equation">
+<span id="wave-exer-standingwave-damped-uex"></span><h2>Exercise 6: Find the analytical solution to a damped wave equation<a class="headerlink" href="#exercise-6-find-the-analytical-solution-to-a-damped-wave-equation" title="Permalink to this headline">¶</a></h2>
+<p>Consider the wave equation with damping <a href="#equation-wave:pde3">(16)</a>.
+The goal is to find an exact solution to a wave problem with damping.
+A starting point is the standing wave solution from
+<a class="reference internal" href="._main_wave002.html#wave-exer-standingwave"><em>Exercise 1: Simulate a standing wave</em></a>. It becomes necessary to
+include a damping term <span class="math">\(e^{-ct}\)</span> and also have both a sine and cosine
+component in time:</p>
+<div class="math">
+\[{u_{\small\mbox{e}}}(x,t) =  e^{-\beta t}
+\sin kx \left( A\cos\omega t
++ B\sin\omega t\right)
+{\thinspace .}\]</div>
+<p>Find <span class="math">\(k\)</span> from the boundary conditions
+<span class="math">\(u(0,t)=u(L,t)=0\)</span>. Then use the PDE to find constraints on
+<span class="math">\(\beta\)</span>, <span class="math">\(\omega\)</span>, <span class="math">\(A\)</span>, and <span class="math">\(B\)</span>.
+Set up a complete initial-boundary value problem
+and its solution.
+Filename: <tt class="docutils literal"><span class="pre">damped_waves.pdf</span></tt>.</p>
+</div>
+<div class="section" id="problem-7-explore-symmetry-boundary-conditions">
+<span id="wave-exer-symmetry-bc"></span><h2>Problem 7: Explore symmetry boundary conditions<a class="headerlink" href="#problem-7-explore-symmetry-boundary-conditions" title="Permalink to this headline">¶</a></h2>
+<p>Consider the simple &#8220;plug&#8221; wave where <span class="math">\(\Omega = [-L,L]\)</span> and</p>
+<div class="math">
+\[\begin{split}I(x) = \left\lbrace\begin{array}{ll}
+1, &amp; x\in [-\delta, \delta],\\
+0, &amp; \hbox{otherwise}
+\end{array}\right.\end{split}\]</div>
+<p>for some number <span class="math">\(0 &lt; \delta &lt; L\)</span>. The other initial condition is
+<span class="math">\(u_t(x,0)=0\)</span> and there is no source term <span class="math">\(f\)</span>.
+The boundary conditions can be set to <span class="math">\(u=0\)</span>.
+The solution to this problem is symmetric around <span class="math">\(x=0\)</span>.
+This means that we can simulate the wave process in only the half
+of the domain <span class="math">\([0,L]\)</span>.</p>
+<p><strong>a)</strong>
+Argue why the symmetry boundary condition
+is <span class="math">\(u_x=0\)</span> at <span class="math">\(x=0\)</span>.</p>
+<p><strong>Hint.</strong>
+Symmetry of a function about <span class="math">\(x=x_0\)</span> means that
+<span class="math">\(f(x_0+h) = f(x_0-h)\)</span>.</p>
+<p><strong>b)</strong>
+Perform simulations of the complete wave problem from
+on <span class="math">\([-L,L]\)</span>. Thereafter, utilize the
+symmetry of the solution and run a simulation
+in half of the domain <span class="math">\([0,L]\)</span>, using a boundary condition
+at <span class="math">\(x=0\)</span>. Compare the two solutions and
+make sure that they are the same.</p>
+<p><strong>c)</strong>
+Prove the symmetry property of the solution
+by setting up the complete initial-boundary value problem
+and showing that if <span class="math">\(u(x,t)\)</span> is a solution, then also <span class="math">\(u(-x,t)\)</span>
+is a solution.</p>
+<p>Filename: <tt class="docutils literal"><span class="pre">wave1D_symmetric</span></tt>.</p>
+</div>
+<div class="section" id="exercise-8-send-pulse-waves-through-a-layered-medium">
+<span id="wave-app-exer-pulse1d"></span><h2>Exercise 8: Send pulse waves through a layered medium<a class="headerlink" href="#exercise-8-send-pulse-waves-through-a-layered-medium" title="Permalink to this headline">¶</a></h2>
+<p>Use the <tt class="docutils literal"><span class="pre">pulse</span></tt> function in <tt class="docutils literal"><span class="pre">wave1D_dn_vc.py</span></tt> to investigate
+sending a pulse, located with its peak at <span class="math">\(x=0\)</span>, through the
+medium to the right where it hits another medium for <span class="math">\(x\in [0.7,0.9]\)</span>
+where the wave velocity is decreased by a factor <span class="math">\(s_f\)</span>.
+Report what happens with a Gaussian pulse, a &#8220;cosine hat&#8221; pulse,
+half a &#8220;cosine hat&#8221; pulse, and a plug pulse for resolutions
+<span class="math">\(N_x=40,80,160\)</span>, and <span class="math">\(s_f=2,4\)</span>.  Use <span class="math">\(C=1\)</span>
+in the medium outside <span class="math">\([0.7,0.9]\)</span>. Simulate until <span class="math">\(T=2\)</span>.
+Filename: <tt class="docutils literal"><span class="pre">pulse1D.py</span></tt>.</p>
+</div>
+<div class="section" id="exercise-9-compare-discretizations-of-a-neumann-condition">
+<h2>Exercise 9: Compare discretizations of a Neumann condition<a class="headerlink" href="#exercise-9-compare-discretizations-of-a-neumann-condition" title="Permalink to this headline">¶</a></h2>
+<p>We have a 1D wave equation with variable wave velocity:
+<span class="math">\(u_t=(qu_x)_x\)</span>.
+A Neumann condition <span class="math">\(u_x\)</span> at <span class="math">\(x=0, L\)</span> can be
+discretized as shown in <a href="#equation-wave:pde2:var:c:scheme:impl:Neumann">(13)</a>
+and <a href="#equation-wave:pde2:var:c:scheme:impl:Neumann2">(14)</a>.</p>
+<p>The aim of this exercise is to examine the rate of the numerical
+error when using different ways of discretizing the Neumann condition.
+As test problem, <span class="math">\(q=1+(x-L/2)^4\)</span> can be used, with <span class="math">\(f(x,t)\)</span>
+adapted such that the solution has a simple form, say
+<span class="math">\(u(x,t)=\cos (\pi x/L)\cos (\omega t)\)</span> for some <span class="math">\(\omega = \sqrt{q}\pi/L\)</span>.</p>
+<p><strong>a)</strong>
+Perform numerical experiments and find the convergence rate of the
+error using
+the approximation
+and <a href="#equation-wave:pde2:var:c:scheme:impl:Neumann2">(14)</a>.</p>
+<p><strong>b)</strong>
+Switch to <span class="math">\(q(x)=\cos(\pi x/L)\)</span>, which is symmetric at <span class="math">\(x=0,L\)</span>,
+and check the convergence rate
+of the scheme
+<a href="#equation-wave:pde2:var:c:scheme:impl:Neumann2">(14)</a>. Now,
+<span class="math">\(q_{i-1/2}\)</span> is a 2nd-order approximation to <span class="math">\(q_i\)</span>,
+<span class="math">\(q_{i-1/2}=q_i + 0.25q_i''\Delta x^2 + \cdots\)</span>, because <span class="math">\(q_i'=0\)</span>
+for <span class="math">\(i=N_x\)</span> (a similar argument can be applied to the case <span class="math">\(i=0\)</span>).</p>
+<p><strong>c)</strong>
+A third discretization can be based on a simple and convenient,
+but less accurate, one-sided difference:
+<span class="math">\(u_{i}-u_{i-1}=0\)</span> at <span class="math">\(i=N_x\)</span> and <span class="math">\(u_{i+1}-u_i=0\)</span> at <span class="math">\(i=0\)</span>.
+Derive the resulting scheme in detail and implement it.
+Run experiments to establish the rate of convergence.</p>
+<p><strong>d)</strong>
+A fourth technique is to view the scheme as</p>
+<div class="math">
+\[[D_tD_tu]^n_i = \frac{1}{\Delta x}\left(
+[qD_xu]_{i+\frac{1}{2}}^n - [qD_xu]_{i-\frac{1}{2}}^n\right)
++ [f]_i^n,\]</div>
+<p>and place the boundary at <span class="math">\(x_{i+\frac{1}{2}}\)</span>, <span class="math">\(i=N_x\)</span>, instead of
+exactly at the physical boundary. With this idea,
+we can just set <span class="math">\([qD_xu]_{i+\frac{1}{2}}^n=0\)</span>. Derive the complete scheme
+using this technique. The implementation of the boundary condition at
+<span class="math">\(L-\Delta x/2\)</span> is <span class="math">\({\mathcal{O}(\Delta x^2)}\)</span> accurate, but the interesting question
+is what impact the movement of the boundary has on the convergence
+rate (compute the errors as usual over the entire mesh).</p>
+</div>
+<div class="section" id="exercise-10-verification-by-a-cubic-polynomial-in-space">
+<span id="wave-fd2-exer-verify-cubic"></span><h2>Exercise 10: Verification by a cubic polynomial in space<a class="headerlink" href="#exercise-10-verification-by-a-cubic-polynomial-in-space" title="Permalink to this headline">¶</a></h2>
+<p>The purpose of this exercise is to verify the implementation of the
+<tt class="docutils literal"><span class="pre">solver</span></tt> function in the program <a class="reference external" href="http://tinyurl.com/jvzzcfn/wave/wave1D/wave1D_n0.py">wave1D_n0.py</a> by using an exact numerical solution
+for the wave equation <span class="math">\(u_{tt}=c^2u_{xx} + f\)</span> with Neumann boundary
+conditions <span class="math">\(u_x(0,t)=u_x(L,t)=0\)</span>.</p>
+<p>A similar verification is used in the file <a class="reference external" href="http://tinyurl.com/jvzzcfn/wave/wave1D/wave1D_u0.py">wave1D_u0.py</a>, which solves the same PDE, but with
+Dirichlet boundary conditions <span class="math">\(u(0,t)=u(L,t)=0\)</span>.  The idea of the
+verification test in function <tt class="docutils literal"><span class="pre">test_quadratic</span></tt> in <tt class="docutils literal"><span class="pre">wave1D_u0.py</span></tt> is to
+a solution that is a lower-order polynomial such that both the PDE
+problem, the boundary conditions, and all the discrete equations are
+exactly fulfilled. Then the <tt class="docutils literal"><span class="pre">solver</span></tt> function should reproduce this
+exact solution to machine precision.  More precisely, we seek
+<span class="math">\(u=X(x)T(t)\)</span>, with <span class="math">\(T(t)\)</span> as a linear function and <span class="math">\(X(x)\)</span> as a
+parabola that fulfills the boundary conditions.  Inserting this <span class="math">\(u\)</span> in
+the PDE determines <span class="math">\(f\)</span>.  It tuns out that <span class="math">\(u\)</span> also fulfills the
+discrete equations, because the truncation error of the discretized
+PDE has derivatives in <span class="math">\(x\)</span> and <span class="math">\(t\)</span> of order four and higher. These
+derivatives all vanish for a quadratic <span class="math">\(X(x)\)</span> and linear <span class="math">\(T(t)\)</span>.</p>
+<p>It would be attractive to use a similar approach in the case of
+Neumann conditions. We set <span class="math">\(u=X(x)T(t)\)</span> and seek lower-order
+polynomials <span class="math">\(X\)</span> and <span class="math">\(T\)</span>.
+To force <span class="math">\(u_x\)</span> to vanish at the boundary, we let <span class="math">\(X_x\)</span> be
+a parabola. Then <span class="math">\(X\)</span> is a cubic polynomial. The fourth-order
+derivative of a cubic polynomial vanishes, so <span class="math">\(u=X(x)T(t)\)</span>
+will fulfill the discretized PDE also in this case, if <span class="math">\(f\)</span>
+is adjusted such that <span class="math">\(u\)</span> fulfills the PDE.</p>
+<p>However, the discrete boundary condition is not exactly fulfilled
+by this choice of <span class="math">\(u\)</span>. The reason is that</p>
+<div class="math" id="equation-wave:fd2:exer:verify:cubic:D2x">
+<span id="eq-wave-fd2-exer-verify-cubic-d2x"></span><span class="eqno">(21)</span>\[     [D_{2x}u]^n_i = u_{x}(x_i,t_n) + \frac{1}{6}u_{xxx}(x_i,t_n)\Delta x^2
+     + {\mathcal{O}(\Delta x^4)}{\thinspace .}\]</div>
+<p>At the boundary two boundary points, <span class="math">\(X_x(x)=0\)</span> such that <span class="math">\(u_x=0\)</span>.
+However, <span class="math">\(u_{xxx}\)</span> is a constant and not zero
+when <span class="math">\(X(x)\)</span> is a cubic polynomial.
+Therefore, our <span class="math">\(u=X(x)T(t)\)</span> fulfills</p>
+<div class="math">
+\[[D_{2x}u]^n_i = \frac{1}{6}u_{xxx}(x_i,t_n)\Delta x^2,\]</div>
+<p>and not</p>
+<div class="math">
+\[[D_{2x}u]^n_i =0,quad i=0,N_x,\]</div>
+<p>as it should. (Note that all the higher-order terms <span class="math">\({\mathcal{O}(\Delta x^4)}\)</span>
+also have higher-order derivatives that vanish for a cubic polynomial.)
+So to summarize, the fundamental problem is that <span class="math">\(u\)</span> as a product of
+a cubic polynomial and a linear or quadratic polynomial in time
+is not an exact solution of the discrete boundary conditions.</p>
+<p>To make progress,
+we assume that <span class="math">\(u=X(x)T(t)\)</span>, where <span class="math">\(T\)</span> for simplicity is taken as a
+prescribed linear function <span class="math">\(1+\frac{1}{2}t\)</span>, and <span class="math">\(X(x)\)</span> is taken
+as an <em>unknown</em> cubic polynomial <span class="math">\(\sum_{j=0}^3 a_jx^j\)</span>.
+There are two different ways of determining the coefficients
+<span class="math">\(a_0,\ldots,a_3\)</span> such that both the discretized PDE and the
+discretized boundary conditions are fulfilled, under the
+constraint that we can specify a function <span class="math">\(f(x,t)\)</span> for the PDE to feed
+to the <tt class="docutils literal"><span class="pre">solver</span></tt> function in <tt class="docutils literal"><span class="pre">wave1D_n0.py</span></tt>. Both approaches
+are explained in the subexercises.</p>
+<p><strong>a)</strong>
+One can insert <span class="math">\(u\)</span> in the discretized PDE and find the corresponding <span class="math">\(f\)</span>.
+Then one can insert <span class="math">\(u\)</span> in the discretized boundary conditions.
+This yields two equations for the four coefficients <span class="math">\(a_0,\ldots,a_3\)</span>.
+To find the coefficients, one can set <span class="math">\(a_0=0\)</span> and <span class="math">\(a_1=1\)</span> for
+simplicity and then determine <span class="math">\(a_2\)</span> and <span class="math">\(a_3\)</span>. This approach will make
+<span class="math">\(a_2\)</span> and <span class="math">\(a_3\)</span> depend on <span class="math">\(\Delta x\)</span> and <span class="math">\(f\)</span> will depend on both
+<span class="math">\(\Delta x\)</span> and <span class="math">\(\Delta t\)</span>.</p>
+<p>Use <tt class="docutils literal"><span class="pre">sympy</span></tt> to perform analytical computations.
+A starting point is to define <span class="math">\(u\)</span> as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_cubic1</span><span class="p">():</span>
+    <span class="kn">import</span> <span class="nn">sympy</span> <span class="kn">as</span> <span class="nn">sm</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dx</span><span class="p">,</span> <span class="n">dt</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s">&#39;x t c L dx dt&#39;</span><span class="p">)</span>
+    <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s">&#39;i n&#39;</span><span class="p">,</span> <span class="n">integer</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="c"># Assume discrete solution is a polynomial of degree 3 in x</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">sm</span><span class="o">.</span><span class="n">Rational</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">t</span>  <span class="c"># Temporal term</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s">&#39;a_0 a_1 a_2 a_3&#39;</span><span class="p">)</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">q</span><span class="p">]</span><span class="o">*</span><span class="n">x</span><span class="o">**</span><span class="n">q</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>  <span class="c"># Spatial term</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">X</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">T</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The symbolic expression for <span class="math">\(u\)</span> is reached by calling <tt class="docutils literal"><span class="pre">u(x,t)</span></tt>
+with <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">t</span></tt> as <tt class="docutils literal"><span class="pre">sympy</span></tt> symbols.</p>
+<p>Define <tt class="docutils literal"><span class="pre">DxDx(u,</span> <span class="pre">i,</span> <span class="pre">n)</span></tt>, <tt class="docutils literal"><span class="pre">DtDt(u,</span> <span class="pre">i,</span> <span class="pre">n)</span></tt>, and <tt class="docutils literal"><span class="pre">D2x(u,</span> <span class="pre">i,</span> <span class="pre">n)</span></tt>
+as Python functions for returning the difference
+approximations <span class="math">\([D_xD_x u]^n_i\)</span>, <span class="math">\([D_tD_t u]^n_i\)</span>, and
+<span class="math">\([D_{2x}u]^n_i\)</span>. The next step is to set up the residuals
+for the equations <span class="math">\([D_{2x}u]^n_0=0\)</span> and <span class="math">\([D_{2x}u]^n_{N_x}=0\)</span>,
+where <span class="math">\(N_x=L/\Delta x\)</span>. Call the residuals <tt class="docutils literal"><span class="pre">R_0</span></tt> and <tt class="docutils literal"><span class="pre">R_L</span></tt>.
+Substitute <span class="math">\(a_0\)</span> and <span class="math">\(a_1\)</span> by 0 and 1, respectively, in
+<tt class="docutils literal"><span class="pre">R_0</span></tt>, <tt class="docutils literal"><span class="pre">R_L</span></tt>, and <tt class="docutils literal"><span class="pre">a</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">R_0</span> <span class="o">=</span> <span class="n">R_0</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">R_L</span> <span class="o">=</span> <span class="n">R_L</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">a</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>  <span class="c"># enable in-place assignment</span>
+<span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>Determining <span class="math">\(a_2\)</span> and <span class="math">\(a_3\)</span> from the discretized boundary conditions
+is then about solving two equations with respect to <span class="math">\(a_2\)</span> and <span class="math">\(a_3\)</span>,
+i.e., <tt class="docutils literal"><span class="pre">a[2:]</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">s</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">solve</span><span class="p">([</span><span class="n">R_0</span><span class="p">,</span> <span class="n">R_L</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span>
+<span class="c"># s is dictionary with the unknowns a[2] and a[3] as keys</span>
+<span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span> <span class="n">s</span><span class="p">[</span><span class="n">a</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span>
+</pre></div>
+</div>
+<p>Now, <tt class="docutils literal"><span class="pre">a</span></tt> contains computed values and <tt class="docutils literal"><span class="pre">u</span></tt> will automatically use
+these new values since <tt class="docutils literal"><span class="pre">X</span></tt> accesses <tt class="docutils literal"><span class="pre">a</span></tt>.</p>
+<p>Compute the source term <span class="math">\(f\)</span> from the discretized PDE:
+<span class="math">\(f^n_i = [D_tD_t u - c^2D_xD_x u]^n_i\)</span>. Turn <span class="math">\(u\)</span>, the time
+derivative <span class="math">\(u_t\)</span> (needed for the initial condition <span class="math">\(V(x)\)</span>),
+and <span class="math">\(f\)</span> into Python functions. Set numerical values for
+<span class="math">\(L\)</span>, <span class="math">\(N_x\)</span>, <span class="math">\(C\)</span>, and <span class="math">\(c\)</span>. Prescribe the time interval as
+<span class="math">\(\Delta t = CL/(N_xc)\)</span>, which imply <span class="math">\(\Delta x = c\Delta t/C = L/N_x\)</span>.
+Define new functions <tt class="docutils literal"><span class="pre">I(x)</span></tt>, <tt class="docutils literal"><span class="pre">V(x)</span></tt>, and <tt class="docutils literal"><span class="pre">f(x,t)</span></tt> as wrappers of the ones
+made above, where fixed values of <span class="math">\(L\)</span>, <span class="math">\(c\)</span>, <span class="math">\(\Delta x\)</span>, and <span class="math">\(\Delta t\)</span>
+are inserted, such that <tt class="docutils literal"><span class="pre">I</span></tt>, <tt class="docutils literal"><span class="pre">V</span></tt>, and <tt class="docutils literal"><span class="pre">f</span></tt> can be passed on to the
+<tt class="docutils literal"><span class="pre">solver</span></tt> function. Finally, call <tt class="docutils literal"><span class="pre">solver</span></tt> with a <tt class="docutils literal"><span class="pre">user_action</span></tt>
+function that compares the numerical solution to this exact
+solution <span class="math">\(u\)</span> of the discrete PDE problem.</p>
+<p><strong>Hint.</strong>
+To turn a <tt class="docutils literal"><span class="pre">sympy</span></tt> expression <tt class="docutils literal"><span class="pre">e</span></tt>, depending on a series of
+symbols, say <tt class="docutils literal"><span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">t</span></tt>, <tt class="docutils literal"><span class="pre">dx</span></tt>, <tt class="docutils literal"><span class="pre">dt</span></tt>, <tt class="docutils literal"><span class="pre">L</span></tt>, and <tt class="docutils literal"><span class="pre">c</span></tt>, into plain
+Python function <tt class="docutils literal"><span class="pre">e_exact(x,t,L,dx,dt,c)</span></tt>, one can write</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">e_exact</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">lambdify</span><span class="p">([</span><span class="n">x</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">L</span><span class="p">,</span><span class="n">dx</span><span class="p">,</span><span class="n">dt</span><span class="p">,</span><span class="n">c</span><span class="p">],</span> <span class="n">e</span><span class="p">,</span> <span class="s">&#39;numpy&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">'numpy'</span></tt> argument is a good habit as the <tt class="docutils literal"><span class="pre">e_exact</span></tt> function
+will then work with array arguments if it contains mathematical
+functions (but here we only do plain arithmetics, which automatically
+work with arrays).</p>
+<p><strong>b)</strong>
+An alternative way of determining <span class="math">\(a_0,\ldots,a_3\)</span> is to reason as
+follows. We first construct <span class="math">\(X(x)\)</span> such that the boundary conditions
+are fulfilled: <span class="math">\(X=x(L-x)\)</span>. However, to compensate for the fact
+that this choice of <span class="math">\(X\)</span> does not fulfill the discrete boundary
+condition, we seek <span class="math">\(u\)</span> such that</p>
+<div class="math">
+\[u_x = \frac{\partial}{\partial x}x(L-x)T(t) - \frac{1}{6}u_{xxx}\Delta x^2,\]</div>
+<p>since this <span class="math">\(u\)</span> will fit the discrete boundary condition.
+Assuming <span class="math">\(u=T(t)\sum_{j=0}^3a_jx^j\)</span>, we can use the above equation to
+determine the coefficients <span class="math">\(a_1,a_2,a_3\)</span>. A value, e.g., 1 can be used for
+<span class="math">\(a_0\)</span>. The following <tt class="docutils literal"><span class="pre">sumpy</span></tt> code computes this <span class="math">\(u\)</span>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_cubic2</span><span class="p">():</span>
+    <span class="kn">import</span> <span class="nn">sympy</span> <span class="kn">as</span> <span class="nn">sm</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dx</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s">&#39;x t c L dx&#39;</span><span class="p">)</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">sm</span><span class="o">.</span><span class="n">Rational</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">t</span>  <span class="c"># Temporal term</span>
+    <span class="c"># Set u as a 3rd-degree polynomial in space</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">x</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s">&#39;a_0 a_1 a_2 a_3&#39;</span><span class="p">)</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">X</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">T</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="c"># Force discrete boundary condition to be zero by adding</span>
+    <span class="c"># a correction term the analytical suggestion x*(L-x)*T</span>
+    <span class="c"># u_x = x*(L-x)*T(t) - 1/6*u_xxx*dx**2</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">u</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">t</span><span class="p">),</span> <span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span>
+        <span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="n">L</span><span class="o">-</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="n">sm</span><span class="o">.</span><span class="n">Rational</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">6</span><span class="p">)</span><span class="o">*</span><span class="n">sm</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">u</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">t</span><span class="p">),</span> <span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">dx</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="c"># R is a polynomial: force all coefficients to vanish.</span>
+    <span class="c"># Turn R to Poly to extract coefficients:</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">poly</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+    <span class="n">coeff</span> <span class="o">=</span> <span class="n">R</span><span class="o">.</span><span class="n">all_coeffs</span><span class="p">()</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">coeff</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>  <span class="c"># a[0] is not present in R</span>
+    <span class="c"># s is dictionary with a[i] as keys</span>
+    <span class="c"># Fix a[0] as 1</span>
+    <span class="n">s</span><span class="p">[</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">sm</span><span class="o">.</span><span class="n">simplify</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span><span class="o">*</span><span class="n">x</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)))</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">X</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">T</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&#39;u:&#39;</span><span class="p">,</span> <span class="n">u</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">t</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The next step is to find the source term <tt class="docutils literal"><span class="pre">f_e</span></tt> by inserting <tt class="docutils literal"><span class="pre">u_e</span></tt>
+in the PDE. Thereafter, turn <tt class="docutils literal"><span class="pre">u</span></tt>, <tt class="docutils literal"><span class="pre">f</span></tt>, and the time derivative of <tt class="docutils literal"><span class="pre">u</span></tt>
+into plain Python functions as in a), and then wrap these functions
+in new functions <tt class="docutils literal"><span class="pre">I</span></tt>, <tt class="docutils literal"><span class="pre">V</span></tt>, and <tt class="docutils literal"><span class="pre">f</span></tt>, with the right signature as
+required by the <tt class="docutils literal"><span class="pre">solver</span></tt> function. Set parameters as in a) and
+check that the solution is exact to machine precision at each
+time level using an appropriate <tt class="docutils literal"><span class="pre">user_action</span></tt> function.</p>
+<p>Filename: <tt class="docutils literal"><span class="pre">wave1D_n0_test_cubic.py</span></tt>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Generalization: reflecting boundaries</a><ul>
+<li><a class="reference internal" href="#neumann-boundary-condition">Neumann boundary condition</a></li>
+<li><a class="reference internal" href="#discretization-of-derivatives-at-the-boundary">Discretization of derivatives at the boundary</a></li>
+<li><a class="reference internal" href="#implementation-of-neumann-conditions">Implementation of Neumann conditions</a></li>
+<li><a class="reference internal" href="#index-set-notation">Index set notation</a></li>
+<li><a class="reference internal" href="#alternative-implementation-via-ghost-cells">Alternative implementation via ghost cells</a><ul>
+<li><a class="reference internal" href="#idea">Idea</a></li>
+<li><a class="reference internal" href="#implementation-2">Implementation  (2)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#generalization-variable-wave-velocity">Generalization: variable wave velocity</a><ul>
+<li><a class="reference internal" href="#the-model-pde-with-a-variable-coefficient">The model PDE with a variable coefficient</a></li>
+<li><a class="reference internal" href="#discretizing-the-variable-coefficient">Discretizing the variable coefficient</a></li>
+<li><a class="reference internal" href="#computing-the-coefficient-between-mesh-points">Computing the coefficient between mesh points</a></li>
+<li><a class="reference internal" href="#how-a-variable-coefficient-affects-the-stability">How a variable coefficient affects the stability</a></li>
+<li><a class="reference internal" href="#neumann-condition-and-a-variable-coefficient">Neumann condition and a variable coefficient</a></li>
+<li><a class="reference internal" href="#implementation-of-variable-coefficients">Implementation of variable coefficients</a></li>
+<li><a class="reference internal" href="#a-more-general-model-pde-with-variable-coefficients">A more general model PDE with variable coefficients</a></li>
+<li><a class="reference internal" href="#generalization-damping">Generalization: damping</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#building-a-general-1d-wave-equation-solver">Building a general 1D wave equation solver</a><ul>
+<li><a class="reference internal" href="#user-action-function-as-a-class">User action function as a class</a></li>
+<li><a class="reference internal" href="#pulse-propagation-in-two-media">Pulse propagation in two media</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#exercises-2">Exercises  (2)</a><ul>
+<li><a class="reference internal" href="#exercise-6-find-the-analytical-solution-to-a-damped-wave-equation">Exercise 6: Find the analytical solution to a damped wave equation</a></li>
+<li><a class="reference internal" href="#problem-7-explore-symmetry-boundary-conditions">Problem 7: Explore symmetry boundary conditions</a></li>
+<li><a class="reference internal" href="#exercise-8-send-pulse-waves-through-a-layered-medium">Exercise 8: Send pulse waves through a layered medium</a></li>
+<li><a class="reference internal" href="#exercise-9-compare-discretizations-of-a-neumann-condition">Exercise 9: Compare discretizations of a Neumann condition</a></li>
+<li><a class="reference internal" href="#exercise-10-verification-by-a-cubic-polynomial-in-space">Exercise 10: Verification by a cubic polynomial in space</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="._main_wave002.html"
+                        title="previous chapter">Implementation  (1)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_wave004.html"
+                        title="next chapter">Analysis of the difference equations</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_wave003.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_wave004.html" title="Analysis of the difference equations"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="._main_wave002.html" title="Implementation (1)"
+             >previous</a> |</li>
+        <li><a href="index.html">Finite difference methods for wave motion</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

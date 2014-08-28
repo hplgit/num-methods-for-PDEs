@@ -1,0 +1,811 @@
+.. !split
+
+A very wide range of physical processes lead to wave motion, where
+signals are propagated through a medium in space and time, normally
+with little or no permanent movement of the medium itself.
+The shape of the signals may undergo changes as they travel through
+matter, but usually not so much that the signals cannot be recognized
+at some later point in space and time.
+Many types of wave motion can be described by the equation
+:math:`u_{tt}=\nabla\cdot (c^2\nabla u) + f`, which we will solve
+in the forthcoming text by finite difference methods.
+
+.. _wave:string:
+
+Simulation of waves on a string
+===============================
+
+.. index::
+   single: waves; on a string
+
+.. index::
+   single: wave equation; 1D
+
+We begin our study of wave equations by simulating one-dimensional
+waves on a string, say on a guitar or violin string.
+Let the string in the deformed state
+coincide with the interval
+:math:`[0,L]` on the :math:`x` axis, and let :math:`u(x,t)` be the displacement at
+time :math:`t` in the :math:`y` direction of a point initially at :math:`x`.
+The displacement function :math:`u` is governed by the mathematical model
+
+.. _Eq:wave:pde1:
+
+.. math::
+   :label: wave:pde1
+        
+        \frac{\partial^2 u}{\partial t^2} =
+        c^2 \frac{\partial^2 u}{\partial x^2}, \quad x\in (0,L),\ t\in (0,T]
+        
+        
+
+.. _Eq:wave:pde1:ic:u:
+
+.. math::
+   :label: wave:pde1:ic:u
+          
+        u(x,0) = I(x), \quad x\in [0,L]
+        
+        
+
+.. _Eq:wave:pde1:ic:ut:
+
+.. math::
+   :label: wave:pde1:ic:ut
+          
+        \frac{\partial}{\partial t}u(x,0) = 0, \quad x\in [0,L]
+        
+        
+
+.. _Eq:wave:pde1:bc:0:
+
+.. math::
+   :label: wave:pde1:bc:0
+          
+        u(0,t)  = 0, \quad  t\in (0,T]
+        
+        
+
+.. _Eq:wave:pde1:bc:L:
+
+.. math::
+   :label: wave:pde1:bc:L
+          
+        u(L,t)  = 0, \quad  t\in (0,T]
+        
+        
+
+The constant :math:`c` and the function :math:`I(x)` must be prescribed.
+
+Equation :eq:`wave:pde1` is known as the one-dimensional
+*wave equation*. Since this PDE contains a second-order derivative
+in time, we need *two initial conditions*, here :eq:`wave:pde1:ic:u`
+specifying the initial shape of the string, :math:`I(x)`, and
+:eq:`wave:pde1:ic:ut` reflecting that the initial velocity of the
+string is zero. In addition, PDEs need *boundary conditions*, here
+:eq:`wave:pde1:bc:0` and :eq:`wave:pde1:bc:L`, specifying that
+the string is fixed at the ends, i.e., that the displacement :math:`u` is zero.
+
+The solution :math:`u(x,t)` varies in space and time and describes waves that
+are moving with velocity :math:`c` to the left and right.
+
+.. raw:: html
+        
+        <div>
+        <video  loop controls width='640' height='365' preload='none'>
+            <source src='mov-wave/guitar_C0.8/movie.webm' type='video/webm; codecs="vp8, vorbis"'>
+            <source src='mov-wave/guitar_C0.8/movie.ogg'  type='video/ogg;  codecs="theora, vorbis"'>
+        </video>
+        </div>
+        <p><em>Example of waves on a string.</em></p>
+
+Sometimes we will use a more compact notation for the partial derivatives
+to save space:
+
+.. math::
+        
+        u_t = \frac{\partial u}{\partial t}, \quad
+        u_{tt} = \frac{\partial^2 u}{\partial t^2},
+        
+
+and similar expressions
+for derivatives with respect to other variables. Then the
+wave equation can be written compactly as :math:`u_{tt} = c^2u_{xx}`.
+
+.. index::
+   single: wave equation; 1D, finite difference method
+
+The PDE problem :eq:`wave:pde1`-:eq:`wave:pde1:bc:L` will now be
+discretized in space and time by a finite difference method.
+
+.. index::
+   single: mesh; finite differences
+
+.. _wave:string:mesh:
+
+Discretizing the domain
+-----------------------
+
+The temporal domain :math:`[0,T]` is represented by a finite number of mesh points
+
+.. math::
+        
+        0 = t_0 < t_1 < t_2 < \cdots < t_{N_t-1} < t_{N_t} = T {\thinspace .}  
+
+Similarly, the spatial domain :math:`[0,L]` is replaced by a set of mesh points
+
+.. math::
+        
+        0 = x_0 < x_1 < x_2 < \cdots < x_{N_x-1} < x_{N_x} = L {\thinspace .}  
+
+One may view the mesh as two-dimensional in the :math:`x,t` plane, consisting
+of points :math:`(x_i, t_n)`, with :math:`i=0,\ldots,N_x` and :math:`n=0,\ldots,N_t`.
+
+Uniform meshes
+~~~~~~~~~~~~~~
+
+For uniformly distributed mesh points we can introduce the constant
+mesh spacings :math:`\Delta t` and :math:`\Delta x`. We have that
+
+.. math::
+        
+        x_i = i\Delta x,\ i=0,\ldots,N_x,\quad
+        t_i = n\Delta t,\ n=0,\ldots,N_t{\thinspace .}
+        
+
+We also have that :math:`\Delta x = x_i-x_{i-1}`, :math:`i=1,\ldots,N_x`, and
+:math:`\Delta t = t_n - t_{n-1}`, :math:`n=1,\ldots,N_t`. Figure :ref:`wave:pde1:fig:mesh`
+displays a mesh in the :math:`x,t` plane with :math:`N_t=5`, :math:`N_x=5`, and constant
+mesh spacings.
+
+.. _wave:string:numerical:sol:
+
+The discrete solution
+---------------------
+
+.. index::
+   single: stencil; 1D wave equation
+
+.. index:: mesh function
+
+The solution :math:`u(x,t)` is sought at the mesh points. We introduce
+the mesh function :math:`u_i^n`, which approximates the exact
+solution at the
+mesh point :math:`(x_i,t_n)` for :math:`i=0,\ldots,N_x` and :math:`n=0,\ldots,N_t`.
+Using the finite difference method, we shall
+develop algebraic equations for computing the mesh function.
+The circles in Figure
+:ref:`wave:pde1:fig:mesh` illustrate neighboring mesh points where
+values of :math:`u^n_i` are connected through an algebraic equation. In this
+particular case, :math:`u_2^1`, :math:`u_1^2`, :math:`u_2^2`, :math:`u_3^2`, and :math:`u_2^3` are
+connected in an algebraic equation associated with the center point
+:math:`(2,2)`. The term *stencil* is often used about the algebraic equation
+at a mesh point, and the geometry of a typical stencil is
+illustrated in Figure :ref:`wave:pde1:fig:mesh`. One also often refers
+to the algebraic equations as *discrete equations*,
+*(finite) difference equations* or a *finite difference
+scheme*.
+
+.. _wave:pde1:fig:mesh:
+
+.. figure:: stencil_n_interior.png
+   :width: 500
+
+   *Mesh in space and time for a 1D wave equation*
+
+.. _wave:string:samplingPDE:
+
+Fulfilling the equation at the mesh points
+------------------------------------------
+
+For a numerical solution by the finite difference method, we relax
+the condition that :eq:`wave:pde1` holds at all points in
+the space-time domain :math:`(0,L)\times (0,T]` to the requirement that the PDE is
+fulfilled at the *interior* mesh points:
+
+.. _Eq:wave:pde1:step2:
+
+.. math::
+   :label: wave:pde1:step2
+        
+        \frac{\partial^2}{\partial t^2} u(x_i, t_n) =
+        c^2\frac{\partial^2}{\partial x^2} u(x_i, t_n),
+        
+        
+
+for :math:`i=1,\ldots,N_x-1` and :math:`n=1,\ldots,N_t-1`. For :math:`n=0` we have
+the initial conditions :math:`u=I(x)` and :math:`u_t=0`,
+and at the boundaries :math:`i=0,N_x` we
+have the boundary condition :math:`u=0`.
+
+.. _wave:string:fd:
+
+Replacing derivatives by finite differences
+-------------------------------------------
+
+The second-order derivatives can be replaced by central
+differences. The most widely used difference approximation of
+the second-order derivative is
+
+.. math::
+         \frac{\partial^2}{\partial t^2}u(x_i,t_n)\approx
+        \frac{u_i^{n+1} - 2u_i^n + u^{n-1}_i}{\Delta t^2}{\thinspace .}
+
+It is convenient to introduce the finite difference operator notation
+
+.. math::
+         [D_tD_t u]^n_i = \frac{u_i^{n+1} - 2u_i^n + u^{n-1}_i}{\Delta t^2}{\thinspace .}
+
+A similar approximation of the second-order derivative in the :math:`x`
+direction reads
+
+.. math::
+         \frac{\partial^2}{\partial x^2}u(x_i,t_n)\approx
+        \frac{u_{i+1}^{n} - 2u_i^n + u^{n}_{i-1}}{\Delta x^2} = [D_xD_x u]^n_i
+        {\thinspace .}
+        
+
+Algebraic version of the PDE
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We can now replace the derivatives in :eq:`wave:pde1:step2`
+and get
+
+.. _Eq:wave:pde1:step3b:
+
+.. math::
+   :label: wave:pde1:step3b
+        
+        \frac{u_i^{n+1} - 2u_i^n + u^{n-1}_i}{\Delta t^2} =
+        c^2\frac{u_{i+1}^{n} - 2u_i^n + u^{n}_{i-1}}{\Delta x^2},
+        
+        
+
+or written more compactly using the operator notation:
+
+.. _Eq:wave:pde1:step3a:
+
+.. math::
+   :label: wave:pde1:step3a
+        
+        [D_tD_t u = c^2 D_xD_x]^{n}_i
+        {\thinspace .}
+        
+        
+
+Algebraic version of the initial conditions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We also need to replace the derivative in the initial condition
+:eq:`wave:pde1:ic:ut` by a finite difference approximation.
+A centered difference of the type
+
+.. math::
+        
+        \frac{\partial}{\partial t} u(x_i,t_n)\approx
+        \frac{u^1_i - u^{-1}_i}{2\Delta t} = [D_{2t} u]^0_i,
+        
+
+seems appropriate. In operator notation the initial condition is
+written as
+
+.. math::
+         [D_{2t} u]^n_i = 0,\quad n=0 {\thinspace .}  
+
+Writing out this equation and ordering the terms give
+
+.. _Eq:wave:pde1:step3c:
+
+.. math::
+   :label: wave:pde1:step3c
+        
+        u^{n-1}_i=u^{n+1}_i,\quad i=0,\ldots,N_x,\ n=0{\thinspace .}
+        
+        
+
+The other initial condition can be computed by
+
+.. math::
+         u_i^0 = I(x_i),\quad i=0,\ldots,N_x{\thinspace .}
+
+.. _wave:string:alg:
+
+Formulating a recursive algorithm
+---------------------------------
+
+We assume that :math:`u^n_i` and
+:math:`u^{n-1}_i` are already computed for :math:`i=0,\ldots,N_x`.
+The only unknown quantity in :eq:`wave:pde1:step3b` is
+therefore :math:`u^{n+1}_i`, which we can solve for:
+
+.. _Eq:wave:pde1:step4:
+
+.. math::
+   :label: wave:pde1:step4
+        
+        u^{n+1}_i = -u^{n-1}_i + 2u^n_i + C^2
+        \left(u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}\right),
+        
+        
+
+where we have introduced the parameter
+
+.. math::
+        
+        C = c\frac{\Delta t}{\Delta x},
+        
+
+known as the *Courant number*.
+
+
+.. admonition:: :math:`C` is the key parameter in the discrete diffusion equation
+
+   We see that the
+   discrete version of the PDE features only one parameter, :math:`C`,
+   which is therefore the key parameter that governs the
+   quality of the numerical solution (see the section :ref:`wave:pde1:analysis`
+   for details). Both the primary
+   physical parameter :math:`c` and the numerical parameters :math:`\Delta x` and :math:`\Delta t`
+   are lumped together in :math:`C`. Note that :math:`C` is a dimensionless
+   parameter.
+
+
+
+
+Given that :math:`u^{n-1}_i` and :math:`u^n_i` are computed for :math:`i=0,\ldots,N_x`,
+we find new values at the next time level by applying the formula
+:eq:`wave:pde1:step4` for :math:`i=1,\ldots,N_x-1`. Figure
+:ref:`wave:pde1:fig:mesh` illustrates the points that are used to
+compute :math:`u^3_2`. For the boundary points, :math:`i=0` and :math:`i=N_x`, we apply
+the boundary conditions :math:`u_i^{n+1}=0`.
+
+A problem with :eq:`wave:pde1:step4` arises when :math:`n=0` since the
+formula for :math:`u^1_i` involves :math:`u^{-1}_i`, which is an undefined
+quantity outside the time mesh (and the time domain). However, we can
+use the initial condition :eq:`wave:pde1:step3c` in combination with
+:eq:`wave:pde1:step4` when :math:`n=0` to arrive at a special formula for
+:math:`u_i^1`:
+
+.. _Eq:wave:pde1:step4:1:
+
+.. math::
+   :label: wave:pde1:step4:1
+        
+        u_i^1 = u^0_i - \frac{1}{2}
+        C^2\left(u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}\right)
+        {\thinspace .}
+        
+        
+
+Figure :ref:`wave:pde1:fig:stencil:u1` illustrates how :eq:`wave:pde1:step4:1`
+connects four instead of five points: :math:`u^1_2`, :math:`u_1^0`, :math:`u_2^0`, and :math:`u_3^0`.
+
+.. _wave:pde1:fig:stencil:u1:
+
+.. figure:: stencil_n0_interior.png
+   :width: 500
+
+   *Modified stencil for the first time step*
+
+We can now summarize the computational algorithm:
+
+1. Compute :math:`u^0_i=I(x_i)` for :math:`i=0,\ldots,N_x`
+
+2. Compute :math:`u^1_i` by :eq:`wave:pde1:step4:1` and set :math:`u_i^1=0`
+   for the boundary points :math:`i=0` and :math:`i=N_x`, for :math:`n=1,2,\ldots,N-1`,
+
+3. For each time level :math:`n=1,2,\ldots,N_t-1`
+
+  1. apply :eq:`wave:pde1:step4` to find :math:`u^{n+1}_i` for :math:`i=1,\ldots,N_x-1`
+
+  2. set :math:`u^{n+1}_i=0` for the boundary points :math:`i=0`, :math:`i=N_x`.
+
+The algorithm essentially consists of moving
+a finite difference stencil through all the mesh points, which is
+illustrated by an animation in a `web page <http://tinyurl.com/k3sdbuv/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/index.html>`__
+or a `movie file <http://tinyurl.com/k3sdbuv/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/movie.ogg>`__.
+
+.. _wave:string:impl:
+
+Sketch of an implementation
+---------------------------
+
+In a Python implementation of this algorithm, we use the array
+elements ``u[i]`` to store :math:`u^{n+1}_i`, ``u_1[i]`` to store :math:`u^n_i`, and
+``u_2[i]`` to store :math:`u^{n-1}_i`. Our naming convention is use ``u`` for the
+unknown new spatial field to be computed, ``u_1`` as the solution at
+one time step back in time, ``u_2`` as the solution two time steps back
+in time and so forth.
+
+The algorithm only needs to access the
+three most recent time levels, so we need only three arrays for
+:math:`u_i^{n+1}`, :math:`u_i^n`, and :math:`u_i^{n-1}`, :math:`i=0,\ldots,N_x`.  Storing all
+the solutions in a two-dimensional array of size :math:`(N_x+1)\times (N_t+1)`
+would be possible in this simple one-dimensional PDE problem, but is
+normally out of the question in three-dimensional (3D) and large
+two-dimensional (2D) problems. We shall therefore in all our programs
+for solving PDEs have the unknown in memory at as few time levels as
+possible.
+
+The following Python snippet realizes the steps in the computational
+algorithm.
+
+.. code-block:: python
+
+        # Given mesh points as arrays x and t (x[i], t[n])
+        dx = x[1] - x[0]
+        dt = t[1] - t[0]
+        C = c*dt/dx            # Courant number
+        Nt = len(t)-1
+        C2 = C**2              # Help variable in the scheme
+        
+        # Set initial condition u(x,0) = I(x)
+        for i in range(0, Nx+1):
+            u_1[i] = I(x[i])
+        
+        # Apply special formula for first step, incorporating du/dt=0
+        for i in range(1, Nx):
+            u[i] = u_1[i] - 0.5*C**2(u_1[i+1] - 2*u_1[i] + u_1[i-1])
+        u[0] = 0;  u[Nx] = 0   # Enforce boundary conditions
+        
+        # Switch variables before next step
+        u_2[:], u_1[:] = u_1, u
+        
+        for n in range(1, Nt):
+            # Update all inner mesh points at time t[n+1]
+            for i in range(1, Nx):
+                u[i] = 2u_1[i] - u_2[i] - \ 
+                       C**2(u_1[i+1] - 2*u_1[i] + u_1[i-1])
+        
+            # Insert boundary conditions
+            u[0] = 0;  u[Nx] = 0
+        
+            # Switch variables before next step
+            u_2[:], u_1[:] = u_1, u
+
+Verification  (1)
+=================
+
+Before implementing the algorithm, it is convenient to add a source
+term to the PDE :eq:`wave:pde1`
+since it gives us more freedom in finding test problems for
+verification. In particular, the source term allows us to use
+*manufactured solutions* for software testing, where we simply choose some
+function as solution, fit the corresponding source term, and define
+boundary and initial conditions consistent with the chosen
+solution. Such solutions
+will seldom fulfill the initial condition :eq:`wave:pde1:ic:ut` so
+we need to generalize this condition to :math:`u_t=V(x)`.
+
+.. _wave:pde2:fd:
+
+A slightly generalized model problem
+------------------------------------
+
+We now address the following extended initial-boundary value problem
+for one-dimensional wave phenomena:
+
+.. _Eq:wave:pde2:
+
+.. math::
+   :label: wave:pde2
+        
+        u_{tt} = c^2 u_{xx} + f(x,t), \quad x\in (0,L),\ t\in (0,T]
+        
+        
+
+.. _Eq:wave:pde2:ic:u:
+
+.. math::
+   :label: wave:pde2:ic:u
+          
+        u(x,0) = I(x), \quad x\in [0,L]
+        
+        
+
+.. _Eq:wave:pde2:ic:ut:
+
+.. math::
+   :label: wave:pde2:ic:ut
+          
+        u_t(x,0) = V(x), \quad x\in [0,L]
+        
+        
+
+.. _Eq:wave:pde2:bc:0:
+
+.. math::
+   :label: wave:pde2:bc:0
+          
+        u(0,t)  = 0, \quad  t>0
+        
+        
+
+.. _Eq:wave:pde2:bc:L:
+
+.. math::
+   :label: wave:pde2:bc:L
+          
+        u(L,t)  = 0, \quad  t>0
+        
+        
+
+Sampling the PDE at :math:`(x_i,t_n)` and using the same finite difference
+approximations as above, yields
+
+.. _Eq:wave:pde2:fdop:
+
+.. math::
+   :label: wave:pde2:fdop
+        
+        [D_tD_t u = c^2 D_xD_x + f]^{n}_i
+        {\thinspace .}
+        
+        
+
+Writing this out and solving for the unknown :math:`u^{n+1}_i` results in
+
+.. _Eq:wave:pde2:step3b:
+
+.. math::
+   :label: wave:pde2:step3b
+        
+        u^{n+1}_i = -u^{n-1}_i + 2u^n_i + C^2
+        (u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}) + \Delta t^2 f^n_i
+        
+        {\thinspace .}
+        
+
+The equation for the first time step must be rederived. The discretization
+of the initial condition :math:`u_t = V(x)` at :math:`t=0`
+becomes
+
+.. math::
+         [D_{2t}u = V]^0_i\quad\Rightarrow\quad u^{-1}_i = u^{1}_i - 2\Delta t V_i,
+
+which, when inserted in :eq:`wave:pde2:step3b` for :math:`n=0`, gives
+the special formula
+
+.. _Eq:wave:pde2:step3c:
+
+.. math::
+   :label: wave:pde2:step3c
+        
+        u^{1}_i = u^0_i - \Delta t V_i + {\frac{1}{2}}
+        C^2
+        \left(u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}\right) + \frac{1}{2}\Delta t^2 f^n_i
+        
+        {\thinspace .}
+        
+
+.. _wave:pde2:fd:standing:waves:
+
+Using an analytical solution of physical significance
+-----------------------------------------------------
+
+Many wave problems feature sinusoidal oscillations in time
+and space. For example, the original PDE problem
+:eq:`wave:pde1`-:eq:`wave:pde1:bc:L` allows a solution
+
+.. _Eq:wave:pde2:test:ue:
+
+.. math::
+   :label: wave:pde2:test:ue
+        
+        {u_{\small\mbox{e}}}(x,y,t)) = A\sin\left(\frac{\pi}{L}x\right)
+        \cos\left(\frac{\pi}{L}ct\right){\thinspace .}
+        
+        
+
+This :math:`{u_{\small\mbox{e}}}` fulfills the PDE with :math:`f=0`, boundary conditions
+:math:`{u_{\small\mbox{e}}}(0,t)={u_{\small\mbox{e}}}(L,0)=0`, as well as initial
+conditions :math:`I(x)=A\sin\left(\frac{\pi}{L}x\right)` and :math:`V=0`.
+
+It is common to use such exact solutions of physical interest
+to verify implementations. However, the numerical
+solution :math:`u^n_i` will only be an approximation to :math:`{u_{\small\mbox{e}}}(x_i,t_n)`.
+We no have knowledge of the precise size of the error in
+this approximation, and therefore we can never know if discrepancies
+between the computed :math:`u^n_i` and :math:`{u_{\small\mbox{e}}}(x_i,t_n)` are caused
+by mathematical approximations or programming errors.
+In particular, if a plot of the computed solution :math:`u^n_i` and
+the exact one \eq:ref:`wave:pde2:test:ue` looks similar, many
+are attempted to claim that the implementation works, but
+there can still be serious programming errors although color
+plots look nice.
+
+The only way to use exact physical solutions like
+:eq:`wave:pde2:test:ue` for serious and thorough verification is to
+run a series of finer and finer meshes, measure the integrated error
+in each mesh, and from this information estimate the convergence
+rate. If these rates are very close to 2, we have strong evidence that
+the implementation works.
+
+.. _wave:pde2:fd:MMS:
+
+Manufactured solution
+---------------------
+
+One problem with the exact solution :eq:`wave:pde2:test:ue` is
+that it requires a simplification (:math:`V=0, f=0`) of the implemented problem
+:eq:`wave:pde2`-:eq:`wave:pde2:bc:L`. An advantage of using
+a manufactured solution is that we can test all terms in the
+PDE problem. The idea of this approach is to set up some chosen
+solution and fit the source term, boundary conditions, and initial
+conditions to be compatible with the chosen solution.
+Given that our boundary conditions in the implementation are
+:math:`u(0,t)=u(L,t)=0`, we must choose a solution that fulfills these
+conditions. One example is
+
+.. math::
+         {u_{\small\mbox{e}}}(x,t) = x(L-x)\sin t{\thinspace .}
+
+Inserted in the PDE :math:`u_{tt}=c^2u_{xx}+f` we get
+
+.. math::
+         -x(L-x)\sin t = -2\sin t + f\quad\Rightarrow f = (2 - x(L-x))\sin t{\thinspace .}
+
+The initial conditions become
+
+.. math::
+        
+        u(x,0) =& I(x) = 0,\\ 
+        u_t(x,0) &= V(x) = (2 - x(L-x))\cos t{\thinspace .}
+        
+
+To verify the code, we run a series of refined meshes and compute
+the convergence rates. In more detail, we keep :math:`\Delta t/\Delta x`
+constant for each mesh, implying that :math:`C` is also constant throughout
+the experiments. A common discretization parameter
+:math:`h = \Delta t` is introduced. For a given :math:`C` (and :math:`c`), :math:`\Delta x
+ch/C`. We choose an initial time cell size :math:`h_0` and run
+experiments with decreasing :math:`h`: :math:`h_i=2^{-i}h_0`, :math:`i=1,2,\ldots,m`.
+Halving the cell size in each experiment is not necessary, but common.
+For each experiment we must record a scalar measure of the error.
+As will be shown later, it is expected that such error measures
+are proportional to :math:`h^2`.
+A standard choice of error measure
+is the :math:`\ell^2` or :math:`\ell^\infty` norm of
+the error mesh function :math:`e^n_i`:
+
+.. math::
+        
+        ||e^n_i||_{\ell^2} = \left( \Delta t\Delta x\sum_{n=0}^{N_t}\sum_{i=0}^{N_x}
+        (e^n_i)^2\right)^{\frac{1}{2}},\quad e^n_i = {u_{\small\mbox{e}}}(x_i,t_n)-u^n_i,
+        
+        
+
+.. math::
+          
+        ||e^n_i||_{\ell^\infty} = \max_{i,n} |e^i_n|{\thinspace .}
+        
+
+In Python, one can compute :math:`\sum_{i}(e^{n+1}_i)^2` at each time step
+and accumulate the value in some sum variable, say ``e2_sum``.  At the
+final time step one can do ``sqrt(dt*dx*e2_sum)``.  For the
+:math:`\ell^\infty` norm one must compare the maximum error at a time level
+(``e.max()``) with the global maximum over the time domain: ``e_max =
+max(e_max, e.max())``.
+
+An alternative error measure
+is to use a spatial norm at one time step only, e.g.,
+the end time :math:`T`:
+
+.. math::
+        
+        ||e^n_i||_{\ell^2} = \left( \Delta x\sum_{i=0}^{N_x}
+        (e^n_i)^2\right)^{\frac{1}{2}},\quad e^n_i = {u_{\small\mbox{e}}}(x_i,t_n)-u^n_i,
+        
+        
+
+.. math::
+          
+        ||e^n_i||_{\ell^\infty} = \max_{0\leq i\leq N_x} |e^i_{n}|{\thinspace .}
+        
+
+Let :math:`E_i` be the error measure in experiment (mesh) number :math:`i` and
+let :math:`h_i` be the corresponding discretization parameter (:math:`h`).
+We expect an error model :math:`E_i = Ch_i^r`, here with :math:`r=0`. To
+estimate :math:`r`, we can compare two consecutive
+experiments and compute
+
+.. math::
+         r_i = \frac{\ln E_{i+1}/E_{i}}{\ln h_{i+1}/h_{i}},\quad i=0,\ldots,m-1{\thinspace .}
+        
+
+We should observe that :math:`r_i` approaches :math:`2` as :math:`i` increases.
+
+The next section describes a method of manufactured solutions where
+do not need to compute error measures and check that they converge
+as expected as the mesh is refined.
+
+.. _wave:pde2:fd:verify:quadratic:
+
+Constructing an exact solution of the discrete equations
+--------------------------------------------------------
+
+For verification purposes we shall use a solution that is quadratic in space
+and linear in time. More specifically, our choice of the manufactured
+solution is
+
+.. _Eq:wave:pde2:fd:verify:quadratic:uex:
+
+.. math::
+   :label: wave:pde2:fd:verify:quadratic:uex
+        
+        {u_{\small\mbox{e}}} (x,t) = x(L-x)(1+{\frac{1}{2}}t),
+        
+        
+
+which by insertion in the PDE leads to :math:`f(x,t)=2(1+t)c^2`. This :math:`{u_{\small\mbox{e}}}`
+fulfills the boundary conditions and is compatible with :math:`I(x)=x(L-x)`
+and :math:`V(x)={\frac{1}{2}}x(L-x)`.
+
+A key feature of the chosen :math:`{u_{\small\mbox{e}}}` is that it is also *an exact
+solution of the discrete equations*. To realize this very important
+result, we first establish the results
+
+.. math::
+        
+        \lbrack D_tD_t t^2\rbrack^n = \frac{t_{n+1}^2 - 2t_n^2 + t_{n-1}^2}{\Delta t^2}
+        = (n+1)^2 -n^2 + (n-1)^2 = 2,
+        
+
+.. math::
+          
+        \lbrack D_tD_t t\rbrack^n = \frac{t_{n+1} - 2t_n + t_{n-1}}{\Delta t^2}
+        = \frac{((n+1) -n + (n-1))\Delta t}{\Delta t^2} = 0
+        {\thinspace .}
+        
+
+Hence,
+
+.. math::
+         [D_tD_t {u_{\small\mbox{e}}}]^n_i = x_i(L-x_i)[D_tD_t (1+{\frac{1}{2}}t)]^n =
+        x_i(L-x_i){\frac{1}{2}}[D_tD_t t]^n = 0,
+
+and
+
+.. math::
+        
+        \lbrack D_xD_x {u_{\small\mbox{e}}}\rbrack^n_i &=
+        (1+{\frac{1}{2}}t_n)\lbrack D_xD_x (xL-x^2)\rbrack_i =
+        (1+{\frac{1}{2}}t_n)\lbrack LD_xD_x x - D_xD_x x^2\rbrack_i \\ 
+        &= -2(1+{\frac{1}{2}}t_n)
+        {\thinspace .}
+        
+
+Now, :math:`f^n_i = 2(1+{\frac{1}{2}}t_n)c^2` and we get
+
+.. math::
+         [D_tD_t {u_{\small\mbox{e}}} - c^2D_xD_x{u_{\small\mbox{e}}} - f]^n_i = 0 - c^2(-1)2(1 + {\frac{1}{2}}t_n
+        + 2(1+{\frac{1}{2}}t_n)c^2 = 0{\thinspace .}
+
+Moreover, :math:`{u_{\small\mbox{e}}}(x_i,0)=I(x_i)`,
+:math:`\partial {u_{\small\mbox{e}}}/\partial t = V(x_i)` at :math:`t=0`, and
+:math:`{u_{\small\mbox{e}}}(x_0,t)={u_{\small\mbox{e}}}(x_{N_x},0)=0`. Also the modified scheme for the
+first time step is fulfilled by :math:`{u_{\small\mbox{e}}}(x_i,t_n)`.
+
+Therefore, the exact solution :math:`{u_{\small\mbox{e}}}(x,t)=x(L-x)(1+t/2)`
+of the PDE problem is also an exact solution of the discrete problem.
+We can use this result to check that the computed :math:`u^n_i` vales from
+an implementation equals :math:`{u_{\small\mbox{e}}}(x_i,t_n)` within machine precision,
+*regardless of the mesh spacings* :math:`\Delta x` and :math:`\Delta t`!
+Nevertheless, there might be stability
+restrictions on :math:`\Delta x` and :math:`\Delta t`, so the test can only be
+run for a mesh that is compatible with the stability criterion (which
+in the present case is :math:`C\leq 1`, to be derived later).
+
+
+.. note::
+   A product of quadratic or linear expressions in the various
+   independent variables, as shown above, will often fulfill both the
+   continuous and discrete PDE problem and can therefore be very useful
+   solutions for verifying implementations.  However, for 1D wave
+   equations of the type :math:`u_t=c^2u_{xx}` we shall see that there is always
+   another much more powerful way of generating exact
+   solutions (just set :math:`C=1`).
+
+
+
+

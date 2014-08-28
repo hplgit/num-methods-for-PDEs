@@ -1,0 +1,657 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Simulation of waves on a string</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Finite difference methods for wave motion" href="index.html" />
+    <link rel="next" title="Implementation (1)" href="._main_wave002.html" />
+    <link rel="prev" title="Finite difference methods for wave motion" href="._main_wave000.html" />
+ 
+  
+   <style type="text/css">
+     div.admonition {
+       background-color: whiteSmoke;
+       border: 1px solid #bababa;
+     }
+   </style>
+  </head>
+
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_wave002.html" title="Implementation (1)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="._main_wave000.html" title="Finite difference methods for wave motion"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Finite difference methods for wave motion</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <p>A very wide range of physical processes lead to wave motion, where
+signals are propagated through a medium in space and time, normally
+with little or no permanent movement of the medium itself.
+The shape of the signals may undergo changes as they travel through
+matter, but usually not so much that the signals cannot be recognized
+at some later point in space and time.
+Many types of wave motion can be described by the equation
+<span class="math">\(u_{tt}=\nabla\cdot (c^2\nabla u) + f\)</span>, which we will solve
+in the forthcoming text by finite difference methods.</p>
+<div class="section" id="simulation-of-waves-on-a-string">
+<span id="wave-string"></span><h1>Simulation of waves on a string<a class="headerlink" href="#simulation-of-waves-on-a-string" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="index-0"></span><p id="index-1">We begin our study of wave equations by simulating one-dimensional
+waves on a string, say on a guitar or violin string.
+Let the string in the deformed state
+coincide with the interval
+<span class="math">\([0,L]\)</span> on the <span class="math">\(x\)</span> axis, and let <span class="math">\(u(x,t)\)</span> be the displacement at
+time <span class="math">\(t\)</span> in the <span class="math">\(y\)</span> direction of a point initially at <span class="math">\(x\)</span>.
+The displacement function <span class="math">\(u\)</span> is governed by the mathematical model</p>
+<div class="math" id="equation-wave:pde1">
+<span id="eq-wave-pde1"></span><span class="eqno">(1)</span>\[     \frac{\partial^2 u}{\partial t^2} =
+     c^2 \frac{\partial^2 u}{\partial x^2}, \quad x\in (0,L),\ t\in (0,T]\]</div>
+<div class="math" id="equation-wave:pde1:ic:u">
+<span id="eq-wave-pde1-ic-u"></span><span class="eqno">(2)</span>\[     u(x,0) = I(x), \quad x\in [0,L]\]</div>
+<div class="math" id="equation-wave:pde1:ic:ut">
+<span id="eq-wave-pde1-ic-ut"></span><span class="eqno">(3)</span>\[     \frac{\partial}{\partial t}u(x,0) = 0, \quad x\in [0,L]\]</div>
+<div class="math" id="equation-wave:pde1:bc:0">
+<span id="eq-wave-pde1-bc-0"></span><span class="eqno">(4)</span>\[     u(0,t)  = 0, \quad  t\in (0,T]\]</div>
+<div class="math" id="equation-wave:pde1:bc:L">
+<span id="eq-wave-pde1-bc-l"></span><span class="eqno">(5)</span>\[     u(L,t)  = 0, \quad  t\in (0,T]\]</div>
+<p>The constant <span class="math">\(c\)</span> and the function <span class="math">\(I(x)\)</span> must be prescribed.</p>
+<p>Equation <a href="#equation-wave:pde1">(1)</a> is known as the one-dimensional
+<em>wave equation</em>. Since this PDE contains a second-order derivative
+in time, we need <em>two initial conditions</em>, here <a href="#equation-wave:pde1:ic:u">(2)</a>
+specifying the initial shape of the string, <span class="math">\(I(x)\)</span>, and
+<a href="#equation-wave:pde1:ic:ut">(3)</a> reflecting that the initial velocity of the
+string is zero. In addition, PDEs need <em>boundary conditions</em>, here
+<a href="#equation-wave:pde1:bc:0">(4)</a> and <a href="#equation-wave:pde1:bc:L">(5)</a>, specifying that
+the string is fixed at the ends, i.e., that the displacement <span class="math">\(u\)</span> is zero.</p>
+<p>The solution <span class="math">\(u(x,t)\)</span> varies in space and time and describes waves that
+are moving with velocity <span class="math">\(c\)</span> to the left and right.</p>
+<div>
+<video  loop controls width='640' height='365' preload='none'>
+    <source src="_static/mov-wave/guitar_C0.8/movie.webm" type='video/webm; codecs="vp8, vorbis"'>
+    <source src="_static/mov-wave/guitar_C0.8/movie.ogg"  type='video/ogg;  codecs="theora, vorbis"'>
+</video>
+</div>
+<p><em>Example of waves on a string.</em></p><p>Sometimes we will use a more compact notation for the partial derivatives
+to save space:</p>
+<div class="math">
+\[u_t = \frac{\partial u}{\partial t}, \quad
+u_{tt} = \frac{\partial^2 u}{\partial t^2},\]</div>
+<p>and similar expressions
+for derivatives with respect to other variables. Then the
+wave equation can be written compactly as <span class="math">\(u_{tt} = c^2u_{xx}\)</span>.</p>
+<p id="index-2">The PDE problem <a href="#equation-wave:pde1">(1)</a>-<a href="#equation-wave:pde1:bc:L">(5)</a> will now be
+discretized in space and time by a finite difference method.</p>
+<div class="section" id="discretizing-the-domain">
+<span id="wave-string-mesh"></span><span id="index-3"></span><h2>Discretizing the domain<a class="headerlink" href="#discretizing-the-domain" title="Permalink to this headline">¶</a></h2>
+<p>The temporal domain <span class="math">\([0,T]\)</span> is represented by a finite number of mesh points</p>
+<div class="math">
+\[\begin{split}0 = t_0 &lt; t_1 &lt; t_2 &lt; \cdots &lt; t_{N_t-1} &lt; t_{N_t} = T {\thinspace .}\end{split}\]</div>
+<p>Similarly, the spatial domain <span class="math">\([0,L]\)</span> is replaced by a set of mesh points</p>
+<div class="math">
+\[\begin{split}0 = x_0 &lt; x_1 &lt; x_2 &lt; \cdots &lt; x_{N_x-1} &lt; x_{N_x} = L {\thinspace .}\end{split}\]</div>
+<p>One may view the mesh as two-dimensional in the <span class="math">\(x,t\)</span> plane, consisting
+of points <span class="math">\((x_i, t_n)\)</span>, with <span class="math">\(i=0,\ldots,N_x\)</span> and <span class="math">\(n=0,\ldots,N_t\)</span>.</p>
+<div class="section" id="uniform-meshes">
+<h3>Uniform meshes<a class="headerlink" href="#uniform-meshes" title="Permalink to this headline">¶</a></h3>
+<p>For uniformly distributed mesh points we can introduce the constant
+mesh spacings <span class="math">\(\Delta t\)</span> and <span class="math">\(\Delta x\)</span>. We have that</p>
+<div class="math">
+\[x_i = i\Delta x,\ i=0,\ldots,N_x,\quad
+t_i = n\Delta t,\ n=0,\ldots,N_t{\thinspace .}\]</div>
+<p>We also have that <span class="math">\(\Delta x = x_i-x_{i-1}\)</span>, <span class="math">\(i=1,\ldots,N_x\)</span>, and
+<span class="math">\(\Delta t = t_n - t_{n-1}\)</span>, <span class="math">\(n=1,\ldots,N_t\)</span>. Figure <a class="reference internal" href="#wave-pde1-fig-mesh"><em>Mesh in space and time for a 1D wave equation</em></a>
+displays a mesh in the <span class="math">\(x,t\)</span> plane with <span class="math">\(N_t=5\)</span>, <span class="math">\(N_x=5\)</span>, and constant
+mesh spacings.</p>
+</div>
+</div>
+<div class="section" id="the-discrete-solution">
+<span id="wave-string-numerical-sol"></span><h2>The discrete solution<a class="headerlink" href="#the-discrete-solution" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-4"></span><p id="index-5">The solution <span class="math">\(u(x,t)\)</span> is sought at the mesh points. We introduce
+the mesh function <span class="math">\(u_i^n\)</span>, which approximates the exact
+solution at the
+mesh point <span class="math">\((x_i,t_n)\)</span> for <span class="math">\(i=0,\ldots,N_x\)</span> and <span class="math">\(n=0,\ldots,N_t\)</span>.
+Using the finite difference method, we shall
+develop algebraic equations for computing the mesh function.
+The circles in Figure
+<a class="reference internal" href="#wave-pde1-fig-mesh"><em>Mesh in space and time for a 1D wave equation</em></a> illustrate neighboring mesh points where
+values of <span class="math">\(u^n_i\)</span> are connected through an algebraic equation. In this
+particular case, <span class="math">\(u_2^1\)</span>, <span class="math">\(u_1^2\)</span>, <span class="math">\(u_2^2\)</span>, <span class="math">\(u_3^2\)</span>, and <span class="math">\(u_2^3\)</span> are
+connected in an algebraic equation associated with the center point
+<span class="math">\((2,2)\)</span>. The term <em>stencil</em> is often used about the algebraic equation
+at a mesh point, and the geometry of a typical stencil is
+illustrated in Figure <a class="reference internal" href="#wave-pde1-fig-mesh"><em>Mesh in space and time for a 1D wave equation</em></a>. One also often refers
+to the algebraic equations as <em>discrete equations</em>,
+<em>(finite) difference equations</em> or a <em>finite difference
+scheme</em>.</p>
+<div class="figure" id="wave-pde1-fig-mesh">
+<a class="reference internal image-reference" href="_images/stencil_n_interior.png"><img alt="_images/stencil_n_interior.png" src="_images/stencil_n_interior.png" style="width: 500px;" /></a>
+<p class="caption"><em>Mesh in space and time for a 1D wave equation</em></p>
+</div>
+</div>
+<div class="section" id="fulfilling-the-equation-at-the-mesh-points">
+<span id="wave-string-samplingpde"></span><h2>Fulfilling the equation at the mesh points<a class="headerlink" href="#fulfilling-the-equation-at-the-mesh-points" title="Permalink to this headline">¶</a></h2>
+<p>For a numerical solution by the finite difference method, we relax
+the condition that <a href="#equation-wave:pde1">(1)</a> holds at all points in
+the space-time domain <span class="math">\((0,L)\times (0,T]\)</span> to the requirement that the PDE is
+fulfilled at the <em>interior</em> mesh points:</p>
+<div class="math" id="equation-wave:pde1:step2">
+<span id="eq-wave-pde1-step2"></span><span class="eqno">(6)</span>\[     \frac{\partial^2}{\partial t^2} u(x_i, t_n) =
+     c^2\frac{\partial^2}{\partial x^2} u(x_i, t_n),\]</div>
+<p>for <span class="math">\(i=1,\ldots,N_x-1\)</span> and <span class="math">\(n=1,\ldots,N_t-1\)</span>. For <span class="math">\(n=0\)</span> we have
+the initial conditions <span class="math">\(u=I(x)\)</span> and <span class="math">\(u_t=0\)</span>,
+and at the boundaries <span class="math">\(i=0,N_x\)</span> we
+have the boundary condition <span class="math">\(u=0\)</span>.</p>
+</div>
+<div class="section" id="replacing-derivatives-by-finite-differences">
+<span id="wave-string-fd"></span><h2>Replacing derivatives by finite differences<a class="headerlink" href="#replacing-derivatives-by-finite-differences" title="Permalink to this headline">¶</a></h2>
+<p>The second-order derivatives can be replaced by central
+differences. The most widely used difference approximation of
+the second-order derivative is</p>
+<div class="math">
+\[\frac{\partial^2}{\partial t^2}u(x_i,t_n)\approx
+\frac{u_i^{n+1} - 2u_i^n + u^{n-1}_i}{\Delta t^2}{\thinspace .}\]</div>
+<p>It is convenient to introduce the finite difference operator notation</p>
+<div class="math">
+\[[D_tD_t u]^n_i = \frac{u_i^{n+1} - 2u_i^n + u^{n-1}_i}{\Delta t^2}{\thinspace .}\]</div>
+<p>A similar approximation of the second-order derivative in the <span class="math">\(x\)</span>
+direction reads</p>
+<div class="math">
+\[\frac{\partial^2}{\partial x^2}u(x_i,t_n)\approx
+\frac{u_{i+1}^{n} - 2u_i^n + u^{n}_{i-1}}{\Delta x^2} = [D_xD_x u]^n_i
+{\thinspace .}\]</div>
+<div class="section" id="algebraic-version-of-the-pde">
+<h3>Algebraic version of the PDE<a class="headerlink" href="#algebraic-version-of-the-pde" title="Permalink to this headline">¶</a></h3>
+<p>We can now replace the derivatives in <a href="#equation-wave:pde1:step2">(6)</a>
+and get</p>
+<div class="math" id="equation-wave:pde1:step3b">
+<span id="eq-wave-pde1-step3b"></span><span class="eqno">(7)</span>\[     \frac{u_i^{n+1} - 2u_i^n + u^{n-1}_i}{\Delta t^2} =
+     c^2\frac{u_{i+1}^{n} - 2u_i^n + u^{n}_{i-1}}{\Delta x^2},\]</div>
+<p>or written more compactly using the operator notation:</p>
+<div class="math" id="equation-wave:pde1:step3a">
+<span id="eq-wave-pde1-step3a"></span><span class="eqno">(8)</span>\[     [D_tD_t u = c^2 D_xD_x]^{n}_i
+     {\thinspace .}\]</div>
+</div>
+<div class="section" id="algebraic-version-of-the-initial-conditions">
+<h3>Algebraic version of the initial conditions<a class="headerlink" href="#algebraic-version-of-the-initial-conditions" title="Permalink to this headline">¶</a></h3>
+<p>We also need to replace the derivative in the initial condition
+<a href="#equation-wave:pde1:ic:ut">(3)</a> by a finite difference approximation.
+A centered difference of the type</p>
+<div class="math">
+\[\frac{\partial}{\partial t} u(x_i,t_n)\approx
+\frac{u^1_i - u^{-1}_i}{2\Delta t} = [D_{2t} u]^0_i,\]</div>
+<p>seems appropriate. In operator notation the initial condition is
+written as</p>
+<div class="math">
+\[[D_{2t} u]^n_i = 0,\quad n=0 {\thinspace .}\]</div>
+<p>Writing out this equation and ordering the terms give</p>
+<div class="math" id="equation-wave:pde1:step3c">
+<span id="eq-wave-pde1-step3c"></span><span class="eqno">(9)</span>\[     u^{n-1}_i=u^{n+1}_i,\quad i=0,\ldots,N_x,\ n=0{\thinspace .}\]</div>
+<p>The other initial condition can be computed by</p>
+<div class="math">
+\[u_i^0 = I(x_i),\quad i=0,\ldots,N_x{\thinspace .}\]</div>
+</div>
+</div>
+<div class="section" id="formulating-a-recursive-algorithm">
+<span id="wave-string-alg"></span><h2>Formulating a recursive algorithm<a class="headerlink" href="#formulating-a-recursive-algorithm" title="Permalink to this headline">¶</a></h2>
+<p>We assume that <span class="math">\(u^n_i\)</span> and
+<span class="math">\(u^{n-1}_i\)</span> are already computed for <span class="math">\(i=0,\ldots,N_x\)</span>.
+The only unknown quantity in <a href="#equation-wave:pde1:step3b">(7)</a> is
+therefore <span class="math">\(u^{n+1}_i\)</span>, which we can solve for:</p>
+<div class="math" id="equation-wave:pde1:step4">
+<span id="eq-wave-pde1-step4"></span><span class="eqno">(10)</span>\[     u^{n+1}_i = -u^{n-1}_i + 2u^n_i + C^2
+     \left(u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}\right),\]</div>
+<p>where we have introduced the parameter</p>
+<div class="math">
+\[C = c\frac{\Delta t}{\Delta x},\]</div>
+<p>known as the <em>Courant number</em>.</p>
+<div class="admonition-math-c-is-the-key-parameter-in-the-discrete-diffusion-equation admonition">
+<p class="first admonition-title"><span class="math">\(C\)</span> is the key parameter in the discrete diffusion equation</p>
+<p class="last">We see that the
+discrete version of the PDE features only one parameter, <span class="math">\(C\)</span>,
+which is therefore the key parameter that governs the
+quality of the numerical solution (see the section <a class="reference internal" href="._main_wave004.html#wave-pde1-analysis"><em>Analysis of the difference equations</em></a>
+for details). Both the primary
+physical parameter <span class="math">\(c\)</span> and the numerical parameters <span class="math">\(\Delta x\)</span> and <span class="math">\(\Delta t\)</span>
+are lumped together in <span class="math">\(C\)</span>. Note that <span class="math">\(C\)</span> is a dimensionless
+parameter.</p>
+</div>
+<p>Given that <span class="math">\(u^{n-1}_i\)</span> and <span class="math">\(u^n_i\)</span> are computed for <span class="math">\(i=0,\ldots,N_x\)</span>,
+we find new values at the next time level by applying the formula
+<a href="#equation-wave:pde1:step4">(10)</a> for <span class="math">\(i=1,\ldots,N_x-1\)</span>. Figure
+<a class="reference internal" href="#wave-pde1-fig-mesh"><em>Mesh in space and time for a 1D wave equation</em></a> illustrates the points that are used to
+compute <span class="math">\(u^3_2\)</span>. For the boundary points, <span class="math">\(i=0\)</span> and <span class="math">\(i=N_x\)</span>, we apply
+the boundary conditions <span class="math">\(u_i^{n+1}=0\)</span>.</p>
+<p>A problem with <a href="#equation-wave:pde1:step4">(10)</a> arises when <span class="math">\(n=0\)</span> since the
+formula for <span class="math">\(u^1_i\)</span> involves <span class="math">\(u^{-1}_i\)</span>, which is an undefined
+quantity outside the time mesh (and the time domain). However, we can
+use the initial condition <a href="#equation-wave:pde1:step3c">(9)</a> in combination with
+<a href="#equation-wave:pde1:step4">(10)</a> when <span class="math">\(n=0\)</span> to arrive at a special formula for
+<span class="math">\(u_i^1\)</span>:</p>
+<div class="math" id="equation-wave:pde1:step4:1">
+<span id="eq-wave-pde1-step4-1"></span><span class="eqno">(11)</span>\[     u_i^1 = u^0_i - \frac{1}{2}
+     C^2\left(u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}\right)
+     {\thinspace .}\]</div>
+<p>Figure <a class="reference internal" href="#wave-pde1-fig-stencil-u1"><em>Modified stencil for the first time step</em></a> illustrates how <a href="#equation-wave:pde1:step4:1">(11)</a>
+connects four instead of five points: <span class="math">\(u^1_2\)</span>, <span class="math">\(u_1^0\)</span>, <span class="math">\(u_2^0\)</span>, and <span class="math">\(u_3^0\)</span>.</p>
+<div class="figure" id="wave-pde1-fig-stencil-u1">
+<a class="reference internal image-reference" href="_images/stencil_n0_interior.png"><img alt="_images/stencil_n0_interior.png" src="_images/stencil_n0_interior.png" style="width: 500px;" /></a>
+<p class="caption"><em>Modified stencil for the first time step</em></p>
+</div>
+<p>We can now summarize the computational algorithm:</p>
+<ol class="arabic simple">
+<li>Compute <span class="math">\(u^0_i=I(x_i)\)</span> for <span class="math">\(i=0,\ldots,N_x\)</span></li>
+<li>Compute <span class="math">\(u^1_i\)</span> by <a href="#equation-wave:pde1:step4:1">(11)</a> and set <span class="math">\(u_i^1=0\)</span>
+for the boundary points <span class="math">\(i=0\)</span> and <span class="math">\(i=N_x\)</span>, for <span class="math">\(n=1,2,\ldots,N-1\)</span>,</li>
+<li>For each time level <span class="math">\(n=1,2,\ldots,N_t-1\)</span></li>
+</ol>
+<blockquote>
+<div><ol class="arabic simple">
+<li>apply <a href="#equation-wave:pde1:step4">(10)</a> to find <span class="math">\(u^{n+1}_i\)</span> for <span class="math">\(i=1,\ldots,N_x-1\)</span></li>
+<li>set <span class="math">\(u^{n+1}_i=0\)</span> for the boundary points <span class="math">\(i=0\)</span>, <span class="math">\(i=N_x\)</span>.</li>
+</ol>
+</div></blockquote>
+<p>The algorithm essentially consists of moving
+a finite difference stencil through all the mesh points, which is
+illustrated by an animation in a <a class="reference external" href="http://tinyurl.com/k3sdbuv/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/index.html">web page</a>
+or a <a class="reference external" href="http://tinyurl.com/k3sdbuv/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/movie.ogg">movie file</a>.</p>
+</div>
+<div class="section" id="sketch-of-an-implementation">
+<span id="wave-string-impl"></span><h2>Sketch of an implementation<a class="headerlink" href="#sketch-of-an-implementation" title="Permalink to this headline">¶</a></h2>
+<p>In a Python implementation of this algorithm, we use the array
+elements <tt class="docutils literal"><span class="pre">u[i]</span></tt> to store <span class="math">\(u^{n+1}_i\)</span>, <tt class="docutils literal"><span class="pre">u_1[i]</span></tt> to store <span class="math">\(u^n_i\)</span>, and
+<tt class="docutils literal"><span class="pre">u_2[i]</span></tt> to store <span class="math">\(u^{n-1}_i\)</span>. Our naming convention is use <tt class="docutils literal"><span class="pre">u</span></tt> for the
+unknown new spatial field to be computed, <tt class="docutils literal"><span class="pre">u_1</span></tt> as the solution at
+one time step back in time, <tt class="docutils literal"><span class="pre">u_2</span></tt> as the solution two time steps back
+in time and so forth.</p>
+<p>The algorithm only needs to access the
+three most recent time levels, so we need only three arrays for
+<span class="math">\(u_i^{n+1}\)</span>, <span class="math">\(u_i^n\)</span>, and <span class="math">\(u_i^{n-1}\)</span>, <span class="math">\(i=0,\ldots,N_x\)</span>.  Storing all
+the solutions in a two-dimensional array of size <span class="math">\((N_x+1)\times (N_t+1)\)</span>
+would be possible in this simple one-dimensional PDE problem, but is
+normally out of the question in three-dimensional (3D) and large
+two-dimensional (2D) problems. We shall therefore in all our programs
+for solving PDEs have the unknown in memory at as few time levels as
+possible.</p>
+<p>The following Python snippet realizes the steps in the computational
+algorithm.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Given mesh points as arrays x and t (x[i], t[n])</span>
+<span class="n">dx</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">c</span><span class="o">*</span><span class="n">dt</span><span class="o">/</span><span class="n">dx</span>            <span class="c"># Courant number</span>
+<span class="n">Nt</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">C2</span> <span class="o">=</span> <span class="n">C</span><span class="o">**</span><span class="mi">2</span>              <span class="c"># Help variable in the scheme</span>
+
+<span class="c"># Set initial condition u(x,0) = I(x)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Nx</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">I</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+<span class="c"># Apply special formula for first step, incorporating du/dt=0</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Nx</span><span class="p">):</span>
+    <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">C</span><span class="o">**</span><span class="mi">2</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="n">u</span><span class="p">[</span><span class="n">Nx</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>   <span class="c"># Enforce boundary conditions</span>
+
+<span class="c"># Switch variables before next step</span>
+<span class="n">u_2</span><span class="p">[:],</span> <span class="n">u_1</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">u_1</span><span class="p">,</span> <span class="n">u</span>
+
+<span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Nt</span><span class="p">):</span>
+    <span class="c"># Update all inner mesh points at time t[n+1]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Nx</span><span class="p">):</span>
+        <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">u_2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> \
+               <span class="n">C</span><span class="o">**</span><span class="mi">2</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="c"># Insert boundary conditions</span>
+    <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="n">u</span><span class="p">[</span><span class="n">Nx</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c"># Switch variables before next step</span>
+    <span class="n">u_2</span><span class="p">[:],</span> <span class="n">u_1</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">u_1</span><span class="p">,</span> <span class="n">u</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="verification-1">
+<h1>Verification  (1)<a class="headerlink" href="#verification-1" title="Permalink to this headline">¶</a></h1>
+<p>Before implementing the algorithm, it is convenient to add a source
+term to the PDE <a href="#equation-wave:pde1">(1)</a>
+since it gives us more freedom in finding test problems for
+verification. In particular, the source term allows us to use
+<em>manufactured solutions</em> for software testing, where we simply choose some
+function as solution, fit the corresponding source term, and define
+boundary and initial conditions consistent with the chosen
+solution. Such solutions
+will seldom fulfill the initial condition <a href="#equation-wave:pde1:ic:ut">(3)</a> so
+we need to generalize this condition to <span class="math">\(u_t=V(x)\)</span>.</p>
+<div class="section" id="a-slightly-generalized-model-problem">
+<span id="wave-pde2-fd"></span><h2>A slightly generalized model problem<a class="headerlink" href="#a-slightly-generalized-model-problem" title="Permalink to this headline">¶</a></h2>
+<p>We now address the following extended initial-boundary value problem
+for one-dimensional wave phenomena:</p>
+<div class="math" id="equation-wave:pde2">
+<span id="eq-wave-pde2"></span><span class="eqno">(12)</span>\[     u_{tt} = c^2 u_{xx} + f(x,t), \quad x\in (0,L),\ t\in (0,T]\]</div>
+<div class="math" id="equation-wave:pde2:ic:u">
+<span id="eq-wave-pde2-ic-u"></span><span class="eqno">(13)</span>\[     u(x,0) = I(x), \quad x\in [0,L]\]</div>
+<div class="math" id="equation-wave:pde2:ic:ut">
+<span id="eq-wave-pde2-ic-ut"></span><span class="eqno">(14)</span>\[     u_t(x,0) = V(x), \quad x\in [0,L]\]</div>
+<div class="math" id="equation-wave:pde2:bc:0">
+<span id="eq-wave-pde2-bc-0"></span><span class="eqno">(15)</span>\[\begin{split}     u(0,t)  = 0, \quad  t&gt;0\end{split}\]</div>
+<div class="math" id="equation-wave:pde2:bc:L">
+<span id="eq-wave-pde2-bc-l"></span><span class="eqno">(16)</span>\[\begin{split}     u(L,t)  = 0, \quad  t&gt;0\end{split}\]</div>
+<p>Sampling the PDE at <span class="math">\((x_i,t_n)\)</span> and using the same finite difference
+approximations as above, yields</p>
+<div class="math" id="equation-wave:pde2:fdop">
+<span id="eq-wave-pde2-fdop"></span><span class="eqno">(17)</span>\[     [D_tD_t u = c^2 D_xD_x + f]^{n}_i
+     {\thinspace .}\]</div>
+<p>Writing this out and solving for the unknown <span class="math">\(u^{n+1}_i\)</span> results in</p>
+<div class="math" id="equation-wave:pde2:step3b">
+<span id="eq-wave-pde2-step3b"></span><span class="eqno">(18)</span>\[     u^{n+1}_i = -u^{n-1}_i + 2u^n_i + C^2
+     (u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}) + \Delta t^2 f^n_i\]\[     {\thinspace .}\]</div>
+<p>The equation for the first time step must be rederived. The discretization
+of the initial condition <span class="math">\(u_t = V(x)\)</span> at <span class="math">\(t=0\)</span>
+becomes</p>
+<div class="math">
+\[[D_{2t}u = V]^0_i\quad\Rightarrow\quad u^{-1}_i = u^{1}_i - 2\Delta t V_i,\]</div>
+<p>which, when inserted in <a href="#equation-wave:pde2:step3b">(18)</a> for <span class="math">\(n=0\)</span>, gives
+the special formula</p>
+<div class="math" id="equation-wave:pde2:step3c">
+<span id="eq-wave-pde2-step3c"></span><span class="eqno">(19)</span>\[     u^{1}_i = u^0_i - \Delta t V_i + {\frac{1}{2}}
+     C^2
+     \left(u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}\right) + \frac{1}{2}\Delta t^2 f^n_i\]\[     {\thinspace .}\]</div>
+</div>
+<div class="section" id="using-an-analytical-solution-of-physical-significance">
+<span id="wave-pde2-fd-standing-waves"></span><h2>Using an analytical solution of physical significance<a class="headerlink" href="#using-an-analytical-solution-of-physical-significance" title="Permalink to this headline">¶</a></h2>
+<p>Many wave problems feature sinusoidal oscillations in time
+and space. For example, the original PDE problem
+<a href="#equation-wave:pde1">(1)</a>-<a href="#equation-wave:pde1:bc:L">(5)</a> allows a solution</p>
+<div class="math" id="equation-wave:pde2:test:ue">
+<span id="eq-wave-pde2-test-ue"></span><span class="eqno">(20)</span>\[     {u_{\small\mbox{e}}}(x,y,t)) = A\sin\left(\frac{\pi}{L}x\right)
+     \cos\left(\frac{\pi}{L}ct\right){\thinspace .}\]</div>
+<p>This <span class="math">\({u_{\small\mbox{e}}}\)</span> fulfills the PDE with <span class="math">\(f=0\)</span>, boundary conditions
+<span class="math">\({u_{\small\mbox{e}}}(0,t)={u_{\small\mbox{e}}}(L,0)=0\)</span>, as well as initial
+conditions <span class="math">\(I(x)=A\sin\left(\frac{\pi}{L}x\right)\)</span> and <span class="math">\(V=0\)</span>.</p>
+<p>It is common to use such exact solutions of physical interest
+to verify implementations. However, the numerical
+solution <span class="math">\(u^n_i\)</span> will only be an approximation to <span class="math">\({u_{\small\mbox{e}}}(x_i,t_n)\)</span>.
+We no have knowledge of the precise size of the error in
+this approximation, and therefore we can never know if discrepancies
+between the computed <span class="math">\(u^n_i\)</span> and <span class="math">\({u_{\small\mbox{e}}}(x_i,t_n)\)</span> are caused
+by mathematical approximations or programming errors.
+In particular, if a plot of the computed solution <span class="math">\(u^n_i\)</span> and
+the exact one eq:ref:<cite>wave:pde2:test:ue</cite> looks similar, many
+are attempted to claim that the implementation works, but
+there can still be serious programming errors although color
+plots look nice.</p>
+<p>The only way to use exact physical solutions like
+<a href="#equation-wave:pde2:test:ue">(20)</a> for serious and thorough verification is to
+run a series of finer and finer meshes, measure the integrated error
+in each mesh, and from this information estimate the convergence
+rate. If these rates are very close to 2, we have strong evidence that
+the implementation works.</p>
+</div>
+<div class="section" id="manufactured-solution">
+<span id="wave-pde2-fd-mms"></span><h2>Manufactured solution<a class="headerlink" href="#manufactured-solution" title="Permalink to this headline">¶</a></h2>
+<p>One problem with the exact solution <a href="#equation-wave:pde2:test:ue">(20)</a> is
+that it requires a simplification (<span class="math">\(V=0, f=0\)</span>) of the implemented problem
+<a href="#equation-wave:pde2">(12)</a>-<a href="#equation-wave:pde2:bc:L">(16)</a>. An advantage of using
+a manufactured solution is that we can test all terms in the
+PDE problem. The idea of this approach is to set up some chosen
+solution and fit the source term, boundary conditions, and initial
+conditions to be compatible with the chosen solution.
+Given that our boundary conditions in the implementation are
+<span class="math">\(u(0,t)=u(L,t)=0\)</span>, we must choose a solution that fulfills these
+conditions. One example is</p>
+<div class="math">
+\[{u_{\small\mbox{e}}}(x,t) = x(L-x)\sin t{\thinspace .}\]</div>
+<p>Inserted in the PDE <span class="math">\(u_{tt}=c^2u_{xx}+f\)</span> we get</p>
+<div class="math">
+\[-x(L-x)\sin t = -2\sin t + f\quad\Rightarrow f = (2 - x(L-x))\sin t{\thinspace .}\]</div>
+<p>The initial conditions become</p>
+<div class="math">
+\[\begin{split}u(x,0) =&amp; I(x) = 0,\\
+u_t(x,0) &amp;= V(x) = (2 - x(L-x))\cos t{\thinspace .}\end{split}\]</div>
+<p>To verify the code, we run a series of refined meshes and compute
+the convergence rates. In more detail, we keep <span class="math">\(\Delta t/\Delta x\)</span>
+constant for each mesh, implying that <span class="math">\(C\)</span> is also constant throughout
+the experiments. A common discretization parameter
+<span class="math">\(h = \Delta t\)</span> is introduced. For a given <span class="math">\(C\)</span> (and <span class="math">\(c\)</span>), <span class="math">\(\Delta x
+ch/C\)</span>. We choose an initial time cell size <span class="math">\(h_0\)</span> and run
+experiments with decreasing <span class="math">\(h\)</span>: <span class="math">\(h_i=2^{-i}h_0\)</span>, <span class="math">\(i=1,2,\ldots,m\)</span>.
+Halving the cell size in each experiment is not necessary, but common.
+For each experiment we must record a scalar measure of the error.
+As will be shown later, it is expected that such error measures
+are proportional to <span class="math">\(h^2\)</span>.
+A standard choice of error measure
+is the <span class="math">\(\ell^2\)</span> or <span class="math">\(\ell^\infty\)</span> norm of
+the error mesh function <span class="math">\(e^n_i\)</span>:</p>
+<div class="math">
+\[||e^n_i||_{\ell^2} = \left( \Delta t\Delta x\sum_{n=0}^{N_t}\sum_{i=0}^{N_x}
+(e^n_i)^2\right)^{\frac{1}{2}},\quad e^n_i = {u_{\small\mbox{e}}}(x_i,t_n)-u^n_i,\]</div>
+<div class="math">
+\[||e^n_i||_{\ell^\infty} = \max_{i,n} |e^i_n|{\thinspace .}\]</div>
+<p>In Python, one can compute <span class="math">\(\sum_{i}(e^{n+1}_i)^2\)</span> at each time step
+and accumulate the value in some sum variable, say <tt class="docutils literal"><span class="pre">e2_sum</span></tt>.  At the
+final time step one can do <tt class="docutils literal"><span class="pre">sqrt(dt*dx*e2_sum)</span></tt>.  For the
+<span class="math">\(\ell^\infty\)</span> norm one must compare the maximum error at a time level
+(<tt class="docutils literal"><span class="pre">e.max()</span></tt>) with the global maximum over the time domain: <tt class="docutils literal"><span class="pre">e_max</span> <span class="pre">=</span>
+<span class="pre">max(e_max,</span> <span class="pre">e.max())</span></tt>.</p>
+<p>An alternative error measure
+is to use a spatial norm at one time step only, e.g.,
+the end time <span class="math">\(T\)</span>:</p>
+<div class="math">
+\[||e^n_i||_{\ell^2} = \left( \Delta x\sum_{i=0}^{N_x}
+(e^n_i)^2\right)^{\frac{1}{2}},\quad e^n_i = {u_{\small\mbox{e}}}(x_i,t_n)-u^n_i,\]</div>
+<div class="math">
+\[||e^n_i||_{\ell^\infty} = \max_{0\leq i\leq N_x} |e^i_{n}|{\thinspace .}\]</div>
+<p>Let <span class="math">\(E_i\)</span> be the error measure in experiment (mesh) number <span class="math">\(i\)</span> and
+let <span class="math">\(h_i\)</span> be the corresponding discretization parameter (<span class="math">\(h\)</span>).
+We expect an error model <span class="math">\(E_i = Ch_i^r\)</span>, here with <span class="math">\(r=0\)</span>. To
+estimate <span class="math">\(r\)</span>, we can compare two consecutive
+experiments and compute</p>
+<div class="math">
+\[r_i = \frac{\ln E_{i+1}/E_{i}}{\ln h_{i+1}/h_{i}},\quad i=0,\ldots,m-1{\thinspace .}\]</div>
+<p>We should observe that <span class="math">\(r_i\)</span> approaches <span class="math">\(2\)</span> as <span class="math">\(i\)</span> increases.</p>
+<p>The next section describes a method of manufactured solutions where
+do not need to compute error measures and check that they converge
+as expected as the mesh is refined.</p>
+</div>
+<div class="section" id="constructing-an-exact-solution-of-the-discrete-equations">
+<span id="wave-pde2-fd-verify-quadratic"></span><h2>Constructing an exact solution of the discrete equations<a class="headerlink" href="#constructing-an-exact-solution-of-the-discrete-equations" title="Permalink to this headline">¶</a></h2>
+<p>For verification purposes we shall use a solution that is quadratic in space
+and linear in time. More specifically, our choice of the manufactured
+solution is</p>
+<div class="math" id="equation-wave:pde2:fd:verify:quadratic:uex">
+<span id="eq-wave-pde2-fd-verify-quadratic-uex"></span><span class="eqno">(21)</span>\[     {u_{\small\mbox{e}}} (x,t) = x(L-x)(1+{\frac{1}{2}}t),\]</div>
+<p>which by insertion in the PDE leads to <span class="math">\(f(x,t)=2(1+t)c^2\)</span>. This <span class="math">\({u_{\small\mbox{e}}}\)</span>
+fulfills the boundary conditions and is compatible with <span class="math">\(I(x)=x(L-x)\)</span>
+and <span class="math">\(V(x)={\frac{1}{2}}x(L-x)\)</span>.</p>
+<p>A key feature of the chosen <span class="math">\({u_{\small\mbox{e}}}\)</span> is that it is also <em>an exact
+solution of the discrete equations</em>. To realize this very important
+result, we first establish the results</p>
+<div class="math">
+\[\lbrack D_tD_t t^2\rbrack^n = \frac{t_{n+1}^2 - 2t_n^2 + t_{n-1}^2}{\Delta t^2}
+= (n+1)^2 -n^2 + (n-1)^2 = 2,\]</div>
+<div class="math">
+\[\lbrack D_tD_t t\rbrack^n = \frac{t_{n+1} - 2t_n + t_{n-1}}{\Delta t^2}
+= \frac{((n+1) -n + (n-1))\Delta t}{\Delta t^2} = 0
+{\thinspace .}\]</div>
+<p>Hence,</p>
+<div class="math">
+\[[D_tD_t {u_{\small\mbox{e}}}]^n_i = x_i(L-x_i)[D_tD_t (1+{\frac{1}{2}}t)]^n =
+x_i(L-x_i){\frac{1}{2}}[D_tD_t t]^n = 0,\]</div>
+<p>and</p>
+<div class="math">
+\[\begin{split}\lbrack D_xD_x {u_{\small\mbox{e}}}\rbrack^n_i &amp;=
+(1+{\frac{1}{2}}t_n)\lbrack D_xD_x (xL-x^2)\rbrack_i =
+(1+{\frac{1}{2}}t_n)\lbrack LD_xD_x x - D_xD_x x^2\rbrack_i \\
+&amp;= -2(1+{\frac{1}{2}}t_n)
+{\thinspace .}\end{split}\]</div>
+<p>Now, <span class="math">\(f^n_i = 2(1+{\frac{1}{2}}t_n)c^2\)</span> and we get</p>
+<div class="math">
+\[[D_tD_t {u_{\small\mbox{e}}} - c^2D_xD_x{u_{\small\mbox{e}}} - f]^n_i = 0 - c^2(-1)2(1 + {\frac{1}{2}}t_n
++ 2(1+{\frac{1}{2}}t_n)c^2 = 0{\thinspace .}\]</div>
+<p>Moreover, <span class="math">\({u_{\small\mbox{e}}}(x_i,0)=I(x_i)\)</span>,
+<span class="math">\(\partial {u_{\small\mbox{e}}}/\partial t = V(x_i)\)</span> at <span class="math">\(t=0\)</span>, and
+<span class="math">\({u_{\small\mbox{e}}}(x_0,t)={u_{\small\mbox{e}}}(x_{N_x},0)=0\)</span>. Also the modified scheme for the
+first time step is fulfilled by <span class="math">\({u_{\small\mbox{e}}}(x_i,t_n)\)</span>.</p>
+<p>Therefore, the exact solution <span class="math">\({u_{\small\mbox{e}}}(x,t)=x(L-x)(1+t/2)\)</span>
+of the PDE problem is also an exact solution of the discrete problem.
+We can use this result to check that the computed <span class="math">\(u^n_i\)</span> vales from
+an implementation equals <span class="math">\({u_{\small\mbox{e}}}(x_i,t_n)\)</span> within machine precision,
+<em>regardless of the mesh spacings</em> <span class="math">\(\Delta x\)</span> and <span class="math">\(\Delta t\)</span>!
+Nevertheless, there might be stability
+restrictions on <span class="math">\(\Delta x\)</span> and <span class="math">\(\Delta t\)</span>, so the test can only be
+run for a mesh that is compatible with the stability criterion (which
+in the present case is <span class="math">\(C\leq 1\)</span>, to be derived later).</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">A product of quadratic or linear expressions in the various
+independent variables, as shown above, will often fulfill both the
+continuous and discrete PDE problem and can therefore be very useful
+solutions for verifying implementations.  However, for 1D wave
+equations of the type <span class="math">\(u_t=c^2u_{xx}\)</span> we shall see that there is always
+another much more powerful way of generating exact
+solutions (just set <span class="math">\(C=1\)</span>).</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Simulation of waves on a string</a><ul>
+<li><a class="reference internal" href="#discretizing-the-domain">Discretizing the domain</a><ul>
+<li><a class="reference internal" href="#uniform-meshes">Uniform meshes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-discrete-solution">The discrete solution</a></li>
+<li><a class="reference internal" href="#fulfilling-the-equation-at-the-mesh-points">Fulfilling the equation at the mesh points</a></li>
+<li><a class="reference internal" href="#replacing-derivatives-by-finite-differences">Replacing derivatives by finite differences</a><ul>
+<li><a class="reference internal" href="#algebraic-version-of-the-pde">Algebraic version of the PDE</a></li>
+<li><a class="reference internal" href="#algebraic-version-of-the-initial-conditions">Algebraic version of the initial conditions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#formulating-a-recursive-algorithm">Formulating a recursive algorithm</a></li>
+<li><a class="reference internal" href="#sketch-of-an-implementation">Sketch of an implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#verification-1">Verification  (1)</a><ul>
+<li><a class="reference internal" href="#a-slightly-generalized-model-problem">A slightly generalized model problem</a></li>
+<li><a class="reference internal" href="#using-an-analytical-solution-of-physical-significance">Using an analytical solution of physical significance</a></li>
+<li><a class="reference internal" href="#manufactured-solution">Manufactured solution</a></li>
+<li><a class="reference internal" href="#constructing-an-exact-solution-of-the-discrete-equations">Constructing an exact solution of the discrete equations</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="._main_wave000.html"
+                        title="previous chapter">Finite difference methods for wave motion</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_wave002.html"
+                        title="next chapter">Implementation  (1)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_wave001.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_wave002.html" title="Implementation (1)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="._main_wave000.html" title="Finite difference methods for wave motion"
+             >previous</a> |</li>
+        <li><a href="index.html">Finite difference methods for wave motion</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

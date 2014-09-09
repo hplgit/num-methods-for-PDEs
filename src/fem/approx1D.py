@@ -216,10 +216,13 @@ collocation = interpolation  # synonym in this module
 
 def comparison_plot(f, u, Omega, filename='tmp',
                     plot_title='', ymin=None, ymax=None,
-                    u_legend='approximation'):
+                    u_legend='approximation',
+                    legend_loc='upper right',
+                    show=True):
     """Compare f(x) and u(x) for x in Omega in a plot."""
     x = sp.Symbol('x')
     print 'f:', f
+    print 'u:', u
 
     f = sp.lambdify([x], f, modules="numpy")
     u = sp.lambdify([x], u, modules="numpy")
@@ -234,25 +237,24 @@ def comparison_plot(f, u, Omega, filename='tmp',
     if not isinstance(Omega[1], (int,float)):
         Omega[1] = float(Omega[1].evalf())
 
-    resolution = 601  # no of points in plot
+    resolution = 601  # no of points in plot (high resolution)
     xcoor = np.linspace(Omega[0], Omega[1], resolution)
     # Vectorized functions expressions does not work with
     # lambdify'ed functions without the modules="numpy"
     exact  = f(xcoor)
     approx = u(xcoor)
+    plt.figure()
     plt.plot(xcoor, approx, '-')
-    plt.hold('on')
     plt.plot(xcoor, exact, '--')
-    plt.legend([u_legend, 'exact'])
+    plt.legend([u_legend, 'exact'], loc=legend_loc)
     plt.title(plot_title)
     plt.xlabel('x')
     if ymin is not None and ymax is not None:
         plt.axis([xcoor[0], xcoor[-1], ymin, ymax])
     plt.savefig(filename + '.pdf')
     plt.savefig(filename + '.png')
-    plt.show()
+    if show:
+        plt.show()
 
 if __name__ == '__main__':
     print 'Module file not meant for execution.'
-
-

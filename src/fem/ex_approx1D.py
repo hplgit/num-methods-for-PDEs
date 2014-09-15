@@ -55,9 +55,9 @@ def run_sines_leastsq_parabola(boundary_term=False):
         Omega = [0, 1]
         if boundary_term:
             f0 = 9; f1 = -1
-            term = f0*(1-x) + x*f1
-            u, c = least_squares_orth(f-term, psi, Omega)
-            u = u + term
+            b = f0*(1-x) + x*f1
+            u, c = least_squares_orth(f-b, psi, Omega)
+            u = u + b
         else:
             u, c = least_squares_orth(f, psi, Omega)
         plt.figure()

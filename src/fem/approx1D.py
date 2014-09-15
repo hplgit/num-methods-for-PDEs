@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 #import scitools.std as plt
 
-def least_squares(f, psi, Omega):
+def least_squares(f, psi, Omega, symbolic=True):
     """
     Given a function f(x) on an interval Omega (2-list)
     return the best approximation to f(x) in the space V
@@ -24,16 +24,18 @@ def least_squares(f, psi, Omega):
             print '(%d,%d)' % (i, j)
 
             integrand = psi[i]*psi[j]
-            I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
-            if isinstance(I, sp.Integral):
+            if symbolic:
+                I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
+            if not symbolic or isinstance(I, sp.Integral):
                 # Could not integrate symbolically, use numerical int.
                 print 'numerical integration of', integrand
                 integrand = sp.lambdify([x], integrand)
                 I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
             A[i,j] = A[j,i] = I
         integrand = psi[i]*f
-        I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
-        if isinstance(I, sp.Integral):
+        if symbolic:
+            I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
+        if not symbolic or isinstance(I, sp.Integral):
             # Could not integrate symbolically, use numerical int.
             print 'numerical integration of', integrand
             integrand = sp.lambdify([x], integrand)
@@ -79,7 +81,7 @@ def numerical_linsys_solve(A, b, floating_point_calc='sumpy'):
         print 'numpy.linalg.solve, %s:' % floating_point_calc, c
 
 
-def least_squares_orth(f, psi, Omega):
+def least_squares_orth(f, psi, Omega, symbolic=True):
     """
     Same as least_squares, but for orthogonal
     basis such that one avoids calling up standard
@@ -98,8 +100,9 @@ def least_squares_orth(f, psi, Omega):
         # Fallback on numerical integration if f*psi is too difficult
         # to integrate
         integrand = psi[i]*f
-        I = sp.integrate(integrand,  (x, Omega[0], Omega[1]))
-        if isinstance(I, sp.Integral):
+        if symbolic:
+            I = sp.integrate(integrand,  (x, Omega[0], Omega[1]))
+        if not symbolic or isinstance(I, sp.Integral):
             print 'numerical integration of', integrand
             integrand = sp.lambdify([x], integrand)
             I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
@@ -108,10 +111,9 @@ def least_squares_orth(f, psi, Omega):
     c = [b[i]/A[i] for i in range(len(b))]
     print 'coeff:', c
     u = 0
-    for i in range(len(psi)):
-        u += c[i]*psi[i]
-    # Alternative:
-    # u = sum(c[i,0]*psi[i] for i in range(len(psi)))
+    #for i in range(len(psi)):
+    #    u += c[i]*psi[i]
+    u = sum(c[i,0]*psi[i] for i in range(len(psi)))
     print 'approximation:', u
     return u, c
 

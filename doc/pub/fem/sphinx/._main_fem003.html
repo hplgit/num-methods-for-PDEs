@@ -210,6 +210,8 @@ parabola and its best approximation in the space of all linear functions.</p>
 </div>
 <div class="section" id="implementation-of-the-least-squares-method">
 <span id="fem-approx-global-ls-code"></span><h2>Implementation of the least squares method<a class="headerlink" href="#implementation-of-the-least-squares-method" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="symbolic-integration">
+<h3>Symbolic integration<a class="headerlink" href="#symbolic-integration" title="Permalink to this headline">¶</a></h3>
 <p>The linear system can be computed either symbolically or
 numerically (a numerical integration rule is needed in the latter case).
 Here is a function for symbolic computation of the linear system,
@@ -241,6 +243,58 @@ only the upper triangular part is computed. Symbolic integration in
 <tt class="docutils literal"><span class="pre">sympy</span></tt> is often time consuming, and (roughly) halving the
 work has noticeable effect on the waiting time for the function to
 finish execution.</p>
+</div>
+<div class="section" id="fallback-on-numerical-integration">
+<h3>Fallback on numerical integration<a class="headerlink" href="#fallback-on-numerical-integration" title="Permalink to this headline">¶</a></h3>
+<p>Obviously, <tt class="docutils literal"><span class="pre">sympy</span></tt> mail fail to successfully integrate
+<span class="math">\(\int_\Omega{\psi}_i{\psi}_jdx\)</span> and
+especially <span class="math">\(\int_\Omega f{\psi}_idx\)</span> symbolically.
+Therefore, we should extend
+the <tt class="docutils literal"><span class="pre">least_squares</span></tt> function such that it falls back on
+numerical integration if the symbolic integration is unsuccessful.
+In the latter case, the returned value from <tt class="docutils literal"><span class="pre">sympy</span></tt>&#8216;s
+<tt class="docutils literal"><span class="pre">integrate</span></tt> function is an object of type <tt class="docutils literal"><span class="pre">Integral</span></tt>.
+We can test on this type and utilize the <tt class="docutils literal"><span class="pre">mpmath</span></tt> module in
+<tt class="docutils literal"><span class="pre">sympy</span></tt> to perform numerical integration of high precision.
+Even when <tt class="docutils literal"><span class="pre">sympy</span></tt> manages to integrate symbolically, it can
+take an undesirable long time. We therefore include an
+argument <tt class="docutils literal"><span class="pre">symbolic</span></tt> that governs whether or not to try
+symbolic integration. Here is the complete code of
+the improved version of function <tt class="docutils literal"><span class="pre">least_squares</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">least_squares</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Omega</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">psi</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">integrand</span> <span class="o">=</span> <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">psi</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">symbolic</span><span class="p">:</span>
+                <span class="n">I</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">symbolic</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Integral</span><span class="p">):</span>
+                <span class="c"># Could not integrate symbolically,</span>
+                <span class="c"># fall back on numerical integration</span>
+                <span class="n">integrand</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">lambdify</span><span class="p">([</span><span class="n">x</span><span class="p">],</span> <span class="n">integrand</span><span class="p">)</span>
+                <span class="n">I</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">mpmath</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="p">[</span><span class="n">Omega</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+            <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">I</span>
+
+        <span class="n">integrand</span> <span class="o">=</span> <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">f</span>
+        <span class="k">if</span> <span class="n">symbolic</span><span class="p">:</span>
+            <span class="n">I</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">symbolic</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Integral</span><span class="p">):</span>
+            <span class="n">integrand</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">lambdify</span><span class="p">([</span><span class="n">x</span><span class="p">],</span> <span class="n">integrand</span><span class="p">)</span>
+            <span class="n">I</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">mpmath</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="p">[</span><span class="n">Omega</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">I</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">LUsolve</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>  <span class="c"># symbolic solve</span>
+    <span class="c"># c is a sympy Matrix object, numbers are in c[i,0]</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">psi</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">u</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">))]</span>
+</pre></div>
+</div>
+<p>The function is found in the file <tt class="docutils literal"><span class="pre">approx1D.py</span></tt>.</p>
+</div>
+<div class="section" id="plotting-the-approximation">
+<h3>Plotting the approximation<a class="headerlink" href="#plotting-the-approximation" title="Permalink to this headline">¶</a></h3>
 <p>Comparing the given <span class="math">\(f(x)\)</span> and the approximate <span class="math">\(u(x)\)</span> visually is
 done by the following function, which with the aid of
 <tt class="docutils literal"><span class="pre">sympy</span></tt>&#8216;s <tt class="docutils literal"><span class="pre">lambdify</span></tt> tool converts a <tt class="docutils literal"><span class="pre">sympy</span></tt>
@@ -272,6 +326,7 @@ are found and coded in the file
 <a class="reference external" href="http://tinyurl.com/jvzzcfn/fem/approx1D.py">approx1D.py</a>.
 The forthcoming examples on their use appear in
 <tt class="docutils literal"><span class="pre">ex_approx1D.py</span></tt>.</p>
+</div>
 </div>
 <div class="section" id="perfect-approximation">
 <span id="fem-approx-global-exact"></span><h2>Perfect approximation<a class="headerlink" href="#perfect-approximation" title="Permalink to this headline">¶</a></h2>
@@ -330,10 +385,10 @@ Analytically, we know that <span class="math">\(c_j=0\)</span> for <span class="
 <span class="math">\(c_j\neq 0\)</span> for <span class="math">\(j&gt;2\)</span>.</p>
 <table border="1" class="docutils">
 <colgroup>
+<col width="14%" />
 <col width="25%" />
-<col width="25%" />
-<col width="25%" />
-<col width="25%" />
+<col width="31%" />
+<col width="31%" />
 </colgroup>
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">exact</th>
@@ -513,11 +568,24 @@ is <span class="math">\(f(0)\)</span> at <span class="math">\(x=0\)</span> and <
 <div class="math">
 \[u(x) = f(0)(1-x) + xf(1) + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x)
 {\thinspace .}\]</div>
-<p>This adjustment of <span class="math">\(u\)</span> alters the linear system slightly as we get an extra
-term <span class="math">\(-(f(0)(1-x) + xf(1),{\psi}_i)\)</span> on the right-hand side.
-Figure <a class="reference internal" href="#fem-approx-global-fig-parabola-sine2"><em>Best approximation of a parabola by a sum of 3 (left) and 11 (right) sine functions with a boundary term</em></a> shows the result
-of this technique for
-ensuring right boundary values: even 3 sines can now adjust the
+<p>This adjustment of <span class="math">\(u\)</span> alters the linear system slightly. In the general
+case, we set</p>
+<div class="math">
+\[u(x) = B(x) +  \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x),\]</div>
+<p>and the linear system becomes</p>
+<div class="math">
+\[\sum_{j\in{\mathcal{I}_s}}({\psi}_i,{\psi}_j)c_j = (f-B,{\psi}_i),\quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
+<p>The calculations can still utilize the <tt class="docutils literal"><span class="pre">least_squares</span></tt> or
+<tt class="docutils literal"><span class="pre">least_squares_orth</span></tt> functions, but solve for <span class="math">\(u-b\)</span>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">f0</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="n">f1</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">f0</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">x</span><span class="o">*</span><span class="n">f1</span>
+<span class="n">u_sum</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">least_squares_orth</span><span class="p">(</span><span class="n">f</span><span class="o">-</span><span class="n">b</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Omega</span><span class="p">)</span>
+<span class="n">u</span> <span class="o">=</span> <span class="n">B</span> <span class="o">+</span> <span class="n">u_sum</span>
+</pre></div>
+</div>
+<p>Figure <a class="reference internal" href="#fem-approx-global-fig-parabola-sine2"><em>Best approximation of a parabola by a sum of 3 (left) and 11 (right) sine functions with a boundary term</em></a> shows the result
+of the technique for
+ensuring right boundary values. Even 3 sines can now adjust the
 <span class="math">\(f(0)(1-x) + xf(1)\)</span> term such that <span class="math">\(u\)</span> approximates the parabola really
 well, at least visually.</p>
 <div class="figure" id="fem-approx-global-fig-parabola-sine2">
@@ -568,7 +636,42 @@ the matrix is diagonal and only the diagonal elements need to be computed:</p>
     <span class="k">return</span> <span class="n">u</span><span class="p">,</span> <span class="n">c</span>
 </pre></div>
 </div>
-<p>This function is found in the file <tt class="docutils literal"><span class="pre">approx1D.py</span></tt>.</p>
+<p>As mentioned in the section <a class="reference internal" href="#fem-approx-global-ls-code"><em>Implementation of the least squares method</em></a>, symbolic integration
+may fail or take very long time. It is therefore natural to extend the
+implementation above with a version where we can choose between symbolic
+and numerical integration and fall back on the latter if the former
+fails:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">least_squares_orth</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Omega</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">psi</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>       <span class="c"># plain list to hold symbolic expressions</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+        <span class="c"># Diagonal matrix term</span>
+        <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+        <span class="c"># Right-hand side term</span>
+        <span class="n">integrand</span> <span class="o">=</span> <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">f</span>
+        <span class="k">if</span> <span class="n">symbolic</span><span class="p">:</span>
+            <span class="n">I</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span>  <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">symbolic</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Integral</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&#39;numerical integration of&#39;</span><span class="p">,</span> <span class="n">integrand</span>
+            <span class="n">integrand</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">lambdify</span><span class="p">([</span><span class="n">x</span><span class="p">],</span> <span class="n">integrand</span><span class="p">)</span>
+            <span class="n">I</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">mpmath</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="p">[</span><span class="n">Omega</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Omega</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">I</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">))]</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">psi</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">u</span><span class="p">,</span> <span class="n">c</span>
+</pre></div>
+</div>
+<p>This function is found in the file <tt class="docutils literal"><span class="pre">approx1D.py</span></tt>. Observe that
+we here assume that
+<span class="math">\(\int_\Omega{\varphi}_i^2dx\)</span> can always be symbolically computed,
+which is not an unreasonable assumption
+when the basis functions are orthogonal, but there is no guarantee,
+so an improved version of the function above would implement
+numerical integration also for the <tt class="docutils literal"><span class="pre">A[i,i]</span></tt> term.</p>
 </div>
 <div class="section" id="numerical-computations">
 <h2>Numerical computations<a class="headerlink" href="#numerical-computations" title="Permalink to this headline">¶</a></h2>
@@ -579,8 +682,8 @@ Even though we implemented a fallback on numerical integration
 of <span class="math">\(\int f{\varphi}_i dx\)</span> considerable time might be required
 by <tt class="docutils literal"><span class="pre">sympy</span></tt> in the attempt to integrate symbolically.
 Therefore, it will be handy to have function for fast
-<em>numerical</em> integration and <em>numerical</em> solution
-of the linear system. Below is such a method. It requires
+<em>numerical integration and numerical solution
+of the linear system</em>. Below is such a method. It requires
 Python functions <tt class="docutils literal"><span class="pre">f(x)</span></tt> and <tt class="docutils literal"><span class="pre">psi(x,i)</span></tt> for <span class="math">\(f(x)\)</span> and <span class="math">\({\psi}_i(x)\)</span>
 as input. The output is a mesh function
 with values <tt class="docutils literal"><span class="pre">u</span></tt> on the mesh with points in the array <tt class="docutils literal"><span class="pre">x</span></tt>.
@@ -889,9 +992,9 @@ and the interpolation techniques can be done by</p>
 <span class="n">f</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">x</span><span class="p">)</span>
 <span class="n">psi</span><span class="p">,</span> <span class="n">points</span> <span class="o">=</span> <span class="n">Lagrange_polynomials_01</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
 <span class="n">Omega</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-<span class="n">u</span> <span class="o">=</span> <span class="n">least_squares</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Omega</span><span class="p">)</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">least_squares</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Omega</span><span class="p">)</span>
 <span class="n">comparison_plot</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">Omega</span><span class="p">)</span>
-<span class="n">u</span> <span class="o">=</span> <span class="n">interpolation</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">interpolation</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span>
 <span class="n">comparison_plot</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">Omega</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -977,21 +1080,15 @@ since <span class="math">\(f\)</span> is piecewise linear.</p>
 <p class="caption"><em>Interpolation of an absolute value function by Lagrange polynomials and Chebyshev nodes as interpolation points: degree 7 (left) and 14 (right)</em></p>
 </div>
 <div class="figure" id="fem-approx-global-lagrange-fig-abs-lag-cheb-osc">
-<a class="reference internal image-reference" href="_images/Lagrange_basis_12.png"><img alt="_images/Lagrange_basis_12.png" src="_images/Lagrange_basis_12.png" style="width: 400px;" /></a>
+<a class="reference internal image-reference" href="_images/Lagrange_basis_Cheb_12.png"><img alt="_images/Lagrange_basis_Cheb_12.png" src="_images/Lagrange_basis_Cheb_12.png" style="width: 400px;" /></a>
 <p class="caption"><em>Illustration of the less oscillatory behavior of two Lagrange polynomials based on 12 Chebyshev points (marked by circles)</em></p>
 </div>
 <p>How does the least squares or projection methods work with Lagrange
 polynomials?
-Unfortunately, <tt class="docutils literal"><span class="pre">sympy</span></tt> has problems integrating the <span class="math">\(f(x)=|1-2x|\)</span>
-function times a polynomial. Other choices of <span class="math">\(f(x)\)</span> can also
-make the symbolic integration fail. Therefore, we should extend
-the <tt class="docutils literal"><span class="pre">least_squares</span></tt> function such that it falls back on
-numerical integration if the symbolic integration is unsuccessful.
-In the latter case, the returned value from <tt class="docutils literal"><span class="pre">sympy</span></tt>&#8216;s
-<tt class="docutils literal"><span class="pre">integrate</span></tt> function is an object of type <tt class="docutils literal"><span class="pre">Integral</span></tt>.
-We can test on this type and utilize the <tt class="docutils literal"><span class="pre">mpmath</span></tt> module in
-<tt class="docutils literal"><span class="pre">sympy</span></tt> to perform numerical integration of high precision.
-Here is the code:</p>
+We can just call the <tt class="docutils literal"><span class="pre">least_squares</span></tt> function, but
+<tt class="docutils literal"><span class="pre">sympy</span></tt> has problems integrating the <span class="math">\(f(x)=|1-2x|\)</span>
+function times a polynomial, so we need to fallback on numerical
+integration.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">least_squares</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Omega</span><span class="p">):</span>
     <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">psi</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
     <span class="n">A</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
@@ -1041,7 +1138,12 @@ Here is the code:</p>
 <li><a class="reference internal" href="#the-least-squares-method-3">The least squares method  (3)</a></li>
 <li><a class="reference internal" href="#the-projection-or-galerkin-method">The projection (or Galerkin) method</a></li>
 <li><a class="reference internal" href="#example-linear-approximation">Example: linear approximation</a></li>
-<li><a class="reference internal" href="#implementation-of-the-least-squares-method">Implementation of the least squares method</a></li>
+<li><a class="reference internal" href="#implementation-of-the-least-squares-method">Implementation of the least squares method</a><ul>
+<li><a class="reference internal" href="#symbolic-integration">Symbolic integration</a></li>
+<li><a class="reference internal" href="#fallback-on-numerical-integration">Fallback on numerical integration</a></li>
+<li><a class="reference internal" href="#plotting-the-approximation">Plotting the approximation</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#perfect-approximation">Perfect approximation</a></li>
 <li><a class="reference internal" href="#ill-conditioning">Ill-conditioning</a></li>
 <li><a class="reference internal" href="#fourier-series">Fourier series</a></li>

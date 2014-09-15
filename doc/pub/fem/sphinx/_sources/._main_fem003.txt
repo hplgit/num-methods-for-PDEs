@@ -252,6 +252,9 @@ parabola and its best approximation in the space of all linear functions.
 Implementation of the least squares method
 ------------------------------------------
 
+Symbolic integration
+~~~~~~~~~~~~~~~~~~~~
+
 The linear system can be computed either symbolically or
 numerically (a numerical integration rule is needed in the latter case).
 Here is a function for symbolic computation of the linear system,
@@ -285,6 +288,61 @@ only the upper triangular part is computed. Symbolic integration in
 ``sympy`` is often time consuming, and (roughly) halving the
 work has noticeable effect on the waiting time for the function to
 finish execution.
+
+Fallback on numerical integration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Obviously, ``sympy`` mail fail to successfully integrate
+:math:`\int_\Omega{\psi}_i{\psi}_jdx` and
+especially :math:`\int_\Omega f{\psi}_idx` symbolically.
+Therefore, we should extend
+the ``least_squares`` function such that it falls back on
+numerical integration if the symbolic integration is unsuccessful.
+In the latter case, the returned value from ``sympy``'s
+``integrate`` function is an object of type ``Integral``.
+We can test on this type and utilize the ``mpmath`` module in
+``sympy`` to perform numerical integration of high precision.
+Even when ``sympy`` manages to integrate symbolically, it can
+take an undesirable long time. We therefore include an
+argument ``symbolic`` that governs whether or not to try
+symbolic integration. Here is the complete code of
+the improved version of function ``least_squares``:
+
+.. code-block:: python
+
+        def least_squares(f, psi, Omega, symbolic=True):
+            N = len(psi) - 1
+            A = sp.zeros((N+1, N+1))
+            b = sp.zeros((N+1, 1))
+            x = sp.Symbol('x')
+            for i in range(N+1):
+                for j in range(i, N+1):
+                    integrand = psi[i]*psi[j]
+                    if symbolic:
+                        I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
+                    if not symbolic or isinstance(I, sp.Integral):
+                        # Could not integrate symbolically,
+                        # fall back on numerical integration
+                        integrand = sp.lambdify([x], integrand)
+                        I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
+                    A[i,j] = A[j,i] = I
+        
+                integrand = psi[i]*f
+                if symbolic:
+                    I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
+                if not symbolic or isinstance(I, sp.Integral):
+                    integrand = sp.lambdify([x], integrand)
+                    I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
+                b[i,0] = I
+            c = A.LUsolve(b)  # symbolic solve
+            # c is a sympy Matrix object, numbers are in c[i,0]
+            u = sum(c[i,0]*psi[i] for i in range(len(psi)))
+            return u, [c[i,0] for i in range(len(c))]
+
+The function is found in the file ``approx1D.py``.
+
+Plotting the approximation
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Comparing the given :math:`f(x)` and the approximate :math:`u(x)` visually is
 done by the following function, which with the aid of
@@ -391,21 +449,21 @@ by functions on the form :math:`u(x)=c_0 + c_1x + c_2x^2 + \cdots + c_{10}x^{10}
 Analytically, we know that :math:`c_j=0` for :math:`j>2`, but numerically we may get
 :math:`c_j\neq 0` for :math:`j>2`.
 
-===========  ===========  ===========  ===========  
-   exact      ``sympy``   ``numpy32``  ``numpy64``  
-===========  ===========  ===========  ===========  
-          9         9.62         5.57         8.98  
-        -20       -23.39        -7.65       -19.93  
-         10        17.74        -4.50         9.96  
-          0        -9.19         4.13        -0.26  
-          0         5.25         2.99         0.72  
-          0         0.18        -1.21        -0.93  
-          0        -2.48        -0.41         0.73  
-          0         1.81       -0.013        -0.36  
-          0        -0.66         0.08         0.11  
-          0         0.12         0.04        -0.02  
-          0       -0.001        -0.02        0.002  
-===========  ===========  ===========  ===========  
+=====  =========  ===========  ===========  
+exact  ``sympy``  ``numpy32``  ``numpy64``  
+=====  =========  ===========  ===========  
+    9       9.62         5.57         8.98  
+  -20     -23.39        -7.65       -19.93  
+   10      17.74        -4.50         9.96  
+    0      -9.19         4.13        -0.26  
+    0       5.25         2.99         0.72  
+    0       0.18        -1.21        -0.93  
+    0      -2.48        -0.41         0.73  
+    0       1.81       -0.013        -0.36  
+    0      -0.66         0.08         0.11  
+    0       0.12         0.04        -0.02  
+    0     -0.001        -0.02        0.002  
+=====  =========  ===========  ===========  
 
 The exact value of :math:`c_j`, :math:`j=0,1,\ldots,10`, appears in the first
 column while the other columns correspond to results obtained
@@ -552,11 +610,30 @@ is :math:`f(0)` at :math:`x=0` and :math:`f(1)` at :math:`x=1`. A simple linear 
         {\thinspace .}
         
 
-This adjustment of :math:`u` alters the linear system slightly as we get an extra
-term :math:`-(f(0)(1-x) + xf(1),{\psi}_i)` on the right-hand side.
+This adjustment of :math:`u` alters the linear system slightly. In the general
+case, we set
+
+.. math::
+         u(x) = B(x) +  \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x),
+
+and the linear system becomes
+
+.. math::
+         \sum_{j\in{\mathcal{I}_s}}({\psi}_i,{\psi}_j)c_j = (f-B,{\psi}_i),\quad i\in{\mathcal{I}_s}{\thinspace .}
+
+The calculations can still utilize the ``least_squares`` or
+``least_squares_orth`` functions, but solve for :math:`u-b`:
+
+.. code-block:: python
+
+        f0 = 0;  f1 = -1
+        B = f0*(1-x) + x*f1
+        u_sum, c = least_squares_orth(f-b, psi, Omega)
+        u = B + u_sum
+
 Figure :ref:`fem:approx:global:fig:parabola:sine2` shows the result
-of this technique for
-ensuring right boundary values: even 3 sines can now adjust the
+of the technique for
+ensuring right boundary values. Even 3 sines can now adjust the
 :math:`f(0)(1-x) + xf(1)` term such that :math:`u` approximates the parabola really
 well, at least visually.
 
@@ -622,7 +699,44 @@ the matrix is diagonal and only the diagonal elements need to be computed:
                 u += c[i]*psi[i]
             return u, c
 
-This function is found in the file ``approx1D.py``.
+As mentioned in the section :ref:`fem:approx:global:LS:code`, symbolic integration
+may fail or take very long time. It is therefore natural to extend the
+implementation above with a version where we can choose between symbolic
+and numerical integration and fall back on the latter if the former
+fails:
+
+.. code-block:: python
+
+        def least_squares_orth(f, psi, Omega, symbolic=True):
+            N = len(psi) - 1
+            A = [0]*(N+1)       # plain list to hold symbolic expressions
+            b = [0]*(N+1)
+            x = sp.Symbol('x')
+            for i in range(N+1):
+                # Diagonal matrix term
+                A[i] = sp.integrate(psi[i]**2, (x, Omega[0], Omega[1]))
+        
+                # Right-hand side term
+                integrand = psi[i]*f
+                if symbolic:
+                    I = sp.integrate(integrand,  (x, Omega[0], Omega[1]))
+                if not symbolic or isinstance(I, sp.Integral):
+                    print 'numerical integration of', integrand
+                    integrand = sp.lambdify([x], integrand)
+                    I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
+                b[i] = I
+            c = [b[i]/A[i] for i in range(len(b))]
+            u = 0
+            u = sum(c[i,0]*psi[i] for i in range(len(psi)))
+            return u, c
+
+This function is found in the file ``approx1D.py``. Observe that
+we here assume that
+:math:`\int_\Omega{\varphi}_i^2dx` can always be symbolically computed,
+which is not an unreasonable assumption
+when the basis functions are orthogonal, but there is no guarantee,
+so an improved version of the function above would implement
+numerical integration also for the ``A[i,i]`` term.
 
 Numerical computations
 ----------------------
@@ -634,8 +748,8 @@ Even though we implemented a fallback on numerical integration
 of :math:`\int f{\varphi}_i dx` considerable time might be required
 by ``sympy`` in the attempt to integrate symbolically.
 Therefore, it will be handy to have function for fast
-*numerical* integration and *numerical* solution
-of the linear system. Below is such a method. It requires
+*numerical integration and numerical solution
+of the linear system*. Below is such a method. It requires
 Python functions ``f(x)`` and ``psi(x,i)`` for :math:`f(x)` and :math:`{\psi}_i(x)`
 as input. The output is a mesh function
 with values ``u`` on the mesh with points in the array ``x``.
@@ -1033,9 +1147,9 @@ and the interpolation techniques can be done by
         f = sp.sin(2*sp.pi*x)
         psi, points = Lagrange_polynomials_01(x, N)
         Omega=[0, 1]
-        u = least_squares(f, psi, Omega)
+        u, c = least_squares(f, psi, Omega)
         comparison_plot(f, u, Omega)
-        u = interpolation(f, psi, points)
+        u, c = interpolation(f, psi, points)
         comparison_plot(f, u, Omega)
 
 Figure :ref:`fem:approx:global:Lagrange:fig:sine:ls:colloc` shows the results.
@@ -1147,23 +1261,17 @@ since :math:`f` is piecewise linear.
 
 .. _fem:approx:global:Lagrange:fig:abs:Lag:Cheb:osc:
 
-.. figure:: Lagrange_basis_12.png
+.. figure:: Lagrange_basis_Cheb_12.png
    :width: 400
 
    *Illustration of the less oscillatory behavior of two Lagrange polynomials based on 12 Chebyshev points (marked by circles)*
 
 How does the least squares or projection methods work with Lagrange
 polynomials?
-Unfortunately, ``sympy`` has problems integrating the :math:`f(x)=|1-2x|`
-function times a polynomial. Other choices of :math:`f(x)` can also
-make the symbolic integration fail. Therefore, we should extend
-the ``least_squares`` function such that it falls back on
-numerical integration if the symbolic integration is unsuccessful.
-In the latter case, the returned value from ``sympy``'s
-``integrate`` function is an object of type ``Integral``.
-We can test on this type and utilize the ``mpmath`` module in
-``sympy`` to perform numerical integration of high precision.
-Here is the code:
+We can just call the ``least_squares`` function, but
+``sympy`` has problems integrating the :math:`f(x)=|1-2x|`
+function times a polynomial, so we need to fallback on numerical
+integration.
 
 .. code-block:: python
 

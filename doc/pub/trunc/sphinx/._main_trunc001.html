@@ -1,0 +1,536 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Overview of truncation error analysis</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Truncation Error Analysis" href="index.html" />
+    <link rel="next" title="Truncation errors in exponential decay ODE" href="._main_trunc002.html" />
+    <link rel="prev" title="Truncation Error Analysis" href="._main_trunc000.html" />
+ 
+  
+   <style type="text/css">
+     div.admonition {
+       background-color: whiteSmoke;
+       border: 1px solid #bababa;
+     }
+   </style>
+  </head>
+
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_trunc002.html" title="Truncation errors in exponential decay ODE"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="._main_trunc000.html" title="Truncation Error Analysis"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Truncation Error Analysis</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="admonition-purpose admonition">
+<p class="first admonition-title">Purpose</p>
+<p>Truncation error analysis provides a widely applicable framework for
+analyzing the accuracy of finite difference schemes. This type of
+analysis can also be used for finite element and finite volume methods
+if the discrete equations are written in finite difference form.  The
+result of the analysis is an asymptotic estimate of the error in the
+scheme on the form <span class="math">\(Ch^r\)</span>, where <span class="math">\(h\)</span> is a discretization parameter
+(<span class="math">\(\Delta t\)</span>, <span class="math">\(\Delta x\)</span>, etc.), <span class="math">\(r\)</span> is a number, known as the convergence
+rate, and <span class="math">\(C\)</span> is a constant, typically dependent on the
+derivatives of the exact solution.</p>
+<p>Knowing <span class="math">\(r\)</span> gives understanding of the accuracy of the scheme. But
+maybe even more important, a powerful verification method for computer
+codes is to check that the empirically observed convergence rates in
+experiments coincide with the theoretical value of <span class="math">\(r\)</span> found from
+truncation error analysis.</p>
+<p class="last">The analysis
+can be carried out by hand, by symbolic software, and also
+numerically. All three methods will be illustrated.
+From examining the symbolic expressions of the truncation error
+we can add correction terms to the differential equations in order
+to increase the numerical accuracy.</p>
+</div>
+<p>In general, the term truncation error refers to the discrepancy that
+arises from performing a finite number of steps to approximate a
+process with infinitely many steps. The term is used in a number
+of contexts, including truncation of infinite series, finite
+precision arithmetic, finite differences, and differential equations.
+We shall be concerned with computing truncation errors arising in
+finite difference formulas and in finite difference discretizations
+of differential equations.</p>
+<div class="section" id="overview-of-truncation-error-analysis">
+<span id="index-0"></span><h1>Overview of truncation error analysis<a class="headerlink" href="#overview-of-truncation-error-analysis" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="abstract-problem-setting">
+<h2>Abstract problem setting<a class="headerlink" href="#abstract-problem-setting" title="Permalink to this headline">¶</a></h2>
+<p>Consider an abstract differential equation</p>
+<div class="math">
+\[\mathcal{L}(u)=0,\]</div>
+<p>where <span class="math">\(\mathcal{L}(u)\)</span> is some formula involving the unknown <span class="math">\(u\)</span> and
+its derivatives. One example is <span class="math">\(\mathcal{L}(u)=u'(t)+a(t)u(t)-b(t)\)</span>, where
+<span class="math">\(a\)</span> and <span class="math">\(b\)</span> are contants or functions of time.
+We can discretize the differential equation and obtain a corresponding
+discrete model, here written as</p>
+<div class="math">
+\[\mathcal{L}_{\Delta}(u) =0{\thinspace .}\]</div>
+<p>The solution <span class="math">\(u\)</span> of this equation is the <em>numerical solution</em>.
+To distinguish the
+numerical solution from the exact solution of the differential
+equation problem,
+we denote the latter by <span class="math">\({u_{\small\mbox{e}}}\)</span> and write the
+differential equation and its discrete counterpart as</p>
+<div class="math">
+\[\begin{split}\mathcal{L}({u_{\small\mbox{e}}})&amp;=0,\\
+\mathcal{L}_\Delta (u)&amp;=0{\thinspace .}\end{split}\]</div>
+<p>Initial and/or boundary conditions can usually be left out of the truncation
+error analysis and are omitted in the following.</p>
+<p>The numerical solution <span class="math">\(u\)</span> is in a finite difference method computed
+at a collection of mesh points. The discrete equations represented
+by the abstract equation <span class="math">\(\mathcal{L}_\Delta (u)=0\)</span> are usually
+algebraic equations involving <span class="math">\(u\)</span> at some
+neighboring mesh points.</p>
+</div>
+<div class="section" id="error-measures">
+<h2>Error measures<a class="headerlink" href="#error-measures" title="Permalink to this headline">¶</a></h2>
+<p>A key issue is how accurate the numerical solution is.
+The ultimate way of addressing this issue would be to compute
+the error <span class="math">\({u_{\small\mbox{e}}} - u\)</span> at the mesh points. This is usually extremely demanding.
+In very simplified problem settings we may, however, manage to
+derive formulas for the numerical solution <span class="math">\(u\)</span>, and
+therefore closed form expressions
+for the error <span class="math">\({u_{\small\mbox{e}}} - u\)</span>. Such special cases can provide
+considerable insight regarding accuracy and stability, but
+the results are established for special problems.</p>
+<p>The error <span class="math">\({u_{\small\mbox{e}}} -u\)</span> can be computed empirically in special cases where
+we know <span class="math">\({u_{\small\mbox{e}}}\)</span>. Such cases can be constructed by the method of
+manufactured solutions, where we choose some exact solution <span class="math">\({u_{\small\mbox{e}}} = v\)</span>
+and fit a source term <span class="math">\(f\)</span> in the governing differential equation
+<span class="math">\(\mathcal{L}({u_{\small\mbox{e}}})=f\)</span> such that <span class="math">\({u_{\small\mbox{e}}}=v\)</span> is a solution (i.e.,
+<span class="math">\(f=\mathcal{L}(v)\)</span>).  Assuming an error model of the form <span class="math">\(Ch^r\)</span>,
+where <span class="math">\(h\)</span> is the discretization parameter, such as <span class="math">\(\Delta t\)</span> or
+<span class="math">\(\Delta x\)</span>, one can estimate the convergence rate <span class="math">\(r\)</span>. This is a
+widely applicable procedure, but the valididity of the results is,
+strictly speaking, tied to the chosen test problems.</p>
+<p>Another error measure is to ask to what extent the exact solution
+<span class="math">\({u_{\small\mbox{e}}}\)</span> fits the discrete equations. Clearly, <span class="math">\({u_{\small\mbox{e}}}\)</span> is in general
+not a solution of <span class="math">\(\mathcal{L}_\Delta(u)=0\)</span>, but we can define
+the residual</p>
+<div class="math">
+\[R = \mathcal{L}_\Delta({u_{\small\mbox{e}}}),\]</div>
+<p>and investigate how close <span class="math">\(R\)</span> is to zero. A small <span class="math">\(R\)</span> means
+intuitively that the discrete equations are close to the
+differential equation, and then we are tempted to think that
+<span class="math">\(u^n\)</span> must also be close to <span class="math">\({u_{\small\mbox{e}}}(t_n)\)</span>.</p>
+<p>The residual <span class="math">\(R\)</span> is known as the truncation error of the finite
+difference scheme <span class="math">\(\mathcal{L}_\Delta(u)=0\)</span>.  It appears that the
+truncation error is relatively straightforward to compute by hand or
+symbolic software <em>without specializing the differential equation
+and the discrete model to a special case</em>. The resulting <span class="math">\(R\)</span> is found
+as a power series in the discretization parameters. The leading-order
+terms in the series provide an asymptotic measure of the accuracy of
+the numerical solution method (as the discretization parameters
+tend to zero). An advantage of truncation error analysis compared
+empricial estimation of convergence rates or detailed analysis
+of a special problem with a mathematical expression for the numerical
+solution, is that the truncation error analysis reveals the
+accuracy of the various building blocks in the numerical method and
+how each building block impacts the overall accuracy. The analysis
+can therefore be used to detect building blocks with lower accuracy
+than the others.</p>
+<p>Knowing the truncation error or other error measures is important for
+verification of programs by empirically establishing convergence
+rates. The forthcoming text will provide many examples on how to
+compute truncation errors for finite difference discretizations of
+ODEs and PDEs.</p>
+</div>
+</div>
+<div class="section" id="truncation-errors-in-finite-difference-formulas">
+<span id="trunc-finite-differences"></span><h1>Truncation errors in finite difference formulas<a class="headerlink" href="#truncation-errors-in-finite-difference-formulas" title="Permalink to this headline">¶</a></h1>
+<p>The accuracy of a finite difference formula is a fundamental issue
+when discretizing differential equations. We shall first go through a
+particular example in detail and thereafter list the truncation error
+in the most common finite difference approximation formulas.</p>
+<div class="section" id="example-the-backward-difference-for">
+<span id="trunc-fd-backward"></span><h2>Example: The backward difference for <span class="math">\(u'(t)\)</span><a class="headerlink" href="#example-the-backward-difference-for" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-1"></span><p id="index-2">Consider a backward
+finite difference approximation of the first-order derivative <span class="math">\(u'\)</span>:</p>
+<div class="math" id="equation-trunc:fd:bw1">
+<span id="eq-trunc-fd-bw1"></span><span class="eqno">(1)</span>\[     \lbrack D_t^- u\rbrack^n  = \frac{u^{n} - u^{n-1}}{\Delta t} \approx u'(t_n)\]\[     {\thinspace .}\]</div>
+<p>Here, <span class="math">\(u^n\)</span> means the value of some function <span class="math">\(u(t)\)</span> at a point <span class="math">\(t_n\)</span>, and
+<span class="math">\([D_t^-u]^n\)</span> is the <em>discrete derivative</em> of <span class="math">\(u(t)\)</span> at
+<span class="math">\(t=t_n\)</span>. The discrete derivative computed by a finite difference
+is not exactly equal to the derivative <span class="math">\(u'(t_n)\)</span>. The error in
+the approximation is</p>
+<div class="math" id="equation-trunc:fd:bw3">
+<span id="eq-trunc-fd-bw3"></span><span class="eqno">(2)</span>\[     R^n = [D^-_tu]^n - u'(t_n){\thinspace .}\]</div>
+<p>The common way of calculating <span class="math">\(R^n\)</span> is to</p>
+<ol class="arabic simple">
+<li>expand <span class="math">\(u(t)\)</span> in a Taylor series around the point where the
+derivative is evaluated, here <span class="math">\(t_n\)</span>,</li>
+<li>insert this Taylor series in <a href="#equation-trunc:fd:bw3">(2)</a>,
+and</li>
+<li>collect terms that cancel and simplify the expression.</li>
+</ol>
+<p>The result is an expression for <span class="math">\(R^n\)</span> in terms of a power series in
+<span class="math">\(\Delta t\)</span>. The error <span class="math">\(R^n\)</span> is commonly referred to as the <em>truncation
+error</em> of the finite difference formula.</p>
+<p>The Taylor series formula often found in calculus books takes the form</p>
+<div class="math">
+\[f(x+h) = \sum_{i=0}^\infty \frac{1}{i!}\frac{d^if}{dx^i}(x)h^i{\thinspace .}\]</div>
+<p>In our application,
+we expand the Taylor series around the point where the finite difference
+formula approximates the derivative. The Taylor series of <span class="math">\(u^n\)</span> at <span class="math">\(t_n\)</span>
+is simply <span class="math">\(u(t_n)\)</span>, while the Taylor sereis of <span class="math">\(u^{n-1}\)</span> at <span class="math">\(t_n\)</span> must
+employ the general formula,</p>
+<div class="math">
+\[\begin{split}u(t_{n-1}) = u(t-\Delta t) &amp;= \sum_{i=0}^\infty \frac{1}{i!}\frac{d^iu}{dt^i}(t_n)(-\Delta t)^i\\
+&amp; = u(t_n) - u'(t_n)\Delta t + {\frac{1}{2}}u''(t_n)\Delta t^2
++ {\mathcal{O}(\Delta t^3)},\end{split}\]</div>
+<p>where <span class="math">\({\mathcal{O}(\Delta t^3)}\)</span> means a power-series in <span class="math">\(\Delta t\)</span> where
+the lowest power is <span class="math">\(\Delta t^3\)</span>. We assume that <span class="math">\(\Delta t\)</span> is small such that
+<span class="math">\(\Delta t^p \gg \Delta t^q\)</span> if <span class="math">\(p\)</span> is smaller than <span class="math">\(q\)</span>.
+The details of higher-order terms
+in <span class="math">\(\Delta t\)</span> are therefore not of much interest.
+Inserting the Taylor series above in the left-hand side of1
+<a href="#equation-trunc:fd:bw3">(2)</a> gives rise to some algebra:</p>
+<div class="math">
+\[\begin{split}[D_t^-u]^n - u'(t_n) &amp;= \frac{u(t_n) - u(t_{n-1})}{\Delta t} - u'(t_n)\\
+&amp;= \frac{u(t_n) - (u(t_n) - u'(t_n)\Delta t + {\frac{1}{2}}u''(t_n)\Delta t^2 + {\mathcal{O}(\Delta t^3)} )}{\Delta t} - u'(t_n)\\
+&amp;= -{\frac{1}{2}}u''(t_n)\Delta t + {\mathcal{O}(\Delta t^2)} ),\end{split}\]</div>
+<p>which is, according to
+<a href="#equation-trunc:fd:bw3">(2)</a>, the truncation error:</p>
+<div class="math">
+\[R^n = - {\frac{1}{2}}u''(t_n)\Delta t + {\mathcal{O}(\Delta t^2)} )
+{\thinspace .}\]</div>
+<p>The dominating term for small <span class="math">\(\Delta t\)</span> is <span class="math">\(-{\frac{1}{2}}u''(t_n)\Delta t\)</span>,
+which is proportional to <span class="math">\(\Delta t\)</span>, and we say that the truncation error
+is of <em>first order</em> in <span class="math">\(\Delta t\)</span>.</p>
+</div>
+<div class="section" id="example-the-forward-difference-for">
+<span id="trunc-fd-forward"></span><h2>Example: The forward difference for <span class="math">\(u'(t)\)</span><a class="headerlink" href="#example-the-forward-difference-for" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-3"></span><p id="index-4">We can analyze the approximation error in the forward difference</p>
+<div class="math">
+\[u'(t_n) \approx [D_t^+ u]^n = \frac{u^{n+1}-u^n}{\Delta t},\]</div>
+<p>by writing</p>
+<div class="math">
+\[R^n = [D_t^+ u]^n - u'(t_n),\]</div>
+<p>and expanding <span class="math">\(u^{n+1}\)</span> in a Taylor series around <span class="math">\(t_n\)</span>,</p>
+<div class="math">
+\[u(t_{n+1}) = u(t_n) + u'(t_n)\Delta t +
+{\frac{1}{2}}u''(t_n)\Delta t^2 + {\mathcal{O}(\Delta t^3)}
+{\thinspace .}\]</div>
+<p>The result becomes</p>
+<div class="math">
+\[R = {\frac{1}{2}}u''(t_n)\Delta t +
+{\mathcal{O}(\Delta t^2)},\]</div>
+<p>showing that also the forward difference is of first order.</p>
+</div>
+<div class="section" id="example-the-central-difference-for">
+<span id="trunc-fd-central"></span><h2>Example: The central difference for <span class="math">\(u'(t)\)</span><a class="headerlink" href="#example-the-central-difference-for" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-5"></span><p id="index-6">For the central difference approximation,</p>
+<div class="math">
+\[u'(t_n)\approx [ D_tu]^n, \quad [D_tu]^n =
+\frac{u^{n+\frac{1}{2}} - u^{n-\frac{1}{2}}}{\Delta t},\]</div>
+<p>we write</p>
+<div class="math">
+\[R^n = [ D_tu]^n - u'(t_n),\]</div>
+<p>and expand <span class="math">\(u(t_{n+\frac{1}{2}})\)</span> and
+<span class="math">\(u(t_{n-1/2})\)</span> in Taylor series around the point <span class="math">\(t_n\)</span> where
+the derivative is evaluated. We have</p>
+<div class="math">
+\[\begin{split}u(t_{n+\frac{1}{2}}) = &amp;u(t_n) + u'(t_n)\frac{1}{2}\Delta t +
+{\frac{1}{2}}u''(t_n)(\frac{1}{2}\Delta t)^2 + \\
+&amp; \frac{1}{6}u'''(t_n) (\frac{1}{2}\Delta t)^3
++ \frac{1}{24}u''''(t_n) (\frac{1}{2}\Delta t)^4 + \\
+&amp; \frac{1}{120}u''''(t_n) (\frac{1}{2}\Delta t)^5 + {\mathcal{O}(\Delta t^6)},\\
+u(t_{n-1/2}) = &amp;u(t_n) - u'(t_n)\frac{1}{2}\Delta t +
+{\frac{1}{2}}u''(t_n)(\frac{1}{2}\Delta t)^2 - \\
+&amp; \frac{1}{6}u'''(t_n) (\frac{1}{2}\Delta t)^3
++ \frac{1}{24}u''''(t_n) (\frac{1}{2}\Delta t)^4 - \\
+&amp; \frac{1}{120}u'''''(t_n) (\frac{1}{2}\Delta t)^5 + {\mathcal{O}(\Delta t^6)}
+{\thinspace .}\end{split}\]</div>
+<p>Now,</p>
+<div class="math">
+\[u(t_{n+\frac{1}{2}}) - u(t_{n-1/2}) = u'(t_n)\Delta t + \frac{1}{24}u'''(t_n) \Delta t^3 + \frac{1}{960}u'''''(t_n) \Delta t^5 + {\mathcal{O}(\Delta t^7)}
+{\thinspace .}\]</div>
+<p>By collecting terms in <span class="math">\([D_t u]^n - u(t_n)\)</span> we find the truncation error
+to be</p>
+<div class="math">
+\[R^n = \frac{1}{24}u'''(t_n)\Delta t^2 + {\mathcal{O}(\Delta t^4)},\]</div>
+<p>with only even powers of <span class="math">\(\Delta t\)</span>. Since <span class="math">\(R\sim \Delta t^2\)</span> we say
+the centered difference is of <em>second order</em> in <span class="math">\(\Delta t\)</span>.</p>
+</div>
+<div class="section" id="overview-of-leading-order-error-terms-in-finite-difference-formulas">
+<span id="trunc-table"></span><h2>Overview of leading-order error terms in finite difference formulas<a class="headerlink" href="#overview-of-leading-order-error-terms-in-finite-difference-formulas" title="Permalink to this headline">¶</a></h2>
+<p id="index-7">Here we list the leading-order terms of the truncation errors
+associated with several common finite difference formulas for the
+first and second derivatives.</p>
+<div class="math" id="equation-trunc:table:fd1:center:eq">
+<span id="eq-trunc-table-fd1-center-eq"></span><span class="eqno">(3)</span>\[     \lbrack D_tu \rbrack^n = \frac{u^{n+\frac{1}{2}} - u^{n-\frac{1}{2}}}{\Delta t} = u'(t_n) + R^n
+     ,\]</div>
+<div class="math" id="equation-trunc:table:fd1:center">
+<span id="eq-trunc-table-fd1-center"></span><span class="eqno">(4)</span>\[     R^n = \frac{1}{24}u'''(t_n)\Delta t^2 + {\mathcal{O}(\Delta t^4)}\]</div>
+<div class="math" id="equation-trunc:table:fd1:center2:eq">
+<span id="eq-trunc-table-fd1-center2-eq"></span><span class="eqno">(5)</span>\[     \lbrack D_{2t}u \rbrack^n = \frac{u^{n+1} - u^{n-1}}{2\Delta t} = u'(t_n) + R^n
+     ,\]</div>
+<div class="math" id="equation-trunc:table:fd1:center2">
+<span id="eq-trunc-table-fd1-center2"></span><span class="eqno">(6)</span>\[     R^n = \frac{1}{6}u'''(t_n)\Delta t^2 + {\mathcal{O}(\Delta t^4)}\]</div>
+<div class="math" id="equation-trunc:table:fd1:bw:eq">
+<span id="eq-trunc-table-fd1-bw-eq"></span><span class="eqno">(7)</span>\[     \lbrack D_t^-u \rbrack^n = \frac{u^{n} - u^{n-1}}{\Delta t} = u'(t_n) + R^n
+     ,\]</div>
+<div class="math" id="equation-trunc:table:fd1:bw">
+<span id="eq-trunc-table-fd1-bw"></span><span class="eqno">(8)</span>\[     R^n = -{\frac{1}{2}}u''(t_n)\Delta t + {\mathcal{O}(\Delta t^2)}\]</div>
+<div class="math" id="equation-trunc:table:fd1:fw:eq">
+<span id="eq-trunc-table-fd1-fw-eq"></span><span class="eqno">(9)</span>\[     \lbrack D_t^+u \rbrack^n = \frac{u^{n+1} - u^{n}}{\Delta t} = u'(t_n) + R^n
+     ,\]</div>
+<div class="math" id="equation-trunc:table:fd1:fw">
+<span id="eq-trunc-table-fd1-fw"></span><span class="eqno">(10)</span>\[     R^n = {\frac{1}{2}}u''(t_n)\Delta t + {\mathcal{O}(\Delta t^2)}\]</div>
+<div class="math" id="equation-trunc:table:fd1:theta:eq">
+<span id="eq-trunc-table-fd1-theta-eq"></span><span class="eqno">(11)</span>\[     [\bar D_tu]^{n+\theta} = \frac{u^{n+1} - u^{n}}{\Delta t} = u'(t_{n+\theta}) + R^{n+\theta}
+     ,\]</div>
+<div class="math" id="equation-trunc:table:fd1:theta">
+<span id="eq-trunc-table-fd1-theta"></span><span class="eqno">(12)</span>\[     R^{n+\theta} = \frac{1}{2}(1-2\theta)u''(t_{n+\theta})\Delta t -
+     \frac{1}{6}((1 - \theta)^3 - \theta^3)u'''(t_{n+\theta})\Delta t^2 +
+     {\mathcal{O}(\Delta t^3)}\]</div>
+<div class="math" id="equation-trunc:table:fd1:bw2:eq">
+<span id="eq-trunc-table-fd1-bw2-eq"></span><span class="eqno">(13)</span>\[     \lbrack D_t^{2-}u \rbrack^n = \frac{3u^{n} - 4u^{n-1} + u^{n-2}}{2\Delta t} = u'(t_n) + R^n
+     ,\]</div>
+<div class="math" id="equation-trunc:table:fd1:bw2">
+<span id="eq-trunc-table-fd1-bw2"></span><span class="eqno">(14)</span>\[     R^n = -\frac{1}{3}u'''(t_n)\Delta t^2 + {\mathcal{O}(\Delta t^3)}\]</div>
+<div class="math" id="equation-trunc:table:fd2:center:eq">
+<span id="eq-trunc-table-fd2-center-eq"></span><span class="eqno">(15)</span>\[     \lbrack D_tD_t u \rbrack^n = \frac{u^{n+1} - 2u^{n} + u^{n-1}}{\Delta t^2} = u''(t_n) + R^n
+     ,\]</div>
+<div class="math" id="equation-trunc:table:fd2:center">
+<span id="eq-trunc-table-fd2-center"></span><span class="eqno">(16)</span>\[     R^n = \frac{1}{12}u''''(t_n)\Delta t^2 + {\mathcal{O}(\Delta t^4)}\]</div>
+<p>It will also be convenient to have the truncation errors for
+various means or averages. The
+weighted arithmetic mean leads to</p>
+<div class="math" id="equation-trunc:table:avg:theta:eq">
+<span id="eq-trunc-table-avg-theta-eq"></span><span class="eqno">(17)</span>\[     [\overline{u}^{t,\theta}]^{n+\theta}
+      = \theta u^{n+1} + (1-\theta)u^n =
+     u(t_{n+\theta}) + R^{n+\theta},\]</div>
+<div class="math" id="equation-trunc:table:avg:theta">
+<span id="eq-trunc-table-avg-theta"></span><span class="eqno">(18)</span>\[     R^{n+\theta} = {\frac{1}{2}}u''(t_{n+\theta})\Delta t^2\theta (1-\theta) +
+     {\mathcal{O}(\Delta t^3)}
+     {\thinspace .}\]</div>
+<p>The standard arithmetic mean follows from this formula when
+<span class="math">\(\theta=1/2\)</span>. Expressed at point <span class="math">\(t_n\)</span> we get</p>
+<div class="math" id="equation-trunc:table:avg:arith:eq">
+<span id="eq-trunc-table-avg-arith-eq"></span><span class="eqno">(19)</span>\[     [\overline{u}^{t}]^{n} = \frac{1}{2}(u^{n-\frac{1}{2}} + u^{n+\frac{1}{2}})
+     = u(t_n) + R^{n},\]</div>
+<div class="math" id="equation-trunc:table:avg:arith">
+<span id="eq-trunc-table-avg-arith"></span><span class="eqno">(20)</span>\[     R^{n} = \frac{1}{8}u''(t_{n})\Delta t^2 + \frac{1}{384}u''''(t_n)\Delta t^4
+     + {\mathcal{O}(\Delta t^6)}{\thinspace .}\]</div>
+<p>The geometric mean also has an error <span class="math">\({\mathcal{O}(\Delta t^2)}\)</span>:</p>
+<div class="math" id="equation-trunc:table:avg:geom:eq">
+<span id="eq-trunc-table-avg-geom-eq"></span><span class="eqno">(21)</span>\[     [\overline{u^2}^{t,g}]^{n} = u^{n-\frac{1}{2}}u^{n+\frac{1}{2}} = (u^n)^2 + R^n,\]</div>
+<div class="math" id="equation-trunc:table:avg:geom">
+<span id="eq-trunc-table-avg-geom"></span><span class="eqno">(22)</span>\[     R^n = - \frac{1}{4}u'(t_n)^2\Delta t^2  + \frac{1}{4}u(t_n)u''(t_n)\Delta t^2
+     + {\mathcal{O}(\Delta t^4)}
+     {\thinspace .}\]</div>
+<p>The harmonic mean is also second-order accurate:</p>
+<div class="math" id="equation-trunc:table:avg:harm:eq">
+<span id="eq-trunc-table-avg-harm-eq"></span><span class="eqno">(23)</span>\[     [\overline{u}^{t,h}]^{n} = u^n = \frac{2}{\frac{1}{u^{n-\frac{1}{2}}} + \frac{1}{u^{n+\frac{1}{2}}}}
+     + R^{n+\frac{1}{2}},\]</div>
+<div class="math" id="equation-trunc:table:avg:harm">
+<span id="eq-trunc-table-avg-harm"></span><span class="eqno">(24)</span>\[     R^n = - \frac{u'(t_n)^2}{4u(t_n)}\Delta t^2 + \frac{1}{8}u''(t_n)\Delta t^2
+     {\thinspace .}\]</div>
+</div>
+<div class="section" id="software-for-computing-truncation-errors">
+<span id="trunc-sympy"></span><h2>Software for computing truncation errors<a class="headerlink" href="#software-for-computing-truncation-errors" title="Permalink to this headline">¶</a></h2>
+<p>We can use <tt class="docutils literal"><span class="pre">sympy</span></tt> to aid calculations with Taylor series.
+The derivatives can be defined as symbols, say <tt class="docutils literal"><span class="pre">D3f</span></tt> for the
+3rd derivative of some function <span class="math">\(f\)</span>. A truncated Taylor series
+can then be written as <tt class="docutils literal"><span class="pre">f</span> <span class="pre">+</span> <span class="pre">D1f*h</span> <span class="pre">+</span> <span class="pre">D2f*h**2/2</span></tt>. The following
+class takes some symbol <tt class="docutils literal"><span class="pre">f</span></tt> for the function in question
+and makes a list of symbols for the derivatives. The
+<tt class="docutils literal"><span class="pre">__call__</span></tt> method computes the symbolic form of the series
+truncated at <tt class="docutils literal"><span class="pre">num_terms</span></tt> terms.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">sympy</span> <span class="kn">as</span> <span class="nn">sp</span>
+
+<span class="k">class</span> <span class="nc">TaylorSeries</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Class for symbolic Taylor series.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">num_terms</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">f</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">=</span> <span class="n">num_terms</span>
+        <span class="c"># Introduce symbols for the derivatives</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s">&#39;D</span><span class="si">%d%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">h</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the truncated Taylor series at x+h.&quot;&quot;&quot;</span>
+        <span class="n">terms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">terms</span> <span class="o">+=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Rational</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">factorial</span><span class="p">(</span><span class="n">i</span><span class="p">))</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">h</span><span class="o">**</span><span class="n">i</span>
+        <span class="k">return</span> <span class="n">terms</span>
+</pre></div>
+</div>
+<p>We may, for example, use this class to compute the truncation error
+of the Forward Euler finite difference formula:</p>
+<div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">truncation_errors</span> <span class="kn">import</span> <span class="n">TaylorSeries</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">u</span><span class="p">,</span> <span class="n">dt</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;u dt&#39;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">u_Taylor</span> <span class="o">=</span> <span class="n">TaylorSeries</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">u_Taylor</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+<span class="n">D1u</span><span class="o">*</span><span class="n">dt</span> <span class="o">+</span> <span class="n">D2u</span><span class="o">*</span><span class="n">dt</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">D3u</span><span class="o">*</span><span class="n">dt</span><span class="o">**</span><span class="mi">3</span><span class="o">/</span><span class="mi">6</span> <span class="o">+</span> <span class="n">D4u</span><span class="o">*</span><span class="n">dt</span><span class="o">**</span><span class="mi">4</span><span class="o">/</span><span class="mi">24</span> <span class="o">+</span> <span class="n">u</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">FE</span> <span class="o">=</span> <span class="p">(</span><span class="n">u_Taylor</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span> <span class="o">-</span> <span class="n">u</span><span class="p">)</span><span class="o">/</span><span class="n">dt</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">FE</span>
+<span class="p">(</span><span class="n">D1u</span><span class="o">*</span><span class="n">dt</span> <span class="o">+</span> <span class="n">D2u</span><span class="o">*</span><span class="n">dt</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">D3u</span><span class="o">*</span><span class="n">dt</span><span class="o">**</span><span class="mi">3</span><span class="o">/</span><span class="mi">6</span> <span class="o">+</span> <span class="n">D4u</span><span class="o">*</span><span class="n">dt</span><span class="o">**</span><span class="mi">4</span><span class="o">/</span><span class="mi">24</span><span class="p">)</span><span class="o">/</span><span class="n">dt</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">simplify</span><span class="p">(</span><span class="n">FE</span><span class="p">)</span>
+<span class="n">D1u</span> <span class="o">+</span> <span class="n">D2u</span><span class="o">*</span><span class="n">dt</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">D3u</span><span class="o">*</span><span class="n">dt</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="mi">6</span> <span class="o">+</span> <span class="n">D4u</span><span class="o">*</span><span class="n">dt</span><span class="o">**</span><span class="mi">3</span><span class="o">/</span><span class="mi">24</span>
+</pre></div>
+</div>
+<p>The truncation error consists of the terms after the first one (<span class="math">\(u'\)</span>).</p>
+<p>The module file <a class="reference external" href="http://tinyurl.com/jvzzcfn/trunc/truncation_errors.py">trunc/truncation_errors.py</a> contains another class <tt class="docutils literal"><span class="pre">DiffOp</span></tt> with symbolic expressions for
+most of the truncation errors listed in the previous section.
+For example:</p>
+<div class="highlight-text"><div class="highlight"><pre>&gt;&gt;&gt; from truncation_errors import DiffOp
+&gt;&gt;&gt; from sympy import *
+&gt;&gt;&gt; u = Symbol(&#39;u&#39;)
+&gt;&gt;&gt; diffop = DiffOp(u, independent_variable=&#39;t&#39;)
+&gt;&gt;&gt; diffop[&#39;geometric_mean&#39;]
+-D1u**2*dt**2/4 - D1u*D3u*dt**4/48 + D2u**2*dt**4/64 + ...
+&gt;&gt;&gt; diffop[&#39;Dtm&#39;]
+D1u + D2u*dt/2 + D3u*dt**2/6 + D4u*dt**3/24
+&gt;&gt;&gt; &gt;&gt;&gt; diffop.operator_names()
+[&#39;geometric_mean&#39;, &#39;harmonic_mean&#39;, &#39;Dtm&#39;, &#39;D2t&#39;, &#39;DtDt&#39;,
+ &#39;weighted_arithmetic_mean&#39;, &#39;Dtp&#39;, &#39;Dt&#39;]
+</pre></div>
+</div>
+<p>The indexing of <tt class="docutils literal"><span class="pre">diffop</span></tt> applies names that correspond to the operators:
+<tt class="docutils literal"><span class="pre">Dtp</span></tt> for <span class="math">\(D^+_t\)</span>, <tt class="docutils literal"><span class="pre">Dtm</span></tt> for <span class="math">\(D_t^-\)</span>, <tt class="docutils literal"><span class="pre">Dt</span></tt> for <span class="math">\(D_t\)</span>, <tt class="docutils literal"><span class="pre">D2t</span></tt> for
+<span class="math">\(D_{2t}\)</span>, <tt class="docutils literal"><span class="pre">DtDt</span></tt> for <span class="math">\(D_tD_t\)</span>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Overview of truncation error analysis</a><ul>
+<li><a class="reference internal" href="#abstract-problem-setting">Abstract problem setting</a></li>
+<li><a class="reference internal" href="#error-measures">Error measures</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#truncation-errors-in-finite-difference-formulas">Truncation errors in finite difference formulas</a><ul>
+<li><a class="reference internal" href="#example-the-backward-difference-for">Example: The backward difference for <span class="math">\(u'(t)\)</span></a></li>
+<li><a class="reference internal" href="#example-the-forward-difference-for">Example: The forward difference for <span class="math">\(u'(t)\)</span></a></li>
+<li><a class="reference internal" href="#example-the-central-difference-for">Example: The central difference for <span class="math">\(u'(t)\)</span></a></li>
+<li><a class="reference internal" href="#overview-of-leading-order-error-terms-in-finite-difference-formulas">Overview of leading-order error terms in finite difference formulas</a></li>
+<li><a class="reference internal" href="#software-for-computing-truncation-errors">Software for computing truncation errors</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="._main_trunc000.html"
+                        title="previous chapter">Truncation Error Analysis</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_trunc002.html"
+                        title="next chapter">Truncation errors in exponential decay ODE</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_trunc001.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_trunc002.html" title="Truncation errors in exponential decay ODE"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="._main_trunc000.html" title="Truncation Error Analysis"
+             >previous</a> |</li>
+        <li><a href="index.html">Truncation Error Analysis</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

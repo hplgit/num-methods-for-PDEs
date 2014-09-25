@@ -1,0 +1,435 @@
+.. !split
+
+.. _trunc:diffu:
+
+Truncation errors in diffusion equations
+========================================
+
+.. _trunc:diffu:1D:
+
+Linear diffusion equation in 1D
+-------------------------------
+
+The standard, linear, 1D diffusion equation takes the form
+
+.. _Eq:trunc:diffu:pde1D:
+
+.. math::
+   :label: trunc:diffu:pde1D
+        
+        \frac{\partial u}{\partial t} = \alpha\frac{\partial^2 u}{\partial x^2} + f(x,t),\quad x\in (0, L),\ t\in (0,T],
+        
+        
+
+where :math:`\alpha > 0` is the constant diffusion coefficient. A more
+compact form of the diffusion equation is :math:`u_t = \alpha u_{xx}+f`.
+
+The spatial derivative in the diffusion equation, :math:`\alpha u_xx`,
+is commonly discretized as :math:`[D_x D_xu]^n_i`. The time-derivative,
+however, can be treated by a variety of methods.
+
+The Forward Euler scheme in time
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Let us start
+with the simple Forward Euler scheme:
+
+.. math::
+         [D_t^+ u = \alpha D_xD_x u + f]^n{\thinspace .}
+
+The truncation error arises as the residual :math:`R` when
+inserting the exact solution
+:math:`{u_{\small\mbox{e}}}` in the discrete equations:
+
+.. math::
+         [D_t^+ {u_{\small\mbox{e}}} = \alpha D_xD_x {u_{\small\mbox{e}}} + f + R]^n_i{\thinspace .}
+
+Now, using :ref:`(2.9) <Eq:trunc:table:fd1:fw:eq>`-:ref:`(2.10) <Eq:trunc:table:fd1:fw>`
+and :ref:`(2.15) <Eq:trunc:table:fd2:center:eq>`-:ref:`(2.16) <Eq:trunc:table:fd2:center>`,
+we can transform the difference operators to derivatives:
+
+.. math::
+        
+        {u_{\small\mbox{e}, t}}(x_i,t_n) &+ \frac{1}{2}{u_{\small\mbox{e}, tt}}(t_n)\Delta t + {\mathcal{O}(\Delta t^2)}
+        = \alpha{u_{\small\mbox{e}, xx}}(x_i,t_n) + \\ 
+        &\frac{\alpha}{12}{u_{\small\mbox{e}, xxxx}}(x_i,t_n)\Delta x^2 + {\mathcal{O}(\Delta x^4)}
+        + f(x_i,t_n) + R^n_i{\thinspace .}
+        
+
+The terms :math:`{u_{\small\mbox{e}, t}}(x_i,t_n) - \alpha{u_{\small\mbox{e}, xx}}(x_i,t_n) - f(x_i,t_n)`
+vansih because :math:`{u_{\small\mbox{e}}}` solves the PDE. The truncation error then becomes
+
+.. math::
+         R^n_i =
+        \frac{1}{2}{u_{\small\mbox{e}, tt}}(t_n)\Delta t + {\mathcal{O}(\Delta t^2)}
+        - \frac{\alpha}{12}{u_{\small\mbox{e}, xxxx}}(x_i,t_n)\Delta x^2 + {\mathcal{O}(\Delta x^4)}{\thinspace .}
+        
+
+.. Correction terms in time...backward 2-level discr of u_tt? Implicity anyway
+
+The Crank-Nicolson scheme in time
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Crank-Nicolson method consists of
+using a centered difference for :math:`u_t` and an arithmetic average of
+the :math:`u_xx` term:
+
+.. math::
+         [D_t u]^{n+\frac{1}{2}}_i = \alpha\frac{1}{2}([D_xD_x u]^n_i +
+        [D_xD_x u]^{n+1}_i + f^{n+\frac{1}{2}}_i{\thinspace .}
+
+The equation for the truncation error is
+
+.. math::
+         [D_t {u_{\small\mbox{e}}}]^{n+\frac{1}{2}}_i = \alpha\frac{1}{2}([D_xD_x {u_{\small\mbox{e}}}]^n_i +
+        [D_xD_x {u_{\small\mbox{e}}}]^{n+1}_i) + f^{n+\frac{1}{2}}_i + R^{n+\frac{1}{2}}_i{\thinspace .}
+
+To find the truncation error, we start by expressing the arithmetic
+average in terms of values at time :math:`t_{n+\frac{1}{2}}`. According to
+:ref:`(2.19) <Eq:trunc:table:avg:arith:eq>`-:ref:`(2.20) <Eq:trunc:table:avg:arith>`,
+
+.. math::
+        
+        \frac{1}{2}([D_xD_x {u_{\small\mbox{e}}}]^n_i + [D_xD_x {u_{\small\mbox{e}}}]^{n+1}_i)
+        =
+        [D_xD_x{u_{\small\mbox{e}}}]^{n+\frac{1}{2}}_i +
+        \frac{1}{8}[D_xD_x{u_{\small\mbox{e}, tt}}]_i^{n+\frac{1}{2}}\Delta t^2
+        + {\mathcal{O}(\Delta t^4)}{\thinspace .}
+        
+
+With :ref:`(2.15) <Eq:trunc:table:fd2:center:eq>`-:ref:`(2.16) <Eq:trunc:table:fd2:center>`
+we can express the difference operator
+:math:`D_xD_xu` in terms of a derivative:
+
+.. math::
+        
+        [D_xD_x{u_{\small\mbox{e}}}]^{n+\frac{1}{2}}_i =
+        {u_{\small\mbox{e}, xx}}(x_i, t_{n+\frac{1}{2}})
+        + \frac{1}{12}{u_{\small\mbox{e}, xxxx}}(x_i, t_{n+\frac{1}{2}})\Delta x^2 +
+        {\mathcal{O}(\Delta x^4)}{\thinspace .}
+        
+
+The error term from the arithmetic mean is similarly expanded,
+
+.. math::
+         \frac{1}{8}[D_xD_x{u_{\small\mbox{e}, tt}}]_i^{n+\frac{1}{2}}\Delta t^2
+        = \frac{1}{8}{u_{\small\mbox{e}, ttxx}}(x_i, t_{n+\frac{1}{2}})\Delta t^2
+        + {\mathcal{O}(\Delta t^2\Delta x^2)}
+        
+
+The time derivative is analyzed using
+:ref:`(2.3) <Eq:trunc:table:fd1:center:eq>`-:ref:`(2.4) <Eq:trunc:table:fd1:center>`:
+
+.. math::
+         [D_t u]^{n+\frac{1}{2}}_i
+        = {u_{\small\mbox{e}, t}}(x_i,t_{n+\frac{1}{2}}) +
+        \frac{1}{24}{u_{\small\mbox{e}, ttt}}(x_i,t_{n+\frac{1}{2}})\Delta t^2 +
+        {\mathcal{O}(\Delta t^4)}{\thinspace .}
+        
+
+Summing up all the contributions and notifying that
+
+.. math::
+         {u_{\small\mbox{e}, t}}(x_i,t_{n+\frac{1}{2}}) =
+        \alpha{u_{\small\mbox{e}, xx}}(x_i, t_{n+\frac{1}{2}})
+        + f(x_i,t_{n+\frac{1}{2}}),
+
+the truncation error is given by
+
+.. math::
+        
+        R^{n+\frac{1}{2}}_i
+        & =
+        \frac{1}{8}{u_{\small\mbox{e}, xx}}(x_i,t_{n+\frac{1}{2}})\Delta t^2 +
+        \frac{1}{12}{u_{\small\mbox{e}, xxxx}}(x_i, t_{n+\frac{1}{2}})\Delta x^2 +\\ 
+        &\quad \frac{1}{24}{u_{\small\mbox{e}, ttt}}(x_i,t_{n+\frac{1}{2}})\Delta t^2 +
+        + {\mathcal{O}(\Delta x^4)} + {\mathcal{O}(\Delta t^4)} + {\mathcal{O}(\Delta t^2\Delta x^2)}
+        
+
+Linear diffusion equation in 2D/3D
+----------------------------------
+
+A nonlinear diffusion equation in 2D
+------------------------------------
+
+Exercises
+=========
+
+.. --- begin exercise ---
+
+.. _trunc:exer:theta:avg:
+
+Exercise 1: Truncation error of a weighted mean
+-----------------------------------------------
+
+Derive the truncation error of the weighted mean in
+:ref:`(2.17) <Eq:trunc:table:avg:theta:eq>`-:ref:`(2.18) <Eq:trunc:table:avg:theta>`.
+
+.. --- begin hint in exercise ---
+
+**Hint.**
+Expand :math:`{u_{\small\mbox{e}}}^{n+1}` and :math:`{u_{\small\mbox{e}}}^n` around :math:`t_{n+\theta}`.
+
+.. --- end hint in exercise ---
+
+Filename: ``trunc_weighted_mean.pdf``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _trunc:exer:theta:avg2:
+
+Exercise 2: Simulate the error of a weighted mean
+-------------------------------------------------
+
+We consider the weighted mean
+
+.. math::
+         {u_{\small\mbox{e}}}(t_n) \approx \theta {u_{\small\mbox{e}}}^{n+1} + (1-\theta){u_{\small\mbox{e}}}^n{\thinspace .}  
+
+Choose some specific function for :math:`{u_{\small\mbox{e}}}(t)` and compute the error in
+this approximation for a sequence of decreasing :math:`\Delta t =
+t_{n+1}-t_n` and for :math:`\theta = 0, 0.25, 0.5, 0.75, 1`.  Assuming that
+the error equals :math:`C\Delta t^r`, for some constants :math:`C` and :math:`r`,
+compute :math:`r` for the two smallest :math:`\Delta t` values for each choice of
+:math:`\theta` and compare with the truncation error
+:ref:`(2.17) <Eq:trunc:table:avg:theta:eq>`-:ref:`(2.18) <Eq:trunc:table:avg:theta>`.
+Filename: ``trunc_theta_avg.py``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _trunc:exer:decay:bw2:
+
+Exercise 3: Verify a truncation error formula
+---------------------------------------------
+
+Set up a numerical experiment as explained in
+the section :ref:`trunc:decay:estimate:R` for verifying the formulas
+:ref:`(2.13) <Eq:trunc:table:fd1:bw2:eq>`-:ref:`(2.14) <Eq:trunc:table:fd1:bw2>`.
+Filename: ``trunc_backward_2level.py``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _trunc:exer:decay:BE:
+
+Exercise 4: Truncation error of the Backward Euler scheme
+---------------------------------------------------------
+
+Derive the truncation error of the Backward Euler scheme for
+the decay ODE :math:`u'=-au` with constant :math:`a`. Extend the analysis to
+cover the variable-coefficient case :math:`u'=-a(t)u + b(t)`.
+Filename: ``trunc_decay_BE.py``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _trunc:exer:decay:estimate:
+
+Exercise 5: Empirical estimation of truncation errors
+-----------------------------------------------------
+
+Use the ideas and tools from the section :ref:`trunc:decay:estimate:R` to
+estimate the rate of the truncation error of the Backward Euler
+and Crank-Nicolson schemes applied to the exponential decay
+model :math:`u'=-au`, :math:`u(0)=I`.
+
+.. --- begin hint in exercise ---
+
+**Hint.**
+In the Backward Euler scheme, the truncation error can be estimated
+at mesh points :math:`n=1,\ldots,N`, while the truncation error must
+be estimated at midpoints :math:`t_{n+\frac{1}{2}}`, :math:`n=0,\ldots,N-1` for
+the Crank-Nicolson scheme. The ``truncation_error(dt, N)``
+function to be supplied to the ``estimate`` function needs to
+carefully implement these details and return the right ``t`` array
+such that ``t[i]`` is the time point corresponding to the quantities
+``R[i]`` and ``R_a[i]``.
+
+.. --- end hint in exercise ---
+
+Filename: ``trunc_decay_BNCN.py``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _trunc:exer:decay:corr:BE:
+
+Exercise 6: Correction term for a Backward Euler scheme
+-------------------------------------------------------
+
+Consider the model :math:`u'=-au`, :math:`u(0)=I`. Use the ideas of
+the section :ref:`trunc:decay:corr` to add a correction term to the ODE
+such that the Backward Euler scheme applied to the perturbed ODE
+problem is of second order in :math:`\Delta t`. Find the amplification
+factor.
+Filename: ``trunc_decay_BE_corr.pdf``.
+
+.. approximation of exp(-p)
+
+.. with u''=a^u, the BE scheme probably leads to a 2nd-order Pade
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _trunc:exer:decay:corr:verify:
+
+Exercise 7: Verify the effect of correction terms
+-------------------------------------------------
+
+The program `decay_convrate.py <http://tinyurl.com/jvzzcfn/decay/decay_convrate.py>`__
+solves :math:`u'=-au`, :math:`u(0)=I`, by the :math:`\theta`-rule and computes
+convergence rates. Copy this file and
+adjust :math:`a` in the ``solver`` function such that it incorporates
+correction terms. Run the program to verify that the error from the Forward
+and Backward Euler schemes with perturbed :math:`a` is
+:math:`{\mathcal{O}(\Delta t^2)}`, while the error arising from the Crank-Nicolson
+scheme with perturbed :math:`a` is :math:`{\mathcal{O}(\Delta t^4)}`.
+Filename: ``trunc_decay_corr_verify.py``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _trunc:exer:decay:varcoeff:CN:
+
+Exercise 8: Truncation error of the Crank-Nicolson scheme
+---------------------------------------------------------
+
+The variable-coefficient ODE :math:`u'=-a(t)u+b(t)` can be discretized
+in two different ways by the Crank-Nicolson scheme, depending on
+whether we use averages for :math:`a` and :math:`b` or compute them at
+the midpoint :math:`t_{n+\frac{1}{2}}`:
+
+.. math::
+        
+        \lbrack D_t u   = -a\overline{u}^t + b \rbrack^{n+\frac{1}{2}},
+        
+
+.. math::
+          
+        \lbrack D_t u   = \overline{-au+b}^t \rbrack^{n+\frac{1}{2}}
+        {\thinspace .}
+        
+
+Compute the truncation error in both cases.
+Filename: ``trunc_decay_CN_vc.pdf``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _trunc:exer:decay:nonlin:BEFE:
+
+Exercise 9: Truncation error of :math:`u'=f(u,t)`
+-------------------------------------------------
+
+Consider the general nonlinear first-order scalar ODE
+
+.. math::
+         u'(t) = f(u(t), t)
+        {\thinspace .}
+        
+
+Show that the truncation error in the Forward Euler scheme,
+
+.. math::
+         [D_t^+ u = f(u,t)]^n,
+
+and in the Backward Euler scheme,
+
+.. math::
+         [D_t^- u = f(u,t)]^n,
+
+both are of first order, regardless of what :math:`f` is.
+
+Showing the order of the truncation error in the Crank-Nicolson scheme,
+
+.. math::
+         [D_t u = f(u,t)]^{n+\frac{1}{2}}, 
+
+is somewhat more involved: Taylor expand :math:`{u_{\small\mbox{e}}}^n`, :math:`{u_{\small\mbox{e}}}^{n+1}`,
+:math:`f({u_{\small\mbox{e}}}^n, t_n)`, and :math:`f({u_{\small\mbox{e}}}^{n+1}, t_{n+1})` around :math:`t_{n+\frac{1}{2}}`,
+and use that
+
+.. math::
+         \frac{df}{dt} = \frac{\partial f}{\partial u}u' + \frac{\partial f}{\partial t}
+        {\thinspace .}  
+
+Check that the derived truncation error is consistent with previous
+results for the case :math:`f(u,t)=-au`.
+Filename: ``trunc_nonlinear_ODE.pdf``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _trunc:exer:DtDtu:
+
+Exercise 10: Truncation error of :math:`[D_t D_tu]^n`
+-----------------------------------------------------
+
+Derive the truncation error of the finite difference approximation
+:ref:`(2.15) <Eq:trunc:table:fd2:center:eq>`-:ref:`(2.16) <Eq:trunc:table:fd2:center>` to
+the second-order derivative.
+Filename: ``trunc_d2u.pdf``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _trunc:exer:vib:ic:fw:
+
+Exercise 11: Investigate the impact of approximating :math:`u'(0)`
+------------------------------------------------------------------
+
+the section :ref:`trunc:vib:undamped` describes two ways of discretizing
+the initial conditon :math:`u'(0)=V` for a vibration model
+:math:`u''+\omega^2u=0`: a centered difference :math:`[D_{2t}u=V]^0` or
+a forward difference :math:`[D_t^+u=V]^0`.
+The program `vib_undamped.py <http://tinyurl.com/jvzzcfn/vib/vib_undamped.py>`__
+solves :math:`u''+\omega^2u=0` with :math:`[D_{2t}u=0]^0` and features
+a function ``convergence_rates`` for computing the order of the
+error in the numerical solution. Modify this program such
+that it applies the forward difference :math:`[D_t^+u=0]^0` and
+report how this simpler and more convenient approximation impacts
+the overall convergence rate of the scheme.
+Filename: ``trunc_vib_ic_fw.py``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _trunc:exer:vib:fbw:
+
+Exercise 12: Investigate the accuracy of a simplified scheme
+------------------------------------------------------------
+
+Consider the ODE
+
+.. math::
+         mu'' + \beta |u'|u' + s(u) = F(t){\thinspace .}
+
+The term :math:`|u'|u'` quickly gives rise to nonlinearities and complicates
+the scheme. Why not simply apply a backward difference to this term
+such that it only involves known values? That is, we propose to solve
+
+.. math::
+         [mD_tD_tu + \beta |D_t^-u|D_t^-u + s(u) = F]^n{\thinspace .}
+
+Drop the absolute value for simplicity and find the truncation error
+of the scheme.
+Perform numerical experiments with the scheme and compared with the one
+based on centered differences. Can you illustrate the accuracy loss
+visually in real computations, or is the asymptotic analysis here
+mainly of theoretical interest?
+Filename: ``trunc_vib_bw_damping.pdf``.
+
+.. --- end exercise ---

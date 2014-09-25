@@ -1,0 +1,666 @@
+.. !split
+
+.. 2DO:
+
+.. truncation error of consistent vs lumped mass matrix for
+
+.. diffusion and wave equations
+
+
+.. admonition:: Purpose
+
+   Truncation error analysis provides a widely applicable framework for
+   analyzing the accuracy of finite difference schemes. This type of
+   analysis can also be used for finite element and finite volume methods
+   if the discrete equations are written in finite difference form.  The
+   result of the analysis is an asymptotic estimate of the error in the
+   scheme on the form :math:`Ch^r`, where :math:`h` is a discretization parameter
+   (:math:`\Delta t`, :math:`\Delta x`, etc.), :math:`r` is a number, known as the convergence
+   rate, and :math:`C` is a constant, typically dependent on the
+   derivatives of the exact solution.
+   
+   Knowing :math:`r` gives understanding of the accuracy of the scheme. But
+   maybe even more important, a powerful verification method for computer
+   codes is to check that the empirically observed convergence rates in
+   experiments coincide with the theoretical value of :math:`r` found from
+   truncation error analysis.
+   
+   The analysis
+   can be carried out by hand, by symbolic software, and also
+   numerically. All three methods will be illustrated.
+   From examining the symbolic expressions of the truncation error
+   we can add correction terms to the differential equations in order
+   to increase the numerical accuracy.
+
+
+
+
+In general, the term truncation error refers to the discrepancy that
+arises from performing a finite number of steps to approximate a
+process with infinitely many steps. The term is used in a number
+of contexts, including truncation of infinite series, finite
+precision arithmetic, finite differences, and differential equations.
+We shall be concerned with computing truncation errors arising in
+finite difference formulas and in finite difference discretizations
+of differential equations.
+
+.. index::
+   single: truncation error; general
+
+Overview of truncation error analysis
+=====================================
+
+Abstract problem setting
+------------------------
+
+Consider an abstract differential equation
+
+.. math::
+         \mathcal{L}(u)=0,
+
+where :math:`\mathcal{L}(u)` is some formula involving the unknown :math:`u` and
+its derivatives. One example is :math:`\mathcal{L}(u)=u'(t)+a(t)u(t)-b(t)`, where
+:math:`a` and :math:`b` are contants or functions of time.
+We can discretize the differential equation and obtain a corresponding
+discrete model, here written as
+
+.. math::
+         \mathcal{L}_{\Delta}(u) =0{\thinspace .}
+
+The solution :math:`u` of this equation is the *numerical solution*.
+To distinguish the
+numerical solution from the exact solution of the differential
+equation problem,
+we denote the latter by :math:`{u_{\small\mbox{e}}}` and write the
+differential equation and its discrete counterpart as
+
+.. math::
+        
+        \mathcal{L}({u_{\small\mbox{e}}})&=0,\\ 
+        \mathcal{L}_\Delta (u)&=0{\thinspace .}
+        
+
+Initial and/or boundary conditions can usually be left out of the truncation
+error analysis and are omitted in the following.
+
+The numerical solution :math:`u` is in a finite difference method computed
+at a collection of mesh points. The discrete equations represented
+by the abstract equation :math:`\mathcal{L}_\Delta (u)=0` are usually
+algebraic equations involving :math:`u` at some
+neighboring mesh points.
+
+Error measures
+--------------
+
+A key issue is how accurate the numerical solution is.
+The ultimate way of addressing this issue would be to compute
+the error :math:`{u_{\small\mbox{e}}} - u` at the mesh points. This is usually extremely demanding.
+In very simplified problem settings we may, however, manage to
+derive formulas for the numerical solution :math:`u`, and
+therefore closed form expressions
+for the error :math:`{u_{\small\mbox{e}}} - u`. Such special cases can provide
+considerable insight regarding accuracy and stability, but
+the results are established for special problems.
+
+The error :math:`{u_{\small\mbox{e}}} -u` can be computed empirically in special cases where
+we know :math:`{u_{\small\mbox{e}}}`. Such cases can be constructed by the method of
+manufactured solutions, where we choose some exact solution :math:`{u_{\small\mbox{e}}} = v`
+and fit a source term :math:`f` in the governing differential equation
+:math:`\mathcal{L}({u_{\small\mbox{e}}})=f` such that :math:`{u_{\small\mbox{e}}}=v` is a solution (i.e.,
+:math:`f=\mathcal{L}(v)`).  Assuming an error model of the form :math:`Ch^r`,
+where :math:`h` is the discretization parameter, such as :math:`\Delta t` or
+:math:`\Delta x`, one can estimate the convergence rate :math:`r`. This is a
+widely applicable procedure, but the valididity of the results is,
+strictly speaking, tied to the chosen test problems.
+
+Another error measure is to ask to what extent the exact solution
+:math:`{u_{\small\mbox{e}}}` fits the discrete equations. Clearly, :math:`{u_{\small\mbox{e}}}` is in general
+not a solution of :math:`\mathcal{L}_\Delta(u)=0`, but we can define
+the residual
+
+.. math::
+         R = \mathcal{L}_\Delta({u_{\small\mbox{e}}}),
+
+and investigate how close :math:`R` is to zero. A small :math:`R` means
+intuitively that the discrete equations are close to the
+differential equation, and then we are tempted to think that
+:math:`u^n` must also be close to :math:`{u_{\small\mbox{e}}}(t_n)`.
+
+The residual :math:`R` is known as the truncation error of the finite
+difference scheme :math:`\mathcal{L}_\Delta(u)=0`.  It appears that the
+truncation error is relatively straightforward to compute by hand or
+symbolic software *without specializing the differential equation
+and the discrete model to a special case*. The resulting :math:`R` is found
+as a power series in the discretization parameters. The leading-order
+terms in the series provide an asymptotic measure of the accuracy of
+the numerical solution method (as the discretization parameters
+tend to zero). An advantage of truncation error analysis compared
+empricial estimation of convergence rates or detailed analysis
+of a special problem with a mathematical expression for the numerical
+solution, is that the truncation error analysis reveals the
+accuracy of the various building blocks in the numerical method and
+how each building block impacts the overall accuracy. The analysis
+can therefore be used to detect building blocks with lower accuracy
+than the others.
+
+Knowing the truncation error or other error measures is important for
+verification of programs by empirically establishing convergence
+rates. The forthcoming text will provide many examples on how to
+compute truncation errors for finite difference discretizations of
+ODEs and PDEs.
+
+.. _trunc:finite:differences:
+
+Truncation errors in finite difference formulas
+===============================================
+
+The accuracy of a finite difference formula is a fundamental issue
+when discretizing differential equations. We shall first go through a
+particular example in detail and thereafter list the truncation error
+in the most common finite difference approximation formulas.
+
+.. _trunc:fd:backward:
+
+Example: The backward difference for :math:`u'(t)`
+--------------------------------------------------
+
+.. index::
+   single: finite differences; backward
+
+.. index::
+   single: truncation error; Backward Euler scheme
+
+Consider a backward
+finite difference approximation of the first-order derivative :math:`u'`:
+
+.. _Eq:trunc:fd:bw1:
+
+.. math::
+   :label: trunc:fd:bw1
+        
+        \lbrack D_t^- u\rbrack^n  = \frac{u^{n} - u^{n-1}}{\Delta t} \approx u'(t_n)
+        
+        {\thinspace .}
+        
+
+Here, :math:`u^n` means the value of some function :math:`u(t)` at a point :math:`t_n`, and
+:math:`[D_t^-u]^n` is the *discrete derivative* of :math:`u(t)` at
+:math:`t=t_n`. The discrete derivative computed by a finite difference
+is not exactly equal to the derivative :math:`u'(t_n)`. The error in
+the approximation is
+
+.. _Eq:trunc:fd:bw3:
+
+.. math::
+   :label: trunc:fd:bw3
+        
+        R^n = [D^-_tu]^n - u'(t_n){\thinspace .}
+        
+        
+
+The common way of calculating :math:`R^n` is to
+
+1. expand :math:`u(t)` in a Taylor series around the point where the
+   derivative is evaluated, here :math:`t_n`,
+
+2. insert this Taylor series in :eq:`trunc:fd:bw3`,
+   and
+
+3. collect terms that cancel and simplify the expression.
+
+The result is an expression for :math:`R^n` in terms of a power series in
+:math:`\Delta t`. The error :math:`R^n` is commonly referred to as the *truncation
+error* of the finite difference formula.
+
+The Taylor series formula often found in calculus books takes the form
+
+.. math::
+         f(x+h) = \sum_{i=0}^\infty \frac{1}{i!}\frac{d^if}{dx^i}(x)h^i{\thinspace .}  
+
+In our application,
+we expand the Taylor series around the point where the finite difference
+formula approximates the derivative. The Taylor series of :math:`u^n` at :math:`t_n`
+is simply :math:`u(t_n)`, while the Taylor sereis of :math:`u^{n-1}` at :math:`t_n` must
+employ the general formula,
+
+.. math::
+        
+        u(t_{n-1}) = u(t-\Delta t) &= \sum_{i=0}^\infty \frac{1}{i!}\frac{d^iu}{dt^i}(t_n)(-\Delta t)^i\\ 
+        & = u(t_n) - u'(t_n)\Delta t + {\frac{1}{2}}u''(t_n)\Delta t^2
+        + {\mathcal{O}(\Delta t^3)},
+        
+
+where :math:`{\mathcal{O}(\Delta t^3)}` means a power-series in :math:`\Delta t` where
+the lowest power is :math:`\Delta t^3`. We assume that :math:`\Delta t` is small such that
+:math:`\Delta t^p \gg \Delta t^q` if :math:`p` is smaller than :math:`q`.
+The details of higher-order terms
+in :math:`\Delta t` are therefore not of much interest.
+Inserting the Taylor series above in the left-hand side of1
+:eq:`trunc:fd:bw3` gives rise to some algebra:
+
+.. math::
+        
+        [D_t^-u]^n - u'(t_n) &= \frac{u(t_n) - u(t_{n-1})}{\Delta t} - u'(t_n)\\ 
+        &= \frac{u(t_n) - (u(t_n) - u'(t_n)\Delta t + {\frac{1}{2}}u''(t_n)\Delta t^2 + {\mathcal{O}(\Delta t^3)} )}{\Delta t} - u'(t_n)\\ 
+        &= -{\frac{1}{2}}u''(t_n)\Delta t + {\mathcal{O}(\Delta t^2)} ),
+        
+
+which is, according to
+:eq:`trunc:fd:bw3`, the truncation error:
+
+.. math::
+        
+        R^n = - {\frac{1}{2}}u''(t_n)\Delta t + {\mathcal{O}(\Delta t^2)} )
+        {\thinspace .}
+        
+
+The dominating term for small :math:`\Delta t` is :math:`-{\frac{1}{2}}u''(t_n)\Delta t`,
+which is proportional to :math:`\Delta t`, and we say that the truncation error
+is of *first order* in :math:`\Delta t`.
+
+.. _trunc:fd:forward:
+
+Example: The forward difference for :math:`u'(t)`
+-------------------------------------------------
+
+.. index::
+   single: finite differences; forward
+
+.. index::
+   single: truncation error; Forward Euler scheme
+
+We can analyze the approximation error in the forward difference
+
+.. math::
+         u'(t_n) \approx [D_t^+ u]^n = \frac{u^{n+1}-u^n}{\Delta t},
+
+by writing
+
+.. math::
+         R^n = [D_t^+ u]^n - u'(t_n),
+
+and expanding :math:`u^{n+1}` in a Taylor series around :math:`t_n`,
+
+.. math::
+         u(t_{n+1}) = u(t_n) + u'(t_n)\Delta t +
+        {\frac{1}{2}}u''(t_n)\Delta t^2 + {\mathcal{O}(\Delta t^3)}
+        {\thinspace .}  
+
+The result becomes
+
+.. math::
+         R = {\frac{1}{2}}u''(t_n)\Delta t +
+        {\mathcal{O}(\Delta t^2)},
+
+showing that also the forward difference is of first order.
+
+.. _trunc:fd:central:
+
+Example: The central difference for :math:`u'(t)`
+-------------------------------------------------
+
+.. index::
+   single: finite differences; centered
+
+.. index::
+   single: truncation error; Crank-Nicolson scheme
+
+For the central difference approximation,
+
+.. math::
+         u'(t_n)\approx [ D_tu]^n, \quad [D_tu]^n =
+        \frac{u^{n+\frac{1}{2}} - u^{n-\frac{1}{2}}}{\Delta t},
+        
+
+we write
+
+.. math::
+         R^n = [ D_tu]^n - u'(t_n),
+
+and expand :math:`u(t_{n+\frac{1}{2}})` and
+:math:`u(t_{n-1/2})` in Taylor series around the point :math:`t_n` where
+the derivative is evaluated. We have
+
+.. math::
+        
+        u(t_{n+\frac{1}{2}}) = &u(t_n) + u'(t_n)\frac{1}{2}\Delta t +
+        {\frac{1}{2}}u''(t_n)(\frac{1}{2}\Delta t)^2 + \\ 
+        & \frac{1}{6}u'''(t_n) (\frac{1}{2}\Delta t)^3
+        + \frac{1}{24}u''''(t_n) (\frac{1}{2}\Delta t)^4 + \\ 
+        & \frac{1}{120}u''''(t_n) (\frac{1}{2}\Delta t)^5 + {\mathcal{O}(\Delta t^6)},\\ 
+        u(t_{n-1/2}) = &u(t_n) - u'(t_n)\frac{1}{2}\Delta t +
+        {\frac{1}{2}}u''(t_n)(\frac{1}{2}\Delta t)^2 - \\ 
+        & \frac{1}{6}u'''(t_n) (\frac{1}{2}\Delta t)^3
+        + \frac{1}{24}u''''(t_n) (\frac{1}{2}\Delta t)^4 - \\ 
+        & \frac{1}{120}u'''''(t_n) (\frac{1}{2}\Delta t)^5 + {\mathcal{O}(\Delta t^6)}
+        {\thinspace .}
+        
+
+Now,
+
+.. math::
+        
+        u(t_{n+\frac{1}{2}}) - u(t_{n-1/2}) = u'(t_n)\Delta t + \frac{1}{24}u'''(t_n) \Delta t^3 + \frac{1}{960}u'''''(t_n) \Delta t^5 + {\mathcal{O}(\Delta t^7)}
+        {\thinspace .}
+        
+
+By collecting terms in :math:`[D_t u]^n - u(t_n)` we find the truncation error
+to be
+
+.. math::
+        
+        R^n = \frac{1}{24}u'''(t_n)\Delta t^2 + {\mathcal{O}(\Delta t^4)},
+        
+
+with only even powers of :math:`\Delta t`. Since :math:`R\sim \Delta t^2` we say
+the centered difference is of *second order* in :math:`\Delta t`.
+
+.. _trunc:table:
+
+Overview of leading-order error terms in finite difference formulas
+-------------------------------------------------------------------
+
+.. index::
+   single: truncation error; table of formulas
+
+Here we list the leading-order terms of the truncation errors
+associated with several common finite difference formulas for the
+first and second derivatives.
+
+.. _Eq:trunc:table:fd1:center:eq:
+
+.. math::
+   :label: trunc:table:fd1:center:eq
+        
+        \lbrack D_tu \rbrack^n = \frac{u^{n+\frac{1}{2}} - u^{n-\frac{1}{2}}}{\Delta t} = u'(t_n) + R^n
+        ,
+        
+
+.. _Eq:trunc:table:fd1:center:
+
+.. math::
+   :label: trunc:table:fd1:center
+          
+        R^n = \frac{1}{24}u'''(t_n)\Delta t^2 + {\mathcal{O}(\Delta t^4)}
+        
+        
+
+.. _Eq:trunc:table:fd1:center2:eq:
+
+.. math::
+   :label: trunc:table:fd1:center2:eq
+          
+        \lbrack D_{2t}u \rbrack^n = \frac{u^{n+1} - u^{n-1}}{2\Delta t} = u'(t_n) + R^n
+        ,
+        
+
+.. _Eq:trunc:table:fd1:center2:
+
+.. math::
+   :label: trunc:table:fd1:center2
+          
+        R^n = \frac{1}{6}u'''(t_n)\Delta t^2 + {\mathcal{O}(\Delta t^4)}
+        
+        
+
+.. _Eq:trunc:table:fd1:bw:eq:
+
+.. math::
+   :label: trunc:table:fd1:bw:eq
+          
+        \lbrack D_t^-u \rbrack^n = \frac{u^{n} - u^{n-1}}{\Delta t} = u'(t_n) + R^n
+        ,
+        
+
+.. _Eq:trunc:table:fd1:bw:
+
+.. math::
+   :label: trunc:table:fd1:bw
+          
+        R^n = -{\frac{1}{2}}u''(t_n)\Delta t + {\mathcal{O}(\Delta t^2)}
+        
+        
+
+.. _Eq:trunc:table:fd1:fw:eq:
+
+.. math::
+   :label: trunc:table:fd1:fw:eq
+          
+        \lbrack D_t^+u \rbrack^n = \frac{u^{n+1} - u^{n}}{\Delta t} = u'(t_n) + R^n
+        ,
+        
+
+.. _Eq:trunc:table:fd1:fw:
+
+.. math::
+   :label: trunc:table:fd1:fw
+          
+        R^n = {\frac{1}{2}}u''(t_n)\Delta t + {\mathcal{O}(\Delta t^2)}
+        
+        
+
+.. _Eq:trunc:table:fd1:theta:eq:
+
+.. math::
+   :label: trunc:table:fd1:theta:eq
+          
+        [\bar D_tu]^{n+\theta} = \frac{u^{n+1} - u^{n}}{\Delta t} = u'(t_{n+\theta}) + R^{n+\theta}
+        ,
+        
+
+.. _Eq:trunc:table:fd1:theta:
+
+.. math::
+   :label: trunc:table:fd1:theta
+          
+        R^{n+\theta} = \frac{1}{2}(1-2\theta)u''(t_{n+\theta})\Delta t -
+        \frac{1}{6}((1 - \theta)^3 - \theta^3)u'''(t_{n+\theta})\Delta t^2 +
+        {\mathcal{O}(\Delta t^3)}
+        
+        
+
+.. _Eq:trunc:table:fd1:bw2:eq:
+
+.. math::
+   :label: trunc:table:fd1:bw2:eq
+          
+        \lbrack D_t^{2-}u \rbrack^n = \frac{3u^{n} - 4u^{n-1} + u^{n-2}}{2\Delta t} = u'(t_n) + R^n
+        ,
+        
+
+.. _Eq:trunc:table:fd1:bw2:
+
+.. math::
+   :label: trunc:table:fd1:bw2
+          
+        R^n = -\frac{1}{3}u'''(t_n)\Delta t^2 + {\mathcal{O}(\Delta t^3)}
+        
+        
+
+.. _Eq:trunc:table:fd2:center:eq:
+
+.. math::
+   :label: trunc:table:fd2:center:eq
+          
+        \lbrack D_tD_t u \rbrack^n = \frac{u^{n+1} - 2u^{n} + u^{n-1}}{\Delta t^2} = u''(t_n) + R^n
+        ,
+        
+
+.. _Eq:trunc:table:fd2:center:
+
+.. math::
+   :label: trunc:table:fd2:center
+          
+        R^n = \frac{1}{12}u''''(t_n)\Delta t^2 + {\mathcal{O}(\Delta t^4)}
+        
+        
+
+It will also be convenient to have the truncation errors for
+various means or averages. The
+weighted arithmetic mean leads to
+
+.. _Eq:trunc:table:avg:theta:eq:
+
+.. math::
+   :label: trunc:table:avg:theta:eq
+        
+        [\overline{u}^{t,\theta}]^{n+\theta}
+         = \theta u^{n+1} + (1-\theta)u^n =
+        u(t_{n+\theta}) + R^{n+\theta},
+        
+        
+
+.. _Eq:trunc:table:avg:theta:
+
+.. math::
+   :label: trunc:table:avg:theta
+          
+        R^{n+\theta} = {\frac{1}{2}}u''(t_{n+\theta})\Delta t^2\theta (1-\theta) +
+        {\mathcal{O}(\Delta t^3)}
+        {\thinspace .}
+        
+        
+
+The standard arithmetic mean follows from this formula when
+:math:`\theta=1/2`. Expressed at point :math:`t_n` we get
+
+.. _Eq:trunc:table:avg:arith:eq:
+
+.. math::
+   :label: trunc:table:avg:arith:eq
+        
+        [\overline{u}^{t}]^{n} = \frac{1}{2}(u^{n-\frac{1}{2}} + u^{n+\frac{1}{2}})
+        = u(t_n) + R^{n},
+        
+        
+
+.. _Eq:trunc:table:avg:arith:
+
+.. math::
+   :label: trunc:table:avg:arith
+          
+        R^{n} = \frac{1}{8}u''(t_{n})\Delta t^2 + \frac{1}{384}u''''(t_n)\Delta t^4
+        + {\mathcal{O}(\Delta t^6)}{\thinspace .}
+        
+        
+
+The geometric mean also has an error :math:`{\mathcal{O}(\Delta t^2)}`:
+
+.. _Eq:trunc:table:avg:geom:eq:
+
+.. math::
+   :label: trunc:table:avg:geom:eq
+        
+        [\overline{u^2}^{t,g}]^{n} = u^{n-\frac{1}{2}}u^{n+\frac{1}{2}} = (u^n)^2 + R^n,
+        
+        
+
+.. _Eq:trunc:table:avg:geom:
+
+.. math::
+   :label: trunc:table:avg:geom
+          
+        R^n = - \frac{1}{4}u'(t_n)^2\Delta t^2  + \frac{1}{4}u(t_n)u''(t_n)\Delta t^2
+        + {\mathcal{O}(\Delta t^4)}
+        {\thinspace .}
+        
+        
+
+The harmonic mean is also second-order accurate:
+
+.. _Eq:trunc:table:avg:harm:eq:
+
+.. math::
+   :label: trunc:table:avg:harm:eq
+        
+        [\overline{u}^{t,h}]^{n} = u^n = \frac{2}{\frac{1}{u^{n-\frac{1}{2}}} + \frac{1}{u^{n+\frac{1}{2}}}}
+        + R^{n+\frac{1}{2}},
+        
+        
+
+.. _Eq:trunc:table:avg:harm:
+
+.. math::
+   :label: trunc:table:avg:harm
+          
+        R^n = - \frac{u'(t_n)^2}{4u(t_n)}\Delta t^2 + \frac{1}{8}u''(t_n)\Delta t^2
+        {\thinspace .}
+        
+        
+
+.. _trunc:sympy:
+
+Software for computing truncation errors
+----------------------------------------
+
+We can use ``sympy`` to aid calculations with Taylor series.
+The derivatives can be defined as symbols, say ``D3f`` for the
+3rd derivative of some function :math:`f`. A truncated Taylor series
+can then be written as ``f + D1f*h + D2f*h**2/2``. The following
+class takes some symbol ``f`` for the function in question
+and makes a list of symbols for the derivatives. The
+``__call__`` method computes the symbolic form of the series
+truncated at ``num_terms`` terms.
+
+.. code-block:: python
+
+        import sympy as sp
+        
+        class TaylorSeries:
+            """Class for symbolic Taylor series."""
+            def __init__(self, f, num_terms=4):
+                self.f = f
+                self.N = num_terms
+                # Introduce symbols for the derivatives
+                self.df = [f]
+                for i in range(1, self.N+1):
+                    self.df.append(sp.Symbol('D%d%s' % (i, f.name)))
+        
+            def __call__(self, h):
+                """Return the truncated Taylor series at x+h."""
+                terms = self.f
+                for i in range(1, self.N+1):
+                    terms += sp.Rational(1, sp.factorial(i))*self.df[i]*h**i
+                return terms
+
+We may, for example, use this class to compute the truncation error
+of the Forward Euler finite difference formula:
+
+.. code-block:: ipy
+
+        >>> from truncation_errors import TaylorSeries
+        >>> from sympy import *
+        >>> u, dt = symbols('u dt')
+        >>> u_Taylor = TaylorSeries(u, 4)
+        >>> u_Taylor(dt)
+        D1u*dt + D2u*dt**2/2 + D3u*dt**3/6 + D4u*dt**4/24 + u
+        >>> FE = (u_Taylor(dt) - u)/dt
+        >>> FE
+        (D1u*dt + D2u*dt**2/2 + D3u*dt**3/6 + D4u*dt**4/24)/dt
+        >>> simplify(FE)
+        D1u + D2u*dt/2 + D3u*dt**2/6 + D4u*dt**3/24
+
+The truncation error consists of the terms after the first one (:math:`u'`).
+
+The module file `trunc/truncation_errors.py <http://tinyurl.com/jvzzcfn/trunc/truncation_errors.py>`__ contains another class ``DiffOp`` with symbolic expressions for
+most of the truncation errors listed in the previous section.
+For example:
+
+.. code-block:: text
+
+        >>> from truncation_errors import DiffOp
+        >>> from sympy import *
+        >>> u = Symbol('u')
+        >>> diffop = DiffOp(u, independent_variable='t')
+        >>> diffop['geometric_mean']
+        -D1u**2*dt**2/4 - D1u*D3u*dt**4/48 + D2u**2*dt**4/64 + ...
+        >>> diffop['Dtm']
+        D1u + D2u*dt/2 + D3u*dt**2/6 + D4u*dt**3/24
+        >>> >>> diffop.operator_names()
+        ['geometric_mean', 'harmonic_mean', 'Dtm', 'D2t', 'DtDt',
+         'weighted_arithmetic_mean', 'Dtp', 'Dt']
+
+The indexing of ``diffop`` applies names that correspond to the operators:
+``Dtp`` for :math:`D^+_t`, ``Dtm`` for :math:`D_t^-`, ``Dt`` for :math:`D_t`, ``D2t`` for
+:math:`D_{2t}`, ``DtDt`` for :math:`D_tD_t`.
+

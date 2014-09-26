@@ -92,7 +92,7 @@ mv -f report.html report_bloodish_Stalemate.html
 # Bootstrap themes with white background
 # First insert a split before the first section so we get a jumbotron first page
 doconce subst -m '^======= Mathematical ' '!split\n======= Mathematical ' report.do.txt
-styles="bootstrap bootswatch_cosmo bootswatch_journal bootswatch_readable bootstrap_bloodish"
+styles="bootstrap bootswatch_cosmo bootswatch_journal bootswatch_readable bootstrap_bloodish bootstrap_FlatUI bootstrap_bluegray"
 for style in $styles; do
 doconce format html report --html_style=$style --pygments_html_style=default --html_admon=bootstrap_alert --html_output=report_${style} --keep_pygments_html_bg --html_code_style=inherit --html_pre_style=inherit
 doconce split_html report_$style.html
@@ -190,11 +190,21 @@ pdflatex -shell-escape report
 pdflatex -shell-escape report
 cp report.pdf report_4phone.pdf
 
+# PDF with anslistings code block style
+doconce format pdflatex report --latex_papersize=a4 --latex_font=helvetica
+doconce ptex2tex report envir=ans:nt
+rm -f *.aux
+pdflatex report
+bibtex report
+pdflatex report
+pdflatex report
+cp report.pdf report_ans.pdf
+
 # PDF for screen viewing with an alternative look from classic LaTeX
-doconce format pdflatex report --latex_font=helvetica --latex_admon=yellowbox '--latex_admon_color=yellow!5' --latex_fancy_header --latex_title_layout=std --latex_section_headings=blue --latex_colored_table_rows=blue
+doconce format pdflatex report --latex_font=helvetica --latex_admon=yellowicon '--latex_admon_color=yellow!5' --latex_fancy_header --latex_title_layout=std --latex_section_headings=blue --latex_colored_table_rows=blue
 # Substitute abstract envir with quote and \small font
 doconce replace 'begin{abstract}' 'begin{quote}\small' report.p.tex
-doconce replace 'end{abstract}' 'end{quote}\small' report.p.tex
+doconce replace 'end{abstract}' 'end{quote}' report.p.tex
 doconce replace '[compact]{titlesec}' '[]{titlesec}' report.p.tex
 
 doconce ptex2tex report envir=minted
@@ -260,6 +270,9 @@ doconce replace 'TITLE: Examples of scientific reports in different formats' 'TI
 doconce format html tmp -DCODE --html_links_in_new_window --html_style=bootswatch_readable
 if [ $? -ne 0 ]; then failures="$failures:doconce-reports/tmp.do.txt"; fi
 mv -f tmp.html index_with_doconce_commands.html
+ls *.html
+
+echo "Making pygmentized HTML files"
 
 pyg="pygmentize -f html -O full,style=emacs"
 for file in *.html; do

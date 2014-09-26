@@ -1,0 +1,1227 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Software engineering</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Scientific software engineering with a simple ODE model as example" href="index.html" />
+    <link rel="next" title="Performing scientific experiments" href="._main_softeng1003.html" />
+    <link rel="prev" title="Sample problem and code" href="._main_softeng1001.html" />
+ 
+  
+   <style type="text/css">
+     div.admonition {
+       background-color: whiteSmoke;
+       border: 1px solid #bababa;
+     }
+   </style>
+  </head>
+
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_softeng1003.html" title="Performing scientific experiments"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="._main_softeng1001.html" title="Sample problem and code"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Scientific software engineering with a simple ODE model as example</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="software-engineering">
+<h1>Software engineering<a class="headerlink" href="#software-engineering" title="Permalink to this headline">¶</a></h1>
+<div class="admonition-goal admonition">
+<p class="first admonition-title">Goal</p>
+<p>Efficient use of differential equation models requires software that is easy to
+test and flexible for setting up extensive numerical experiments.
+This section introduces three important concepts:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Modules</li>
+<li>Testing frameworks</li>
+<li>Implementation with classes</li>
+</ul>
+</div></blockquote>
+<p class="last">The concepts are introduced using the differential equation
+problem <span class="math">\(u'=-au\)</span>, <span class="math">\(u(0)=I\)</span>, as example.</p>
+</div>
+<div class="section" id="making-a-module">
+<span id="decay-prog-se-module"></span><h2>Making a module<a class="headerlink" href="#making-a-module" title="Permalink to this headline">¶</a></h2>
+<div class="admonition-the-dry-principle admonition" id="index-0">
+<p class="first admonition-title">The DRY principle</p>
+<p class="last">The previous sections have outlined numerous different programs, all of
+them having their own copy of the <tt class="docutils literal"><span class="pre">solver</span></tt> function.  Such copies
+of the same piece of code is against the important <em>Don&#8217;t Repeat
+Yourself</em> (DRY) principle in programming.  If we want to change the
+<tt class="docutils literal"><span class="pre">solver</span></tt> function there should be <em>one and only one</em> place where the
+change needs to be performed.</p>
+</div>
+<p>To clean up the repetitive code snippets scattered among the
+<tt class="docutils literal"><span class="pre">decay_*.py</span></tt> files, we start by collecting the
+various functions we want to keep for the future in one file,
+now called <a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/decay_mod.py">decay_mod.py</a> (<tt class="docutils literal"><span class="pre">mod</span></tt> stands for &#8220;module&#8221;).
+The following functions are copied to this file:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">solver</span></tt> for computing the numerical solution</li>
+<li><tt class="docutils literal"><span class="pre">verify_three_steps</span></tt> for verifying the first three solution
+points against hand calculations</li>
+<li><tt class="docutils literal"><span class="pre">verify_discrete_solution</span></tt> for verifying the entire computed solution
+against an exact formula for the numerical solution</li>
+<li><tt class="docutils literal"><span class="pre">explore</span></tt> for computing and plotting the solution</li>
+<li><tt class="docutils literal"><span class="pre">define_command_line_options</span></tt> for defining option-value pairs
+on the command line</li>
+<li><tt class="docutils literal"><span class="pre">read_command_line</span></tt> for reading input from the command line,
+now extended to work both with <tt class="docutils literal"><span class="pre">sys.argv</span></tt> directly
+and with an <tt class="docutils literal"><span class="pre">ArgumentParser</span></tt> object</li>
+<li><tt class="docutils literal"><span class="pre">main</span></tt> for running experiments with <span class="math">\(\theta=0,0.5,1\)</span> and a series of
+<span class="math">\(\Delta t\)</span> values, and computing convergence rates</li>
+<li><tt class="docutils literal"><span class="pre">main_GUI</span></tt> for doing the same as the <tt class="docutils literal"><span class="pre">main</span></tt> function, but modified
+for automatic GUI generation</li>
+<li><tt class="docutils literal"><span class="pre">verify_convergence_rate</span></tt> for verifying the computed convergence
+rates against the theoretically expected values</li>
+</ul>
+</div></blockquote>
+<p>We use Matplotlib for plotting. A sketch of the <tt class="docutils literal"><span class="pre">decay_mod.py</span></tt>
+file, with complete versions of the modified functions, looks as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+    <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">verify_three_steps</span><span class="p">():</span>
+    <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">verify_exact_discrete_solution</span><span class="p">():</span>
+    <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">u_exact</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
+    <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">explore</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">makeplot</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">define_command_line_options</span><span class="p">():</span>
+    <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">read_command_line</span><span class="p">(</span><span class="n">use_argparse</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">use_argparse</span><span class="p">:</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">define_command_line_options</span><span class="p">()</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+        <span class="k">print</span> <span class="s">&#39;I={}, a={}, makeplot={}, dt_values={}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">makeplot</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">dt_values</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">args</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">makeplot</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">dt_values</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">6</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;Usage: </span><span class="si">%s</span><span class="s"> I a on/off dt1 dt2 dt3 ...&#39;</span> <span class="o">%</span> \
+                  <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span> <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">I</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+        <span class="n">makeplot</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;on&#39;</span><span class="p">,</span> <span class="s">&#39;True&#39;</span><span class="p">)</span>
+        <span class="n">dt_values</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">5</span><span class="p">:]]</span>
+
+        <span class="k">return</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">makeplot</span><span class="p">,</span> <span class="n">dt_values</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>This <tt class="docutils literal"><span class="pre">decay_mod.py</span></tt> file is already a module such that we can import
+desired functions in other programs. For example, we can in a file do</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">decay_mod</span> <span class="kn">import</span> <span class="n">solver</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p id="index-1">However, it should also be possible to both use <tt class="docutils literal"><span class="pre">decay_mod.py</span></tt> as
+a module <em>and</em> execute the file as a program that runs <tt class="docutils literal"><span class="pre">main()</span></tt>. This is
+accomplished by ending the file with a <em>test block</em>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>When <tt class="docutils literal"><span class="pre">decay_mod.py</span></tt> is used as a module, <tt class="docutils literal"><span class="pre">__name__</span></tt> equals the module
+name <tt class="docutils literal"><span class="pre">decay_mod</span></tt>, while <tt class="docutils literal"><span class="pre">__name__</span></tt> equals <tt class="docutils literal"><span class="pre">'__main__'</span></tt> when the
+file is run as a program.
+Optionally, we could run the verification tests if the word <tt class="docutils literal"><span class="pre">verify</span></tt>
+is present on the command line and <tt class="docutils literal"><span class="pre">verify_convergence_rate</span></tt> could
+be tested if <tt class="docutils literal"><span class="pre">verify_rates</span></tt> is found on the command line. The
+<tt class="docutils literal"><span class="pre">verify_rates</span></tt> argument must be removed before we read parameter values from
+the command line, otherwise the <tt class="docutils literal"><span class="pre">read_command_line</span></tt> function (called by <tt class="docutils literal"><span class="pre">main</span></tt>)
+will not work properly.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s">&#39;verify&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">verify_three_steps</span><span class="p">()</span> <span class="ow">and</span> <span class="n">verify_discrete_solution</span><span class="p">():</span>
+            <span class="k">pass</span> <span class="c"># ok</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;Bug in the implementation!&#39;</span>
+    <span class="k">elif</span> <span class="s">&#39;verify_rates&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s">&#39;verify_rates&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;--dt&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;Must assign several dt values&#39;</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c"># abort</span>
+        <span class="k">if</span> <span class="n">verify_convergence_rate</span><span class="p">():</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;Bug in the implementation!&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># Perform simulations</span>
+        <span class="n">main</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="prefixing-imported-functions-by-the-module-name">
+<span id="decay-prog-se-import"></span><h2>Prefixing imported functions by the module name<a class="headerlink" href="#prefixing-imported-functions-by-the-module-name" title="Permalink to this headline">¶</a></h2>
+<p id="index-2">Import statements of the form <tt class="docutils literal"><span class="pre">from</span> <span class="pre">module</span> <span class="pre">import</span> <span class="pre">*</span></tt> import
+functions and variables in <tt class="docutils literal"><span class="pre">module.py</span></tt> into the current file.
+For example, when doing</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+</div>
+<p>we get mathematical functions like <tt class="docutils literal"><span class="pre">sin</span></tt> and <tt class="docutils literal"><span class="pre">exp</span></tt>
+as well as MATLAB-style functions like <tt class="docutils literal"><span class="pre">linspace</span></tt> and <tt class="docutils literal"><span class="pre">plot</span></tt>,
+which can be called by these well-known names.
+Unfortunately, it sometimes becomes confusing to
+know where a particular function comes from. Is it from <tt class="docutils literal"><span class="pre">numpy</span></tt>? Or
+<tt class="docutils literal"><span class="pre">matplotlib.pyplot</span></tt>?
+Or is it our own function?</p>
+<p>An alternative import is</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span>
+</pre></div>
+</div>
+<p>and such imports require functions to be prefixed by the module name, e.g.,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">t</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">u_e</span> <span class="o">=</span> <span class="n">I</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">pyplot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u_e</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is normally regarded as a better habit because it is explicitly stated
+from which module a function comes from.</p>
+<p>The modules <tt class="docutils literal"><span class="pre">numpy</span></tt> and <tt class="docutils literal"><span class="pre">matplotlib.pyplot</span></tt> are so frequently used,
+and their full names quite tedious to write, so two standard abbreviations
+have evolved in the Python scientific computing community:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+<span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">u_e</span> <span class="o">=</span> <span class="n">I</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u_e</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A version of the <tt class="docutils literal"><span class="pre">decay_mod</span></tt> module where we use the <tt class="docutils literal"><span class="pre">np</span></tt> and <tt class="docutils literal"><span class="pre">plt</span></tt>
+prefixes is found in the file
+<a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/decay_mod_prefix.py">decay_mod_prefix.py</a>.</p>
+<p>The downside of prefixing functions by the module name is that
+mathematical expressions like <span class="math">\(e^{-at}\sin(2\pi t)\)</span> get
+cluttered with module names,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+<span class="c"># or</span>
+<span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Such an expression looks like <tt class="docutils literal"><span class="pre">exp(-a*t)*sin(2*pi*t)</span></tt> in most
+other programming languages. Similarly,
+<tt class="docutils literal"><span class="pre">np.linspace</span></tt> and <tt class="docutils literal"><span class="pre">plt.plot</span></tt> look less familiar to people who are
+used to MATLAB and who have not adopted Python&#8217;s prefix style.
+Whether to do <tt class="docutils literal"><span class="pre">from</span> <span class="pre">module</span> <span class="pre">import</span> <span class="pre">*</span></tt> or <tt class="docutils literal"><span class="pre">import</span> <span class="pre">module</span></tt> depends
+on personal taste and the problem at hand. In these writings we use
+<tt class="docutils literal"><span class="pre">from</span> <span class="pre">module</span> <span class="pre">import</span></tt> in shorter programs where similarity with
+MATLAB could be an advantage, and where a one-to-one correspondence between
+mathematical formulas and Python expressions is important.
+The style <tt class="docutils literal"><span class="pre">import</span> <span class="pre">module</span></tt> is preferred inside Python modules (see
+<a class="reference internal" href="._main_softeng1004.html#decay-exer-module1"><em>Problem 5: Make a module</em></a> for a demonstration).</p>
+</div>
+<div class="section" id="doctests">
+<span id="decay-prog-se-doctest"></span><h2>Doctests<a class="headerlink" href="#doctests" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-3"></span><p id="index-4">We have emphasized how important it is to be able to run tests in the
+program at any time. This was solved by calling various <tt class="docutils literal"><span class="pre">verify*</span></tt>
+functions in the previous examples. However, there exists
+well-established procedures and corresponding tools for automating
+the execution of tests. We shall briefly demonstrate two important
+techniques: <em>doctest</em> and <em>unit testing</em>. The corresponding files are
+the modules <a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/decay_mod_doctest.py">decay_mod_doctest.py</a>
+and <a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/decay_mod_nosetest.py">decay_mod_nosetest.py</a>.</p>
+<p>A doc string (the first string after the function header) is used to
+document the purpose of functions and their arguments. Very often it
+is instructive to include an example on how to use the function.
+Interactive examples in the Python shell are most illustrative as
+we can see the output resulting from function calls. For example,
+we can in the <tt class="docutils literal"><span class="pre">solver</span></tt> function include an example on calling
+this function and printing the computed <tt class="docutils literal"><span class="pre">u</span></tt> and <tt class="docutils literal"><span class="pre">t</span></tt> arrays:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Solve u&#39;=-a*u, u(0)=I, for t in (0,T] with steps of dt.</span>
+
+
+<span class="sd">    &gt;&gt;&gt; u, t = solver(I=0.8, a=1.2, T=4, dt=0.5, theta=0.5)</span>
+<span class="sd">    &gt;&gt;&gt; for t_n, u_n in zip(t, u):</span>
+<span class="sd">    ...     print &#39;t=%.1f, u=%.14f&#39; % (t_n, u_n)</span>
+<span class="sd">    t=0.0, u=0.80000000000000</span>
+<span class="sd">    t=0.5, u=0.43076923076923</span>
+<span class="sd">    t=1.0, u=0.23195266272189</span>
+<span class="sd">    t=1.5, u=0.12489758761948</span>
+<span class="sd">    t=2.0, u=0.06725254717972</span>
+<span class="sd">    t=2.5, u=0.03621291001985</span>
+<span class="sd">    t=3.0, u=0.01949925924146</span>
+<span class="sd">    t=3.5, u=0.01049960113002</span>
+<span class="sd">    t=4.0, u=0.00565363137770</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>When such interactive demonstrations are inserted in doc strings,
+Python&#8217;s <a class="reference external" href="http://docs.python.org/library/doctest.html">doctest</a>
+module can be used to automate running all commands
+in interactive sessions and compare new output with the output
+appearing in the doc string.  All we have to do in the current example
+is to write</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">Terminal</span><span class="o">&gt;</span> <span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">doctest</span> <span class="n">decay_mod_doctest</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>This command imports the <tt class="docutils literal"><span class="pre">doctest</span></tt> module, which runs all tests.
+No additional command-line argument is allowed when running doctests.
+If any test fails, the problem is reported, e.g.,</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python -m doctest decay_mod_doctest.py
+********************************************************
+File &quot;decay_mod_doctest.py&quot;, line 12, in decay_mod_doctest....
+Failed example:
+    for t_n, u_n in zip(t, u):
+        print &#39;t=%.1f, u=%.14f&#39; % (t_n, u_n)
+Expected:
+    t=0.0, u=0.80000000000000
+    t=0.5, u=0.43076923076923
+    t=1.0, u=0.23195266272189
+    t=1.5, u=0.12489758761948
+    t=2.0, u=0.06725254717972
+Got:
+    t=0.0, u=0.80000000000000
+    t=0.5, u=0.43076923076923
+    t=1.0, u=0.23195266272189
+    t=1.5, u=0.12489758761948
+    t=2.0, u=0.06725254718756
+********************************************************
+1 items had failures:
+   1 of   2 in decay_mod_doctest.solver
+***Test Failed*** 1 failures.
+</pre></div>
+</div>
+<p>Note that in the output of <tt class="docutils literal"><span class="pre">t</span></tt> and <tt class="docutils literal"><span class="pre">u</span></tt> we write <tt class="docutils literal"><span class="pre">u</span></tt> with 14 digits.
+Writing all 16 digits is not a good idea: if the tests are run on
+different hardware, round-off errors might be different, and
+the <tt class="docutils literal"><span class="pre">doctest</span></tt> module detects that the numbers are not precisely the same
+and reports failures. In the present application, where <span class="math">\(0 &lt; u(t) \leq 0.8\)</span>,
+we expect round-off errors to be of size <span class="math">\(10^{-16}\)</span>, so comparing 15
+digits would probably be reliable, but we compare 14 to be on the
+safe side.</p>
+<p>Doctests are highly encouraged as they do two things: 1) demonstrate
+how a function is used and 2) test that the function works.</p>
+<p>Here is an example on a doctest in the <tt class="docutils literal"><span class="pre">explore</span></tt> function:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">explore</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">makeplot</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run a case with the solver, compute error measure,</span>
+<span class="sd">    and plot the numerical and exact solutions (if makeplot=True).</span>
+
+<span class="sd">    &gt;&gt;&gt; for theta in 0, 0.5, 1:</span>
+<span class="sd">    ...    E = explore(I=1.9, a=2.1, T=5, dt=0.1, theta=theta,</span>
+<span class="sd">    ...                makeplot=False)</span>
+<span class="sd">    ...    print &#39;%.10E&#39; % E</span>
+<span class="sd">    ...</span>
+<span class="sd">    7.3565079236E-02</span>
+<span class="sd">    2.4183893110E-03</span>
+<span class="sd">    6.5013039886E-02</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>This time we limit the output to 10 digits.</p>
+<div class="admonition-caution admonition">
+<p class="first admonition-title">Caution</p>
+<p class="last">Doctests requires careful coding if they use command-line input or
+print results to the terminal window. Command-line input must
+be simulated by filling <tt class="docutils literal"><span class="pre">sys.argv</span></tt> correctly, e.g.,
+<tt class="docutils literal"><span class="pre">sys.argv</span> <span class="pre">=</span> <span class="pre">'--I</span> <span class="pre">1.0</span> <span class="pre">--a</span> <span class="pre">5'.split</span></tt>.
+The output lines of print statements must be copied exactly as they
+appear when running the statements in an interactive Python shell.</p>
+</div>
+</div>
+<div class="section" id="unit-testing-with-nose">
+<span id="decay-prog-se-nose"></span><h2>Unit testing with nose<a class="headerlink" href="#unit-testing-with-nose" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-5"></span><span class="target" id="index-6"></span><p id="index-7">The unit testing technique consists of identifying small units
+of code, usually functions (or classes), and write one or more tests for
+each unit. One test should, ideally, not depend on the outcome of
+other tests. For example, the doctest in function <tt class="docutils literal"><span class="pre">solver</span></tt> is a
+unit test, and the doctest in function <tt class="docutils literal"><span class="pre">explore</span></tt> as well, but the
+latter depends on a working <tt class="docutils literal"><span class="pre">solver</span></tt>. Putting the error computation
+and plotting in <tt class="docutils literal"><span class="pre">explore</span></tt> in two separate functions would allow
+independent unit tests. In this way, the design of unit tests impacts
+the design of functions. The recommended practice is actually to
+design and write the unit tests first and <em>then</em> implement the functions!</p>
+<p>In scientific computing it is not always obvious how to best perform
+unit testing. The units is naturally larger than in non-scientific
+software. Very often the solution procedure of a mathematical problem
+identifies a unit.</p>
+<div class="section" id="basic-use-of-nose">
+<h3>Basic use of nose<a class="headerlink" href="#basic-use-of-nose" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">nose</span></tt> package is a versatile tool for implementing unit tests
+in Python. Here is a short explanation of the usage of nose:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Implement tests in functions with names starting with <tt class="docutils literal"><span class="pre">test_</span></tt>.
+Such functions cannot have any arguments.</li>
+<li>The test functions perform assertions on computed results
+using <tt class="docutils literal"><span class="pre">assert</span></tt> functions from the <tt class="docutils literal"><span class="pre">nose.tools</span></tt> module.</li>
+<li>The test functions can be in the source code files or be
+collected in separate files with names <tt class="docutils literal"><span class="pre">test*.py</span></tt>.</li>
+</ol>
+</div></blockquote>
+<p>Here comes a very simple illustration of the three points.
+Assume that we have this function in a module <tt class="docutils literal"><span class="pre">mymod</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">double</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">2</span><span class="o">*</span><span class="n">n</span>
+</pre></div>
+</div>
+<p>Either in this file, or in a separate file <tt class="docutils literal"><span class="pre">test_mymod.py</span></tt>, we
+implement a test function whose purpose is
+to test that the function <tt class="docutils literal"><span class="pre">double</span></tt> works as intended:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">nose.tools</span> <span class="kn">as</span> <span class="nn">nt</span>
+
+<span class="k">def</span> <span class="nf">test_double</span><span class="p">():</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">double</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+    <span class="n">nt</span><span class="o">.</span><span class="n">assert_equal</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Notice that <tt class="docutils literal"><span class="pre">test_double</span></tt> has no arguments.
+We need to do an <tt class="docutils literal"><span class="pre">import</span> <span class="pre">mymod</span></tt> or <tt class="docutils literal"><span class="pre">from</span> <span class="pre">mymod</span> <span class="pre">import</span> <span class="pre">double</span></tt>
+if this test resides in a separate file.
+Running</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; nosetests -s mymod
+</pre></div>
+</div>
+<p>makes the <tt class="docutils literal"><span class="pre">nose</span></tt> tool run all functions with names matching <tt class="docutils literal"><span class="pre">test_*()</span></tt>
+in <tt class="docutils literal"><span class="pre">mymod.py</span></tt>.
+Alternatively, if the test functions are in some <tt class="docutils literal"><span class="pre">test_mymod.py</span></tt> file,
+we can just write <tt class="docutils literal"><span class="pre">nosetests</span> <span class="pre">-s</span></tt>. The nose tool will then look
+for all files with names mathching <tt class="docutils literal"><span class="pre">test*.py</span></tt> and run all
+functions <tt class="docutils literal"><span class="pre">test_*()</span></tt> in these files.</p>
+<p>When you have nose tests in separate test
+files with names <tt class="docutils literal"><span class="pre">test*.py</span></tt> it is common to collect
+these files in a subdirectory <tt class="docutils literal"><span class="pre">tests</span></tt>, or <tt class="docutils literal"><span class="pre">*_tests</span></tt> if
+you have several test subdirectories. Running <tt class="docutils literal"><span class="pre">nosetests</span> <span class="pre">-s</span></tt> will
+then recursively look for all <tt class="docutils literal"><span class="pre">tests</span></tt> and <tt class="docutils literal"><span class="pre">*_tests</span></tt> subdirectories
+and run all functions <tt class="docutils literal"><span class="pre">test_*()</span></tt> in all files <tt class="docutils literal"><span class="pre">test_*.py</span></tt> in these
+directories. Just one command can then launch a series of tests in
+a directory tree!</p>
+<p>An example of a <tt class="docutils literal"><span class="pre">tests</span></tt> directory with different types of <tt class="docutils literal"><span class="pre">test*.py</span></tt>
+files are found in <a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/tests">src/decay/tests</a>.
+Note that these perform imports of modules in the parent directory.
+These imports works well because the tests are supposed to be
+run by <tt class="docutils literal"><span class="pre">nosetests</span> <span class="pre">-s</span></tt> executed in the parent directory (<tt class="docutils literal"><span class="pre">decay</span></tt>).</p>
+<div class="admonition-tip admonition">
+<p class="first admonition-title">Tip</p>
+<p class="last">The <tt class="docutils literal"><span class="pre">-s</span></tt> option to <tt class="docutils literal"><span class="pre">nosetests</span></tt> assures that any print statement
+in the <tt class="docutils literal"><span class="pre">test_*</span></tt> functions appears in the output. Without this
+option, <tt class="docutils literal"><span class="pre">nosetests</span></tt> suppressed whatever the tests writes to
+the terminal window (standard output). Such behavior is annoying,
+especially when developing and testing tests.</p>
+</div>
+<p>The number of failed tests and their details are
+reported, or an <tt class="docutils literal"><span class="pre">OK</span></tt> is printed if all tests passed.</p>
+<p>The advantage with the <tt class="docutils literal"><span class="pre">nose</span></tt> package is two-fold:</p>
+<ol class="arabic simple">
+<li>tests are written and collected
+in a structured way, and</li>
+<li>large collections of tests, scattered
+throughout a tree of directories,
+can be executed with one command <tt class="docutils literal"><span class="pre">nosetests</span> <span class="pre">-s</span></tt>.</li>
+</ol>
+</div>
+<div class="section" id="alternative-assert-statements">
+<h3>Alternative assert statements<a class="headerlink" href="#alternative-assert-statements" title="Permalink to this headline">¶</a></h3>
+<p>In case the <tt class="docutils literal"><span class="pre">nt.assert_equal</span></tt> function
+finds that the two arguments are equal, the test is a success, otherwise
+it is a failure and an exception of type <tt class="docutils literal"><span class="pre">AssertionError</span></tt> is raised.
+The particular exception is the indicator that a test has failed.</p>
+<p>Instead of calling the convenience function <tt class="docutils literal"><span class="pre">nt.assert_equal</span></tt>, we
+can use Python&#8217;s plain <tt class="docutils literal"><span class="pre">assert</span></tt> statement, which tests if a boolean
+expression is true and raises an <tt class="docutils literal"><span class="pre">AssertionError</span></tt> otherwise.
+Here, the statement is <tt class="docutils literal"><span class="pre">assert</span> <span class="pre">result</span> <span class="pre">==</span> <span class="pre">8</span></tt>.</p>
+<p>A completely manual alternative is to explicitly raise an <tt class="docutils literal"><span class="pre">AssertionError</span></tt>
+exception if the computed result is wrong:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">if</span> <span class="n">result</span> <span class="o">!=</span> <span class="mi">8</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="applying-nose">
+<h3>Applying nose<a class="headerlink" href="#applying-nose" title="Permalink to this headline">¶</a></h3>
+<p>Let us illustrate how to use the <tt class="docutils literal"><span class="pre">nose</span></tt> tool for testing key functions
+in the <tt class="docutils literal"><span class="pre">decay_mod</span></tt> module. Or more precisely, the module is called
+<tt class="docutils literal"><span class="pre">decay_mod_unittest</span></tt> with all the <tt class="docutils literal"><span class="pre">verify*</span></tt> functions removed
+as these now are outdated by the unit tests.</p>
+<p>We design three unit tests:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>A comparison between the computed <span class="math">\(u^n\)</span> values and the
+exact discrete solution.</li>
+<li>A comparison between the computed <span class="math">\(u^n\)</span> values and precomputed,
+verified reference values.</li>
+<li>A comparison between observed and expected convergence rates.</li>
+</ol>
+</div></blockquote>
+<p>These tests follow very closely the code in the previously shown
+<tt class="docutils literal"><span class="pre">verify*</span></tt> functions. We start with comparing <span class="math">\(u^n\)</span>, as computed by
+the function <tt class="docutils literal"><span class="pre">solver</span></tt>, to the formula
+for the exact discrete solution:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">nose.tools</span> <span class="kn">as</span> <span class="nn">nt</span>
+<span class="kn">import</span> <span class="nn">decay_mod_unittest</span> <span class="kn">as</span> <span class="nn">decay_mod</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="k">def</span> <span class="nf">exact_discrete_solution</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return exact discrete solution of the theta scheme.&quot;&quot;&quot;</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>  <span class="c"># avoid integer division</span>
+    <span class="n">factor</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">theta</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="n">a</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">factor</span><span class="o">**</span><span class="n">n</span>
+
+<span class="k">def</span> <span class="nf">test_exact_discrete_solution</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compare result from solver against</span>
+<span class="sd">    formula for the discrete solution.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">;</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="n">I</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">;</span> <span class="n">dt</span> <span class="o">=</span> <span class="mf">0.8</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">8</span><span class="o">/</span><span class="n">dt</span><span class="p">)</span>  <span class="c"># no of steps</span>
+    <span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">decay_mod</span><span class="o">.</span><span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">N</span><span class="o">*</span><span class="n">dt</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">u_de</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">exact_discrete_solution</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+                     <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+    <span class="n">diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">u_de</span> <span class="o">-</span> <span class="n">u</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="n">nt</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">1E-14</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">nt.assert_almost_equal</span></tt> is the relevant function for comparing two
+real numbers. The <tt class="docutils literal"><span class="pre">delta</span></tt> argument specifies a tolerance for the
+comparison. Alternatively, one can specify a <tt class="docutils literal"><span class="pre">places</span></tt> argument
+for the number of decimal places to be used in the comparison.</p>
+<p>After having carefully verified the implementation, we may
+store correctly computed numbers in the test program or in files for
+use in future tests. Here is an example on how the outcome from the
+<tt class="docutils literal"><span class="pre">solver</span></tt> function can be compared to what is considered to be
+correct results:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_solver</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compare result from solver against</span>
+<span class="sd">    precomputed arrays for theta=0, 0.5, 1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">I</span><span class="o">=</span><span class="mf">0.8</span><span class="p">;</span> <span class="n">a</span><span class="o">=</span><span class="mf">1.2</span><span class="p">;</span> <span class="n">T</span><span class="o">=</span><span class="mi">4</span><span class="p">;</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.5</span>  <span class="c"># fixed parameters</span>
+    <span class="n">precomputed</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;t&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="mf">0.</span> <span class="p">,</span>  <span class="mf">0.5</span><span class="p">,</span>  <span class="mf">1.</span> <span class="p">,</span>  <span class="mf">1.5</span><span class="p">,</span>  <span class="mf">2.</span> <span class="p">,</span>  <span class="mf">2.5</span><span class="p">,</span>
+                        <span class="mf">3.</span> <span class="p">,</span>  <span class="mf">3.5</span><span class="p">,</span>  <span class="mf">4.</span> <span class="p">]),</span>
+        <span class="mf">0.5</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[</span> <span class="mf">0.8</span>       <span class="p">,</span>  <span class="mf">0.43076923</span><span class="p">,</span>  <span class="mf">0.23195266</span><span class="p">,</span> <span class="mf">0.12489759</span><span class="p">,</span>
+              <span class="mf">0.06725255</span><span class="p">,</span>  <span class="mf">0.03621291</span><span class="p">,</span>  <span class="mf">0.01949926</span><span class="p">,</span> <span class="mf">0.0104996</span> <span class="p">,</span>
+              <span class="mf">0.00565363</span><span class="p">]),</span>
+        <span class="mi">0</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[</span>  <span class="mf">8.00000000e-01</span><span class="p">,</span>   <span class="mf">3.20000000e-01</span><span class="p">,</span>
+               <span class="mf">1.28000000e-01</span><span class="p">,</span>   <span class="mf">5.12000000e-02</span><span class="p">,</span>
+               <span class="mf">2.04800000e-02</span><span class="p">,</span>   <span class="mf">8.19200000e-03</span><span class="p">,</span>
+               <span class="mf">3.27680000e-03</span><span class="p">,</span>   <span class="mf">1.31072000e-03</span><span class="p">,</span>
+               <span class="mf">5.24288000e-04</span><span class="p">]),</span>
+        <span class="mi">1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[</span> <span class="mf">0.8</span>       <span class="p">,</span>  <span class="mf">0.5</span>       <span class="p">,</span>  <span class="mf">0.3125</span>    <span class="p">,</span>  <span class="mf">0.1953125</span> <span class="p">,</span>
+              <span class="mf">0.12207031</span><span class="p">,</span>  <span class="mf">0.07629395</span><span class="p">,</span>  <span class="mf">0.04768372</span><span class="p">,</span>  <span class="mf">0.02980232</span><span class="p">,</span>
+              <span class="mf">0.01862645</span><span class="p">]),</span>
+        <span class="p">}</span>
+    <span class="k">for</span> <span class="n">theta</span> <span class="ow">in</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">decay_mod</span><span class="o">.</span><span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">)</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">u</span> <span class="o">-</span> <span class="n">precomputed</span><span class="p">[</span><span class="n">theta</span><span class="p">])</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="c"># Precomputed numbers are known to 8 decimal places</span>
+        <span class="n">nt</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">places</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+                               <span class="n">msg</span><span class="o">=</span><span class="s">&#39;theta=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">theta</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">precomputed</span></tt> object is a dictionary with four keys: <tt class="docutils literal"><span class="pre">'t'</span></tt> for the
+time mesh, and three <span class="math">\(\theta\)</span> values for <span class="math">\(u^n\)</span> solutions corresponding
+to <span class="math">\(\theta=0,0.5,1\)</span>.</p>
+<p>Testing for special type of input data that may cause trouble constitutes
+a common way of constructing unit tests.
+For example, the updating formula for
+<span class="math">\(u^{n+1}\)</span> may be incorrectly evaluated because of unintended integer
+divisions. With</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">theta</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">I</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">dt</span> <span class="o">=</span> <span class="mi">2</span>
+</pre></div>
+</div>
+<p>the nominator and denominator in the updating expression,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">theta</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="n">a</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>evaluate to 1 and 3, respectively, and the fraction <tt class="docutils literal"><span class="pre">1/3</span></tt> will
+call up integer division and consequently lead to <tt class="docutils literal"><span class="pre">u[n+1]=0</span></tt>.
+We construct a unit test to make sure <tt class="docutils literal"><span class="pre">solver</span></tt> is smart
+enough to avoid this problem:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_potential_integer_division</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Choose variables that can trigger integer division.&quot;&quot;&quot;</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">I</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">dt</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">decay_mod</span><span class="o">.</span><span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">N</span><span class="o">*</span><span class="n">dt</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">u_de</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">exact_discrete_solution</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+                     <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+    <span class="n">diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">u_de</span> <span class="o">-</span> <span class="n">u</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="n">nt</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">1E-14</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The final test is to see that the convergence rates corresponding to
+<span class="math">\(\theta=0,0.5, 1\)</span> are 1, 2, and 1, respectively:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_convergence_rates</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Compare empirical convergence rates to exact ones.&quot;&quot;&quot;</span>
+    <span class="c"># Set command-line arguments directly in sys.argv</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="s">&#39;--I 0.8 --a 2.1 --T 5 &#39;</span>\
+                   <span class="s">&#39;--dt 0.4 0.2 0.1 0.05 0.025&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">decay_mod</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">theta</span> <span class="ow">in</span> <span class="n">r</span><span class="p">:</span>
+        <span class="n">nt</span><span class="o">.</span><span class="n">assert_true</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="n">theta</span><span class="p">])</span>  <span class="c"># check for non-empty list</span>
+
+    <span class="n">expected_rates</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">theta</span> <span class="ow">in</span> <span class="n">r</span><span class="p">:</span>
+        <span class="n">r_final</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="n">theta</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c"># Compare to 1 decimal place</span>
+        <span class="n">nt</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">expected_rates</span><span class="p">[</span><span class="n">theta</span><span class="p">],</span> <span class="n">r_final</span><span class="p">,</span>
+                               <span class="n">places</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s">&#39;theta=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">theta</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Nothing more is needed in the <a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/tests/test_decay_nose.py">test_decay_nose.py</a>
+file where the tests reside.
+Running <tt class="docutils literal"><span class="pre">nosetests</span> <span class="pre">-s</span></tt> will report <tt class="docutils literal"><span class="pre">Ran</span> <span class="pre">3</span> <span class="pre">tests</span></tt> and an <tt class="docutils literal"><span class="pre">OK</span></tt> for
+success.  Every time we modify the <tt class="docutils literal"><span class="pre">decay_mod_unittest</span></tt> module we can
+run <tt class="docutils literal"><span class="pre">nosetests</span></tt> to quickly see if the edits have any impact on the
+verification tests.</p>
+</div>
+<div class="section" id="installation-of-nose">
+<h3>Installation of nose<a class="headerlink" href="#installation-of-nose" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">nose</span></tt> package does not come with a standard Python distribution and must
+therefore be installed separately. The procedure is standard and
+described on <a class="reference external" href="http://nose.readthedocs.org/en/latest/">Nose&#8217;s web pages</a>.  On Debian-based Linux
+systems the command is <tt class="docutils literal"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">python-nose</span></tt>, and
+with MacPorts you run <tt class="docutils literal"><span class="pre">sudo</span> <span class="pre">port</span> <span class="pre">install</span> <span class="pre">py27-nose</span></tt>.</p>
+<span class="target" id="index-8"></span></div>
+<div class="section" id="using-nose-to-test-modules-with-doctests">
+<span id="index-9"></span><h3>Using nose to test modules with doctests<a class="headerlink" href="#using-nose-to-test-modules-with-doctests" title="Permalink to this headline">¶</a></h3>
+<p>Assume that <tt class="docutils literal"><span class="pre">mod</span></tt> is the name of some module that contains doctests.
+We may let <tt class="docutils literal"><span class="pre">nose</span></tt> run these doctests and report errors in the
+standard way using the code set-up</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">doctest</span>
+<span class="kn">import</span> <span class="nn">mod</span>
+
+<span class="k">def</span> <span class="nf">test_mod</span><span class="p">():</span>
+    <span class="n">failure_count</span><span class="p">,</span> <span class="n">test_count</span> <span class="o">=</span> <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">(</span><span class="n">m</span><span class="o">=</span><span class="n">mod</span><span class="p">)</span>
+    <span class="n">nt</span><span class="o">.</span><span class="n">assert_equal</span><span class="p">(</span><span class="n">failure_count</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="n">msg</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%d</span><span class="s"> tests out of </span><span class="si">%d</span><span class="s"> failed&#39;</span> <span class="o">%</span>
+                    <span class="p">(</span><span class="n">failure_count</span><span class="p">,</span> <span class="n">test_count</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The call to <tt class="docutils literal"><span class="pre">doctest.testmod</span></tt> runs all doctests in the module file
+<tt class="docutils literal"><span class="pre">mod.py</span></tt> and returns the number of failures (<tt class="docutils literal"><span class="pre">failure_count</span></tt>)
+and the total number of tests (<tt class="docutils literal"><span class="pre">test_count</span></tt>). A real example is
+found in the file
+<a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/tests/test_decay_doctest.py">test_decay_doctest.py</a>.</p>
+</div>
+</div>
+<div class="section" id="classical-class-based-unit-testing">
+<span id="decay-prog-se-unittest"></span><h2>Classical class-based unit testing<a class="headerlink" href="#classical-class-based-unit-testing" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-10"></span><span class="target" id="index-11"></span><p id="index-12">The classical way of implementing unit tests derives from the JUnit
+tool in Java where all tests are methods in a class for testing.
+Python comes with a module <tt class="docutils literal"><span class="pre">unittest</span></tt> for doing this type of unit tests.
+While <tt class="docutils literal"><span class="pre">nose</span></tt> allows simple functions for unit tests, <tt class="docutils literal"><span class="pre">unittest</span></tt>
+requires deriving a class <tt class="docutils literal"><span class="pre">Test*</span></tt> from <tt class="docutils literal"><span class="pre">unittest.TestCase</span></tt> and
+implementing each test as methods with names <tt class="docutils literal"><span class="pre">test_*</span></tt> in that class.
+I strongly recommend to use <tt class="docutils literal"><span class="pre">nose</span></tt> over <tt class="docutils literal"><span class="pre">unittest</span></tt>, because it is
+much simpler and more convenient, but class-based unit testing
+is a very classical subject that computational scientists should
+have some knowledge about. That is why a short introduction
+to <tt class="docutils literal"><span class="pre">unittest</span></tt> is included below.</p>
+<div class="section" id="basic-use-of-unittest">
+<h3>Basic use of unittest<a class="headerlink" href="#basic-use-of-unittest" title="Permalink to this headline">¶</a></h3>
+<span class="target" id="index-13"></span><p id="index-14">We apply the <tt class="docutils literal"><span class="pre">double</span></tt> function in the <tt class="docutils literal"><span class="pre">mymod</span></tt> module introduced in the
+previous section as example.
+Unit testing with the aid of the <tt class="docutils literal"><span class="pre">unittest</span></tt> module
+consists of writing a file <tt class="docutils literal"><span class="pre">test_mymod.py</span></tt> with the content</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">unittest</span>
+<span class="kn">import</span> <span class="nn">mymod</span>
+
+<span class="k">class</span> <span class="nc">TestMyCode</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">test_double</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">mymod</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The test is run by executing the test file <tt class="docutils literal"><span class="pre">test_mymod.py</span></tt> as a standard
+Python program. There is no support in <tt class="docutils literal"><span class="pre">unittest</span></tt> for automatically
+locating and running all tests in all test files in a directory tree.</p>
+<p>Those who have experience with object-oriented programming will see that
+the difference between using <tt class="docutils literal"><span class="pre">unittest</span></tt> and <tt class="docutils literal"><span class="pre">nose</span></tt> is minor.</p>
+</div>
+<div class="section" id="demonstration-of-unittest">
+<h3>Demonstration of unittest<a class="headerlink" href="#demonstration-of-unittest" title="Permalink to this headline">¶</a></h3>
+<p>The same tests as shown for the nose framework are reimplemented
+with the <tt class="docutils literal"><span class="pre">TestCase</span></tt> classes in the file <a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/tests/test_decay_nose.py">test_decay_unittest.py</a>.
+The tests are identical, the only difference being that with
+<tt class="docutils literal"><span class="pre">unittest</span></tt> we must write the tests as methods in
+a class and the assert functions have
+slightly different names.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">unittest</span>
+<span class="kn">import</span> <span class="nn">decay_mod_unittest</span> <span class="kn">as</span> <span class="nn">decay</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="k">def</span> <span class="nf">exact_discrete_solution</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+    <span class="n">factor</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">theta</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="n">a</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">factor</span><span class="o">**</span><span class="n">n</span>
+
+<span class="k">class</span> <span class="nc">TestDecay</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">test_exact_discrete_solution</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">u_de</span> <span class="o">-</span> <span class="n">u</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertAlmostEqual</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">1E-14</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">test_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+        <span class="k">for</span> <span class="n">theta</span> <span class="ow">in</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="o">...</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertAlmostEqual</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">places</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+                                   <span class="n">msg</span><span class="o">=</span><span class="s">&#39;theta=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">theta</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">test_potential_integer_division</span><span class="p">():</span>
+        <span class="o">...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertAlmostEqual</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">1E-14</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">test_convergence_rates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+        <span class="k">for</span> <span class="n">theta</span> <span class="ow">in</span> <span class="n">r</span><span class="p">:</span>
+            <span class="o">...</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertAlmostEqual</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="implementing-simple-problem-and-solver-classes">
+<span id="decay-prog-se-class"></span><h2>Implementing simple problem and solver classes<a class="headerlink" href="#implementing-simple-problem-and-solver-classes" title="Permalink to this headline">¶</a></h2>
+<p>The <span class="math">\(\theta\)</span>-rule was compactly and conveniently implemented in
+a function <tt class="docutils literal"><span class="pre">solver</span></tt> in the section <em class="xref std std-ref">decay:py1</em>.
+In more complicated problems it might
+be beneficial to use classes and introduce a class <tt class="docutils literal"><span class="pre">Problem</span></tt> to
+hold the definition of the physical problem, a class <tt class="docutils literal"><span class="pre">Solver</span></tt>
+to hold the data and methods needed to numerically solve the problem,
+and a class <tt class="docutils literal"><span class="pre">Visualizer</span></tt> to make plots.
+This idea will now be illustrated, resulting in code that represents
+an alternative to the <tt class="docutils literal"><span class="pre">solver</span></tt> and <tt class="docutils literal"><span class="pre">explore</span></tt> functions found
+in the <tt class="docutils literal"><span class="pre">decay_mod</span></tt> module.</p>
+<p>Explaining the details of class programming in Python is considered
+beyond the scope of this text.  Readers who are unfamiliar with Python
+class programming should first consult one of the many electronic
+Python tutorials or textbooks to come up to speed with concepts and
+syntax of Python classes before reading on. The author has a gentle
+introduction to class programming for scientific applications
+in <a class="reference internal" href="._main_softeng1005.html#ref1" id="id1">[Ref1]</a>, see Chapter 7 and 9 and Appendix E.
+Other useful resources are</p>
+<blockquote>
+<div><ul class="simple">
+<li>The Python Tutorial: <a class="reference external" href="http://docs.python.org/2/tutorial/classes.html">http://docs.python.org/2/tutorial/classes.html</a></li>
+<li>Wiki book on Python Programming: <a class="reference external" href="http://en.wikibooks.org/wiki/Python_Programming/Classes">http://en.wikibooks.org/wiki/Python_Programming/Classes</a></li>
+<li>tutorialspoint.com: <a class="reference external" href="http://www.tutorialspoint.com/python/python_classes_objects.htm">http://www.tutorialspoint.com/python/python_classes_objects.htm</a></li>
+</ul>
+</div></blockquote>
+<div class="section" id="the-problem-class-1">
+<h3>The problem class  (1)<a class="headerlink" href="#the-problem-class-1" title="Permalink to this headline">¶</a></h3>
+<p id="index-15">The purpose of the problem class is to store all information about
+the mathematical model. This usually means all the physical parameters
+in the problem. In the current example with exponential decay we may
+also add the exact solution of the ODE to the problem class.
+The simplest form of a problem class is therefore</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">exp</span>
+
+<span class="k">class</span> <span class="nc">Problem</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">I</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">T</span>
+
+    <span class="k">def</span> <span class="nf">u_exact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="n">I</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span>
+        <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We could in the <tt class="docutils literal"><span class="pre">u_exact</span></tt> method have written
+<tt class="docutils literal"><span class="pre">self.I*exp(-self.a*t)</span></tt>, but using local variables <tt class="docutils literal"><span class="pre">I</span></tt> and <tt class="docutils literal"><span class="pre">a</span></tt> allows
+the formula <tt class="docutils literal"><span class="pre">I*exp(-a*t)</span></tt> which looks closer to the mathematical
+expression <span class="math">\(Ie^{-at}\)</span>.  This is not an important issue with the
+current compact formula, but is beneficial in more complicated
+problems with longer formulas to obtain the closest possible
+relationship between code and mathematics. My coding style is to strip
+off the <tt class="docutils literal"><span class="pre">self</span></tt> prefix when the code expresses mathematical formulas.</p>
+<p>The class data can be set either as arguments in the constructor or
+at any time later, e.g.,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">problem</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">problem</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">problem</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="mf">1.5</span>
+</pre></div>
+</div>
+<p>(Some programmers prefer <tt class="docutils literal"><span class="pre">set</span></tt> and <tt class="docutils literal"><span class="pre">get</span></tt> functions for setting and getting
+data in classes, often implemented via <em>properties</em> in Python, but
+I consider that overkill when we just have a few data items in a class.)</p>
+<p>It would be convenient if class <tt class="docutils literal"><span class="pre">Problem</span></tt> could also initialize
+the data from the command line. To this end, we add a method for
+defining a set of command-line options and a method that sets the
+local attributes equal to what was found on the command line.
+The default values associated with the command-line options are taken
+as the values provided to the constructor. Class <tt class="docutils literal"><span class="pre">Problem</span></tt> now becomes</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Problem</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">I</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">T</span>
+
+    <span class="k">def</span> <span class="nf">define_command_line_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">argparse</span>
+            <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s">&#39;--I&#39;</span><span class="p">,</span> <span class="s">&#39;--initial_condition&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;initial condition, u(0)&#39;</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;I&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s">&#39;--a&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s">&#39;coefficient in ODE&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;a&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s">&#39;--T&#39;</span><span class="p">,</span> <span class="s">&#39;--stop_time&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s">&#39;end time of simulation&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;T&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">parser</span>
+
+    <span class="k">def</span> <span class="nf">init_from_command_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="k">def</span> <span class="nf">exact_solution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="n">I</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span>
+        <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Observe that if the user already has an <tt class="docutils literal"><span class="pre">ArgumentParser</span></tt> object it can be
+supplied, but if she does not have any, class <tt class="docutils literal"><span class="pre">Problem</span></tt> makes one.
+Python&#8217;s <tt class="docutils literal"><span class="pre">None</span></tt> object is used to indicate that a variable is not
+initialized with a proper value.</p>
+</div>
+<div class="section" id="the-solver-class-1">
+<h3>The solver class  (1)<a class="headerlink" href="#the-solver-class-1" title="Permalink to this headline">¶</a></h3>
+<span class="target" id="index-16"></span><p id="index-17">The solver class stores data related to the numerical solution method
+and provides a function <tt class="docutils literal"><span class="pre">solve</span></tt> for solving the problem.
+A problem object must be given to the constructor so that the solver
+can easily look up physical data. In the present example, the
+data related to the numerical solution method consists of <span class="math">\(\Delta t\)</span>
+and <span class="math">\(\theta\)</span>. We add, as in the problem class, functionality for
+reading <span class="math">\(\Delta t\)</span> and <span class="math">\(\theta\)</span> from the command line:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Solver</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span> <span class="o">=</span> <span class="n">problem</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">),</span> <span class="n">theta</span>
+
+    <span class="k">def</span> <span class="nf">define_command_line_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s">&#39;--dt&#39;</span><span class="p">,</span> <span class="s">&#39;--time_step_value&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;time step value&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;dt&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s">&#39;--theta&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s">&#39;time discretization parameter&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;dt&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">parser</span>
+
+    <span class="k">def</span> <span class="nf">init_from_command_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">theta</span>
+
+    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">decay_mod</span> <span class="kn">import</span> <span class="n">solver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">u_e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">exact_solution</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">)</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">u_e</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">u</span>
+        <span class="n">E</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="o">*</span><span class="nb">sum</span><span class="p">(</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">E</span>
+</pre></div>
+</div>
+<p>Note that we here simply reuse the implementation of the numerical method
+from the <tt class="docutils literal"><span class="pre">decay_mod</span></tt> module. The <tt class="docutils literal"><span class="pre">solve</span></tt> function is just a <em>wrapper</em>
+of the previously developed stand-alone <tt class="docutils literal"><span class="pre">solver</span></tt> function.</p>
+</div>
+<div class="section" id="the-visualizer-class-1">
+<h3>The visualizer class  (1)<a class="headerlink" href="#the-visualizer-class-1" title="Permalink to this headline">¶</a></h3>
+<p id="index-18">The purpose of the visualizer class is to plot the numerical solution
+stored in class <tt class="docutils literal"><span class="pre">Solver</span></tt>. We also add the possibility to plot the
+exact solution. Access to the problem and solver objects is required
+when making plots so the constructor must hold references to these objects:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Visualizer</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">,</span> <span class="n">solver</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">=</span> <span class="n">problem</span><span class="p">,</span> <span class="n">solver</span>
+
+    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">include_exact</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">plt</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add solver.u curve to the plotting object plt,</span>
+<span class="sd">        and include the exact solution if include_exact is True.</span>
+<span class="sd">        This plot function can be called several times (if</span>
+<span class="sd">        the solver object has computed new solutions).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">plt</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">scitools.std</span>  <span class="kn">as</span> <span class="nn">plt</span> <span class="c"># can use matplotlib as well</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">u</span><span class="p">,</span> <span class="s">&#39;--o&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">hold</span><span class="p">(</span><span class="s">&#39;on&#39;</span><span class="p">)</span>
+        <span class="n">theta2name</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s">&#39;FE&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s">&#39;BE&#39;</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">:</span> <span class="s">&#39;CN&#39;</span><span class="p">}</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">theta2name</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">legends</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;numerical </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">include_exact</span><span class="p">:</span>
+            <span class="n">t_e</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="mi">1001</span><span class="p">)</span>
+            <span class="n">u_e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">exact_solution</span><span class="p">(</span><span class="n">t_e</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">u_e</span><span class="p">,</span> <span class="s">&#39;b-&#39;</span><span class="p">)</span>
+            <span class="n">legends</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;exact&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">legends</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;t&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;u&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;theta=</span><span class="si">%g</span><span class="s">, dt=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span>
+                  <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">dt</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">_</span><span class="si">%g</span><span class="s">.png&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">dt</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">plt</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">plt</span></tt> object in the <tt class="docutils literal"><span class="pre">plot</span></tt> method is worth a comment. The idea is
+that <tt class="docutils literal"><span class="pre">plot</span></tt> can add a numerical solution curve to an existing
+plot. Calling <tt class="docutils literal"><span class="pre">plot</span></tt> with a <tt class="docutils literal"><span class="pre">plt</span></tt> object (which has to be a
+<tt class="docutils literal"><span class="pre">matplotlib.pyplot</span></tt> or <tt class="docutils literal"><span class="pre">scitools.std</span></tt> object in this implementation),
+will just add the curve
+<tt class="docutils literal"><span class="pre">self.solver.u</span></tt> as a dashed line with circles at the mesh points
+(leaving the color of the curve up to the plotting tool). This
+functionality allows plots with several solutions: just make a loop
+where new data is set in the problem and/or solver classes, the
+solver&#8217;s <tt class="docutils literal"><span class="pre">solve()</span></tt> method is called, and the most recent numerical
+solution is plotted by the <tt class="docutils literal"><span class="pre">plot(plt)</span></tt> method in the visualizer object
+<a class="reference internal" href="._main_softeng1004.html#decay-exer-decay-class-exper"><em>Exercise 6: Make use of a class implementation</em></a> describes a problem setting
+where this functionality is explored.</p>
+</div>
+<div class="section" id="combining-the-objects">
+<h3>Combining the objects<a class="headerlink" href="#combining-the-objects" title="Permalink to this headline">¶</a></h3>
+<p>Eventually we need to show how the classes <tt class="docutils literal"><span class="pre">Problem</span></tt>, <tt class="docutils literal"><span class="pre">Solver</span></tt>, and
+<tt class="docutils literal"><span class="pre">Visualizer</span></tt> play together:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">problem</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">()</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">Solver</span><span class="p">(</span><span class="n">problem</span><span class="p">)</span>
+    <span class="n">viz</span> <span class="o">=</span> <span class="n">Visualizer</span><span class="p">(</span><span class="n">problem</span><span class="p">,</span> <span class="n">solver</span><span class="p">)</span>
+
+    <span class="c"># Read input from the command line</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">problem</span><span class="o">.</span><span class="n">define_command_line_options</span><span class="p">()</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span> <span class="n">define_command_line_options</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="n">problem</span><span class="o">.</span><span class="n">init_from_command_line</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">solver</span><span class="o">.</span> <span class="n">init_from_command_line</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="c"># Solve and plot</span>
+    <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+    <span class="c">#import scitools.std as plt</span>
+    <span class="n">plt</span> <span class="o">=</span> <span class="n">viz</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">plt</span><span class="o">=</span><span class="n">plt</span><span class="p">)</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">error</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">E</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Error: </span><span class="si">%.4E</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">E</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The file <a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/decay_class.py">decay_class.py</a>
+constitutes a module with the three classes and the <tt class="docutils literal"><span class="pre">main</span></tt> function.</p>
+<div class="admonition-test-the-understanding admonition">
+<p class="first admonition-title">Test the understanding</p>
+<p class="last">Implement the problem in
+<em class="xref std std-ref">decay:app:exer:drag:prog</em> in terms of problem, solver,
+and visualizer classes. Equip the classes and their methods with
+doc strings with tests. Also include nose tests.</p>
+</div>
+</div>
+</div>
+<div class="section" id="improving-the-problem-and-solver-classes">
+<span id="decay-prog-se-class2"></span><h2>Improving the problem and solver classes<a class="headerlink" href="#improving-the-problem-and-solver-classes" title="Permalink to this headline">¶</a></h2>
+<p>The previous <tt class="docutils literal"><span class="pre">Problem</span></tt> and <tt class="docutils literal"><span class="pre">Solver</span></tt> classes containing parameters
+soon get much repetitive code when the number of parameters increases.
+Much of this code can be parameterized and be made more compact.
+For this purpose, we decide to collect all parameters in a dictionary,
+<tt class="docutils literal"><span class="pre">self.prms</span></tt>, with two associated dictionaries <tt class="docutils literal"><span class="pre">self.types</span></tt> and
+<tt class="docutils literal"><span class="pre">self.help</span></tt> for holding associated object types and help strings.
+Provided a problem, solver, or visualizer class defines these three
+dictionaries in the constructor, using default or user-supplied values
+of the parameters, we can create a super class <tt class="docutils literal"><span class="pre">Parameters</span></tt> with general code
+for defining command-line options and reading them as well as
+methods for setting and getting a parameter. A <tt class="docutils literal"><span class="pre">Problem</span></tt> or <tt class="docutils literal"><span class="pre">Solver</span></tt> class will
+then inherit command-line functionality and the set/get methods from
+the <tt class="docutils literal"><span class="pre">Parameters</span></tt> class.</p>
+<div class="section" id="a-generic-class-for-parameters">
+<h3>A generic class for parameters<a class="headerlink" href="#a-generic-class-for-parameters" title="Permalink to this headline">¶</a></h3>
+<p>A simplified version of the parameter class looks as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Parameters</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">parameters</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prms</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prms</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">define_command_line_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">argparse</span>
+            <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prms</span><span class="p">:</span>
+            <span class="n">tp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">types</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">types</span> <span class="k">else</span> <span class="nb">str</span>
+            <span class="n">help</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">help</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">help</span> <span class="k">else</span> <span class="bp">None</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+                <span class="s">&#39;--&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">metavar</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="n">tp</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="n">help</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">parser</span>
+
+    <span class="k">def</span> <span class="nf">init_from_command_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prms</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prms</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The file <a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/class_decay_oo.py">class_decay_oo.py</a> contains
+a slightly more advanced version of class <tt class="docutils literal"><span class="pre">Parameters</span></tt> where we
+in the <tt class="docutils literal"><span class="pre">set</span></tt> and <tt class="docutils literal"><span class="pre">get</span></tt> functions test for valid parameter names and
+raise exceptions with informative messages if any name is not registered.</p>
+</div>
+<div class="section" id="the-problem-class-2">
+<h3>The problem class  (2)<a class="headerlink" href="#the-problem-class-2" title="Permalink to this headline">¶</a></h3>
+<p id="index-19">A class <tt class="docutils literal"><span class="pre">Problem</span></tt> for the problem <span class="math">\(u'=-au\)</span>, <span class="math">\(u(0)=I\)</span>, <span class="math">\(t\in (0,T]\)</span>, with
+parameters input <span class="math">\(a\)</span>, <span class="math">\(I\)</span>, and <span class="math">\(T\)</span> can now be coded as</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Problem</span><span class="p">(</span><span class="n">Parameters</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Physical parameters for the problem u&#39;=-a*u, u(0)=I,</span>
+<span class="sd">    with t in [0,T].</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prms</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">types</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">help</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="s">&#39;initial condition, u(0)&#39;</span><span class="p">,</span>
+                         <span class="n">a</span><span class="o">=</span><span class="s">&#39;coefficient in ODE&#39;</span><span class="p">,</span>
+                         <span class="n">T</span><span class="o">=</span><span class="s">&#39;end time of simulation&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">exact_solution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="n">I</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;I&#39;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="the-solver-class-2">
+<h3>The solver class  (2)<a class="headerlink" href="#the-solver-class-2" title="Permalink to this headline">¶</a></h3>
+<p id="index-20">Also the solver class is derived from class <tt class="docutils literal"><span class="pre">Parameters</span></tt> and works with
+the <tt class="docutils literal"><span class="pre">prms</span></tt>, <tt class="docutils literal"><span class="pre">types</span></tt>, and <tt class="docutils literal"><span class="pre">help</span></tt> dictionaries in the same way as class
+<tt class="docutils literal"><span class="pre">Problem</span></tt>. Otherwise, the code is very similar to class <tt class="docutils literal"><span class="pre">Solver</span></tt> in
+the <tt class="docutils literal"><span class="pre">decay_class.py</span></tt> file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Solver</span><span class="p">(</span><span class="n">Parameters</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span> <span class="o">=</span> <span class="n">problem</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prms</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">types</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">help</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="s">&#39;time step value&#39;</span><span class="p">,</span>
+                         <span class="n">theta</span><span class="o">=</span><span class="s">&#39;time discretization parameter&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">decay_mod</span> <span class="kn">import</span> <span class="n">solver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;I&#39;</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;T&#39;</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;dt&#39;</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;theta&#39;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">u_e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">exact_solution</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">)</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="n">u_e</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">u</span>
+            <span class="n">E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;dt&#39;</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="n">E</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="n">E</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="the-visualizer-class-2">
+<h3>The visualizer class  (2)<a class="headerlink" href="#the-visualizer-class-2" title="Permalink to this headline">¶</a></h3>
+<p id="index-21">Class <tt class="docutils literal"><span class="pre">Visualizer</span></tt> can be identical to the one in the <tt class="docutils literal"><span class="pre">decay_class.py</span></tt> file
+since the class does not need any parameters. However, a few
+adjustments in the <tt class="docutils literal"><span class="pre">plot</span></tt> method is necessary since parameters are
+accessed as, e.g., <tt class="docutils literal"><span class="pre">problem.get('T')</span></tt> rather than <tt class="docutils literal"><span class="pre">problem.T</span></tt>.
+The details are found in the file <tt class="docutils literal"><span class="pre">class_decay_oo.py</span></tt>.</p>
+<p>Finally, we need a function that solves a real problem using the
+classes <tt class="docutils literal"><span class="pre">Problem</span></tt>, <tt class="docutils literal"><span class="pre">Solver</span></tt>, and <tt class="docutils literal"><span class="pre">Visualizer</span></tt>. This function can
+be just like <tt class="docutils literal"><span class="pre">main</span></tt> in the <tt class="docutils literal"><span class="pre">decay_class.py</span></tt> file.</p>
+<p>The advantage with the <tt class="docutils literal"><span class="pre">Parameters</span></tt> class is that it scales to problems
+with a large number of physical and numerical parameters:
+as long as the parameters are defined once via a dictionary,
+the compact code in class <tt class="docutils literal"><span class="pre">Parameters</span></tt> can handle any collection of
+parameters of any size.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Software engineering</a><ul>
+<li><a class="reference internal" href="#making-a-module">Making a module</a></li>
+<li><a class="reference internal" href="#prefixing-imported-functions-by-the-module-name">Prefixing imported functions by the module name</a></li>
+<li><a class="reference internal" href="#doctests">Doctests</a></li>
+<li><a class="reference internal" href="#unit-testing-with-nose">Unit testing with nose</a><ul>
+<li><a class="reference internal" href="#basic-use-of-nose">Basic use of nose</a></li>
+<li><a class="reference internal" href="#alternative-assert-statements">Alternative assert statements</a></li>
+<li><a class="reference internal" href="#applying-nose">Applying nose</a></li>
+<li><a class="reference internal" href="#installation-of-nose">Installation of nose</a></li>
+<li><a class="reference internal" href="#using-nose-to-test-modules-with-doctests">Using nose to test modules with doctests</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#classical-class-based-unit-testing">Classical class-based unit testing</a><ul>
+<li><a class="reference internal" href="#basic-use-of-unittest">Basic use of unittest</a></li>
+<li><a class="reference internal" href="#demonstration-of-unittest">Demonstration of unittest</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementing-simple-problem-and-solver-classes">Implementing simple problem and solver classes</a><ul>
+<li><a class="reference internal" href="#the-problem-class-1">The problem class  (1)</a></li>
+<li><a class="reference internal" href="#the-solver-class-1">The solver class  (1)</a></li>
+<li><a class="reference internal" href="#the-visualizer-class-1">The visualizer class  (1)</a></li>
+<li><a class="reference internal" href="#combining-the-objects">Combining the objects</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#improving-the-problem-and-solver-classes">Improving the problem and solver classes</a><ul>
+<li><a class="reference internal" href="#a-generic-class-for-parameters">A generic class for parameters</a></li>
+<li><a class="reference internal" href="#the-problem-class-2">The problem class  (2)</a></li>
+<li><a class="reference internal" href="#the-solver-class-2">The solver class  (2)</a></li>
+<li><a class="reference internal" href="#the-visualizer-class-2">The visualizer class  (2)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="._main_softeng1001.html"
+                        title="previous chapter">Sample problem and code</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_softeng1003.html"
+                        title="next chapter">Performing scientific experiments</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_softeng1002.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_softeng1003.html" title="Performing scientific experiments"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="._main_softeng1001.html" title="Sample problem and code"
+             >previous</a> |</li>
+        <li><a href="index.html">Scientific software engineering with a simple ODE model as example</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

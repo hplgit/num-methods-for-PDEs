@@ -1,0 +1,721 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Finite difference simulation of 2D waves">
+
+<title>Finite difference simulation of 2D waves</title>
+
+<!-- Bootstrap style: bootstrap -->
+<link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+<!-- not necessary
+<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+-->
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [(' General information ', 1, None, '___sec0'),
+              (' Check list for peer review ', 2, None, '___sec1'),
+              (' Background material ', 2, None, '___sec2'),
+              (' The core parts of the project ', 1, None, '___sec3'),
+              (' Mathematical problem ', 2, None, '___sec4'),
+              (' Discretization ', 2, None, '___sec5'),
+              (' Implementation ', 2, None, '___sec6'),
+              (' Verification ', 1, None, '___sec7'),
+              (' Constant solution ', 2, None, '___sec8'),
+              (' Cubic solution (optional) ', 2, None, '___sec9'),
+              (' Hint ', 3, None, '___sec10'),
+              (' Exact 1D plug-wave solution in 2D ', 2, None, '___sec11'),
+              (' Standing, undamped waves ', 2, None, '___sec12'),
+              (' Standing, damped waves (optional) ', 2, None, '___sec13'),
+              (' Manufactured solution ', 2, None, '___sec14'),
+              (' Investigate a physical problem ', 1, None, '___sec15'),
+              (' Optional additional tasks ', 1, None, '___sec16'),
+              (' Truncation error ', 2, None, '___sec17'),
+              (' Harmonic averaging ', 2, None, '___sec18'),
+              (' Visualization ', 2, None, '___sec19'),
+              (' Open outlet boundary: 1D condition ', 2, None, '___sec20'),
+              (' Open outlet boundary: absorbing layer ',
+               2,
+               None,
+               '___sec21'),
+              (' Open outlet boundary: layer with faked damping ',
+               2,
+               None,
+               '___sec22'),
+              (' Compiled loops ', 2, None, '___sec23'),
+              (' Parallel computing ', 2, None, '___sec24')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "AMS"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\uex}{{u_{\small\mbox{e}}}}
+\newcommand{\tp}{\thinspace .}
+$$
+
+
+
+
+    
+<!-- Bootstrap navigation bar -->
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="wave_project.html">Finite difference simulation of 2D waves</a>
+  </div>
+  <div class="navbar-collapse collapse navbar-responsive-collapse">
+    <ul class="nav navbar-nav navbar-right">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Contents <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+     <!-- navigation toc: --> <li><a href="#___sec0" style="font-size: 80%;">General information</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec3" style="font-size: 80%;">The core parts of the project</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec7" style="font-size: 80%;">Verification</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec15" style="font-size: 80%;">Investigate a physical problem</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec16" style="font-size: 80%;">Optional additional tasks</a></li>
+
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+</div> <!-- end of navigation bar -->
+
+<div class="container">
+
+<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p> <!-- add vertical space -->
+
+<!-- ------------------- main content ---------------------- -->
+
+
+
+<center><h1>Finite difference simulation of 2D waves</h1></center>  <!-- document title -->
+
+<p>
+<!-- author(s): INF5620 -->
+
+<center>
+<b>INF5620</b> 
+</center>
+
+
+<p>
+<!-- institution(s) -->
+<p>
+<center><h4>2014</h4></center> <!-- date -->
+<p>
+<a href="wave_project.pdf" target="_self">PDF version of this document</a>
+
+<h1 id="___sec0">General information <a name="___sec0"></a></h1>
+
+<ul>
+ <li> Deadline: Oct 13</li>
+ <li> Each student delivers a set of files, including a project report,
+   in her/his GitHub repo, but we encourage collaboration.</li>
+ <li> Each project will be assessed by a group of three students.</li>
+ <li> Make a directory <code>wave_project</code> in the top directory of your INF5620
+   repo on GitHub to hold all your files of this project.
+   Make suitable subdirectories. Include a <code>README</code>
+   file with a short overview of the different files.</li>
+ <li> Check that you have a <code>.gitignore</code>
+   file, either in your home directory or in the root directory of your
+   repo, where you list all redundant files and all (big) files that
+   can be regenerated and that are not necessary for peer review of
+   your project.</li>
+ <li> Write a short report summarizing the main results. LaTeX is
+   probably the preferred format, but there are several
+   <a href="http://hplgit.github.io/teamods/writing_reports/index.html" target="_self">other options</a> too. Regardless of format, the report must be in an easy-to-read format
+   like PDF or HTML.</li>
+ <li> Note that the last part of this compulsory project allows you to
+   develop the project in different directions, including visualization,
+   high-performance computing, more advanced numerics, etc.</li>
+</ul>
+
+<h2 id="___sec1">Check list for peer review <a name="___sec1"></a></h2>
+
+<p>
+The project will undergo review by your peers, i.e., other students
+in the course. More precisely, a group of three students will assess
+three individual projects and write a short report for each project.
+You may use our <a href="http://tinyurl.com/opdfafk/pub/web-INF5620/exercise_checklist.html" target="_self">general checklist</a> as starting point
+for the assessment.
+
+<p>
+Name the feedback file <code>FEEDBACK_NOT_PASSED.txt</code> if the group's
+decision is that the project is not passed, otherwise name the file
+<code>FEEDBACK.txt</code>. The teachers will follow up on projects that are
+considered not passed, and the new version will be assessed by a
+teacher.
+
+<h2 id="___sec2">Background material <a name="___sec2"></a></h2>
+
+<p>
+<div class="alert alert-block alert-success alert-text-normal"><b>Main document.</b>
+The various building blocks needed in this project is found in
+the text <em>Finite difference methods for wave motion</em> in the
+<a href="http://tinyurl.com/opdfafk/pub" target="_self">course notes</a>.
+Observe that there are also links to a compact study guide version of
+this document.
+</div>
+
+
+<p>
+Depending on your familiarity with finite difference methods before
+this course, it might be useful to consult <em>Finite difference methods
+for vibration problems</em> in the <a href="http://tinyurl.com/opdfafk/pub" target="_self">course notes</a> since
+that text describes the fundamentals of the time discretization needed
+in the present project.
+
+<p>
+Information on how to structure the software in projects like this
+(and also use tools for producing reports) is found in <em>Scientific
+software engineering with a simple ODE model as example</em>
+(in the <a href="http://tinyurl.com/opdfafk/pub" target="_self">course notes</a>). Both this document and the one on
+vibration problems build on <em>Introduction to computing with finite
+difference methods</em>, which was quickly lectured in the beginning of
+the course.
+
+<h1 id="___sec3">The core parts of the project <a name="___sec3"></a></h1>
+
+<h2 id="___sec4">Mathematical problem <a name="___sec4"></a></h2>
+
+<p>
+The project addresses the two-dimensional, standard, linear wave equation,
+with damping,
+
+$$
+\begin{equation}
+\frac{\partial^2 u}{\partial t^2} + b\frac{\partial u}{\partial t} =
+\frac{\partial}{\partial x}\left( q (x,y)
+\frac{\partial u}{\partial x}\right) +
+\frac{\partial}{\partial y}\left( q (x,y)
+\frac{\partial u}{\partial y}\right) + f(x,y,t)\thinspace .
+\end{equation}
+$$
+
+The associated boundary condition is
+$$
+\begin{equation}
+ \frac{\partial u}{\partial n} = 0,
+\end{equation}
+$$
+
+in a rectangular spatial domain \( \Omega = [0,L_x]\times [0,L_y] \).
+The initial conditions are
+
+$$
+\begin{align}
+u(x,y,0)&=I(x,y),\\ 
+u_t(x,y,0)&=V(x,y)\thinspace .
+\end{align}
+$$
+
+<h2 id="___sec5">Discretization <a name="___sec5"></a></h2>
+
+<p>
+Derive the discrete set of equations to be implemented in a program:
+
+<ul>
+  <li> the general scheme for computing \( u_{i,j}^{n+1} \) at interior
+    spatial mesh points,</li>
+  <li> the modified scheme for the first step,</li>
+  <li> the modified scheme at boundary points (first step and subsequent
+    steps), unless you use the interior
+    scheme also at the boundary with extra ghost cells.</li>
+</ul>
+
+<h2 id="___sec6">Implementation <a name="___sec6"></a></h2>
+
+<p>
+Implement the numerical method for the PDE problem in a program. You may use
+<a href="http://tinyurl.com/nm5587k/wave/wave2D_u0/wave2D_u0.py" target="_self"><tt>wave2D_u0.py</tt></a>
+as a starting point (this program solves the 2D wave equation
+with constant wave velocity and \( u=0 \) on the boundary and is explained
+in the course notes).
+You will need to include both scalar (pointwise)
+computation of the scheme for debugging and reference as well as a
+vectorized version for speed.
+
+<h1 id="___sec7">Verification <a name="___sec7"></a></h1>
+
+<h2 id="___sec8">Constant solution <a name="___sec8"></a></h2>
+
+<p>
+Construct a test case with constant solution (not 0 or 1).
+Make a corresponding nose/pytest test.
+
+<p>
+Invent five types of possible bugs in the implementation of the mathematical
+formulas. See how many of them that lead to a wrong non-constant solution.
+
+<h2 id="___sec9">Cubic solution (optional) <a name="___sec9"></a></h2>
+
+<p>
+Assume an exact solution on the form \( \uex(x,y,t)=X(x)Y(y)T(t) \) where
+\( X \), \( Y \), and \( T \) are polynomials of degree three or less.
+Construct \( X \) and \( Y \) such that the normal derivative vanishes at the
+four boundaries. Fit a corresponding source term \( f(x,y,t) \) in the wave
+equation.
+
+<p>
+It would be great if this exact solution also were an exact solution
+of the discrete equations when \( q \) is constant and \( b=0 \),
+which is often the case with lower-order
+polynomials because the <a href="http://tinyurl.com/opdfafk/pub/trunc/sphinx/index.html" target="_self">truncation errors</a>
+involve higher-order derivatives (which vanish for lower-order polynomials).
+
+<p>
+The exact cubic solution fits the discrete equations at all inner
+mesh points, <em>but not on the boundary</em>. Add a term in the boundary
+equation for testing such that the exact solution also fulfills the
+boundary equation. Implement a corresponding nose/pytest test. You will
+need to introduce a parameter in front of this extra term so you can
+easily turn the term on and off (it should, of course, only be on for
+verifying a cubic solution, not in physical applications).
+
+<h3 id="___sec10">Hint <a name="___sec10"></a></h3>
+
+<p>
+We outline some ideas in 1D.
+For constant \( q \) and \( b=0 \) we have the scheme
+\( [D_tD_t u - qD_xD_x = f]^n_{i} \) at inner points.
+Because \( [D_xD_x x^3]_i = 6x_i \),
+\( [D_xD_x x^2]_i = 2 \), \( [D_xD_x x]_i = 0 \) all are exact, the suggested
+\( u \) also fits the discrete equation. On the boundary we get a modified
+scheme, which in operator notation can be written as
+
+$$ [D_tD_t u= qD_xD_x u + q\frac{2}{\Delta x}D_{2x} u + f]^n_i,\quad i=0,$$
+
+and
+
+$$ [D_tD_t u= qD_xD_x - q\frac{2}{\Delta x}D_{2x} u + f]^n_i,\quad i=N_x\tp$$
+
+We have the results
+\( [D_{2x} x^3]_i =  3x_i^2 + \Delta x^2 \),
+and \( [D_{2x} x^2]_i = 2x_i \), \( [D_{2x} x]_i=1 \).
+Consider now
+\( [D_tD_t u= qD_xD_x u - q\frac{2}{\Delta x}D_{2x}u + f]^n_i \).
+Inserting \( u=X(x)T(t) \) requires the same \( f \) as for the PDE, but with
+an additional term \( T(t)2q\Delta x \) because of the \( D_{2x} \) operator acting
+on a cubic polynomial in \( x \).
+
+<p>
+This test requires the \( f \) that fits the PDE to be modified on the
+boundary. A possible implementation is to modify the array of
+\( f \) values at the boundary mesh points directly, or perform
+tests on the coordinates if a pointwise
+evaluation of \( f \) is requested:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">f</span>(x, y, t):
+    <span style="color: #008000; font-weight: bold">if</span> <span style="color: #008000">isinstance</span>(x, np<span style="color: #666666">.</span>ndarray) <span style="color: #AA22FF; font-weight: bold">and</span> <span style="color: #008000">isinstance</span>(y, np<span style="color: #666666">.</span>ndarray):
+        <span style="color: #408080; font-style: italic"># Array evaluation</span>
+        f_a <span style="color: #666666">=</span> <span style="color: #666666">....</span> <span style="color: #408080; font-style: italic"># evaluate the f that fits the PDE</span>
+        <span style="color: #408080; font-style: italic"># Modify boundary values</span>
+        f_a[<span style="color: #666666">0</span>,:]  <span style="color: #666666">=</span> <span style="color: #666666">...</span> <span style="color: #408080; font-style: italic"># x=0</span>
+        f_a[<span style="color: #666666">-1</span>,:] <span style="color: #666666">=</span> <span style="color: #666666">...</span> <span style="color: #408080; font-style: italic"># x=Lx</span>
+        f_a[:,<span style="color: #666666">0</span>]  <span style="color: #666666">=</span> <span style="color: #666666">...</span> <span style="color: #408080; font-style: italic"># y=0</span>
+        f_a[:,<span style="color: #666666">-1</span>] <span style="color: #666666">=</span> <span style="color: #666666">...</span> <span style="color: #408080; font-style: italic"># x=Ly</span>
+    <span style="color: #008000; font-weight: bold">else</span>:
+        <span style="color: #408080; font-style: italic"># Assume pointwise evaluation</span>
+        tol <span style="color: #666666">=</span> <span style="color: #666666">1E-14</span>  <span style="color: #408080; font-style: italic"># tolerance for float comparison</span>
+        f_v <span style="color: #666666">=</span> <span style="color: #666666">...</span> <span style="color: #408080; font-style: italic"># evaluate the f that fits the PDE</span>
+        <span style="color: #408080; font-style: italic"># Modify boundary values</span>
+        <span style="color: #008000; font-weight: bold">if</span> <span style="color: #008000">abs</span>(x) <span style="color: #666666">&lt;</span> tol:
+            f_v <span style="color: #666666">=</span> <span style="color: #666666">...</span>   <span style="color: #408080; font-style: italic"># x=0</span>
+        <span style="color: #008000; font-weight: bold">if</span> <span style="color: #008000">abs</span>(x<span style="color: #666666">-</span>Lx) <span style="color: #666666">&lt;</span> tol:
+            f_v <span style="color: #666666">=</span> <span style="color: #666666">...</span>   <span style="color: #408080; font-style: italic"># x=Lx</span>
+        <span style="color: #008000; font-weight: bold">if</span> <span style="color: #008000">abs</span>(y) <span style="color: #666666">&lt;</span> tol:
+            f_v <span style="color: #666666">=</span> <span style="color: #666666">...</span>   <span style="color: #408080; font-style: italic"># y=0</span>
+        <span style="color: #008000; font-weight: bold">if</span> <span style="color: #008000">abs</span>(y<span style="color: #666666">-</span>Ly) <span style="color: #666666">&lt;</span> tol:
+            f_v <span style="color: #666666">=</span> <span style="color: #666666">...</span>   <span style="color: #408080; font-style: italic"># y=Ly</span>
+</pre></div>
+
+<h2 id="___sec11">Exact 1D plug-wave solution in 2D <a name="___sec11"></a></h2>
+
+<p>
+The program <a href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_dn_vc.py" target="_self"><tt>wave1D_dn_vc.py</tt></a>
+has a <code>pulse</code> function for simulating the propagation of a plug wave,
+where \( I(x) \) is constant in some region of the domain and zero
+elsewhere.  With unit Courant number, the plug is split into two
+identical waves, moving in opposite direction, exactly one cell per
+time step. The discrete solution is then equal to the exact solution.
+
+<p>
+Set \( b=0 \) and \( q \) to a constant.
+Test the 2D program using a one-dimensional plug wave in \( x \) direction with
+\( c\Delta t/\Delta x=1 \) (the plug is constant in \( y \) direction and hence
+compatible with the \( \partial/\partial y=0 \) boundary condition).
+Also propagate a one-dimensional plug wave in the \( y \)
+direction with \( c\Delta t/\Delta y=1 \). Both test cases are essentially
+1D test cases, and the results should as in the 1D case.
+Implement a corresponding nose test.
+
+<h2 id="___sec12">Standing, undamped waves <a name="___sec12"></a></h2>
+
+<p>
+With an exact analytical solution of the PDE we can compute the error
+and see how the error approaches zero as \( \Delta t,\Delta x,\Delta y
+\rightarrow 0 \). (See the <a href="http://tinyurl.com/opdfafk/pub/wave/sphinx/._main_wave001.html#manufactured-solution" target="_self">textbook material</a>
+for how this is done in a corresponding 1D problem).  With no damping
+(\( b=0 \)) and constant wave velocity (\( c \)), our wave equation problem
+without any source term admits a standing wave solution:
+
+$$
+\begin{equation}
+\uex(x,y,t)=A\cos(k_xx)\cos(k_yy)\cos (\omega t),\quad
+k_x = \frac{m_x\pi}{L_x}, \ k_y = \frac{m_y\pi}{L_y},
+\label{wave:app:exer:standing:waves}
+\end{equation}
+$$
+
+for arbitrary amplitude \( A \), arbitrary integers \( m_x \) and \( m_y \),
+and a suitable choice of \( \omega \). This solution can be used to test
+the convergence rate of the numerical method.
+
+<p>
+Compute the true error \( e^n_{i,j}=\uex(x_i,y_j,t_n) - u^n_{i,j} \) on
+a series of meshes. A suitable error norm can be
+
+$$ E = ||e^n_{i,j}||_{\ell^\infty} = \max_{i}\max_{j}\max_{t}
+|e^n_{i,j}|,$$
+
+Introduce a common discretization parameter \( h \) such that
+\( \Delta t \), \( \Delta x \), and \( \Delta y \) are proportional to \( h \).
+This leads to an error model \( E=\hat Ch^r \) for some constant \( \hat C \)
+and \( r=2 \). Compute a sequence of \( r \) values by comparing two
+consecutive experiments (as shown in the course material) and
+see if \( r \) approaches 2.
+
+<h2 id="___sec13">Standing, damped waves (optional) <a name="___sec13"></a></h2>
+
+<p>
+Try to find an analytical solution of damped waves using an ansatz
+of the type
+
+$$
+\begin{equation}
+\uex(x,y,t)=\left(A\cos (\omega t)
++ B\sin (\omega t)\right)
+e^{-ct}\cos(k_xx)\cos(k_yym_yy\pi/L_y),\quad
+k_x = \frac{m_x\pi}{L_x}, \ k_y = \frac{m_y\pi}{L_y}\tp
+\label{wave:app:exer:standing:waves:damped}
+\end{equation}
+$$
+
+That is, find \( A \), \( B \), \( \omega \), and \( c \) such that
+\eqref{wave:app:exer:standing:waves:damped} solves the PDE with
+constant \( q \), no
+source term, and initial condition \( u_t(x,y,0)=0 \) (as for the
+undamped standing waves). Make a corresponding convergence test.
+
+<p>
+<b>Hint.</b>
+The algebra can quickly be quite involved. Getting an
+overview of the algebra in a 1D version of this problem might be
+helpful.  Start with relating \( A \) and \( B \) through the initial
+conditions (\( u=A\cos k_xx\cos k_yy \) and \( u_t=0 \) as implied by
+\eqref{wave:app:exer:standing:waves}) and eliminate \( B \).  After having
+inserted \( u \) in the PDE, two equations for \( \omega \) and \( c \) arise from
+factoring the sine and cosine terms in time. One equation can be
+solved for \( \omega = \sqrt{k_x^2q + k_y^2q - c^2} \), while the other
+can be solved for \( c=b/2 \) by inserting the found \( \omega \) expression.
+
+<h2 id="___sec14">Manufactured solution <a name="___sec14"></a></h2>
+
+<p>
+Choose some \( q(x,y)\neq 0 \) and find \( f(x,y,t) \) such that
+({wave:app:exer:standing:waves:damped}) is a solution to the general
+2D wave equation problem with damping and variable wave velocity.
+Find corresponding \( I \) and \( V \), and make a convergence test that
+recovers the expected convergence rate. Make a corresponding nose
+test.
+
+<p>
+<b>Hint.</b>
+You may explore <code>sympy</code> for automating the analytical work:
+
+<p>
+
+<!-- code=ipy (!bc ipy) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
+<span style="color: #666666">&gt;&gt;&gt;</span> x <span style="color: #666666">=</span> Symbol(<span style="color: #BA2121">&#39;x&#39;</span>)
+<span style="color: #666666">&gt;&gt;&gt;</span> q<span style="color: #666666">=</span>x<span style="color: #666666">**2</span>
+<span style="color: #666666">&gt;&gt;&gt;</span> u<span style="color: #666666">=</span>sin(x)
+<span style="color: #666666">&gt;&gt;&gt;</span> r <span style="color: #666666">=</span> diff(q<span style="color: #666666">*</span>diff(u, x), x)   <span style="color: #408080; font-style: italic"># Derivative: (q*u_x)_x</span>
+<span style="color: #666666">&gt;&gt;&gt;</span> simplify(r)
+x<span style="color: #666666">*</span>(<span style="color: #666666">-</span>x<span style="color: #666666">*</span>sin(x) <span style="color: #666666">+</span> <span style="color: #666666">2*</span>cos(x))
+</pre></div>
+
+<h1 id="___sec15">Investigate a physical problem <a name="___sec15"></a></h1>
+
+<p>
+The purpose of this part is to explore what happens to a wave that
+enters a medium with different wave velocity. A particular physical
+interpretation can be wave propagation of a tsunami over a subsea
+hill. The unknown \( u(x,y,t) \) is then the elevation of the ocean
+surface, and the boundary condition \( \partial u/\partial n=0 \) means
+that the waves are perfectly reflected, because of a steep hill at the
+shore, or the condition expresses symmetry in the solution.  The wave
+velocity is in this case
+given by \( q = gH(x,y) \), where \( g \) is the acceleration of
+gravity and \( H(x,y) \) is the stillwater depth.
+
+<p>
+It can be wise to do <a href="http://tinyurl.com/opdfafk/pub/wave/sphinx/._main_wave010.html#problem-23-earthquake-generated-tsunami-over-a-subsea-hill" target="_self">Problem 21</a>,
+because that 1D program, which corresponds to the present 2D problem,
+allows for much faster experimentation with parameters and effects.
+
+<p>
+The initial surface is taken as a smooth Gaussian function
+
+$$
+\begin{equation}
+I(x;I_0,I_a,I_m,I_s) =
+I_0 + I_a\exp{\left(-\left(\frac{x-I_m}{I_s}\right)^2\right)},
+\end{equation}
+$$
+
+with \( I_m=0 \) reflecting the location of the peak of \( I(x) \) and
+\( I_s \) being a measure of the width of the function \( I(x) \)
+(\( I_s \) is \( \sqrt{2} \) times the standard deviation of the familiar
+normal distribution curve).
+
+<p>
+Three different bottom shapes can be investigated.
+A 2D Gaussian hill can be modeled by
+
+$$
+\begin{equation}
+B(x;B_0,B_a,B_{mx}, B_{my} ,B_s, b) =
+B_0 + B_a\exp{\left(-\left(\frac{x-B_{mx}}{B_s}\right)^2
+-\left(\frac{y-B_{my}}{bB_s}\right)^2\right)},
+\label{wave:app:exer:tsunami2D:hill:Gauss}
+\end{equation}
+$$
+
+where \( b \) is a scaling parameter: \( b=1 \) gives a circular Gaussian
+function with circular contour lines, while \( b\neq 1 \) gives an elliptic
+shape with elliptic contour lines.
+
+<p>
+A less smooth hill is modeled by the "cosine hat" function
+
+$$
+\begin{equation}
+B(x; B_0, B_a, B_{mx}, B_{my}, B_s) =
+B_0 + B_a\cos{\left( \pi\frac{x-B_{mx}}{2B_s}\right)}
+\cos{\left( \pi\frac{y-B_{my}}{2B_s}\right)},
+\label{wave:app:exer:tsunami2D:hill:cohat}
+\end{equation}
+$$
+
+when \( 0 \leq \sqrt{x^2+y^2} \leq B_s \) and \( B=B_0 \) outside this circle.
+
+<p>
+A more dramatic hill shape is a box:
+
+$$
+\begin{equation}
+B(x; B_0, B_a, B_m, B_s, b) = B_0 + B_a
+\label{wave:app:exer:tsunami2D:hill:box}
+\end{equation}
+$$
+
+for \( x \) and \( y \) inside a rectangle
+$$ B_{mx}-B_s \leq  x \leq B_{mx} + B_s,\quad
+B_{my}-bB_s \leq  y \leq B_{my} + bB_s,
+$$
+
+and \( B=B_0 \) outside this rectangle.
+The \( b \) parameter controls the rectangular shape of the cross section of
+the box.
+
+<p>
+Note that the initial condition and the listed bottom shapes are
+symmetric around the line \( y=B_{my} \). We therefore expect the surface
+elevation also to be symmetric with respect to this line.  This means
+that we can halve the computational domain by working with
+\( [0,L_x]\times [0, B_{my}] \). Along the upper boundary, \( y=B_{my} \), we
+must impose the symmetry condition \( \partial \eta/\partial n=0 \).  Such
+a symmetry condition (\( -\eta_x=0 \)) is also needed at the \( x=0 \)
+boundary because the initial condition has a symmetry here. At the
+lower boundary \( y=0 \) we also set a Neumann condition (which becomes
+\( -\eta_y=0 \)).  The wave motion is to be simulated until the wave hits
+the reflecting boundaries where \( \partial\eta/\partial n =\eta_x =0 \).
+
+<p>
+Investigate how different hill shapes, different sizes of the water
+gap above the hill, and different resolutions \( \Delta x = \Delta y =
+h \) and \( \Delta t \) influence the numerical quality of the solution. One
+anticipates that the less smooth hill shapes will introduce more
+numerical noise.  Presenting the results as movies of the surface
+elevation is effective.
+
+<h1 id="___sec16">Optional additional tasks <a name="___sec16"></a></h1>
+
+<p>
+<!-- Each project must feature one or more of the following subprojects. -->
+
+<h2 id="___sec17">Truncation error <a name="___sec17"></a></h2>
+
+<p>
+Compute the <em>truncation error</em> of the scheme at an arbitrary interior
+mesh point.  (It easier to start with \( q=\hbox{const} \) and then
+generalize to variable \( q \)).
+
+<p>
+Suitable background material is the writings on <em>Truncation error
+analysis</em> in the <a href="http://hplgit.github.io/num-methods-for-PDEs/doc/pub" target="_self">course notes</a>.
+
+<h2 id="___sec18">Harmonic averaging <a name="___sec18"></a></h2>
+
+<p>
+Harmonic means are often used if the coefficient \( q \) is
+non-smooth or discontinuous. Investigate if harmonic averaging of \( q \)
+works better than the arithmetic averging for the box-shaped subsea hill.
+The effect might not be big unless the water gap at the top of the
+hill is small. It can be wise to test the effect of harmonic averaging in
+1D first.
+
+<p>
+<b>Remark.</b>
+With a small gap between the obstruction and the free surface,
+and with abrupt changes in the bottom shape, the model PDE does not
+necessarily describe the wave motion in an accurate or qualitatively correct
+way.
+
+<h2 id="___sec19">Visualization <a name="___sec19"></a></h2>
+
+<p>
+Create some fancy 3D visualization of the water waves <em>and</em> the subsea hill.
+Try to make the hill transparent. Suitable tools are
+
+<ul>
+  <li> <a href="http://code.enthought.com/projects/mayavi/" target="_self">Mayavi</a></li>
+  <li> <a href="http://www.paraview.org/" target="_self">Paraview</a></li>
+  <li> <a href="http://www.opendx.org/" target="_self">OpenDX</a></li>
+  <li> <a href="http://matplotlib.org/" target="_self">Matplotlib</a></li>
+</ul>
+
+<h2 id="___sec20">Open outlet boundary: 1D condition <a name="___sec20"></a></h2>
+
+<p>
+Implement an open boundary condition at \( x=L_x \), \( u_t + \sqrt{q}u_x=0 \),
+as suggested
+in <a href="http://tinyurl.com/opdfafk/pub/wave/sphinx/._main_wave010.html#problem-21-implement-open-boundary-conditions" target="_self">Problem 21</a>.
+This condition is only correct in 1D, but might work satisfactorily in 2D if
+the wave is approximately one-dimensional when it hits the boundary.
+See how well this condition works in letting the tsunami pass out of
+the domain. The distance from the subsea hill (which disturbes the wave)
+and the outlet boundary \( x=L_x \) is an important parameter.
+
+<h2 id="___sec21">Open outlet boundary: absorbing layer <a name="___sec21"></a></h2>
+
+<p>
+Instead of using a condition \( u_t + \sqrt{q}u_x=0 \), which is exact only
+for plane waves propagating in \( x \) direction, one can add an
+artificial domain \( [L_x,L_x+\delta]\times [0,L_y] \) where waves are
+sufficiently damped and absorbed. The goal of an open boundary condition
+is to avoid waves being reflected back into the domain. Turn on
+the damping parameter \( b \) in \( [L_x,L_x+\delta]\times [0,L_y] \),
+and test if it is wise to vary \( b \), say in a linear or exponential
+fashion to have a smooth transition from \( b=0 \) in the physical
+domain and to some significant (efficient) \( b \) value towards the
+artificial boundary \( x=L_x+\delta \).
+
+<h2 id="___sec22">Open outlet boundary: layer with faked damping <a name="___sec22"></a></h2>
+
+<p>
+To let waves pass out of the boundary, we can extend the domain and
+damp the wave as suggested in the section above. However, instead
+of implementing a physical relevant damping via the term \( bu_t \),
+one can simply multiply the solution by a function that reduces
+the amplitude of the wave in the extension of the domain.
+Such a function should be 1 close to the physical boundary and
+decrease towards 0 at the end of the extened domain. The goal is
+to let waves pass out of the physical boundary with no reflections
+back into the physical domain.
+
+<h2 id="___sec23">Compiled loops <a name="___sec23"></a></h2>
+
+<p>
+Extend the program with compiled loops using one or more of the
+following techniques:
+
+<ul>
+ <li> <a href="http://tinyurl.com/opdfafk/pub/wave/sphinx/._main_wave006.html#migrating-loops-to-cython" target="_self">Cython code</a></li>
+ <li> <a href="http://tinyurl.com/opdfafk/pub/wave/sphinx/._main_wave006.html#migrating-loops-to-fortran" target="_self">Fortran code</a> interfaced via <code>f2py</code></li>
+ <li> C code: interfaced via <a href="http://tinyurl.com/opdfafk/pub/wave/sphinx/._main_wave006.html#migrating-loops-to-c-via-cython" target="_self">Cython</a> or <a href="http://tinyurl.com/opdfafk/pub/wave/sphinx/._main_wave006.html#migrating-loops-to-c-via-f2py" target="_self">f2py</a></li>
+ <li> C/C++ code interfaced via <a href="http://docs.scipy.org/doc/scipy/reference/tutorial/weave.html" target="_self">scipy.weave</a></li>
+ <li> C/C++ code interfaced via <a href="https://launchpad.net/instant" target="_self">Instant</a></li>
+</ul>
+
+Note that Instant comes with FEniCS (<code>sudo apt-get install fenics</code> on
+Ubuntu will install Instant) and it is described in the
+<a href="https://launchpad.net/fenics-book" target="_self">FEniCS book</a>.
+
+<h2 id="___sec24">Parallel computing <a name="___sec24"></a></h2>
+
+<p>
+Make a parallel version of the program using one (or more) of
+the following approaches:
+
+<ul>
+ <li> Automatic OpenMP code in migrated Cython loops using
+   <a href="http://docs.cython.org/src/userguide/parallelism.html" target="_self"><tt>cython.parallel</tt></a></li>
+ <li> OpenMP in migrated C or Fortran loops</li>
+ <li> Automatic parallelization via
+   <a href="http://docs.continuum.io/numbapro/" target="_self">NumbaPro</a></li>
+ <li> MPI in migrated C or Fortran loops</li>
+ <li> mpi4py MPI programming from Python (distribute vectorized code)</li>
+</ul>
+
+
+<!-- ------------------- end of main content --------------- -->
+
+</div>  <!-- end container -->
+<!-- include javascript, jQuery *first* -->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+<!-- Bootstrap footer
+<footer>
+<a href="http://..."><img width="250" align=right src="http://..."></a>
+</footer>
+-->
+
+
+</body>
+</html>
+    
+

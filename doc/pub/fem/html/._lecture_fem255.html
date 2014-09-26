@@ -596,7 +596,7 @@ div { text-align: justify; text-justify: inter-word; }
                2,
                None,
                '___sec160'),
-              (' Basic features of 2D P1 elements ', 2, None, '___sec161'),
+              (' Basic features of 2D elements ', 2, None, '___sec161'),
               (' Linear mapping of reference element onto general triangular cell ',
                2,
                None,
@@ -1051,16 +1051,38 @@ $$
 <p>
 <!-- !split -->
 
-<h1>Variational formulations in 2D and 3D <a name="fem:deq:2D:varform"></a></h1>
+<h2>Python pseudo code; the element matrix and vector  <a name="___sec253"></a></h2>
 
-<div class="alert alert-block alert-block alert-text-normal">
-<b></b>
 <p>
-How to do integration by parts is the major difference when moving to
-2D and 3D.
-</div>
 
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #666666">&lt;</span>Declare <span style="color: #008000; font-weight: bold">global</span> matrix, <span style="color: #008000; font-weight: bold">global</span> rhs: A, b<span style="color: #666666">&gt;</span>
 
+<span style="color: #408080; font-style: italic"># Loop over all cells</span>
+<span style="color: #008000; font-weight: bold">for</span> e <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(cells)):
+
+    <span style="color: #408080; font-style: italic"># Compute element matrix and vector</span>
+    n <span style="color: #666666">=</span> <span style="color: #008000">len</span>(dof_map[e])  <span style="color: #408080; font-style: italic"># no of dofs in this element</span>
+    h <span style="color: #666666">=</span> vertices[cells[e][<span style="color: #666666">1</span>]] <span style="color: #666666">-</span> vertices[cells[e][<span style="color: #666666">0</span>]]
+    <span style="color: #666666">&lt;</span>Declare element matrix, element vector: A_e, b_e<span style="color: #666666">&gt;</span>
+
+    <span style="color: #408080; font-style: italic"># Integrate over the reference cell</span>
+    points, weights <span style="color: #666666">=</span> <span style="color: #666666">&lt;</span>numerical integration rule<span style="color: #666666">&gt;</span>
+    <span style="color: #008000; font-weight: bold">for</span> X, w <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">zip</span>(points, weights):
+        phi <span style="color: #666666">=</span> <span style="color: #666666">&lt;</span>basis functions <span style="color: #666666">+</span> derivatives at X<span style="color: #666666">&gt;</span>
+        detJ <span style="color: #666666">=</span> h<span style="color: #666666">/2</span>
+        x <span style="color: #666666">=</span> <span style="color: #666666">&lt;</span>affine mapping <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">X</span><span style="color: #666666">&gt;</span>
+        <span style="color: #008000; font-weight: bold">for</span> r <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(n):
+            <span style="color: #008000; font-weight: bold">for</span> s <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(n):
+                A_e[r,s] <span style="color: #666666">+=</span> integrand_lhs(phi, r, s, x)<span style="color: #666666">*</span>detJ<span style="color: #666666">*</span>w
+            b_e[r] <span style="color: #666666">+=</span> integrand_rhs(phi, r, x)<span style="color: #666666">*</span>detJ<span style="color: #666666">*</span>w
+
+    <span style="color: #408080; font-style: italic"># Add boundary terms</span>
+    <span style="color: #008000; font-weight: bold">for</span> r <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(n):
+        <span style="color: #008000; font-weight: bold">for</span> s <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(n):
+            A_e[r,s] <span style="color: #666666">+=</span> boundary_lhs(phi, r, s, x)<span style="color: #666666">*</span>detJ<span style="color: #666666">*</span>w
+        b_e[r] <span style="color: #666666">+=</span> boundary_rhs(phi, r, x)<span style="color: #666666">*</span>detJ<span style="color: #666666">*</span>w
+</pre></div>
 <p>
 <p>
 <!-- begin bottom navigation -->

@@ -889,8 +889,8 @@ We can now summarize the computational algorithm:
 
 The algorithm essentially consists of moving
 a finite difference stencil through all the mesh points, which is
-illustrated by an animation in a <a href="http://tinyurl.com/k3sdbuv/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/index.html" target="_self">web page</a>
-or a <a href="http://tinyurl.com/k3sdbuv/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/movie.ogg" target="_self">movie file</a>.
+illustrated by an animation in a <a href="http://tinyurl.com/opdfafk/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/index.html" target="_self">web page</a>
+or a <a href="http://tinyurl.com/opdfafk/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/movie.ogg" target="_self">movie file</a>.
 
 <h2>Sketch of an implementation <a name="wave:string:impl"></a></h2>
 
@@ -1105,26 +1105,50 @@ $$
 
 <p>
 To verify the code, we run a series of refined meshes and compute
-the convergence rates. In more detail, we keep \( \Delta t/\Delta x \)
-constant for each mesh, implying that \( C \) is also constant throughout
-the experiments. A common discretization parameter
-\( h = \Delta t \) is introduced. For a given \( C \) (and \( c \)), \( \Delta x
-ch/C \). We choose an initial time cell size \( h_0 \) and run
+the convergence rates. Such tests rely on an assumption that some
+measure \( E \) of the numerical error is related to the discretization
+parameters through
+
+$$ E = C_t\Delta t^r + C_x\Delta x^p,$$
+
+where \( C_t \), \( C_x \), \( r \), and \( p \) are constants. The constants
+\( r \) and \( p \) are known as the <em>convergence rates</em> in time and space,
+respectively.
+From the
+accuracy in the finite difference approximations, we expect \( r=p=2 \).
+This is confirmed by truncation error analysis and other types of analysis.
+By using an exact solution of the PDE problem, we can empirically compute
+the error measure \( E \) on a sequence of refined meshes and see if
+the rates \( r=p=2 \) are obtained. We will not be concerned with estimating
+the constants \( C_t \) and \( C_x \).
+
+<p>
+It is advantageous to introduce a single discretization parameter
+\( h=\Delta t=\hat c \Delta x \) for some constant \( \hat c \) (the idea is
+to keep \( \Delta t^r/\Delta x^p \) constant). Since \( \Delta t \) and \( \Delta x \)
+are related through the Courant number, \( \Delta t = C\Delta x/c \), we
+set \( h=\Delta t \), and then \( \Delta x = hc/C \).
+Now the expression for the error measure is greatly simplified:
+
+$$ E = C_t\Delta t^r + C_x\Delta x^r = C_t h^r + \frac{C_xc}{C} h^r
+= \hat Ch^r,\quad \hat C = C_t+\frac{C_xc}{C} \tp$$
+
+
+<p>
+We choose an initial discretization parameter \( h_0 \) and run
 experiments with decreasing \( h \): \( h_i=2^{-i}h_0 \), \( i=1,2,\ldots,m \).
-Halving the cell size in each experiment is not necessary, but common.
-For each experiment we must record a scalar measure of the error.
-As will be shown later, it is expected that such error measures
-are proportional to \( h^2 \).
+Halving \( h \) in each experiment is not necessary, but a common choice.
+For each experiment we must record \( E \) and \( h \).
 A standard choice of error measure
 is the \( \ell^2 \) or \( \ell^\infty \) norm of
 the error mesh function \( e^n_i \):
 
 $$
 \begin{align}
-||e^n_i||_{\ell^2} &= \left( \Delta t\Delta x\sum_{n=0}^{N_t}\sum_{i=0}^{N_x}
+E &= ||e^n_i||_{\ell^2} = \left( \Delta t\Delta x\sum_{n=0}^{N_t}\sum_{i=0}^{N_x}
 (e^n_i)^2\right)^{\half},\quad e^n_i = \uex(x_i,t_n)-u^n_i,
 \\ 
-||e^n_i||_{\ell^\infty} &= \max_{i,n} |e^i_n|\tp
+E &= ||e^n_i||_{\ell^\infty} = \max_{i,n} |e^i_n|\tp
 \end{align}
 $$
 
@@ -1142,10 +1166,10 @@ the end time \( T \):
 
 $$
 \begin{align}
-||e^n_i||_{\ell^2} &= \left( \Delta x\sum_{i=0}^{N_x}
+E &= ||e^n_i||_{\ell^2} = \left( \Delta x\sum_{i=0}^{N_x}
 (e^n_i)^2\right)^{\half},\quad e^n_i = \uex(x_i,t_n)-u^n_i,
 \\ 
-||e^n_i||_{\ell^\infty} &= \max_{0\leq i\leq N_x} |e^i_{n}|\tp
+E &= ||e^n_i||_{\ell^\infty} = \max_{0\leq i\leq N_x} |e^i_{n}|\tp
 \end{align}
 $$
 
@@ -1153,26 +1177,44 @@ $$
 <p>
 Let \( E_i \) be the error measure in experiment (mesh) number \( i \) and
 let \( h_i \) be the corresponding discretization parameter (\( h \)).
-We expect an error model \( E_i = Ch_i^r \), here with \( r=0 \). To
-estimate \( r \), we can compare two consecutive
-experiments and compute
+With the error model \( E_i = \hat Ch_i^r \), we can
+estimate \( r \) by comparing two consecutive
+experiments: \( E_{i+1}=\hat Ch_{i+1}^{r} \) and
+\( E_{i}=\hat Ch_{i}^{r} \). Dividing the two equations eliminates \( \hat C \)
+and solving for \( r_i \) yields
 
 $$ r_i = \frac{\ln E_{i+1}/E_{i}}{\ln h_{i+1}/h_{i}},\quad i=0,\ldots,m-1\tp
 $$
 
-We should observe that \( r_i \) approaches \( 2 \) as \( i \) increases.
-
-<p>
-The next section describes a method of manufactured solutions where
-do not need to compute error measures and check that they converge
-as expected as the mesh is refined.
+We should for the present discretization method
+observe that \( r_i \) approaches \( 2 \) as \( i \) increases.
 
 <h2>Constructing an exact solution of the discrete equations <a name="wave:pde2:fd:verify:quadratic"></a></h2>
 
 <p>
-For verification purposes we shall use a solution that is quadratic in space
-and linear in time. More specifically, our choice of the manufactured
-solution is
+With a manufactured or known analytical solution, as outlined above,
+we can estimate convergence rates and see if they have the correct
+asymptotic behavior. Experience shows that this is a quite good
+verification technique in that many common bugs will destroy the
+convergence rates. A significantly better test would be to check that the
+numerical solution is exactly what it should be. This will in general
+require knowledge of the numerical error, which we do not have.
+However, it is possible to look for solutions where we can show that
+the numerical error vanishes, i.e., the solution of the PDE problem is
+also a solution of the discrete equations. This property often arises
+if the exact solution is a lower-order polynomial. (Truncation error
+analysis leads to error measures that involve derivatives of the
+exact solution. In the present problem, the truncation error involves
+4th-order derivatives of \( u \) in space and time. Choosing \( u \)
+as a polynomial of degree three or less
+will therefore lead to vanishing error.)
+
+<p>
+We shall now illustrate the construction of an exact solution of the
+PDE problem and the discrete equations.
+Our choice of manufactured solution is quadratic in space
+and linear in time. More specifically, we set
+
 $$
 \begin{equation}
 \uex (x,t) = x(L-x)(1+{\half}t),
@@ -1181,13 +1223,14 @@ $$
 $$
 
 which by insertion in the PDE leads to \( f(x,t)=2(1+t)c^2 \). This \( \uex \)
-fulfills the boundary conditions and is compatible with \( I(x)=x(L-x) \)
+fulfills the boundary conditions \( u=0 \) and demands \( I(x)=x(L-x) \)
 and \( V(x)={\half}x(L-x) \).
 
 <p>
-A key feature of the chosen \( \uex \) is that it is also <em>an exact
-solution of the discrete equations</em>. To realize this very important
-result, we first establish the results
+To realize that the chosen \( \uex \) is that it is also an exact
+solution of the discrete equations,
+we first establish the results
+
 $$
 \begin{align}
 \lbrack D_tD_t t^2\rbrack^n &= \frac{t_{n+1}^2 - 2t_n^2 + t_{n-1}^2}{\Delta t^2}

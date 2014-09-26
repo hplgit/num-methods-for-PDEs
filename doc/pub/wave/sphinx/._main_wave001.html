@@ -306,8 +306,8 @@ for the boundary points <span class="math">\(i=0\)</span> and <span class="math"
 </div></blockquote>
 <p>The algorithm essentially consists of moving
 a finite difference stencil through all the mesh points, which is
-illustrated by an animation in a <a class="reference external" href="http://tinyurl.com/k3sdbuv/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/index.html">web page</a>
-or a <a class="reference external" href="http://tinyurl.com/k3sdbuv/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/movie.ogg">movie file</a>.</p>
+illustrated by an animation in a <a class="reference external" href="http://tinyurl.com/opdfafk/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/index.html">web page</a>
+or a <a class="reference external" href="http://tinyurl.com/opdfafk/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/movie.ogg">movie file</a>.</p>
 </div>
 <div class="section" id="sketch-of-an-implementation">
 <span id="wave-string-impl"></span><h2>Sketch of an implementation<a class="headerlink" href="#sketch-of-an-implementation" title="Permalink to this headline">¶</a></h2>
@@ -461,24 +461,42 @@ conditions. One example is</p>
 \[\begin{split}u(x,0) =&amp; I(x) = 0,\\
 u_t(x,0) &amp;= V(x) = (2 - x(L-x))\cos t{\thinspace .}\end{split}\]</div>
 <p>To verify the code, we run a series of refined meshes and compute
-the convergence rates. In more detail, we keep <span class="math">\(\Delta t/\Delta x\)</span>
-constant for each mesh, implying that <span class="math">\(C\)</span> is also constant throughout
-the experiments. A common discretization parameter
-<span class="math">\(h = \Delta t\)</span> is introduced. For a given <span class="math">\(C\)</span> (and <span class="math">\(c\)</span>), <span class="math">\(\Delta x
-ch/C\)</span>. We choose an initial time cell size <span class="math">\(h_0\)</span> and run
+the convergence rates. Such tests rely on an assumption that some
+measure <span class="math">\(E\)</span> of the numerical error is related to the discretization
+parameters through</p>
+<div class="math">
+\[E = C_t\Delta t^r + C_x\Delta x^p,\]</div>
+<p>where <span class="math">\(C_t\)</span>, <span class="math">\(C_x\)</span>, <span class="math">\(r\)</span>, and <span class="math">\(p\)</span> are constants. The constants
+<span class="math">\(r\)</span> and <span class="math">\(p\)</span> are known as the <em>convergence rates</em> in time and space,
+respectively.
+From the
+accuracy in the finite difference approximations, we expect <span class="math">\(r=p=2\)</span>.
+This is confirmed by truncation error analysis and other types of analysis.
+By using an exact solution of the PDE problem, we can empirically compute
+the error measure <span class="math">\(E\)</span> on a sequence of refined meshes and see if
+the rates <span class="math">\(r=p=2\)</span> are obtained. We will not be concerned with estimating
+the constants <span class="math">\(C_t\)</span> and <span class="math">\(C_x\)</span>.</p>
+<p>It is advantageous to introduce a single discretization parameter
+<span class="math">\(h=\Delta t=\hat c \Delta x\)</span> for some constant <span class="math">\(\hat c\)</span> (the idea is
+to keep <span class="math">\(\Delta t^r/\Delta x^p\)</span> constant). Since <span class="math">\(\Delta t\)</span> and <span class="math">\(\Delta x\)</span>
+are related through the Courant number, <span class="math">\(\Delta t = C\Delta x/c\)</span>, we
+set <span class="math">\(h=\Delta t\)</span>, and then <span class="math">\(\Delta x = hc/C\)</span>.
+Now the expression for the error measure is greatly simplified:</p>
+<div class="math">
+\[E = C_t\Delta t^r + C_x\Delta x^r = C_t h^r + \frac{C_xc}{C} h^r
+= \hat Ch^r,\quad \hat C = C_t+\frac{C_xc}{C} {\thinspace .}\]</div>
+<p>We choose an initial discretization parameter <span class="math">\(h_0\)</span> and run
 experiments with decreasing <span class="math">\(h\)</span>: <span class="math">\(h_i=2^{-i}h_0\)</span>, <span class="math">\(i=1,2,\ldots,m\)</span>.
-Halving the cell size in each experiment is not necessary, but common.
-For each experiment we must record a scalar measure of the error.
-As will be shown later, it is expected that such error measures
-are proportional to <span class="math">\(h^2\)</span>.
+Halving <span class="math">\(h\)</span> in each experiment is not necessary, but a common choice.
+For each experiment we must record <span class="math">\(E\)</span> and <span class="math">\(h\)</span>.
 A standard choice of error measure
 is the <span class="math">\(\ell^2\)</span> or <span class="math">\(\ell^\infty\)</span> norm of
 the error mesh function <span class="math">\(e^n_i\)</span>:</p>
 <div class="math">
-\[||e^n_i||_{\ell^2} = \left( \Delta t\Delta x\sum_{n=0}^{N_t}\sum_{i=0}^{N_x}
+\[E = ||e^n_i||_{\ell^2} = \left( \Delta t\Delta x\sum_{n=0}^{N_t}\sum_{i=0}^{N_x}
 (e^n_i)^2\right)^{\frac{1}{2}},\quad e^n_i = {u_{\small\mbox{e}}}(x_i,t_n)-u^n_i,\]</div>
 <div class="math">
-\[||e^n_i||_{\ell^\infty} = \max_{i,n} |e^i_n|{\thinspace .}\]</div>
+\[E = ||e^n_i||_{\ell^\infty} = \max_{i,n} |e^i_n|{\thinspace .}\]</div>
 <p>In Python, one can compute <span class="math">\(\sum_{i}(e^{n+1}_i)^2\)</span> at each time step
 and accumulate the value in some sum variable, say <tt class="docutils literal"><span class="pre">e2_sum</span></tt>.  At the
 final time step one can do <tt class="docutils literal"><span class="pre">sqrt(dt*dx*e2_sum)</span></tt>.  For the
@@ -489,35 +507,52 @@ final time step one can do <tt class="docutils literal"><span class="pre">sqrt(d
 is to use a spatial norm at one time step only, e.g.,
 the end time <span class="math">\(T\)</span>:</p>
 <div class="math">
-\[||e^n_i||_{\ell^2} = \left( \Delta x\sum_{i=0}^{N_x}
+\[E = ||e^n_i||_{\ell^2} = \left( \Delta x\sum_{i=0}^{N_x}
 (e^n_i)^2\right)^{\frac{1}{2}},\quad e^n_i = {u_{\small\mbox{e}}}(x_i,t_n)-u^n_i,\]</div>
 <div class="math">
-\[||e^n_i||_{\ell^\infty} = \max_{0\leq i\leq N_x} |e^i_{n}|{\thinspace .}\]</div>
+\[E = ||e^n_i||_{\ell^\infty} = \max_{0\leq i\leq N_x} |e^i_{n}|{\thinspace .}\]</div>
 <p>Let <span class="math">\(E_i\)</span> be the error measure in experiment (mesh) number <span class="math">\(i\)</span> and
 let <span class="math">\(h_i\)</span> be the corresponding discretization parameter (<span class="math">\(h\)</span>).
-We expect an error model <span class="math">\(E_i = Ch_i^r\)</span>, here with <span class="math">\(r=0\)</span>. To
-estimate <span class="math">\(r\)</span>, we can compare two consecutive
-experiments and compute</p>
+With the error model <span class="math">\(E_i = \hat Ch_i^r\)</span>, we can
+estimate <span class="math">\(r\)</span> by comparing two consecutive
+experiments: <span class="math">\(E_{i+1}=\hat Ch_{i+1}^{r}\)</span> and
+<span class="math">\(E_{i}=\hat Ch_{i}^{r}\)</span>. Dividing the two equations eliminates <span class="math">\(\hat C\)</span>
+and solving for <span class="math">\(r_i\)</span> yields</p>
 <div class="math">
 \[r_i = \frac{\ln E_{i+1}/E_{i}}{\ln h_{i+1}/h_{i}},\quad i=0,\ldots,m-1{\thinspace .}\]</div>
-<p>We should observe that <span class="math">\(r_i\)</span> approaches <span class="math">\(2\)</span> as <span class="math">\(i\)</span> increases.</p>
-<p>The next section describes a method of manufactured solutions where
-do not need to compute error measures and check that they converge
-as expected as the mesh is refined.</p>
+<p>We should for the present discretization method
+observe that <span class="math">\(r_i\)</span> approaches <span class="math">\(2\)</span> as <span class="math">\(i\)</span> increases.</p>
 </div>
 <div class="section" id="constructing-an-exact-solution-of-the-discrete-equations">
 <span id="wave-pde2-fd-verify-quadratic"></span><h2>Constructing an exact solution of the discrete equations<a class="headerlink" href="#constructing-an-exact-solution-of-the-discrete-equations" title="Permalink to this headline">¶</a></h2>
-<p>For verification purposes we shall use a solution that is quadratic in space
-and linear in time. More specifically, our choice of the manufactured
-solution is</p>
+<p>With a manufactured or known analytical solution, as outlined above,
+we can estimate convergence rates and see if they have the correct
+asymptotic behavior. Experience shows that this is a quite good
+verification technique in that many common bugs will destroy the
+convergence rates. A significantly better test would be to check that the
+numerical solution is exactly what it should be. This will in general
+require knowledge of the numerical error, which we do not have.
+However, it is possible to look for solutions where we can show that
+the numerical error vanishes, i.e., the solution of the PDE problem is
+also a solution of the discrete equations. This property often arises
+if the exact solution is a lower-order polynomial. (Truncation error
+analysis leads to error measures that involve derivatives of the
+exact solution. In the present problem, the truncation error involves
+4th-order derivatives of <span class="math">\(u\)</span> in space and time. Choosing <span class="math">\(u\)</span>
+as a polynomial of degree three or less
+will therefore lead to vanishing error.)</p>
+<p>We shall now illustrate the construction of an exact solution of the
+PDE problem and the discrete equations.
+Our choice of manufactured solution is quadratic in space
+and linear in time. More specifically, we set</p>
 <div class="math" id="equation-wave:pde2:fd:verify:quadratic:uex">
 <span id="eq-wave-pde2-fd-verify-quadratic-uex"></span><span class="eqno">(21)</span>\[     {u_{\small\mbox{e}}} (x,t) = x(L-x)(1+{\frac{1}{2}}t),\]</div>
 <p>which by insertion in the PDE leads to <span class="math">\(f(x,t)=2(1+t)c^2\)</span>. This <span class="math">\({u_{\small\mbox{e}}}\)</span>
-fulfills the boundary conditions and is compatible with <span class="math">\(I(x)=x(L-x)\)</span>
+fulfills the boundary conditions <span class="math">\(u=0\)</span> and demands <span class="math">\(I(x)=x(L-x)\)</span>
 and <span class="math">\(V(x)={\frac{1}{2}}x(L-x)\)</span>.</p>
-<p>A key feature of the chosen <span class="math">\({u_{\small\mbox{e}}}\)</span> is that it is also <em>an exact
-solution of the discrete equations</em>. To realize this very important
-result, we first establish the results</p>
+<p>To realize that the chosen <span class="math">\({u_{\small\mbox{e}}}\)</span> is that it is also an exact
+solution of the discrete equations,
+we first establish the results</p>
 <div class="math">
 \[\lbrack D_tD_t t^2\rbrack^n = \frac{t_{n+1}^2 - 2t_n^2 + t_{n-1}^2}{\Delta t^2}
 = (n+1)^2 -n^2 + (n-1)^2 = 2,\]</div>

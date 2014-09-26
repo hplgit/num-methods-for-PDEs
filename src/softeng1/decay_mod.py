@@ -15,7 +15,7 @@ def solver(I, a, T, dt, theta):
         u[n+1] = (1 - (1-theta)*a*dt)/(1 + theta*dt*a)*u[n]
     return u, t
 
-def verify_three_steps():
+def test_three_steps():
     # Three manual steps
     theta = 0.8; a = 2; I = 0.1; dt = 0.8
     factor = (1 - (1-theta)*a*dt)/(1 + theta*dt*a)
@@ -29,9 +29,9 @@ def verify_three_steps():
     tol = 1E-15  # tolerance for comparing floats
     difference = abs(u1-u[1]) + abs(u2-u[2]) + abs(u3-u[3])
     success = difference <= tol
-    return success
+    assert success
 
-def verify_exact_discrete_solution():
+def test_exact_discrete_solution():
 
     def exact_discrete_solution(n, I, a, theta, dt):
         factor = (1 - (1-theta)*a*dt)/(1 + theta*dt*a)
@@ -45,7 +45,7 @@ def verify_exact_discrete_solution():
     difference = abs(u_de - u).max()  # max deviation
     tol = 1E-15  # tolerance for comparing floats
     success = difference <= tol
-    return success
+    assert success
 
 def exact_solution(t, I, a):
     return I*exp(-a*t)
@@ -124,7 +124,7 @@ def main():
 
 if __name__ == '__main__':
     if 'verify' in sys.argv:
-        if verify_three_steps() and verify_discrete_solution():
+        if test_three_steps() and test_discrete_solution():
             pass # ok
         else:
             print 'Bug in the implementation!'

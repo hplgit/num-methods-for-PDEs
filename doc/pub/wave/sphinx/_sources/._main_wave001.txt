@@ -402,8 +402,8 @@ We can now summarize the computational algorithm:
 
 The algorithm essentially consists of moving
 a finite difference stencil through all the mesh points, which is
-illustrated by an animation in a `web page <http://tinyurl.com/k3sdbuv/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/index.html>`__
-or a `movie file <http://tinyurl.com/k3sdbuv/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/movie.ogg>`__.
+illustrated by an animation in a `web page <http://tinyurl.com/opdfafk/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/index.html>`__
+or a `movie file <http://tinyurl.com/opdfafk/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/movie.ogg>`__.
 
 .. _wave:string:impl:
 
@@ -654,30 +654,53 @@ The initial conditions become
         
 
 To verify the code, we run a series of refined meshes and compute
-the convergence rates. In more detail, we keep :math:`\Delta t/\Delta x`
-constant for each mesh, implying that :math:`C` is also constant throughout
-the experiments. A common discretization parameter
-:math:`h = \Delta t` is introduced. For a given :math:`C` (and :math:`c`), :math:`\Delta x
-ch/C`. We choose an initial time cell size :math:`h_0` and run
+the convergence rates. Such tests rely on an assumption that some
+measure :math:`E` of the numerical error is related to the discretization
+parameters through
+
+.. math::
+         E = C_t\Delta t^r + C_x\Delta x^p,
+
+where :math:`C_t`, :math:`C_x`, :math:`r`, and :math:`p` are constants. The constants
+:math:`r` and :math:`p` are known as the *convergence rates* in time and space,
+respectively.
+From the
+accuracy in the finite difference approximations, we expect :math:`r=p=2`.
+This is confirmed by truncation error analysis and other types of analysis.
+By using an exact solution of the PDE problem, we can empirically compute
+the error measure :math:`E` on a sequence of refined meshes and see if
+the rates :math:`r=p=2` are obtained. We will not be concerned with estimating
+the constants :math:`C_t` and :math:`C_x`.
+
+It is advantageous to introduce a single discretization parameter
+:math:`h=\Delta t=\hat c \Delta x` for some constant :math:`\hat c` (the idea is
+to keep :math:`\Delta t^r/\Delta x^p` constant). Since :math:`\Delta t` and :math:`\Delta x`
+are related through the Courant number, :math:`\Delta t = C\Delta x/c`, we
+set :math:`h=\Delta t`, and then :math:`\Delta x = hc/C`.
+Now the expression for the error measure is greatly simplified:
+
+.. math::
+         E = C_t\Delta t^r + C_x\Delta x^r = C_t h^r + \frac{C_xc}{C} h^r
+        = \hat Ch^r,\quad \hat C = C_t+\frac{C_xc}{C} {\thinspace .}
+
+We choose an initial discretization parameter :math:`h_0` and run
 experiments with decreasing :math:`h`: :math:`h_i=2^{-i}h_0`, :math:`i=1,2,\ldots,m`.
-Halving the cell size in each experiment is not necessary, but common.
-For each experiment we must record a scalar measure of the error.
-As will be shown later, it is expected that such error measures
-are proportional to :math:`h^2`.
+Halving :math:`h` in each experiment is not necessary, but a common choice.
+For each experiment we must record :math:`E` and :math:`h`.
 A standard choice of error measure
 is the :math:`\ell^2` or :math:`\ell^\infty` norm of
 the error mesh function :math:`e^n_i`:
 
 .. math::
         
-        ||e^n_i||_{\ell^2} = \left( \Delta t\Delta x\sum_{n=0}^{N_t}\sum_{i=0}^{N_x}
+        E = ||e^n_i||_{\ell^2} = \left( \Delta t\Delta x\sum_{n=0}^{N_t}\sum_{i=0}^{N_x}
         (e^n_i)^2\right)^{\frac{1}{2}},\quad e^n_i = {u_{\small\mbox{e}}}(x_i,t_n)-u^n_i,
         
         
 
 .. math::
           
-        ||e^n_i||_{\ell^\infty} = \max_{i,n} |e^i_n|{\thinspace .}
+        E = ||e^n_i||_{\ell^\infty} = \max_{i,n} |e^i_n|{\thinspace .}
         
 
 In Python, one can compute :math:`\sum_{i}(e^{n+1}_i)^2` at each time step
@@ -693,40 +716,57 @@ the end time :math:`T`:
 
 .. math::
         
-        ||e^n_i||_{\ell^2} = \left( \Delta x\sum_{i=0}^{N_x}
+        E = ||e^n_i||_{\ell^2} = \left( \Delta x\sum_{i=0}^{N_x}
         (e^n_i)^2\right)^{\frac{1}{2}},\quad e^n_i = {u_{\small\mbox{e}}}(x_i,t_n)-u^n_i,
         
         
 
 .. math::
           
-        ||e^n_i||_{\ell^\infty} = \max_{0\leq i\leq N_x} |e^i_{n}|{\thinspace .}
+        E = ||e^n_i||_{\ell^\infty} = \max_{0\leq i\leq N_x} |e^i_{n}|{\thinspace .}
         
 
 Let :math:`E_i` be the error measure in experiment (mesh) number :math:`i` and
 let :math:`h_i` be the corresponding discretization parameter (:math:`h`).
-We expect an error model :math:`E_i = Ch_i^r`, here with :math:`r=0`. To
-estimate :math:`r`, we can compare two consecutive
-experiments and compute
+With the error model :math:`E_i = \hat Ch_i^r`, we can
+estimate :math:`r` by comparing two consecutive
+experiments: :math:`E_{i+1}=\hat Ch_{i+1}^{r}` and
+:math:`E_{i}=\hat Ch_{i}^{r}`. Dividing the two equations eliminates :math:`\hat C`
+and solving for :math:`r_i` yields
 
 .. math::
          r_i = \frac{\ln E_{i+1}/E_{i}}{\ln h_{i+1}/h_{i}},\quad i=0,\ldots,m-1{\thinspace .}
         
 
-We should observe that :math:`r_i` approaches :math:`2` as :math:`i` increases.
-
-The next section describes a method of manufactured solutions where
-do not need to compute error measures and check that they converge
-as expected as the mesh is refined.
+We should for the present discretization method
+observe that :math:`r_i` approaches :math:`2` as :math:`i` increases.
 
 .. _wave:pde2:fd:verify:quadratic:
 
 Constructing an exact solution of the discrete equations
 --------------------------------------------------------
 
-For verification purposes we shall use a solution that is quadratic in space
-and linear in time. More specifically, our choice of the manufactured
-solution is
+With a manufactured or known analytical solution, as outlined above,
+we can estimate convergence rates and see if they have the correct
+asymptotic behavior. Experience shows that this is a quite good
+verification technique in that many common bugs will destroy the
+convergence rates. A significantly better test would be to check that the
+numerical solution is exactly what it should be. This will in general
+require knowledge of the numerical error, which we do not have.
+However, it is possible to look for solutions where we can show that
+the numerical error vanishes, i.e., the solution of the PDE problem is
+also a solution of the discrete equations. This property often arises
+if the exact solution is a lower-order polynomial. (Truncation error
+analysis leads to error measures that involve derivatives of the
+exact solution. In the present problem, the truncation error involves
+4th-order derivatives of :math:`u` in space and time. Choosing :math:`u`
+as a polynomial of degree three or less
+will therefore lead to vanishing error.)
+
+We shall now illustrate the construction of an exact solution of the
+PDE problem and the discrete equations.
+Our choice of manufactured solution is quadratic in space
+and linear in time. More specifically, we set
 
 .. _Eq:wave:pde2:fd:verify:quadratic:uex:
 
@@ -738,12 +778,12 @@ solution is
         
 
 which by insertion in the PDE leads to :math:`f(x,t)=2(1+t)c^2`. This :math:`{u_{\small\mbox{e}}}`
-fulfills the boundary conditions and is compatible with :math:`I(x)=x(L-x)`
+fulfills the boundary conditions :math:`u=0` and demands :math:`I(x)=x(L-x)`
 and :math:`V(x)={\frac{1}{2}}x(L-x)`.
 
-A key feature of the chosen :math:`{u_{\small\mbox{e}}}` is that it is also *an exact
-solution of the discrete equations*. To realize this very important
-result, we first establish the results
+To realize that the chosen :math:`{u_{\small\mbox{e}}}` is that it is also an exact
+solution of the discrete equations,
+we first establish the results
 
 .. math::
         

@@ -1,0 +1,1246 @@
+.. !split
+
+Software engineering
+====================
+
+
+.. admonition:: Goal
+
+   Efficient use of differential equation models requires software that is easy to
+   test and flexible for setting up extensive numerical experiments.
+   This section introduces three important concepts:
+   
+     * Modules
+   
+     * Testing frameworks
+   
+     * Implementation with classes
+   
+   The concepts are introduced using the differential equation
+   problem :math:`u'=-au`, :math:`u(0)=I`, as example.
+
+
+
+
+.. _decay:prog:se:module:
+
+Making a module
+---------------
+
+.. index:: modules
+
+
+.. admonition:: The DRY principle
+
+   The previous sections have outlined numerous different programs, all of
+   them having their own copy of the ``solver`` function.  Such copies
+   of the same piece of code is against the important *Don't Repeat
+   Yourself* (DRY) principle in programming.  If we want to change the
+   ``solver`` function there should be *one and only one* place where the
+   change needs to be performed.
+
+
+
+
+To clean up the repetitive code snippets scattered among the
+``decay_*.py`` files, we start by collecting the
+various functions we want to keep for the future in one file,
+now called `decay_mod.py <http://tinyurl.com/nm5587k/softeng1/decay_mod.py>`__ (``mod`` stands for "module").
+The following functions are copied to this file:
+
+ * ``solver`` for computing the numerical solution
+
+ * ``verify_three_steps`` for verifying the first three solution
+   points against hand calculations
+
+ * ``verify_discrete_solution`` for verifying the entire computed solution
+   against an exact formula for the numerical solution
+
+ * ``explore`` for computing and plotting the solution
+
+ * ``define_command_line_options`` for defining option-value pairs
+   on the command line
+
+ * ``read_command_line`` for reading input from the command line,
+   now extended to work both with ``sys.argv`` directly
+   and with an ``ArgumentParser`` object
+
+ * ``main`` for running experiments with :math:`\theta=0,0.5,1` and a series of
+   :math:`\Delta t` values, and computing convergence rates
+
+ * ``main_GUI`` for doing the same as the ``main`` function, but modified
+   for automatic GUI generation
+
+ * ``verify_convergence_rate`` for verifying the computed convergence
+   rates against the theoretically expected values
+
+We use Matplotlib for plotting. A sketch of the ``decay_mod.py``
+file, with complete versions of the modified functions, looks as follows:
+
+.. code-block:: python
+
+        from numpy import *
+        from matplotlib.pyplot import *
+        import sys
+        
+        def solver(I, a, T, dt, theta):
+            ...
+        
+        def verify_three_steps():
+            ...
+        
+        def verify_exact_discrete_solution():
+            ...
+        
+        def u_exact(t, I, a):
+            ...
+        
+        def explore(I, a, T, dt, theta=0.5, makeplot=True):
+            ...
+        
+        def define_command_line_options():
+            ...
+        
+        def read_command_line(use_argparse=True):
+            if use_argparse:
+                parser = define_command_line_options()
+                args = parser.parse_args()
+                print 'I={}, a={}, makeplot={}, dt_values={}'.format(
+                    args.I, args.a, args.makeplot, args.dt_values)
+                return args.I, args.a, args.makeplot, args.dt_values
+            else:
+                if len(sys.argv) < 6:
+                    print 'Usage: %s I a on/off dt1 dt2 dt3 ...' % \ 
+                          sys.argv[0]; sys.exit(1)
+        
+                I = float(sys.argv[1])
+                a = float(sys.argv[2])
+                T = float(sys.argv[3])
+                makeplot = sys.argv[4] in ('on', 'True')
+                dt_values = [float(arg) for arg in sys.argv[5:]]
+        
+                return I, a, makeplot, dt_values
+        
+        def main():
+            ...
+
+This ``decay_mod.py`` file is already a module such that we can import
+desired functions in other programs. For example, we can in a file do
+
+.. code-block:: python
+
+        from decay_mod import solver
+        u, t = solver(I=1.0, a=3.0, T=3, dt=0.01, theta=0.5)
+
+.. index:: test block (in Python modules)
+
+However, it should also be possible to both use ``decay_mod.py`` as
+a module *and* execute the file as a program that runs ``main()``. This is
+accomplished by ending the file with a *test block*:
+
+.. code-block:: python
+
+        if __name__ == '__main__':
+            main()
+
+When ``decay_mod.py`` is used as a module, ``__name__`` equals the module
+name ``decay_mod``, while ``__name__`` equals ``'__main__'`` when the
+file is run as a program.
+Optionally, we could run the verification tests if the word ``verify``
+is present on the command line and ``verify_convergence_rate`` could
+be tested if ``verify_rates`` is found on the command line. The
+``verify_rates`` argument must be removed before we read parameter values from
+the command line, otherwise the ``read_command_line`` function (called by ``main``)
+will not work properly.
+
+.. code-block:: python
+
+        if __name__ == '__main__':
+            if 'verify' in sys.argv:
+                if verify_three_steps() and verify_discrete_solution():
+                    pass # ok
+                else:
+                    print 'Bug in the implementation!'
+            elif 'verify_rates' in sys.argv:
+                sys.argv.remove('verify_rates')
+                if not '--dt' in sys.argv:
+                    print 'Must assign several dt values'
+                    sys.exit(1)  # abort
+                if verify_convergence_rate():
+                    pass
+                else:
+                    print 'Bug in the implementation!'
+            else:
+                # Perform simulations
+                main()
+
+.. _decay:prog:se:import:
+
+Prefixing imported functions by the module name
+-----------------------------------------------
+
+.. index:: importing modules
+
+Import statements of the form ``from module import *`` import
+functions and variables in ``module.py`` into the current file.
+For example, when doing
+
+.. code-block:: python
+
+        from numpy import *
+        from matplotlib.pyplot import *
+
+we get mathematical functions like ``sin`` and ``exp``
+as well as MATLAB-style functions like ``linspace`` and ``plot``,
+which can be called by these well-known names.
+Unfortunately, it sometimes becomes confusing to
+know where a particular function comes from. Is it from ``numpy``? Or
+``matplotlib.pyplot``?
+Or is it our own function?
+
+An alternative import is
+
+.. code-block:: python
+
+        import numpy
+        import matplotlib.pyplot
+
+and such imports require functions to be prefixed by the module name, e.g.,
+
+.. code-block:: python
+
+        t = numpy.linspace(0, T, Nt+1)
+        u_e = I*numpy.exp(-a*t)
+        matplotlib.pyplot.plot(t, u_e)
+
+This is normally regarded as a better habit because it is explicitly stated
+from which module a function comes from.
+
+The modules ``numpy`` and ``matplotlib.pyplot`` are so frequently used,
+and their full names quite tedious to write, so two standard abbreviations
+have evolved in the Python scientific computing community:
+
+.. code-block:: python
+
+        import numpy as np
+        import matplotlib.pyplot as plt
+        
+        t = np.linspace(0, T, Nt+1)
+        u_e = I*np.exp(-a*t)
+        plt.plot(t, u_e)
+
+A version of the ``decay_mod`` module where we use the ``np`` and ``plt``
+prefixes is found in the file
+`decay_mod_prefix.py <http://tinyurl.com/nm5587k/softeng1/decay_mod_prefix.py>`__.
+
+The downside of prefixing functions by the module name is that
+mathematical expressions like :math:`e^{-at}\sin(2\pi t)` get
+cluttered with module names,
+
+.. code-block:: python
+
+        numpy.exp(-a*t)*numpy.sin(2(numpy.pi*t)
+        # or
+        np.exp(-a*t)*np.sin(2*np.pi*t)
+
+Such an expression looks like ``exp(-a*t)*sin(2*pi*t)`` in most
+other programming languages. Similarly,
+``np.linspace`` and ``plt.plot`` look less familiar to people who are
+used to MATLAB and who have not adopted Python's prefix style.
+Whether to do ``from module import *`` or ``import module`` depends
+on personal taste and the problem at hand. In these writings we use
+``from module import`` in shorter programs where similarity with
+MATLAB could be an advantage, and where a one-to-one correspondence between
+mathematical formulas and Python expressions is important.
+The style ``import module`` is preferred inside Python modules (see
+:ref:`decay:exer:module1` for a demonstration).
+
+.. _decay:prog:se:doctest:
+
+Doctests
+--------
+
+.. index:: doctests
+
+.. index::
+   single: software testing; doctests
+
+We have emphasized how important it is to be able to run tests in the
+program at any time. This was solved by calling various ``verify*``
+functions in the previous examples. However, there exists
+well-established procedures and corresponding tools for automating
+the execution of tests. We shall briefly demonstrate two important
+techniques: *doctest* and *unit testing*. The corresponding files are
+the modules `decay_mod_doctest.py <http://tinyurl.com/nm5587k/softeng1/decay_mod_doctest.py>`__
+and `decay_mod_nosetest.py <http://tinyurl.com/nm5587k/softeng1/decay_mod_nosetest.py>`__.
+
+A doc string (the first string after the function header) is used to
+document the purpose of functions and their arguments. Very often it
+is instructive to include an example on how to use the function.
+Interactive examples in the Python shell are most illustrative as
+we can see the output resulting from function calls. For example,
+we can in the ``solver`` function include an example on calling
+this function and printing the computed ``u`` and ``t`` arrays:
+
+.. code-block:: python
+
+        def solver(I, a, T, dt, theta):
+            """
+            Solve u'=-a*u, u(0)=I, for t in (0,T] with steps of dt.
+        
+        
+            >>> u, t = solver(I=0.8, a=1.2, T=4, dt=0.5, theta=0.5)
+            >>> for t_n, u_n in zip(t, u):
+            ...     print 't=%.1f, u=%.14f' % (t_n, u_n)
+            t=0.0, u=0.80000000000000
+            t=0.5, u=0.43076923076923
+            t=1.0, u=0.23195266272189
+            t=1.5, u=0.12489758761948
+            t=2.0, u=0.06725254717972
+            t=2.5, u=0.03621291001985
+            t=3.0, u=0.01949925924146
+            t=3.5, u=0.01049960113002
+            t=4.0, u=0.00565363137770
+            """
+            ...
+
+When such interactive demonstrations are inserted in doc strings,
+Python's `doctest <http://docs.python.org/library/doctest.html>`__
+module can be used to automate running all commands
+in interactive sessions and compare new output with the output
+appearing in the doc string.  All we have to do in the current example
+is to write
+
+.. code-block:: python
+
+        Terminal> python -m doctest decay_mod_doctest.py
+
+This command imports the ``doctest`` module, which runs all tests.
+No additional command-line argument is allowed when running doctests.
+If any test fails, the problem is reported, e.g.,
+
+.. code-block:: text
+
+        Terminal> python -m doctest decay_mod_doctest.py
+        ********************************************************
+        File "decay_mod_doctest.py", line 12, in decay_mod_doctest....
+        Failed example:
+            for t_n, u_n in zip(t, u):
+                print 't=%.1f, u=%.14f' % (t_n, u_n)
+        Expected:
+            t=0.0, u=0.80000000000000
+            t=0.5, u=0.43076923076923
+            t=1.0, u=0.23195266272189
+            t=1.5, u=0.12489758761948
+            t=2.0, u=0.06725254717972
+        Got:
+            t=0.0, u=0.80000000000000
+            t=0.5, u=0.43076923076923
+            t=1.0, u=0.23195266272189
+            t=1.5, u=0.12489758761948
+            t=2.0, u=0.06725254718756
+        ********************************************************
+        1 items had failures:
+           1 of   2 in decay_mod_doctest.solver
+        ***Test Failed*** 1 failures.
+
+Note that in the output of ``t`` and ``u`` we write ``u`` with 14 digits.
+Writing all 16 digits is not a good idea: if the tests are run on
+different hardware, round-off errors might be different, and
+the ``doctest`` module detects that the numbers are not precisely the same
+and reports failures. In the present application, where :math:`0 < u(t) \leq 0.8`,
+we expect round-off errors to be of size :math:`10^{-16}`, so comparing 15
+digits would probably be reliable, but we compare 14 to be on the
+safe side.
+
+Doctests are highly encouraged as they do two things: 1) demonstrate
+how a function is used and 2) test that the function works.
+
+Here is an example on a doctest in the ``explore`` function:
+
+.. code-block:: python
+
+        def explore(I, a, T, dt, theta=0.5, makeplot=True):
+            """
+            Run a case with the solver, compute error measure,
+            and plot the numerical and exact solutions (if makeplot=True).
+        
+            >>> for theta in 0, 0.5, 1:
+            ...    E = explore(I=1.9, a=2.1, T=5, dt=0.1, theta=theta,
+            ...                makeplot=False)
+            ...    print '%.10E' % E
+            ...
+            7.3565079236E-02
+            2.4183893110E-03
+            6.5013039886E-02
+            """
+            ...
+
+This time we limit the output to 10 digits.
+
+
+.. admonition:: Caution
+
+   Doctests requires careful coding if they use command-line input or
+   print results to the terminal window. Command-line input must
+   be simulated by filling ``sys.argv`` correctly, e.g.,
+   ``sys.argv = '--I 1.0 --a 5'.split``.
+   The output lines of print statements must be copied exactly as they
+   appear when running the statements in an interactive Python shell.
+
+
+
+
+.. _decay:prog:se:nose:
+
+Unit testing with nose
+----------------------
+
+.. index:: nose tests
+
+.. index:: unit testing
+
+.. index::
+   single: software testing; nose
+
+The unit testing technique consists of identifying small units
+of code, usually functions (or classes), and write one or more tests for
+each unit. One test should, ideally, not depend on the outcome of
+other tests. For example, the doctest in function ``solver`` is a
+unit test, and the doctest in function ``explore`` as well, but the
+latter depends on a working ``solver``. Putting the error computation
+and plotting in ``explore`` in two separate functions would allow
+independent unit tests. In this way, the design of unit tests impacts
+the design of functions. The recommended practice is actually to
+design and write the unit tests first and *then* implement the functions!
+
+In scientific computing it is not always obvious how to best perform
+unit testing. The units is naturally larger than in non-scientific
+software. Very often the solution procedure of a mathematical problem
+identifies a unit.
+
+Basic use of nose
+~~~~~~~~~~~~~~~~~
+
+The ``nose`` package is a versatile tool for implementing unit tests
+in Python. Here is a short explanation of the usage of nose:
+
+ 1. Implement tests in functions with names starting with ``test_``.
+    Such functions cannot have any arguments.
+
+ 2. The test functions perform assertions on computed results
+    using ``assert`` functions from the ``nose.tools`` module.
+
+ 3. The test functions can be in the source code files or be
+    collected in separate files with names ``test*.py``.
+
+Here comes a very simple illustration of the three points.
+Assume that we have this function in a module ``mymod``:
+
+.. code-block:: python
+
+        def double(n):
+            return 2*n
+
+Either in this file, or in a separate file ``test_mymod.py``, we
+implement a test function whose purpose is
+to test that the function ``double`` works as intended:
+
+.. code-block:: python
+
+        import nose.tools as nt
+        
+        def test_double():
+            result = double(4)
+            nt.assert_equal(result, 8)
+
+Notice that ``test_double`` has no arguments.
+We need to do an ``import mymod`` or ``from mymod import double``
+if this test resides in a separate file.
+Running
+
+.. code-block:: text
+
+        Terminal> nosetests -s mymod
+
+makes the ``nose`` tool run all functions with names matching ``test_*()``
+in ``mymod.py``.
+Alternatively, if the test functions are in some ``test_mymod.py`` file,
+we can just write ``nosetests -s``. The nose tool will then look
+for all files with names mathching ``test*.py`` and run all
+functions ``test_*()`` in these files.
+
+When you have nose tests in separate test
+files with names ``test*.py`` it is common to collect
+these files in a subdirectory ``tests``, or ``*_tests`` if
+you have several test subdirectories. Running ``nosetests -s`` will
+then recursively look for all ``tests`` and ``*_tests`` subdirectories
+and run all functions ``test_*()`` in all files ``test_*.py`` in these
+directories. Just one command can then launch a series of tests in
+a directory tree!
+
+An example of a ``tests`` directory with different types of ``test*.py``
+files are found in `src/decay/tests <http://tinyurl.com/nm5587k/softeng1/tests>`__.
+Note that these perform imports of modules in the parent directory.
+These imports works well because the tests are supposed to be
+run by ``nosetests -s`` executed in the parent directory (``decay``).
+
+
+.. admonition:: Tip
+
+   The ``-s`` option to ``nosetests`` assures that any print statement
+   in the ``test_*`` functions appears in the output. Without this
+   option, ``nosetests`` suppressed whatever the tests writes to
+   the terminal window (standard output). Such behavior is annoying,
+   especially when developing and testing tests.
+
+
+
+
+The number of failed tests and their details are
+reported, or an ``OK`` is printed if all tests passed.
+
+The advantage with the ``nose`` package is two-fold:
+
+1. tests are written and collected
+   in a structured way, and
+
+2. large collections of tests, scattered
+   throughout a tree of directories,
+   can be executed with one command ``nosetests -s``.
+
+Alternative assert statements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In case the ``nt.assert_equal`` function
+finds that the two arguments are equal, the test is a success, otherwise
+it is a failure and an exception of type ``AssertionError`` is raised.
+The particular exception is the indicator that a test has failed.
+
+Instead of calling the convenience function ``nt.assert_equal``, we
+can use Python's plain ``assert`` statement, which tests if a boolean
+expression is true and raises an ``AssertionError`` otherwise.
+Here, the statement is ``assert result == 8``.
+
+A completely manual alternative is to explicitly raise an ``AssertionError``
+exception if the computed result is wrong:
+
+.. code-block:: python
+
+        if result != 8:
+            raise AssertionError()
+
+Applying nose
+~~~~~~~~~~~~~
+
+Let us illustrate how to use the ``nose`` tool for testing key functions
+in the ``decay_mod`` module. Or more precisely, the module is called
+``decay_mod_unittest`` with all the ``verify*`` functions removed
+as these now are outdated by the unit tests.
+
+We design three unit tests:
+
+ 1. A comparison between the computed :math:`u^n` values and the
+    exact discrete solution.
+
+ 2. A comparison between the computed :math:`u^n` values and precomputed,
+    verified reference values.
+
+ 3. A comparison between observed and expected convergence rates.
+
+These tests follow very closely the code in the previously shown
+``verify*`` functions. We start with comparing :math:`u^n`, as computed by
+the function ``solver``, to the formula
+for the exact discrete solution:
+
+.. code-block:: python
+
+        import nose.tools as nt
+        import decay_mod_unittest as decay_mod
+        import numpy as np
+        
+        def exact_discrete_solution(n, I, a, theta, dt):
+            """Return exact discrete solution of the theta scheme."""
+            dt = float(dt)  # avoid integer division
+            factor = (1 - (1-theta)*a*dt)/(1 + theta*dt*a)
+            return I*factor**n
+        
+        def test_exact_discrete_solution():
+            """
+            Compare result from solver against
+            formula for the discrete solution.
+            """
+            theta = 0.8; a = 2; I = 0.1; dt = 0.8
+            N = int(8/dt)  # no of steps
+            u, t = decay_mod.solver(I=I, a=a, T=N*dt, dt=dt, theta=theta)
+            u_de = np.array([exact_discrete_solution(n, I, a, theta, dt)
+                             for n in range(N+1)])
+            diff = np.abs(u_de - u).max()
+            nt.assert_almost_equal(diff, 0, delta=1E-14)
+
+The ``nt.assert_almost_equal`` is the relevant function for comparing two
+real numbers. The ``delta`` argument specifies a tolerance for the
+comparison. Alternatively, one can specify a ``places`` argument
+for the number of decimal places to be used in the comparison.
+
+After having carefully verified the implementation, we may
+store correctly computed numbers in the test program or in files for
+use in future tests. Here is an example on how the outcome from the
+``solver`` function can be compared to what is considered to be
+correct results:
+
+.. code-block:: python
+
+        def test_solver():
+            """
+            Compare result from solver against
+            precomputed arrays for theta=0, 0.5, 1.
+            """
+            I=0.8; a=1.2; T=4; dt=0.5  # fixed parameters
+            precomputed = {
+                't': np.array([ 0. ,  0.5,  1. ,  1.5,  2. ,  2.5,
+                                3. ,  3.5,  4. ]),
+                0.5: np.array(
+                    [ 0.8       ,  0.43076923,  0.23195266, 0.12489759,
+                      0.06725255,  0.03621291,  0.01949926, 0.0104996 ,
+                      0.00565363]),
+                0: np.array(
+                    [  8.00000000e-01,   3.20000000e-01,
+                       1.28000000e-01,   5.12000000e-02,
+                       2.04800000e-02,   8.19200000e-03,
+                       3.27680000e-03,   1.31072000e-03,
+                       5.24288000e-04]),
+                1: np.array(
+                    [ 0.8       ,  0.5       ,  0.3125    ,  0.1953125 ,
+                      0.12207031,  0.07629395,  0.04768372,  0.02980232,
+                      0.01862645]),
+                }
+            for theta in 0, 0.5, 1:
+                u, t = decay_mod.solver(I, a, T, dt, theta=theta)
+                diff = np.abs(u - precomputed[theta]).max()
+                # Precomputed numbers are known to 8 decimal places
+                nt.assert_almost_equal(diff, 0, places=8,
+                                       msg='theta=%s' % theta)
+
+The ``precomputed`` object is a dictionary with four keys: ``'t'`` for the
+time mesh, and three :math:`\theta` values for :math:`u^n` solutions corresponding
+to :math:`\theta=0,0.5,1`.
+
+Testing for special type of input data that may cause trouble constitutes
+a common way of constructing unit tests.
+For example, the updating formula for
+:math:`u^{n+1}` may be incorrectly evaluated because of unintended integer
+divisions. With
+
+.. code-block:: python
+
+        theta = 1; a = 1; I = 1; dt = 2
+
+the nominator and denominator in the updating expression,
+
+.. code-block:: python
+
+        (1 - (1-theta)*a*dt)
+        (1 + theta*dt*a)
+
+evaluate to 1 and 3, respectively, and the fraction ``1/3`` will
+call up integer division and consequently lead to ``u[n+1]=0``.
+We construct a unit test to make sure ``solver`` is smart
+enough to avoid this problem:
+
+.. code-block:: python
+
+        def test_potential_integer_division():
+            """Choose variables that can trigger integer division."""
+            theta = 1; a = 1; I = 1; dt = 2
+            N = 4
+            u, t = decay_mod.solver(I=I, a=a, T=N*dt, dt=dt, theta=theta)
+            u_de = np.array([exact_discrete_solution(n, I, a, theta, dt)
+                             for n in range(N+1)])
+            diff = np.abs(u_de - u).max()
+            nt.assert_almost_equal(diff, 0, delta=1E-14)
+
+The final test is to see that the convergence rates corresponding to
+:math:`\theta=0,0.5, 1` are 1, 2, and 1, respectively:
+
+.. code-block:: python
+
+        def test_convergence_rates():
+            """Compare empirical convergence rates to exact ones."""
+            # Set command-line arguments directly in sys.argv
+            import sys
+            sys.argv[1:] = '--I 0.8 --a 2.1 --T 5 '\ 
+                           '--dt 0.4 0.2 0.1 0.05 0.025'.split()
+            r = decay_mod.main()
+            for theta in r:
+                nt.assert_true(r[theta])  # check for non-empty list
+        
+            expected_rates = {0: 1, 1: 1, 0.5: 2}
+            for theta in r:
+                r_final = r[theta][-1]
+                # Compare to 1 decimal place
+                nt.assert_almost_equal(expected_rates[theta], r_final,
+                                       places=1, msg='theta=%s' % theta)
+
+Nothing more is needed in the `test_decay_nose.py <http://tinyurl.com/nm5587k/softeng1/tests/test_decay_nose.py>`__
+file where the tests reside.
+Running ``nosetests -s`` will report ``Ran 3 tests`` and an ``OK`` for
+success.  Every time we modify the ``decay_mod_unittest`` module we can
+run ``nosetests`` to quickly see if the edits have any impact on the
+verification tests.
+
+Installation of nose
+~~~~~~~~~~~~~~~~~~~~
+
+The ``nose`` package does not come with a standard Python distribution and must
+therefore be installed separately. The procedure is standard and
+described on `Nose's web pages <http://nose.readthedocs.org/en/latest/>`__.  On Debian-based Linux
+systems the command is ``sudo apt-get install python-nose``, and
+with MacPorts you run ``sudo port install py27-nose``.
+
+.. index:: nose testing of doctests
+
+.. index::
+   single: software testing; nose w/doctests
+
+Using nose to test modules with doctests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Assume that ``mod`` is the name of some module that contains doctests.
+We may let ``nose`` run these doctests and report errors in the
+standard way using the code set-up
+
+.. code-block:: python
+
+        import doctest
+        import mod
+        
+        def test_mod():
+            failure_count, test_count = doctest.testmod(m=mod)
+            nt.assert_equal(failure_count, 0,
+                            msg='%d tests out of %d failed' %
+                            (failure_count, test_count))
+
+The call to ``doctest.testmod`` runs all doctests in the module file
+``mod.py`` and returns the number of failures (``failure_count``)
+and the total number of tests (``test_count``). A real example is
+found in the file
+`test_decay_doctest.py <http://tinyurl.com/nm5587k/softeng1/tests/test_decay_doctest.py>`__.
+
+.. _decay:prog:se:unittest:
+
+Classical class-based unit testing
+----------------------------------
+
+.. index:: unit testing
+
+.. index:: unittest
+
+.. index::
+   single: software testing; unit testing (class-based)
+
+The classical way of implementing unit tests derives from the JUnit
+tool in Java where all tests are methods in a class for testing.
+Python comes with a module ``unittest`` for doing this type of unit tests.
+While ``nose`` allows simple functions for unit tests, ``unittest``
+requires deriving a class ``Test*`` from ``unittest.TestCase`` and
+implementing each test as methods with names ``test_*`` in that class.
+I strongly recommend to use ``nose`` over ``unittest``, because it is
+much simpler and more convenient, but class-based unit testing
+is a very classical subject that computational scientists should
+have some knowledge about. That is why a short introduction
+to ``unittest`` is included below.
+
+Basic use of unittest
+~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: unittest
+
+.. index:: TestCase (class in unittest)
+
+We apply the ``double`` function in the ``mymod`` module introduced in the
+previous section as example.
+Unit testing with the aid of the ``unittest`` module
+consists of writing a file ``test_mymod.py`` with the content
+
+.. code-block:: python
+
+        import unittest
+        import mymod
+        
+        class TestMyCode(unittest.TestCase):
+            def test_double(self):
+                result = mymod.double(4)
+                self.assertEqual(result, 8)
+        
+        if __name__ == '__main__':
+            unittest.main()
+
+The test is run by executing the test file ``test_mymod.py`` as a standard
+Python program. There is no support in ``unittest`` for automatically
+locating and running all tests in all test files in a directory tree.
+
+Those who have experience with object-oriented programming will see that
+the difference between using ``unittest`` and ``nose`` is minor.
+
+Demonstration of unittest
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The same tests as shown for the nose framework are reimplemented
+with the ``TestCase`` classes in the file `test_decay_unittest.py <http://tinyurl.com/nm5587k/softeng1/tests/test_decay_nose.py>`__.
+The tests are identical, the only difference being that with
+``unittest`` we must write the tests as methods in
+a class and the assert functions have
+slightly different names.
+
+.. code-block:: python
+
+        import unittest
+        import decay_mod_unittest as decay
+        import numpy as np
+        
+        def exact_discrete_solution(n, I, a, theta, dt):
+            factor = (1 - (1-theta)*a*dt)/(1 + theta*dt*a)
+            return I*factor**n
+        
+        class TestDecay(unittest.TestCase):
+        
+            def test_exact_discrete_solution(self):
+                ...
+                diff = np.abs(u_de - u).max()
+                self.assertAlmostEqual(diff, 0, delta=1E-14)
+        
+            def test_solver(self):
+                ...
+                for theta in 0, 0.5, 1:
+                    ...
+                    self.assertAlmostEqual(diff, 0, places=8,
+                                           msg='theta=%s' % theta)
+        
+            def test_potential_integer_division():
+                ...
+                self.assertAlmostEqual(diff, 0, delta=1E-14)
+        
+            def test_convergence_rates(self):
+                ...
+                for theta in r:
+                    ...
+                    self.assertAlmostEqual(...)
+        
+        if __name__ == '__main__':
+            unittest.main()
+
+.. @@@CODE src-softeng1/tests/test_decay_unittest.py fromto: def test_conv@
+
+.. _decay:prog:se:class:
+
+Implementing simple problem and solver classes
+----------------------------------------------
+
+The :math:`\theta`-rule was compactly and conveniently implemented in
+a function ``solver`` in the section :ref:`decay:py1`.
+In more complicated problems it might
+be beneficial to use classes and introduce a class ``Problem`` to
+hold the definition of the physical problem, a class ``Solver``
+to hold the data and methods needed to numerically solve the problem,
+and a class ``Visualizer`` to make plots.
+This idea will now be illustrated, resulting in code that represents
+an alternative to the ``solver`` and ``explore`` functions found
+in the ``decay_mod`` module.
+
+Explaining the details of class programming in Python is considered
+beyond the scope of this text.  Readers who are unfamiliar with Python
+class programming should first consult one of the many electronic
+Python tutorials or textbooks to come up to speed with concepts and
+syntax of Python classes before reading on. The author has a gentle
+introduction to class programming for scientific applications
+in [Ref1]_, see Chapter 7 and 9 and Appendix E.
+Other useful resources are
+
+ * The Python Tutorial: `<http://docs.python.org/2/tutorial/classes.html>`_
+
+ * Wiki book on Python Programming: `<http://en.wikibooks.org/wiki/Python_Programming/Classes>`_
+
+ * tutorialspoint.com: `<http://www.tutorialspoint.com/python/python_classes_objects.htm>`_
+
+The problem class  (1)
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: problem class
+
+The purpose of the problem class is to store all information about
+the mathematical model. This usually means all the physical parameters
+in the problem. In the current example with exponential decay we may
+also add the exact solution of the ODE to the problem class.
+The simplest form of a problem class is therefore
+
+.. code-block:: python
+
+        from numpy import exp
+        
+        class Problem:
+            def __init__(self, I=1, a=1, T=10):
+                self.T, self.I, self.a = I, float(a), T
+        
+            def u_exact(self, t):
+                I, a = self.I, self.a
+                return I*exp(-a*t)
+
+We could in the ``u_exact`` method have written
+``self.I*exp(-self.a*t)``, but using local variables ``I`` and ``a`` allows
+the formula ``I*exp(-a*t)`` which looks closer to the mathematical
+expression :math:`Ie^{-at}`.  This is not an important issue with the
+current compact formula, but is beneficial in more complicated
+problems with longer formulas to obtain the closest possible
+relationship between code and mathematics. My coding style is to strip
+off the ``self`` prefix when the code expresses mathematical formulas.
+
+The class data can be set either as arguments in the constructor or
+at any time later, e.g.,
+
+.. code-block:: python
+
+        problem = Problem(T=5)
+        problem.T = 8
+        problem.dt = 1.5
+
+(Some programmers prefer ``set`` and ``get`` functions for setting and getting
+data in classes, often implemented via *properties* in Python, but
+I consider that overkill when we just have a few data items in a class.)
+
+It would be convenient if class ``Problem`` could also initialize
+the data from the command line. To this end, we add a method for
+defining a set of command-line options and a method that sets the
+local attributes equal to what was found on the command line.
+The default values associated with the command-line options are taken
+as the values provided to the constructor. Class ``Problem`` now becomes
+
+.. code-block:: python
+
+        class Problem:
+            def __init__(self, I=1, a=1, T=10):
+                self.T, self.I, self.a = I, float(a), T
+        
+            def define_command_line_options(self, parser=None):
+                if parser is None:
+                    import argparse
+                    parser = argparse.ArgumentParser()
+        
+                parser.add_argument(
+                    '--I', '--initial_condition', type=float,
+                    default=self.I, help='initial condition, u(0)',
+                    metavar='I')
+                parser.add_argument(
+                    '--a', type=float, default=self.a,
+                    help='coefficient in ODE', metavar='a')
+                parser.add_argument(
+                    '--T', '--stop_time', type=float, default=self.T,
+                    help='end time of simulation', metavar='T')
+                return parser
+        
+            def init_from_command_line(self, args):
+                self.I, self.a, self.T = args.I, args.a, args.T
+        
+            def exact_solution(self, t):
+                I, a = self.I, self.a
+                return I*exp(-a*t)
+
+Observe that if the user already has an ``ArgumentParser`` object it can be
+supplied, but if she does not have any, class ``Problem`` makes one.
+Python's ``None`` object is used to indicate that a variable is not
+initialized with a proper value.
+
+The solver class  (1)
+~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: solver class
+
+.. index:: wrapper (code)
+
+The solver class stores data related to the numerical solution method
+and provides a function ``solve`` for solving the problem.
+A problem object must be given to the constructor so that the solver
+can easily look up physical data. In the present example, the
+data related to the numerical solution method consists of :math:`\Delta t`
+and :math:`\theta`. We add, as in the problem class, functionality for
+reading :math:`\Delta t` and :math:`\theta` from the command line:
+
+.. code-block:: python
+
+        class Solver:
+            def __init__(self, problem, dt=0.1, theta=0.5):
+                self.problem = problem
+                self.dt, self.theta = float(dt), theta
+        
+            def define_command_line_options(self, parser):
+                parser.add_argument(
+                    '--dt', '--time_step_value', type=float,
+                    default=0.5, help='time step value', metavar='dt')
+                parser.add_argument(
+                    '--theta', type=float, default=0.5,
+                    help='time discretization parameter', metavar='dt')
+                return parser
+        
+            def init_from_command_line(self, args):
+                self.dt, self.theta = args.dt, args.theta
+        
+            def solve(self):
+                from decay_mod import solver
+                self.u, self.t = solver(
+                    self.problem.I, self.problem.a, self.problem.T,
+                    self.dt, self.theta)
+        
+            def error(self):
+                u_e = self.problem.exact_solution(self.t)
+                e = u_e - self.u
+                E = sqrt(self.dt*sum(e**2))
+                return E
+
+Note that we here simply reuse the implementation of the numerical method
+from the ``decay_mod`` module. The ``solve`` function is just a *wrapper*
+of the previously developed stand-alone ``solver`` function.
+
+The visualizer class  (1)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: visualizer class
+
+The purpose of the visualizer class is to plot the numerical solution
+stored in class ``Solver``. We also add the possibility to plot the
+exact solution. Access to the problem and solver objects is required
+when making plots so the constructor must hold references to these objects:
+
+.. code-block:: python
+
+        class Visualizer:
+            def __init__(self, problem, solver):
+                self.problem, self.solver = problem, solver
+        
+            def plot(self, include_exact=True, plt=None):
+                """
+                Add solver.u curve to the plotting object plt,
+                and include the exact solution if include_exact is True.
+                This plot function can be called several times (if
+                the solver object has computed new solutions).
+                """
+                if plt is None:
+                    import scitools.std  as plt # can use matplotlib as well
+        
+                plt.plot(self.solver.t, self.solver.u, '--o')
+                plt.hold('on')
+                theta2name = {0: 'FE', 1: 'BE', 0.5: 'CN'}
+                name = theta2name.get(self.solver.theta, '')
+                legends = ['numerical %s' % name]
+                if include_exact:
+                    t_e = linspace(0, self.problem.T, 1001)
+                    u_e = self.problem.exact_solution(t_e)
+                    plt.plot(t_e, u_e, 'b-')
+                    legends.append('exact')
+                plt.legend(legends)
+                plt.xlabel('t')
+                plt.ylabel('u')
+                plt.title('theta=%g, dt=%g' %
+                          (self.solver.theta, self.solver.dt))
+                plt.savefig('%s_%g.png' % (name, self.solver.dt))
+                return plt
+
+The ``plt`` object in the ``plot`` method is worth a comment. The idea is
+that ``plot`` can add a numerical solution curve to an existing
+plot. Calling ``plot`` with a ``plt`` object (which has to be a
+``matplotlib.pyplot`` or ``scitools.std`` object in this implementation),
+will just add the curve
+``self.solver.u`` as a dashed line with circles at the mesh points
+(leaving the color of the curve up to the plotting tool). This
+functionality allows plots with several solutions: just make a loop
+where new data is set in the problem and/or solver classes, the
+solver's ``solve()`` method is called, and the most recent numerical
+solution is plotted by the ``plot(plt)`` method in the visualizer object
+:ref:`decay:exer:decay_class:exper` describes a problem setting
+where this functionality is explored.
+
+Combining the objects
+~~~~~~~~~~~~~~~~~~~~~
+
+Eventually we need to show how the classes ``Problem``, ``Solver``, and
+``Visualizer`` play together:
+
+.. code-block:: python
+
+        def main():
+            problem = Problem()
+            solver = Solver(problem)
+            viz = Visualizer(problem, solver)
+        
+            # Read input from the command line
+            parser = problem.define_command_line_options()
+            parser = solver. define_command_line_options(parser)
+            args = parser.parse_args()
+            problem.init_from_command_line(args)
+            solver. init_from_command_line(args)
+        
+            # Solve and plot
+            solver.solve()
+            import matplotlib.pyplot as plt
+            #import scitools.std as plt
+            plt = viz.plot(plt=plt)
+            E = solver.error()
+            if E is not None:
+                print 'Error: %.4E' % E
+            plt.show()
+
+The file `decay_class.py <http://tinyurl.com/nm5587k/softeng1/decay_class.py>`__
+constitutes a module with the three classes and the ``main`` function.
+
+
+.. admonition:: Test the understanding
+
+   Implement the problem in
+   :ref:`decay:app:exer:drag:prog` in terms of problem, solver,
+   and visualizer classes. Equip the classes and their methods with
+   doc strings with tests. Also include nose tests.
+
+
+
+
+.. _decay:prog:se:class2:
+
+Improving the problem and solver classes
+----------------------------------------
+
+The previous ``Problem`` and ``Solver`` classes containing parameters
+soon get much repetitive code when the number of parameters increases.
+Much of this code can be parameterized and be made more compact.
+For this purpose, we decide to collect all parameters in a dictionary,
+``self.prms``, with two associated dictionaries ``self.types`` and
+``self.help`` for holding associated object types and help strings.
+Provided a problem, solver, or visualizer class defines these three
+dictionaries in the constructor, using default or user-supplied values
+of the parameters, we can create a super class ``Parameters`` with general code
+for defining command-line options and reading them as well as
+methods for setting and getting a parameter. A ``Problem`` or ``Solver`` class will
+then inherit command-line functionality and the set/get methods from
+the ``Parameters`` class.
+
+A generic class for parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A simplified version of the parameter class looks as follows:
+
+.. code-block:: python
+
+        class Parameters:
+            def set(self, **parameters):
+                for name in parameters:
+                    self.prms[name] = parameters[name]
+        
+            def get(self, name):
+                return self.prms[name]
+        
+            def define_command_line_options(self, parser=None):
+                if parser is None:
+                    import argparse
+                    parser = argparse.ArgumentParser()
+        
+                for name in self.prms:
+                    tp = self.types[name] if name in self.types else str
+                    help = self.help[name] if name in self.help else None
+                    parser.add_argument(
+                        '--' + name, default=self.get(name), metavar=name,
+                        type=tp, help=help)
+        
+                return parser
+        
+            def init_from_command_line(self, args):
+                for name in self.prms:
+                    self.prms[name] = getattr(args, name)
+
+The file `class_decay_oo.py <http://tinyurl.com/nm5587k/softeng1/class_decay_oo.py>`__ contains
+a slightly more advanced version of class ``Parameters`` where we
+in the ``set`` and ``get`` functions test for valid parameter names and
+raise exceptions with informative messages if any name is not registered.
+
+The problem class  (2)
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: problem class
+
+A class ``Problem`` for the problem :math:`u'=-au`, :math:`u(0)=I`, :math:`t\in (0,T]`, with
+parameters input :math:`a`, :math:`I`, and :math:`T` can now be coded as
+
+.. code-block:: python
+
+        class Problem(Parameters):
+            """
+            Physical parameters for the problem u'=-a*u, u(0)=I,
+            with t in [0,T].
+            """
+            def __init__(self):
+                self.prms = dict(I=1, a=1, T=10)
+                self.types = dict(I=float, a=float, T=float)
+                self.help = dict(I='initial condition, u(0)',
+                                 a='coefficient in ODE',
+                                 T='end time of simulation')
+        
+            def exact_solution(self, t):
+                I, a = self.get('I'), self.get('a')
+                return I*np.exp(-a*t)
+
+The solver class  (2)
+~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: solver class
+
+Also the solver class is derived from class ``Parameters`` and works with
+the ``prms``, ``types``, and ``help`` dictionaries in the same way as class
+``Problem``. Otherwise, the code is very similar to class ``Solver`` in
+the ``decay_class.py`` file:
+
+.. code-block:: python
+
+        class Solver(Parameters):
+            def __init__(self, problem):
+                self.problem = problem
+                self.prms = dict(dt=0.5, theta=0.5)
+                self.types = dict(dt=float, theta=float)
+                self.help = dict(dt='time step value',
+                                 theta='time discretization parameter')
+        
+            def solve(self):
+                from decay_mod import solver
+                self.u, self.t = solver(
+                    self.problem.get('I'),
+                    self.problem.get('a'),
+                    self.problem.get('T'),
+                    self.get('dt'),
+                    self.get('theta'))
+        
+            def error(self):
+                try:
+                    u_e = self.problem.exact_solution(self.t)
+                    e = u_e - self.u
+                    E = np.sqrt(self.get('dt')*np.sum(e**2))
+                except AttributeError:
+                    E = None
+                return E
+
+The visualizer class  (2)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: visualizer class
+
+Class ``Visualizer`` can be identical to the one in the ``decay_class.py`` file
+since the class does not need any parameters. However, a few
+adjustments in the ``plot`` method is necessary since parameters are
+accessed as, e.g., ``problem.get('T')`` rather than ``problem.T``.
+The details are found in the file ``class_decay_oo.py``.
+
+Finally, we need a function that solves a real problem using the
+classes ``Problem``, ``Solver``, and ``Visualizer``. This function can
+be just like ``main`` in the ``decay_class.py`` file.
+
+The advantage with the ``Parameters`` class is that it scales to problems
+with a large number of physical and numerical parameters:
+as long as the parameters are defined once via a dictionary,
+the compact code in class ``Parameters`` can handle any collection of
+parameters of any size.
+

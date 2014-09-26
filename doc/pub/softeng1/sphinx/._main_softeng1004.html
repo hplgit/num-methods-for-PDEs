@@ -1,0 +1,326 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Exercises</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Scientific software engineering with a simple ODE model as example" href="index.html" />
+    <link rel="next" title="Bibliography" href="._main_softeng1005.html" />
+    <link rel="prev" title="Performing scientific experiments" href="._main_softeng1003.html" />
+ 
+  
+   <style type="text/css">
+     div.admonition {
+       background-color: whiteSmoke;
+       border: 1px solid #bababa;
+     }
+   </style>
+  </head>
+
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_softeng1005.html" title="Bibliography"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="._main_softeng1003.html" title="Performing scientific experiments"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Scientific software engineering with a simple ODE model as example</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="exercises">
+<h1>Exercises<a class="headerlink" href="#exercises" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="exercise-1-refactor-a-flat-program-in-terms-of-a-function">
+<span id="decay-exer-main2func"></span><h2>Exercise 1: Refactor a flat program in terms of a function<a class="headerlink" href="#exercise-1-refactor-a-flat-program-in-terms-of-a-function" title="Permalink to this headline">¶</a></h2>
+<p>For simple ODEs of the form</p>
+<div class="math">
+\[u' = f(t),\quad u(0)=I,\ t\in (0,T]\]</div>
+<p>we can find the solution by straightforward integration:</p>
+<div class="math">
+\[u(t) = \int_0^t f(\tau) d\tau{\thinspace .}\]</div>
+<p>To compute <span class="math">\(u(t)\)</span> for <span class="math">\(t\in [0,T]\)</span>, we introduce a uniform time mesh with
+points <span class="math">\(t_n=n\Delta t\)</span> and apply to Trapezoidal rule to approximate the
+integral. Suppose we have computed the numerical approximation <span class="math">\(u^n\)</span> to
+<span class="math">\(u(t_n)\)</span>. We have</p>
+<div class="math">
+\[u(t_{n+1}) = u(t_n) + \int_{t_n}^{t_{n+1}} f(\tau)d\tau{\thinspace .}\]</div>
+<p>Using the Trapezoidal rule we get</p>
+<div class="math">
+\[u^{n+1} = u^n + \frac{1}{2}\Delta t (f(t_n) + f(t_{n+1})){\thinspace .}\]</div>
+<p>The starting value is <span class="math">\(u^0=I\)</span>.
+A corresponding implementation for the case <span class="math">\(f(t)=2t+1\)</span> is given next.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># f(t) is 2*t + 1</span>
+<span class="n">T</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="mf">0.2</span>               <span class="c"># time step</span>
+<span class="n">Nt</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="n">dt</span><span class="p">))</span>  <span class="c"># no of mesh points</span>
+<span class="n">u</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Nt</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is a flat program. Refactor the program as a function
+<tt class="docutils literal"><span class="pre">solver(f,</span> <span class="pre">I,</span> <span class="pre">T,</span> <span class="pre">dt)</span></tt>, where <tt class="docutils literal"><span class="pre">f</span></tt> is the Python implementation of
+the mathematical function <span class="math">\(f(t)\)</span> that is to be integrated. The
+return value of <tt class="docutils literal"><span class="pre">solver</span></tt> is the pair (<tt class="docutils literal"><span class="pre">u</span></tt>, <tt class="docutils literal"><span class="pre">t</span></tt>) representing
+the solution values and the associated time mesh.
+Filename: <tt class="docutils literal"><span class="pre">integrate.py</span></tt>.</p>
+<div class="section" id="remarks">
+<h3>Remarks<a class="headerlink" href="#remarks" title="Permalink to this headline">¶</a></h3>
+<p>Many prefer to do a first implementation of an algorithm as a flat
+program and hardcode formulas, here the <span class="math">\(f(t)\)</span>, into the algorithm.
+Unfortunately, this coding style makes it difficult to reuse a
+well-tested algorithm. When the flat program works, it is strongly
+recommended to <em>refactor</em> the code (i.e., rearrange the statements)
+such that general algorithms are encapsulated in Python functions.
+The function arguments should be chosen such that the function
+can be applied for a large class of
+problems, here all problems that can be expressed as <span class="math">\(u'=f(t)\)</span>,.</p>
+</div>
+</div>
+<div class="section" id="exercise-2-compare-methods-for-a-given-time-mesh">
+<span id="decay-exer-plot-dtconst"></span><h2>Exercise 2: Compare methods for a given time mesh<a class="headerlink" href="#exercise-2-compare-methods-for-a-given-time-mesh" title="Permalink to this headline">¶</a></h2>
+<p>Make a program that imports the <tt class="docutils literal"><span class="pre">solver</span></tt> function from the
+<tt class="docutils literal"><span class="pre">decay_mod</span></tt> module and offers a function <tt class="docutils literal"><span class="pre">compare(dt,</span> <span class="pre">I,</span> <span class="pre">a)</span></tt> for
+comparing, in a plot, the methods corresponding to <span class="math">\(\theta=0,0.5,1\)</span>
+and the exact solution.  This plot shows the accuracy of the methods
+for a given time mesh. Read input data for the problem from the
+command line using appropriate functions in the <tt class="docutils literal"><span class="pre">decay_mod</span></tt> module
+(the <tt class="docutils literal"><span class="pre">--dt</span></tt> option for giving several time step values can be reused:
+just use the first time step value for the computations).
+Filename: <tt class="docutils literal"><span class="pre">decay_compare_theta.py</span></tt>.</p>
+</div>
+<div class="section" id="problem-3-write-a-doctest">
+<span id="decay-exer-doctest1"></span><h2>Problem 3: Write a doctest<a class="headerlink" href="#problem-3-write-a-doctest" title="Permalink to this headline">¶</a></h2>
+<p>Type in the following program and equip the <tt class="docutils literal"><span class="pre">roots</span></tt> function with a doctest:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">sys</span>
+<span class="c"># This sqrt(x) returns real if x&gt;0 and complex if x&lt;0</span>
+<span class="kn">from</span> <span class="nn">numpy.lib.scimath</span> <span class="kn">import</span> <span class="n">sqrt</span>
+
+<span class="k">def</span> <span class="nf">roots</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the roots of the quadratic polynomial</span>
+<span class="sd">    p(x) = a*x**2 + b*x + c.</span>
+
+<span class="sd">    The roots are real or complex objects.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">b</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">4</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="n">c</span>
+    <span class="n">r1</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">b</span> <span class="o">+</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">q</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">a</span><span class="p">)</span>
+    <span class="n">r2</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">b</span> <span class="o">-</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">q</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">a</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">r1</span><span class="p">,</span> <span class="n">r2</span>
+
+<span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:]]</span>
+<span class="k">print</span> <span class="n">roots</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Make sure to test both real and complex roots.
+Write out numbers with 14 digits or less.
+Filename: <tt class="docutils literal"><span class="pre">doctest_roots.py</span></tt>.</p>
+</div>
+<div class="section" id="problem-4-write-a-nose-test">
+<span id="decay-exer-nosetest1"></span><h2>Problem 4: Write a nose test<a class="headerlink" href="#problem-4-write-a-nose-test" title="Permalink to this headline">¶</a></h2>
+<p>Make a nose test for the <tt class="docutils literal"><span class="pre">roots</span></tt> function in <a class="reference internal" href="#decay-exer-doctest1"><em>Problem 3: Write a doctest</em></a>.
+Filename: <tt class="docutils literal"><span class="pre">test_roots.py</span></tt>.</p>
+</div>
+<div class="section" id="problem-5-make-a-module">
+<span id="decay-exer-module1"></span><h2>Problem 5: Make a module<a class="headerlink" href="#problem-5-make-a-module" title="Permalink to this headline">¶</a></h2>
+<p>Let</p>
+<div class="math">
+\[q(t) = \frac{RAe^{at}}{R + A(e^{at} - 1)}
+{\thinspace .}\]</div>
+<p>Make a Python module <tt class="docutils literal"><span class="pre">q_module</span></tt> containing two functions <tt class="docutils literal"><span class="pre">q(t)</span></tt> and
+<tt class="docutils literal"><span class="pre">dqdt(t)</span></tt> for computing <span class="math">\(q(t)\)</span> and <span class="math">\(q'(t)\)</span>, respectively. Perform a
+<tt class="docutils literal"><span class="pre">from</span> <span class="pre">numpy</span> <span class="pre">import</span> <span class="pre">*</span></tt> in this module. Import <tt class="docutils literal"><span class="pre">q</span></tt> and <tt class="docutils literal"><span class="pre">dqdt</span></tt> in another
+file using the &#8220;star import&#8221; construction <tt class="docutils literal"><span class="pre">from</span> <span class="pre">q_module</span> <span class="pre">import</span>
+<span class="pre">*</span></tt>. All objects available in this file is given by <tt class="docutils literal"><span class="pre">dir()</span></tt>. Print
+<tt class="docutils literal"><span class="pre">dir()</span></tt> and <tt class="docutils literal"><span class="pre">len(dir())</span></tt>.  Then change the import of <tt class="docutils literal"><span class="pre">numpy</span></tt> in
+<tt class="docutils literal"><span class="pre">q_module.py</span></tt> to <tt class="docutils literal"><span class="pre">import</span> <span class="pre">numpy</span> <span class="pre">as</span> <span class="pre">np</span></tt>. What is the effect of this
+import on the number of objects in <tt class="docutils literal"><span class="pre">dir()</span></tt> in a file that does <tt class="docutils literal"><span class="pre">from</span>
+<span class="pre">q_module</span> <span class="pre">import</span> <span class="pre">*</span></tt>?
+Filename: <tt class="docutils literal"><span class="pre">q_module.py</span></tt>.</p>
+</div>
+<div class="section" id="exercise-6-make-use-of-a-class-implementation">
+<span id="decay-exer-decay-class-exper"></span><h2>Exercise 6: Make use of a class implementation<a class="headerlink" href="#exercise-6-make-use-of-a-class-implementation" title="Permalink to this headline">¶</a></h2>
+<p>We want to solve the exponential decay problem <span class="math">\(u'=-au\)</span>, <span class="math">\(u(0)=I\)</span>,
+for several <span class="math">\(\Delta t\)</span> values and <span class="math">\(\theta=0,0.5,1\)</span>.
+For each <span class="math">\(\Delta t\)</span> value, we want to make a plot where the
+three solutions corresponding to <span class="math">\(\theta=0,0.5,1\)</span> appear along with
+the exact solution.
+Write a function <tt class="docutils literal"><span class="pre">experiment</span></tt> to accomplish this. The function should
+import the classes <tt class="docutils literal"><span class="pre">Problem</span></tt>, <tt class="docutils literal"><span class="pre">Solver</span></tt>, and <tt class="docutils literal"><span class="pre">Visualizer</span></tt> from the
+<a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay_class.py">decay_class</a>
+module and make use of these. A new command-line option <tt class="docutils literal"><span class="pre">--dt_values</span></tt>
+must be added to allow the user to specify the <span class="math">\(\Delta t\)</span> values on
+the command line (the options <tt class="docutils literal"><span class="pre">--dt</span></tt> and <tt class="docutils literal"><span class="pre">--theta</span></tt> implemented
+by the <tt class="docutils literal"><span class="pre">decay_class</span></tt> module have then no effect
+when running the <tt class="docutils literal"><span class="pre">experiment</span></tt> function).
+Note that the classes in the <tt class="docutils literal"><span class="pre">decay_class</span></tt> module should <em>not</em> be
+modified.
+Filename: <tt class="docutils literal"><span class="pre">decay_class_exper.py</span></tt>.</p>
+</div>
+<div class="section" id="exercise-7-generalize-a-class-implementation">
+<span id="decay-exer-decay-class2"></span><h2>Exercise 7: Generalize a class implementation<a class="headerlink" href="#exercise-7-generalize-a-class-implementation" title="Permalink to this headline">¶</a></h2>
+<p>Consider the file <a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay_class.py">decay_class.py</a>
+where the exponential decay problem <span class="math">\(u'=-au\)</span>, <span class="math">\(u(0)=I\)</span>, is implemented
+via the classes <tt class="docutils literal"><span class="pre">Problem</span></tt>, <tt class="docutils literal"><span class="pre">Solver</span></tt>, and <tt class="docutils literal"><span class="pre">Visualizer</span></tt>.
+Extend the classes to handle the more general problem</p>
+<div class="math">
+\[u'(t) = -a(t)u(t) + b(t),\quad u(0)=I,\ t\in (0,T],\]</div>
+<p>using the <span class="math">\(\theta\)</span>-rule for discretization.</p>
+<p>In the case with arbitrary functions <span class="math">\(a(t)\)</span> and <span class="math">\(b(t)\)</span> the problem class
+is no longer guaranteed to provide an exact solution. Let
+the <tt class="docutils literal"><span class="pre">u_exact</span></tt> in class <tt class="docutils literal"><span class="pre">Problem</span></tt> return <tt class="docutils literal"><span class="pre">None</span></tt> if the exact
+solution for the particular problem is not available. Modify classes
+<tt class="docutils literal"><span class="pre">Solver</span></tt> and <tt class="docutils literal"><span class="pre">Visualizer</span></tt> accordingly.</p>
+<p>Add test functions <tt class="docutils literal"><span class="pre">test_*()</span></tt> for the nose testing tool in the module.
+Also add a demo example where the environment suddenly changes
+(modeled as an abrupt change in the decay rate <span class="math">\(a\)</span>):</p>
+<div class="math">
+\[\begin{split}a(t) =\left\lbrace\begin{array}{ll}
+1, &amp; 0\leq t\leq t_p,\\
+k, &amp; t&gt; t_p,\end{array}\right.\end{split}\]</div>
+<p>where <span class="math">\(t_p\)</span> is the point of time the environment changes. Take <span class="math">\(t_p=1\)</span>
+and make plots that illustrate the effect of having <span class="math">\(k\gg 1\)</span> and <span class="math">\(k\ll 1\)</span>.
+Filename: <tt class="docutils literal"><span class="pre">decay_class2.py</span></tt>.</p>
+</div>
+<div class="section" id="exercise-8-generalize-an-advanced-class-implementation">
+<span id="decay-exer-decay-class3"></span><h2>Exercise 8: Generalize an advanced class implementation<a class="headerlink" href="#exercise-8-generalize-an-advanced-class-implementation" title="Permalink to this headline">¶</a></h2>
+<p>Solve <a class="reference internal" href="#decay-exer-decay-class2"><em>Exercise 7: Generalize a class implementation</em></a> by utilizing the
+class implementations in
+<a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay_class_oo.py">decay_class_oo.py</a>.
+Filename: <tt class="docutils literal"><span class="pre">decay_class3.py</span></tt>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Exercises</a><ul>
+<li><a class="reference internal" href="#exercise-1-refactor-a-flat-program-in-terms-of-a-function">Exercise 1: Refactor a flat program in terms of a function</a><ul>
+<li><a class="reference internal" href="#remarks">Remarks</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#exercise-2-compare-methods-for-a-given-time-mesh">Exercise 2: Compare methods for a given time mesh</a></li>
+<li><a class="reference internal" href="#problem-3-write-a-doctest">Problem 3: Write a doctest</a></li>
+<li><a class="reference internal" href="#problem-4-write-a-nose-test">Problem 4: Write a nose test</a></li>
+<li><a class="reference internal" href="#problem-5-make-a-module">Problem 5: Make a module</a></li>
+<li><a class="reference internal" href="#exercise-6-make-use-of-a-class-implementation">Exercise 6: Make use of a class implementation</a></li>
+<li><a class="reference internal" href="#exercise-7-generalize-a-class-implementation">Exercise 7: Generalize a class implementation</a></li>
+<li><a class="reference internal" href="#exercise-8-generalize-an-advanced-class-implementation">Exercise 8: Generalize an advanced class implementation</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="._main_softeng1003.html"
+                        title="previous chapter">Performing scientific experiments</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_softeng1005.html"
+                        title="next chapter">Bibliography</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_softeng1004.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_softeng1005.html" title="Bibliography"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="._main_softeng1003.html" title="Performing scientific experiments"
+             >previous</a> |</li>
+        <li><a href="index.html">Scientific software engineering with a simple ODE model as example</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

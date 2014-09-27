@@ -596,30 +596,30 @@ more slowly than they should.
 With ``sympy`` we can also easily make a Taylor series expansion in the
 discretization parameter :math:`p`:
 
-.. code-block:: py
+.. code-block:: python
 
         >>> C, p = symbols('C p')
-        >>> rs = r(C, p).series(p, 0, 7)
-        >>> print rs
-        1 - p**2/6 + p**4/120 - p**6/5040 + C**2*p**2/6 -
-        C**2*p**4/12 + 13*C**2*p**6/720 + 3*C**4*p**4/40 -
-        C**4*p**6/16 + 5*C**6*p**6/112 + O(p**7)
-        >>> # Factorize each term and drop the remainder O(...) term
-        >>> rs_factored = [factor(term) for term in rs.lseries(p)]
-        >>> rs_factored = sum(rs_factored)
-        >>> print rs_factored
-        p**6*(C - 1)*(C + 1)*(225*C**4 - 90*C**2 + 1)/5040 +
-        p**4*(C - 1)*(C + 1)*(3*C - 1)*(3*C + 1)/120 +
-        p**2*(C - 1)*(C + 1)/6 + 1
+        >>> # Compute the 7 first terms around p=0 with no O() term
+        >>> rs = r(C, p).series(p, 0, 7).removeO()
+        >>> rs
+        p**6*(5*C**6/112 - C**4/16 + 13*C**2/720 - 1/5040) +
+        p**4*(3*C**4/40 - C**2/12 + 1/120) +
+        p**2*(C**2/6 - 1/6) + 1
+        >>> rs_error_leading_order = (rs - 1).extract_leading_order(p)
+        >>> rs_error_leading_order
+        p**2*(C**2/6 - 1/6)
+        >>> # Turn the series expansion into a Python function
+        >>> rs_pyfunc = lambdify([C, p], rs, modules='numpy')
+        >>> # Check: rs_pyfunc is exact (=1) for C=1
+        >>> rs_pyfunc(1, 0.1)
+        1.0
 
-We see that :math:`C=1` makes all the terms in ``rs_factored`` vanish, except
-the last one.
-Since we already know that the numerical solution is exact for :math:`C=1`, the
-remaining terms in the Taylor series expansion
-will also contain factors of :math:`C-1` and cancel for :math:`C=1`.
+Without the ``.removeO()`` call the series get an ``O(x**7)`` term
+that makes it impossible to convert the series to a Python function
+(for, e.g., plotting).
 
-From the ``rs_factored`` expression above we also see that the leading
-order terms in the error of this series expansion are
+From the ``rs_error_leading_order`` expression above we see that the leading
+order term in the error of this series expansion is
 
 .. math::
         
@@ -630,6 +630,38 @@ order terms in the error of this series expansion are
 pointing to an error :math:`{\mathcal{O}(\Delta t^2, \Delta x^2)}`, which is
 compatible with the errors in the difference approximations (:math:`D_tD_t`
 and :math:`D_xD_x`).
+
+Here is an alternative way of performing a series expansion: we
+use the ``lseries`` method, which returns an iterator over all the
+terms in the expansion, and ask for the 4 first terms (via
+``itertools.islice``, which can slice an iterator). Collecting the terms
+in a list makes it possible to factor each term individually.
+Summing up the terms results in a nicer expression:
+
+.. code-block:: python
+
+        >>> import itertools
+        >>> rs = [t for t in itertools.islice(r(C, p).lseries(p), 4)]
+        >>> rs
+        [1, C**2*p**2/6 - p**2/6,
+         3*C**4*p**4/40 - C**2*p**4/12 + p**4/120,
+         5*C**6*p**6/112 - C**4*p**6/16 + 13*C**2*p**6/720 - p**6/5040]
+        >>> rs = [factor(t) for t in rs]
+        >>> rs
+        [1, p**2*(C - 1)*(C + 1)/6,
+         p**4*(C - 1)*(C + 1)*(3*C - 1)*(3*C + 1)/120,
+         p**6*(C - 1)*(C + 1)*(225*C**4 - 90*C**2 + 1)/5040]
+        >>> rs = sum(rs)  # Python's sum function
+        >>> rs
+        p**6*(C - 1)*(C + 1)*(225*C**4 - 90*C**2 + 1)/5040 +
+        p**4*(C - 1)*(C + 1)*(3*C - 1)*(3*C + 1)/120 +
+        p**2*(C - 1)*(C + 1)/6 + 1
+
+We see from the last expression
+that :math:`C=1` makes all the terms in ``rs`` vanish.
+Since we already know that the numerical solution is exact for :math:`C=1`, the
+remaining terms in the Taylor series expansion
+will also contain factors of :math:`C-1` and cancel for :math:`C=1`.
 
 .. 2DO
 

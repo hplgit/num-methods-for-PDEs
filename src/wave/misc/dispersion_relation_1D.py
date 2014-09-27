@@ -29,17 +29,27 @@ def makeplot():
 
 def sympy_analysis():
     C, p = symbols('C p')
-    rs = r(C, p).series(p, 0, 7)
-    print rs
+    # Turn series expansion into polynomial and Python function
+    # representations
+    rs = r(C, p).series(p, 0, 7).removeO()
+    print 'series representation of r(C, p):', rs
+    print 'factored series representation of r(C, p):', factor(rs)
+    rs1 = factor((rs - 1).extract_leading_order(p)[0][0])
+    print 'leading order of the error:', rs1
+    rs_poly = poly(rs)
+    print 'polynomial representation:', rs_poly
+    rs_pyfunc = lambdify([C, p], rs)  # can be used for plotting
+    # Know that rs_pyfunc is correct (=1) when C=1, check that
+    print rs_pyfunc(1, 0.1), rs_pyfunc(1, 0.76)
 
-    for term in r(C, p).lseries(p): # get rid of the O() term
-        print term                  # only two terms
-    rs_factored = [factor(term) for term in rs.lseries(p)]
-    rs_factored = sum(rs_factored)
-    print rs_factored
-    rs_f = poly(rs_factored)  # convert to polynomial form
-    print rs_f
-    print rs.extract_leading_order(p)
+    # Alternative method for extracting terms in a series expansion:
+    import itertools
+    rs = [t for t in itertools.islice(r(C, p).lseries(p), 4)]
+    print rs
+    rs = [factor(t) for t in rs]
+    print rs
+    rs = sum(rs)
+    print rs
 
     # true error
     x, t, k, w, c, dx, dt = symbols('x t k w c dx dt')
@@ -54,4 +64,3 @@ if __name__ == '__main__':
     #makeplot()
     from sympy import * # erases sin and other math functions from numpy
     sympy_analysis()
-

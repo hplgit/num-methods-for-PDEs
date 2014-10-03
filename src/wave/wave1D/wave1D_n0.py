@@ -72,7 +72,8 @@ def solver(I, V, f, c, L, dt, C, T, user_action=None):
         user_action(u, x, t, 1)
 
     # Update data structures for next step
-    u_2[:], u_1[:] = u_1, u
+    #u_2[:] = u_1;  u_1[:] = u  # safe, but slower
+    u_2, u_1, u = u_1, u, u_2
 
     for n in range(1, Nt):
         for i in range(0, Nx+1):
@@ -87,8 +88,11 @@ def solver(I, V, f, c, L, dt, C, T, user_action=None):
                 break
 
         # Update data structures for next step
-        u_2[:], u_1[:] = u_1, u
+        #u_2[:] = u_1;  u_1[:] = u  # safe, but slower
+        u_2, u_1, u = u_1, u, u_2
 
+    # Wrong assignment u = u_2 must be corrected before return
+    u = u_1
     cpu_time = t0 - time.clock()
     return u, x, t, cpu_time
 
@@ -119,8 +123,6 @@ def viz(I, V, f, c, L, dt, C, T, umin, umax, animate=True):
                   output_file='movie.html')
     return cpu
 
-import nose.tools as nt
-
 
 def plug(C=1, Nx=50, animate=True, T=2):
     """Plug profile as initial condition."""
@@ -137,6 +139,8 @@ def plug(C=1, Nx=50, animate=True, T=2):
               umin=-1.1, umax=1.1, animate=animate)
 
 
+import nose.tools as nt
+
 def test_plug():
     """
     Check that an initial plug is correct back after one period,
@@ -145,7 +149,7 @@ def test_plug():
     L = 1.0
     I = lambda x: 0 if abs(x-L/2.0) > 0.1 else 1
 
-    Nx = 50
+    Nx = 10
     c = 0.5
     C = 1
     dt = C*(L/Nx)/c
@@ -160,7 +164,4 @@ def test_plug():
 
 
 if __name__ == '__main__':
-    import sys
-    from scitools.misc import function_UI
-    cmd = function_UI([test_plug, plug], sys.argv)
-    eval(cmd)
+    pass

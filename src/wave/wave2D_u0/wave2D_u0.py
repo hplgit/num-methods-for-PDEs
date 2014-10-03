@@ -138,7 +138,9 @@ def solver(I, V, f, c, Lx, Ly, Nx, Ny, dt, T,
     if user_action is not None:
         user_action(u, x, xv, y, yv, t, 1)
 
-    u_2[:,:] = u_1; u_1[:,:] = u
+    # Update data structures for next step
+    #u_2[:] = u_1;  u_1[:] = u  # safe, but slower
+    u_2, u_1, u = u_1, u, u_2
 
     for n in It[1:-1]:
         if version == 'scalar':
@@ -157,11 +159,16 @@ def solver(I, V, f, c, Lx, Ly, Nx, Ny, dt, T,
             if user_action(u, x, xv, y, yv, t, n+1):
                 break
 
-        u_2[:,:], u_1[:,:] = u_1, u
+        # Update data structures for next step
+        #u_2[:] = u_1;  u_1[:] = u  # safe, but slower
+        u_2, u_1, u = u_1, u, u_2
 
+    # Important to set u = u_1 if u is to be returned!
     t1 = time.clock()
     # dt might be computed in this function so return the value
     return dt, t1 - t0
+
+
 
 def advance_scalar(u, u_1, u_2, f, x, y, t, n, Cx2, Cy2, dt2,
                    V=None, step1=False):

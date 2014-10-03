@@ -118,7 +118,8 @@ def solver(I, V, f, c, U_0, U_L, L, dt, C, T,
         user_action(u, x, t, 1)
 
     # Update data structures for next step
-    u_2[:], u_1[:] = u_1, u
+    #u_2[:] = u_1;  u_1[:] = u  # safe, but slower
+    u_2, u_1, u = u_1, u, u_2
 
     for n in It[1:-1]:
         # Update all inner points
@@ -164,8 +165,12 @@ def solver(I, V, f, c, U_0, U_L, L, dt, C, T,
                 break
 
         # Update data structures for next step
-        u_2[:], u_1[:] = u_1, u
+        #u_2[:] = u_1;  u_1[:] = u  # safe, but slower
+        u_2, u_1, u = u_1, u, u_2
 
+    # Important to correct the mathematically wrong u=u_2 above
+    # before returning u
+    u = u_1
     cpu_time = t0 - time.clock()
     return u, x, t, cpu_time
 
@@ -401,9 +406,4 @@ def sincos(C=1):
     return dt, E
 
 if __name__ == '__main__':
-    import sys
-    from scitools.misc import function_UI
-    cmd = function_UI([test_quadratic, test_plug, plug,
-                       gaussian, sincos, guitar,
-                       moving_end, sincos], sys.argv)
-    eval(cmd)
+    pass

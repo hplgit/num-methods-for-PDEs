@@ -60,7 +60,7 @@ def solver(I, V, f, c, L, dt, C, T, user_action=None):
         user_action(u, x, t, 1)
 
     # Switch variables before next step
-    u_2[:], u_1[:] = u_1, u
+    u_2[:] = u_1;  u_1[:] = u
 
     for n in range(1, Nt):
         # Update all inner points at time t[n+1]
@@ -76,7 +76,7 @@ def solver(I, V, f, c, L, dt, C, T, user_action=None):
                 break
 
         # Switch variables before next step
-        u_2[:], u_1[:] = u_1, u
+        u_2[:] = u_1;  u_1[:] = u
 
     cpu_time = t0 - time.clock()
     return u, x, t, cpu_time
@@ -187,4 +187,5 @@ if __name__ == '__main__':
         print 'C=%g' % C
     except IndexError:
         C = 0.85
+    print 'Courant number: %.2f' % C
     guitar(C)

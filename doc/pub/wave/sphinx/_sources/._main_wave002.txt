@@ -9,26 +9,25 @@ Implementation  (1)
    single: wave equation; 1D, implementation
 
 This section present the complete computational algorithm, its
-implementation in Python code, animation of the solution,
-and verification of the implementation.
+implementation in Python code, animation of the solution, and
+verification of the implementation.
 
-A real implementation of the basic computational algorithm
-from the sections :ref:`wave:string:alg` and :ref:`wave:string:impl` can be
-encapsulated in a function,
-taking all the input data for the problem as arguments.  The physical
-input data consists of :math:`c`, :math:`I(x)`, :math:`V(x)`, :math:`f(x,t)`, :math:`L`, and :math:`T`.
-The numerical input is the mesh parameters :math:`\Delta t` and :math:`\Delta x`.
+A real implementation of the basic computational algorithm from
+the sections :ref:`wave:string:alg` and :ref:`wave:string:impl` can be
+encapsulated in a function, taking all the input data for the problem
+as arguments.  The physical input data consists of :math:`c`, :math:`I(x)`,
+:math:`V(x)`, :math:`f(x,t)`, :math:`L`, and :math:`T`.  The numerical input is the mesh
+parameters :math:`\Delta t` and :math:`\Delta x`.
 
-Instead of specifying :math:`\Delta t` *and* :math:`\Delta x`, we can specify
-one of them and the Courant number :math:`C` instead, since having
-explicit control of the Courant number is convenient when investigating
-the numerical method. Many find it natural to prescribe the
-resolution of the spatial grid and set :math:`N_x`. The solver function
-can then compute :math:`\Delta t = CL/(cN_x)`. However, for comparing
-:math:`u(x,t)` curves (as functions of :math:`x`) for various Courant numbers,
-especially in animations in time,
-it is more convenient to keep :math:`\Delta t` fixed for all :math:`C` and
-let :math:`\Delta x` vary according to :math:`\Delta x = c\Delta t/C`.
+Instead of specifying :math:`\Delta t` *and* :math:`\Delta x`, we can specify one
+of them and the Courant number :math:`C` instead, since having explicit
+control of the Courant number is convenient when investigating the
+numerical method. Many find it natural to prescribe the resolution of
+the spatial grid and set :math:`N_x`. The solver function can then compute
+:math:`\Delta t = CL/(cN_x)`. However, for comparing :math:`u(x,t)` curves (as
+functions of :math:`x`) for various Courant numbers, especially in
+animations in time, it is more convenient to keep :math:`\Delta t` fixed for
+all :math:`C` and let :math:`\Delta x` vary according to :math:`\Delta x = c\Delta t/C`.
 (With :math:`\Delta t` fixed, all frames correspond to the same time :math:`t`,
 and plotting curves with different spatial resolution is trivial.)
 
@@ -93,7 +92,7 @@ A first attempt at a solver function is listed below.
                 user_action(u, x, t, 1)
         
             # Switch variables before next step
-            u_2[:], u_1[:] = u_1, u
+            u_2[:] = u_1;  u_1[:] = u
         
             for n in range(1, Nt):
                 # Update all inner points at time t[n+1]
@@ -109,7 +108,7 @@ A first attempt at a solver function is listed below.
                         break
         
                 # Switch variables before next step
-                u_2[:], u_1[:] = u_1, u
+                u_2[:] = u_1;  u_1[:] = u
         
             cpu_time = t0 - time.clock()
             return u, x, t, cpu_time
@@ -764,6 +763,80 @@ for :math:`N_x=50,100,200,400,800`, and measuring the CPU time
 (see the ``run_efficiency_experiments`` function), shows that the vectorized
 code runs substantially faster: the scalar code uses approximately
 a factor :math:`N_x/5` more time!
+
+.. _wave:pde1:impl:ref:switch:
+
+Remark on the updating of arrays
+--------------------------------
+
+At the end of each time step we need to update the ``u_2`` and ``u_1``
+arrays such that they have the right content for the next time step:
+
+.. code-block:: python
+
+        u_2[:] = u_1
+        u_1[:] = u
+
+The order here is important! (Updating ``u_1`` first, makes ``u_2`` equal
+to ``u``, which is wrong.)
+
+The assignment ``u_1[:] = u`` copies the content of the ``u`` array into
+the elements of the ``u_1`` array. Such copying takes time, but
+little compared to computing ``u`` from the finite difference formula,
+even when the formula has a vectorized implementation.
+However, efficiency of program code is a key topic when solving
+PDEs numerically, so it must be mentioned that there exists a
+much more efficient way of making the arrays ``u_2`` and ``u_1``
+ready for the next time step. The idea is based on *switching
+references* and explained below.
+
+A Python variable is actually a reference to some object (C programmers
+may think of pointers). Instead of copying data, we can let ``u_2``
+refer to the ``u_1`` object and ``u_1`` refer to the ``u`` object.
+A naive implementation like
+
+.. code-block:: python
+
+        u_2 = u_1
+        u_1 = u
+
+will fail, however, because now ``u_1`` and ``u`` refers to the same
+object and the update of ``u`` from the finite difference formula
+at the next time step will overwrite ``u_1`` and lead to erroneous
+computations. Also, with the suggested change of references, the
+reference to the ``u_2`` array is lost, and we have in fact only
+two arrays. The solution to this problem is to ensure that ``u``
+points to the ``u_2`` array. This is mathematically wrong, but
+new correct values will be filled into ``u`` at the next time step.
+
+The correct switch of references is then
+
+.. code-block:: python
+
+        tmp = u_2
+        u_2 = u_1
+        u_1 = u
+        u = tmp
+
+We can get rid of the temporary reference ``tmp`` by writing
+
+.. code-block:: python
+
+        u_2, u_1, u = u_1, u, u_2
+
+This update will be used in later implementations.
+
+
+.. admonition:: Caution
+
+   The update ``u_2, u_1, u = u_1, u, u_2`` leaves wrong content in ``u``
+   at the final time step. This means that if we return ``u``, as we
+   do in the example codes here, we actually return ``u_2``, which is
+   obviously wrong. It is therefore important to adjust the content
+   of ``u`` to ``u = u_1`` before returning ``u``.
+
+
+
 
 .. ===== Profiling code ===== better in 2D
 

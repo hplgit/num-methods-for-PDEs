@@ -86,7 +86,8 @@ def solver(I, V, f, c, L, dt, C, T, user_action=None):
         user_action(u[Ix[0]:Ix[-1]+1], x, t, 1)
 
     # Update data structures for next step
-    u_2[:], u_1[:] = u_1, u
+    #u_2[:] = u_1;  u_1[:] = u  # safe, but slower
+    u_2, u_1, u = u_1, u, u_2
 
     for n in range(1, Nt):
         for i in Ix:
@@ -105,8 +106,12 @@ def solver(I, V, f, c, L, dt, C, T, user_action=None):
                 break
 
         # Update data structures for next step
-        u_2[:], u_1[:] = u_1, u
+        #u_2[:] = u_1;  u_1[:] = u  # safe, but slower
+        u_2, u_1, u = u_1, u, u_2
 
+    # Important to correct the mathematically wrong u=u_2 above
+    # before returning u
+    u = u_1
     cpu_time = t0 - time.clock()
     return u[1:-1], x, t, cpu_time
 
@@ -171,7 +176,4 @@ def test_plug():
     nt.assert_almost_equal(diff, 0, places=13)
 
 if __name__ == '__main__':
-    import sys
-    from scitools.misc import function_UI
-    cmd = function_UI([test_plug, plug], sys.argv)
-    eval(cmd)
+    pass

@@ -122,7 +122,8 @@ def solver(I, V, f, c, U_0, U_L, L, dt, C, T,
         user_action(u, x, t, 1)
 
     # Update data structures for next step
-    u_2[:], u_1[:] = u_1, u
+    #u_2[:] = u_1;  u_1[:] = u  # safe, but slower
+    u_2, u_1, u = u_1, u, u_2
 
     for n in It[1:-1]:
         # Update all inner points
@@ -172,8 +173,12 @@ def solver(I, V, f, c, U_0, U_L, L, dt, C, T,
                 break
 
         # Update data structures for next step
-        u_2[:], u_1[:] = u_1, u
+        #u_2[:] = u_1;  u_1[:] = u  # safe, but slower
+        u_2, u_1, u = u_1, u, u_2
 
+    # Important to correct the mathematically wrong u=u_2 above
+    # before returning u
+    u = u_1
     cpu_time = t0 - time.clock()
     return u, x, t, cpu_time
 
@@ -463,11 +468,4 @@ def pulse(C=1, Nx=200, animate=True, version='vectorized', T=2,
 
 
 if __name__ == '__main__':
-    import sys
-    # Enable running the various functions from the command line
-    from scitools.misc import function_UI
-    cmd = function_UI([test_quadratic, test_plug, pulse,
-                       demo_BC_plug, demo_BC_gaussian, moving_end,],
-                      sys.argv)
-    eval(cmd)
-    raw_input()
+    pass

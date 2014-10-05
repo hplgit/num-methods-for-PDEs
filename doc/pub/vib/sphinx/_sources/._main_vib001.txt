@@ -1,0 +1,2190 @@
+.. !split
+
+.. 2DO:
+
+.. _undamped -> _simple everywhere
+
+.. Long time integration by adaptive RK: will that improve the
+
+.. phase error? Do experiments where we measure the wavelength
+
+.. and plot it as function of time. Can we vectorize the
+
+.. max/min pt computation?
+
+.. _vib:model1:
+
+Finite difference discretization
+================================
+
+Much of the numerical challenges with computing oscillatory
+solutions in ODEs and PDEs can be captured by the very simple
+ODE :math:`u'' + u =0` and this is therefore the starting point for
+method development, implementation, and analysis.
+
+A basic model for vibrations
+----------------------------
+
+.. index:: vibration ODE
+
+.. index:: oscillations
+
+.. index:: mechanical vibrations
+
+A system that vibrates without damping and external forcing
+can be described by ODE problem
+
+.. _Eq:vib:ode1:
+
+.. math::
+   :label: vib:ode1
+        
+        u'' + \omega^2u = 0,\quad u(0)=I,\ u'(0)=0,\ t\in (0,T]
+        {\thinspace .}
+        
+        
+
+Here, :math:`\omega` and :math:`I` are given constants.
+The exact solution of :eq:`vib:ode1` is
+
+.. index:: period (of oscillations)
+
+.. index:: frequency (of oscillations)
+
+.. index:: Hz (unit)
+
+.. _Eq:vib:ode1:uex:
+
+.. math::
+   :label: vib:ode1:uex
+        
+        u(t) = I\cos (\omega t)
+        {\thinspace .}
+        
+        
+
+That is, :math:`u` oscillates with constant amplitude :math:`I` and
+angular frequency :math:`\omega`.
+The corresponding period of oscillations (i.e., the time between two
+neighboring peaks in the cosine function) is :math:`P=2\pi/\omega`.
+The number of periods per second
+is :math:`f=\omega/(2\pi)` and measured in the unit Hz.
+Both :math:`f` and :math:`\omega` are referred to as frequency, but :math:`\omega`
+may be more precisely named angular frequency, measured in rad/s.
+
+In vibrating mechanical systems modeled by :eq:`vib:ode1`, :math:`u(t)`
+very often represents a position or a displacement of a particular
+point in the system. The derivative :math:`u'(t)` then has the
+interpretation of the point's velocity, and :math:`u''(t)` is the associated
+acceleration.  The model :eq:`vib:ode1` is not only
+applicable to vibrating mechanical systems, but also to oscillations
+in electrical circuits.
+
+.. _vib:ode1:fdm:
+
+A centered finite difference scheme
+-----------------------------------
+
+To formulate a finite difference method for the model
+problem  :eq:`vib:ode1` we follow the `four steps <http://tinyurl.com/opdfafk/pub/sphinx-decay/main_decay.html#the-forward-euler-scheme>`__ in [Ref1]_.
+
+.. index::
+   single: mesh; finite differences
+
+.. index:: mesh function
+
+Step 1: Discretizing the domain
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The domain is discretized by
+introducing a uniformly partitioned time mesh in the present problem.
+The points in the mesh are hence :math:`t_n=n\Delta t`, :math:`n=0,1,\ldots,N_t`,
+where :math:`\Delta t = T/N_t` is the constant length of the time steps.
+We introduce a mesh function :math:`u^n` for :math:`n=0,1,\ldots,N_t`, which
+approximates the exact solution at the mesh points. The mesh
+function will be computed from algebraic equations derived from
+the differential equation problem.
+
+Step 2: Fulfilling the equation at discrete time points
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ODE is to be satisfied at each mesh point:
+
+.. _Eq:vib:ode1:step2:
+
+.. math::
+   :label: vib:ode1:step2
+        
+        u''(t_n) + \omega^2u(t_n) = 0,\quad n=1,\ldots,N_t
+        {\thinspace .}
+        
+        
+
+.. index:: centered difference
+
+.. index::
+   single: finite differences; centered
+
+Step 3: Replacing derivatives by finite differences
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The derivative :math:`u''(t_n)` is to be replaced by a finite
+difference approximation. A common second-order accurate approximation
+to the second-order derivative is
+
+.. _Eq:vib:ode1:step3:
+
+.. math::
+   :label: vib:ode1:step3
+        
+        u''(t_n) \approx \frac{u^{n+1}-2u^n + u^{n-1}}{\Delta t^2}
+        {\thinspace .}
+        
+        
+
+Inserting :eq:`vib:ode1:step3` in :eq:`vib:ode1:step2`
+yields
+
+.. _Eq:vib:ode1:step3b:
+
+.. math::
+   :label: vib:ode1:step3b
+        
+        \frac{u^{n+1}-2u^n + u^{n-1}}{\Delta t^2} = -\omega^2 u^n
+        {\thinspace .}
+        
+        
+
+We also need to replace the derivative in the initial condition by
+a finite difference. Here we choose a centered difference, whose
+accuracy is similar to the centered difference we used for :math:`u''`:
+
+.. _Eq:vib:ode1:step3c:
+
+.. math::
+   :label: vib:ode1:step3c
+        
+        \frac{u^1-u^{-1}}{2\Delta t} = 0
+        
+        {\thinspace .}
+        
+
+Step 4: Formulating a recursive algorithm
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To formulate the computational algorithm, we assume that we
+have already computed :math:`u^{n-1}` and :math:`u^n` such that :math:`u^{n+1}` is the
+unknown value, which we can readily solve for:
+
+.. _Eq:vib:ode1:step4:
+
+.. math::
+   :label: vib:ode1:step4
+        
+        u^{n+1} = 2u^n - u^{n-1} - \Delta t^2\omega^2 u^n
+        {\thinspace .}
+        
+        
+
+The computational algorithm is simply to apply :eq:`vib:ode1:step4`
+successively for :math:`n=1,2,\ldots,N_t-1`. This numerical scheme sometimes
+goes under the name
+Stormer's
+method or `Verlet integration <http://en.wikipedia.org/wiki/Verlet_integration>`__.
+
+Computing the first step
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+We observe that :eq:`vib:ode1:step4` cannot be used for :math:`n=0` since
+the computation of :math:`u^1` then involves the undefined value :math:`u^{-1}`
+at :math:`t=-\Delta t`. The discretization of the initial condition
+then come to rescue: :eq:`vib:ode1:step3c` implies :math:`u^{-1} = u^1`
+and this relation can be combined with :eq:`vib:ode1:step4`
+for :math:`n=1` to yield a value for :math:`u^1`:
+
+.. math::
+         u^1 = 2u^0 - u^{1} - \Delta t^2 \omega^2 u^0,
+
+which reduces to
+
+.. _Eq:vib:ode1:step4b:
+
+.. math::
+   :label: vib:ode1:step4b
+        
+        u^1 = u^0 - \frac{1}{2} \Delta t^2 \omega^2 u^0
+        {\thinspace .}
+        
+        
+
+:ref:`vib:exer:step4b:alt` asks you to perform an alternative derivation
+and also to generalize the initial condition to :math:`u'(0)=V\neq 0`.
+
+The computational algorithm
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The steps for solving :eq:`vib:ode1` becomes
+
+ 1. :math:`u^0=I`
+
+ 2. compute :math:`u^1` from :eq:`vib:ode1:step4b`
+
+ 3. for :math:`n=1,2,\ldots,N_t-1`:
+
+   1. compute :math:`u^{n+1}` from :eq:`vib:ode1:step4`
+
+The algorithm is more precisely expressed directly in Python:
+
+.. code-block:: python
+
+        t = linspace(0, T, Nt+1)  # mesh points in time
+        dt = t[1] - t[0]          # constant time step
+        u = zeros(Nt+1)           # solution
+        
+        u[0] = I
+        u[1] = u[0] - 0.5*dt**2*w**2*u[0]
+        for n in range(1, Nt):
+            u[n+1] = 2*u[n] - u[n-1] - dt**2*w**2*u[n]
+
+
+.. admonition:: Remark
+
+   In the code, we use ``w`` as the symbol for :math:`\omega`.
+   The reason is that this author prefers ``w`` for readability
+   and comparison with the mathematical :math:`\omega` instead of
+   the full word ``omega`` as variable name.
+
+
+
+
+Operator notation
+~~~~~~~~~~~~~~~~~
+
+We may write the scheme using the compact difference notation
+(see 
+`examples <http://tinyurl.com/opdfafk/pub/sphinx-decay/main_decay.html#compact-operator-notation-for-finite-differences>`__ in [Ref1]_). The difference :eq:`vib:ode1:step3` has the operator
+notation :math:`[D_tD_t u]^n` such that we can write:
+
+.. _Eq:vib:ode1:step4:op:
+
+.. math::
+   :label: vib:ode1:step4:op
+        
+        [D_tD_t u  + \omega^2 u = 0]^n
+        {\thinspace .}
+        
+        
+
+Note that :math:`[D_tD_t u]^n` means applying a central difference with step :math:`\Delta t/2` twice:
+
+.. math::
+         [D_t(D_t u)]^n = \frac{[D_t u]^{n+\frac{1}{2}} - [D_t u]^{n-\frac{1}{2}}}{\Delta t}
+
+which is written out as
+
+.. math::
+        
+        \frac{1}{\Delta t}\left(\frac{u^{n+1}-u^n}{\Delta t} - \frac{u^{n}-u^{n-1}}{\Delta t}\right) = \frac{u^{n+1}-2u^n + u^{n-1}}{\Delta t^2}
+        {\thinspace .}
+        
+
+The discretization of initial conditions can in the operator notation
+be expressed as
+
+.. math::
+        
+        [u = I]^0,\quad [D_{2t} u = 0]^0,
+        
+
+where the operator :math:`[D_{2t} u]^n` is defined as
+
+.. math::
+        
+        [D_{2t} u]^n = \frac{u^{n+1} - u^{n-1}}{2\Delta t}
+        {\thinspace .}
+        
+
+.. _vib:impl1:
+
+Implementation  (1)
+===================
+
+.. _vib:impl1:solver:
+
+Making a solver function
+------------------------
+
+The algorithm from the previous section is readily translated to
+a complete Python function for computing (returning)
+:math:`u^0,u^1,\ldots,u^{N_t}` and :math:`t_0,t_1,\ldots,t_{N_t}`, given the
+input :math:`I`, :math:`\omega`, :math:`\Delta t`, and :math:`T`:
+
+.. code-block:: python
+
+        from numpy import *
+        from matplotlib.pyplot import *
+        from vib_empirical_analysis import minmax, periods, amplitudes
+        
+        def solver(I, w, dt, T):
+            """
+            Solve u'' + w**2*u = 0 for t in (0,T], u(0)=I and u'(0)=0,
+            by a central finite difference method with time step dt.
+            """
+            dt = float(dt)
+            Nt = int(round(T/dt))
+            u = zeros(Nt+1)
+            t = linspace(0, Nt*dt, Nt+1)
+        
+            u[0] = I
+            u[1] = u[0] - 0.5*dt**2*w**2*u[0]
+            for n in range(1, Nt):
+                u[n+1] = 2*u[n] - u[n-1] - dt**2*w**2*u[n]
+            return u, t
+
+A function for plotting the numerical and the exact solution is also
+convenient to have:
+
+.. code-block:: python
+
+        def u_exact(t, I, w):
+            return I*cos(w*t)
+        
+        def visualize(u, t, I, w):
+            plot(t, u, 'r--o')
+            t_fine = linspace(0, t[-1], 1001)  # very fine mesh for u_e
+            u_e = u_exact(t_fine, I, w)
+            hold('on')
+            plot(t_fine, u_e, 'b-')
+            legend(['numerical', 'exact'], loc='upper left')
+            xlabel('t')
+            ylabel('u')
+            dt = t[1] - t[0]
+            title('dt=%g' % dt)
+            umin = 1.2*u.min();  umax = -umin
+            axis([t[0], t[-1], umin, umax])
+            savefig('vib1.png')
+            savefig('vib1.pdf')
+            savefig('vib1.eps')
+
+A corresponding main program calling these functions for a simulation
+of a given number of periods (``num_periods``) may take the form
+
+.. code-block:: python
+
+        I = 1
+        w = 2*pi
+        dt = 0.05
+        num_periods = 5
+        P = 2*pi/w    #  one period
+        T = P*num_periods
+        u, t = solver(I, w, dt, T)
+        visualize(u, t, I, w, dt)
+
+Adjusting some of the input parameters on the command line can be
+handy. Here is a code segment using the ``ArgumentParser`` tool in
+the ``argparse`` module to define option value (``--option value``)
+pairs on the command line:
+
+.. code-block:: python
+
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--I', type=float, default=1.0)
+        parser.add_argument('--w', type=float, default=2*pi)
+        parser.add_argument('--dt', type=float, default=0.05)
+        parser.add_argument('--num_periods', type=int, default=5)
+        a = parser.parse_args()
+        I, w, dt, num_periods = a.I, a.w, a.dt, a.num_periods
+
+A typical execution goes like
+
+.. code-block:: text
+
+        Terminal> python vib_undamped.py --num_periods 20 --dt 0.1
+
+Computing :math:`u'`
+~~~~~~~~~~~~~~~~~~~~
+
+In mechanical vibration applications one is often interested in
+computing the velocity :math:`v(t)=u'(t)` after :math:`u(t)` has been computed.
+This can be done by a central difference,
+
+.. math::
+        
+        v(t_n)=u'(t_n) \approx v^n = \frac{u^{n+1}-u^{n-1}}{2\Delta t} = [D_{2t}u]^n
+        {\thinspace .}
+        
+
+This formula applies for all inner mesh points, :math:`n=1,\ldots,N_t-1`.
+For :math:`n=0` we have that :math:`v(0)` is given by the initial condition on :math:`u'(0)`,
+and for :math:`n=N_t` we can use a one-sided, backward difference:
+:math:`v^n=[D_t^-u]^n`.
+
+Appropriate vectorized Python code becomes
+
+.. code-block:: python
+
+        v = np.zeros_like(u)
+        v[1:-1] = (u[2:] - u[:-2])/(2*dt)  # internal mesh points
+        v[0] = V                           # Given boundary condition u'(0)
+        v[-1] = (u[-1] - u[-2])/dt         # backward difference
+
+.. _vib:ode1:verify:
+
+Verification  (1)
+-----------------
+
+Manual calculation
+~~~~~~~~~~~~~~~~~~
+
+The simplest type of verification, which is also instructive for understanding
+the algorithm, is to compute :math:`u^1`, :math:`u^2`, and :math:`u^3`
+with the aid of a calculator
+and make a function for comparing these results with those from the ``solver``
+function. We refer to the ``test_three_steps`` function in
+the file `vib_undamped.py <http://tinyurl.com/nm5587k/vib/vib_undamped.py>`__
+for details.
+
+Testing very simple solutions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Constructing test problems where the exact solution is constant or
+linear helps initial debugging and verification as one expects any
+reasonable numerical method to reproduce such solutions to machine
+precision.  Second-order accurate methods will often also reproduce a
+quadratic solution.  Here :math:`[D_tD_tt^2]^n=2`, which is the exact
+result. A solution :math:`u=t^2` leads to :math:`u''+\omega^2 u=2 + (\omega
+t)^2\neq 0`.  We must therefore add a source in the equation: :math:`u'' +
+\omega^2 u = f` to allow a solution :math:`u=t^2` for :math:`f=(\omega t)^2`.  By
+simple insertion we can show that the mesh function :math:`u^n = t_n^2` is
+also a solution of the discrete equations.  :ref:`vib:exer:undamped:verify:linquad` asks you to carry out all
+details with showing that linear and quadratic solutions are solutions
+of the discrete equations. Such results are very useful for debugging
+and verification.
+
+Checking convergence rates
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Empirical computation of convergence rates, as explained for a simple `ODE model <http://tinyurl.com/opdfafk/pub/sphinx-decay/main_decay.html#computing-convergence-rates>`__,
+yields a good method for verification. The function below
+
+ * performs :math:`m` simulations with halved time steps: :math:`2^{-i}\Delta t`, :math:`i=0,\ldots,m-1`,
+
+ * computes the :math:`L^2` norm of the error,
+   :math:`E=\sqrt{2^{-i}\Delta t\sum_{n=0}^{N_t-1}(u^n-{u_{\small\mbox{e}}}(t_n))^2}` in each case,
+
+ * estimates the convergence rates :math:`r_i` based on two consecutive
+   experiments :math:`(\Delta t_{i-1}, E_{i-1})` and :math:`(\Delta t_{i}, E_{i})`,
+   assuming :math:`E_i=C\Delta t_i^{r_i}` and :math:`E_{i-1}=C\Delta t_{i-1}^{r_i}`.
+   From these equations it follows that
+   :math:`r_{i-1} = \ln (E_{i-1}/E_i)/\ln (\Delta t_{i-1}/\Delta t_i)`, for
+   :math:`i=1,\ldots,m-1`.
+
+All the implementational details appear below.
+
+.. code-block:: python
+
+        def convergence_rates(m, solver_function, num_periods=8):
+            """
+            Return m-1 empirical estimates of the convergence rate
+            based on m simulations, where the time step is halved
+            for each simulation.
+            """
+            w = 0.35; I = 0.3
+            dt = 2*pi/w/30  # 30 time step per period 2*pi/w
+            T = 2*pi/w*num_periods
+            dt_values = []
+            E_values = []
+            for i in range(m):
+                u, t = solver_function(I, w, dt, T)
+                u_e = u_exact(t, I, w)
+                E = sqrt(dt*sum((u_e-u)**2))
+                dt_values.append(dt)
+                E_values.append(E)
+                dt = dt/2
+        
+            r = [log(E_values[i-1]/E_values[i])/
+                 log(dt_values[i-1]/dt_values[i])
+                 for i in range(1, m, 1)]
+            return r
+
+The returned ``r`` list has its values equal to 2.00, which is in
+excellent agreement with what is expected from the second-order finite
+difference approximation :math:`[D_tD_tu]^n` and other theoretical measures
+of the error in the numerical method.  The final ``r[-1]`` value is a
+good candidate for a unit test:
+
+.. code-block:: python
+
+        def test_convergence_rates():
+            r = convergence_rates(m=5, solver_function=solver, num_periods=8)
+            # Accept rate to 1 decimal place
+            nt.assert_almost_equal(r[-1], 2.0, places=1)
+
+The complete code appears in the file ``vib_undamped.py``.
+
+.. _vib:ode1:longseries:
+
+Long time simulations
+=====================
+
+Figure :ref:`vib:ode1:2dt` shows a comparison of the exact and numerical
+solution for :math:`\Delta t=0.1, 0.05` and :math:`w=2\pi`.
+From the plot we make the following observations:
+
+ * The numerical solution seems to have correct amplitude.
+
+ * There is a phase error which is reduced by reducing the time step.
+
+ * The total phase error grows with time.
+
+By phase error we mean that the peaks of the numerical solution have incorrect
+positions compared with the peaks of the exact cosine solution. This
+effect can be understood as if also the numerical solution is on
+the form :math:`I\cos\tilde\omega t`, but where :math:`\tilde\omega` is not exactly
+equal to :math:`\omega`. Later, we shall mathematically
+quantify this numerical frequency :math:`\tilde\omega`.
+
+.. _vib:ode1:2dt:
+
+.. figure:: vib_phase_err1.png
+   :width: 600
+
+   *Effect of halving the time step*
+
+Using a moving plot window
+--------------------------
+
+In vibration problems it is often of interest to investigate the system's
+behavior over long time intervals. Errors in the phase may then show
+up as crucial. Let us investigate long
+time series by introducing a moving plot window that can move along with
+the :math:`p` most recently computed periods of the solution. The
+`SciTools <http://code.google.com/p/scitools>`__ package contains
+a convenient tool for this: ``MovingPlotWindow``. Typing
+``pydoc scitools.MovingPlotWindow`` shows a demo and description of usage.
+The function below illustrates the usage and is invoked in the
+``vib_undamped.py`` code if the number of periods in the simulation exceeds
+10:
+
+.. code-block:: python
+
+        def visualize_front(u, t, I, w, savefig=False):
+            """
+            Visualize u and the exact solution vs t, using a
+            moving plot window and continuous drawing of the
+            curves as they evolve in time.
+            Makes it easy to plot very long time series.
+            """
+            import scitools.std as st
+            from scitools.MovingPlotWindow import MovingPlotWindow
+        
+            P = 2*pi/w  # one period
+            umin = 1.2*u.min();  umax = -umin
+            plot_manager = MovingPlotWindow(
+                window_width=8*P,
+                dt=t[1]-t[0],
+                yaxis=[umin, umax],
+                mode='continuous drawing')
+            for n in range(1,len(u)):
+                if plot_manager.plot(n):
+                    s = plot_manager.first_index_in_plot
+                    st.plot(t[s:n+1], u[s:n+1], 'r-1',
+                            t[s:n+1], I*cos(w*t)[s:n+1], 'b-1',
+                            title='t=%6.3f' % t[n],
+                            axis=plot_manager.axis(),
+                            show=not savefig) # drop window if savefig
+                    if savefig:
+                        filename = 'tmp_vib%04d.png' % n
+                        st.savefig(filename)
+                        print 'making plot file', filename, 'at t=%g' % t[n]
+                plot_manager.update(n)
+
+Running
+
+.. code-block:: text
+
+        Terminal> python vib_undamped.py --dt 0.05 --num_periods 40
+
+makes the simulation last for 40 periods of the cosine function.
+With the moving plot window we can follow the numerical and exact
+solution as time progresses, and we see from this demo that
+the phase error is small in the beginning, but then becomes more
+prominent with time. Running ``vib_undamped.py`` with :math:`\Delta t=0.1`
+clearly shows that the phase errors become significant even earlier
+in the time series and destroys the solution.
+
+Making a video
+--------------
+
+.. index:: making movies
+
+The ``visualize_front`` function stores all the plots in
+files whose names are numbered:
+``tmp_vib0000.png``, ``tmp_vib0001.png``, ``tmp_vib0002.png``,
+and so on. From these files we may make a movie. The Flash
+format is popular,
+
+.. code-block:: text
+
+        Terminal> avconv -r 12 -i tmp_vib%04d.png -c:v flv movie.flv
+
+The ``avconv`` program can be replaced by the ``ffmpeg`` program in
+the above command if desired. The ``-r`` option should come first and
+describes the number of frames per second in the movie. The
+``-i`` option describes the name of the plot files.
+Other formats can be generated by changing the video codec
+and equipping the video file with the right extension:
+
+======  ============================  
+Format       Codec and filename       
+======  ============================  
+Flash   ``-c:v flv movie.flv``        
+MP4     ``-c:v libx264 movie.mp4``    
+Webm    ``-c:v libvpx movie.webm``    
+Ogg     ``-c:v libtheora movie.ogg``  
+======  ============================  
+
+The video file can be played by some video player like ``vlc``, ``mplayer``,
+``gxine``, or ``totem``, e.g.,
+
+.. code-block:: text
+
+        Terminal> vlc movie.webm
+
+A web page can also be used to play the movie. Today's standard is
+to use the HTML5 ``video`` tag:
+
+.. code-block:: html
+
+        <video autoplay loop controls
+               width='640' height='365' preload='none'>
+        <source src='movie.webm'  type='video/webm; codecs="vp8, vorbis"'>
+        </video>
+
+
+.. admonition:: Caution: number the plot files correctly
+
+   To ensure that the individual plot frames are shown in correct order,
+   it is important to number the files with zero-padded numbers
+   (0000, 0001, 0002, etc.). The printf format ``%04d`` specifies an
+   integer in a field of width 4, padded with zeros from the left.
+   A simple Unix wildcard file specification like ``tmp_vib*.png``
+   will then list the frames in the right order. If the numbers in the
+   filenames were not zero-padded, the frame ``tmp_vib11.png`` would appear
+   before ``tmp_vib2.png`` in the movie.
+
+
+
+
+Using a line-by-line ascii plotter
+----------------------------------
+
+Plotting functions vertically, line by line, in the terminal window
+using ascii characters only is a simple, fast, and convenient
+visualization technique for long time series (the time arrow points
+downward). The tool
+``scitools.avplotter.Plotter`` makes it easy to create such plots:
+
+.. code-block:: python
+
+        def visualize_front_ascii(u, t, I, w, fps=10):
+            """
+            Plot u and the exact solution vs t line by line in a
+            terminal window (only using ascii characters).
+            Makes it easy to plot very long time series.
+            """
+            from scitools.avplotter import Plotter
+            import time
+            P = 2*pi/w
+            umin = 1.2*u.min();  umax = -umin
+        
+            p = Plotter(ymin=umin, ymax=umax, width=60, symbols='+o')
+            for n in range(len(u)):
+                print p.plot(t[n], u[n], I*cos(w*t[n])), \ 
+                      '%.1f' % (t[n]/P)
+                time.sleep(1/float(fps))
+        
+        if __name__ == '__main__':
+            main()
+            raw_input()
+
+The call ``p.plot`` returns a line of text, with the :math:`t` axis marked and
+a symbol ``+`` for the first function (``u``) and ``o`` for the second
+function (the exact solution). Here we append this text
+a time counter reflecting how many periods the current time point
+corresponds to. A typical output (:math:`\omega =2\pi`, :math:`\Delta t=0.05`)
+looks like this:
+
+.. code-block:: text
+
+                                      |                       o+      14.0
+                                      |                      + o      14.0
+                                      |                  +    o       14.1
+                                      |             +     o           14.1
+                                      |     +        o                14.2
+                                     +|       o                       14.2
+                             +        |                               14.2
+                      +       o       |                               14.3
+                 +     o              |                               14.4
+              +   o                   |                               14.4
+             +o                       |                               14.5
+             o +                      |                               14.5
+              o    +                  |                               14.6
+                  o      +            |                               14.6
+                       o        +     |                               14.7
+                              o       | +                             14.7
+                                      |        +                      14.8
+                                      |       o       +               14.8
+                                      |              o     +          14.9
+                                      |                   o   +       14.9
+                                      |                       o+      15.0
+
+.. _vib:ode1:empirical:
+
+Empirical analysis of the solution
+----------------------------------
+
+For oscillating functions like those in Figure :ref:`vib:ode1:2dt` we may
+compute the amplitude and frequency (or period) empirically.
+That is, we run through the discrete solution points :math:`(t_n, u_n)` and
+find all maxima and minima points. The distance between two consecutive
+maxima (or minima) points can be used as estimate of the local period,
+while half the difference between the :math:`u` value at a maximum and a nearby
+minimum gives an estimate of the local amplitude.
+
+The local maxima are the points where
+
+.. math::
+        
+        u^{n-1} < u^n > u^{n+1},\quad n=1,\ldots,N_t-1,
+        
+
+and the local minima are recognized by
+
+.. math::
+        
+        u^{n-1} > u^n < u^{n+1},\quad n=1,\ldots,N_t-1
+        {\thinspace .}
+        
+
+In computer code this becomes
+
+.. code-block:: python
+
+        def minmax(t, u):
+            minima = []; maxima = []
+            for n in range(1, len(u)-1, 1):
+                if u[n-1] > u[n] < u[n+1]:
+                    minima.append((t[n], u[n]))
+                if u[n-1] < u[n] > u[n+1]:
+                    maxima.append((t[n], u[n]))
+            return minima, maxima
+
+Note that the returned objects are list of tuples.
+
+Let :math:`(t_i, e_i)`, :math:`i=0,\ldots,M-1`, be the sequence of all
+the :math:`M` maxima points, where :math:`t_i`
+is the time value and :math:`e_i` the corresponding :math:`u` value.
+The local period can be defined as :math:`p_i=t_{i+1}-t_i`.
+With Python syntax this reads
+
+.. code-block:: python
+
+        def periods(maxima):
+            p = [extrema[n][0] - maxima[n-1][0]
+                 for n in range(1, len(maxima))]
+            return np.array(p)
+
+The list ``p`` created by a list comprehension is converted to an array
+since we probably want to compute with it, e.g., find the corresponding
+frequencies ``2*pi/p``.
+
+Having the minima and the maxima, the local amplitude can be
+calculated as the difference between two neighboring minimum and
+maximum points:
+
+.. code-block:: python
+
+        def amplitudes(minima, maxima):
+            a = [(abs(maxima[n][1] - minima[n][1]))/2.0
+                 for n in range(min(len(minima),len(maxima)))]
+            return np.array(a)
+
+The code segments are found in the file `vib_empirical_analysis.py <http://tinyurl.com/nm5587k/vib/vib_empirical_analysis.py>`__.
+
+Visualization of the periods ``p`` or the amplitudes ``a``
+it is most conveniently done with just a counter
+on the horizontal axis, since ``a[i]`` and ``p[i]`` correspond to
+the :math:`i`-th amplitude estimate and the :math:`i`-th period estimate, respectively.
+There is no unique time point associated with either of these estimate
+since values at two different time points were used in the
+computations.
+
+In the analysis of very long time series, it is advantageous to
+compute and plot ``p`` and ``a`` instead of :math:`u` to get an impression of
+the development of the oscillations.
+
+.. Use it for very long time integration of CN! And of RK4!
+
+.. _vib:ode1:analysis:
+
+Analysis of the numerical scheme
+================================
+
+Deriving a solution of the numerical scheme
+-------------------------------------------
+
+After having seen the phase error grow with time in the previous
+section, we shall now quantify this error through mathematical
+analysis.  The key tool in the analysis will be to establish an exact
+solution of the discrete equations.  The difference equation
+:eq:`vib:ode1:step4` has constant coefficients and is
+homogeneous. The solution is then :math:`u^n=CA^n`, where :math:`A` is some number
+to be determined from the differential equation and :math:`C` is determined
+from the initial condition (:math:`C=I`).  Recall that :math:`n` in :math:`u^n` is a
+superscript labeling the time level, while :math:`n` in :math:`A^n` is an
+exponent.  With oscillating functions as solutions, the algebra will
+be considerably simplified if we seek an :math:`A` on the form
+
+.. math::
+         A=e^{i\tilde\omega \Delta t},
+
+and solve for the numerical frequency :math:`\tilde\omega` rather than
+:math:`A`. Note that :math:`i=\sqrt{-1}` is the imaginary unit. (Using a
+complex exponential function gives simpler arithmetics than working
+with a sine or cosine function.)
+We have
+
+.. math::
+        
+        A^n = e^{i\tilde\omega \Delta t\, n}=e^{i\tilde\omega t} =
+        \cos (\tilde\omega t) + i\sin(\tilde \omega t)
+        {\thinspace .}
+        
+
+The physically relevant numerical solution can
+be taken as the real part of this complex expression.
+
+The calculations goes as
+
+.. math::
+        
+        [D_tD_t u]^n &= \frac{u^{n+1} - 2u^n + u^{n-1}}{\Delta t^2}\\ 
+        &= I\frac{A^{n+1} - 2A^n + A^{n-1}}{\Delta t^2}\\ 
+        &= I\frac{\exp{(i\tilde\omega(t+\Delta t))} - 2\exp{(i\tilde\omega t)} + \exp{(i\tilde\omega(t-\Delta t))}}{\Delta t^2}\\ 
+        &= I\exp{(i\tilde\omega t)}\frac{1}{\Delta t^2}\left(\exp{(i\tilde\omega(\Delta t))} + \exp{(i\tilde\omega(-\Delta t))} - 2\right)\\ 
+        &= I\exp{(i\tilde\omega t)}\frac{2}{\Delta t^2}\left(\cosh(i\tilde\omega\Delta t) -1 \right)\\ 
+        &= I\exp{(i\tilde\omega t)}\frac{2}{\Delta t^2}\left(\cos(\tilde\omega\Delta t) -1 \right)\\ 
+        &= -I\exp{(i\tilde\omega t)}\frac{4}{\Delta t^2}\sin^2(\frac{\tilde\omega\Delta t}{2})
+        
+
+The last line follows from the relation
+:math:`\cos x - 1 = -2\sin^2(x/2)` (try ``cos(x)-1`` in
+`wolframalpha.com <http://www.wolframalpha.com>`__ to see the formula).
+
+The scheme :eq:`vib:ode1:step4`
+with :math:`u^n=Ie^{i\omega\tilde\Delta t\, n}` inserted now gives
+
+.. math::
+        
+        -Ie^{i\tilde\omega t}\frac{4}{\Delta t^2}\sin^2(\frac{\tilde\omega\Delta t}{2})
+        + \omega^2 Ie^{i\tilde\omega t} = 0,
+        
+
+which after dividing by :math:`Ie^{i\tilde\omega t}` results in
+
+.. math::
+        
+        \frac{4}{\Delta t^2}\sin^2(\frac{\tilde\omega\Delta t}{2}) = \omega^2
+        {\thinspace .}
+        
+
+The first step in solving for the unknown :math:`\tilde\omega` is
+
+.. math::
+         \sin^2(\frac{\tilde\omega\Delta t}{2}) = \left(\frac{\omega\Delta t}{2}\right)^2
+        {\thinspace .}
+        
+
+Then, taking the square root, applying the inverse sine function, and
+multiplying by :math:`2/\Delta t`, results in
+
+.. _Eq:vib:ode1:tildeomega:
+
+.. math::
+   :label: vib:ode1:tildeomega
+        
+        \tilde\omega = \pm \frac{2}{\Delta t}\sin^{-1}\left(\frac{\omega\Delta t}{2}\right)
+        {\thinspace .}
+        
+        
+
+The first observation of :eq:`vib:ode1:tildeomega` tells that
+there is a phase error since the numerical frequency :math:`\tilde\omega`
+never equals the exact frequency :math:`\omega`. But how good is
+the approximation :eq:`vib:ode1:tildeomega`? That is, what
+is the error :math:`\omega - \tilde\omega` or :math:`\tilde\omega/\omega`?
+Taylor series expansion
+for small :math:`\Delta t` may give an expression that is easier to understand
+than the complicated function in :eq:`vib:ode1:tildeomega`:
+
+.. code-block:: ipy
+
+        >>> from sympy import *
+        >>> dt, w = symbols('dt w')
+        >>> w_tilde_e = 2/dt*asin(w*dt/2)
+        >>> w_tilde_series = w_tilde_e.series(dt, 0, 4)
+        >>> print w_tilde_series
+        w + dt**2*w**3/24 + O(dt**4)
+
+This means that
+
+.. See vib_symbolic.py for computations with sympy
+
+.. _Eq:vib:ode1:tildeomega:series:
+
+.. math::
+   :label: vib:ode1:tildeomega:series
+        
+        \tilde\omega = \omega\left( 1 + \frac{1}{24}\omega^2\Delta t^2\right)
+        + {\mathcal{O}(\Delta t^4)}
+        {\thinspace .}
+        
+        
+
+The error in the numerical frequency is of second-order in
+:math:`\Delta t`, and the error vanishes as :math:`\Delta t\rightarrow 0`.
+We see that :math:`\tilde\omega > \omega` since the term :math:`\omega^3\Delta t^2/24 >0`
+and this is by far the biggest term in the series expansion for small
+:math:`\omega\Delta t`. A numerical frequency that is too large gives an oscillating
+curve that oscillates too fast and therefore "lags behind" the exact
+oscillations, a feature that can be seen in the plots.
+
+Figure :ref:`vib:ode1:tildeomega:plot` plots the discrete frequency
+:eq:`vib:ode1:tildeomega`
+and its approximation :eq:`vib:ode1:tildeomega:series` for :math:`\omega =1` (based
+on the program `vib_plot_freq.py <http://tinyurl.com/nm5587k/vib/vib_plot_freq.py>`__).
+Although :math:`\tilde\omega` is a function of :math:`\Delta t` in
+:eq:`vib:ode1:tildeomega:series`,
+it is misleading to think of :math:`\Delta t` as the important
+discretization parameter. It is the product :math:`\omega\Delta t` that is
+the key discretization parameter. This quantity reflects the
+*number of time steps per period* of the oscillations.
+To see this, we set :math:`P=N_P\Delta t`, where :math:`P` is the length of
+a period, and :math:`N_P` is the number of time steps during a period.
+Since :math:`P` and :math:`\omega` are related by :math:`P=2\pi/\omega`,
+we get that :math:`\omega\Delta t = 2\pi/N_P`, which shows that
+:math:`\omega\Delta t` is directly related to :math:`N_P`.
+
+The plot shows
+that at least :math:`N_P\sim 25-30` points per period are necessary for reasonable
+accuracy, but this depends on the length of the simulation (:math:`T`) as
+the total phase error due to the frequency error grows linearly with time
+(see :ref:`vib:exer:phase:err:growth`).
+
+.. _vib:ode1:tildeomega:plot:
+
+.. figure:: discrete_freq.png
+   :width: 400
+
+   *Exact discrete frequency and its second-order series expansion*
+
+.. _vib:ode1:analysis:sol:
+
+Exact discrete solution
+-----------------------
+
+Perhaps more important than the :math:`\tilde\omega = \omega + {\cal O}(\Delta t^2)`
+result found above is the fact that we have an exact discrete solution of
+the problem:
+
+.. _Eq:vib:ode1:un:exact:
+
+.. math::
+   :label: vib:ode1:un:exact
+        
+        u^n = I\cos\left(\tilde\omega n\Delta t\right),\quad
+        \tilde\omega = \frac{2}{\Delta t}\sin^{-1}\left(\frac{\omega\Delta t}{2}\right)
+        {\thinspace .}
+        
+        
+
+We can then compute the error mesh function
+
+.. _Eq:vib:ode1:en:
+
+.. math::
+   :label: vib:ode1:en
+        
+        e^n = {u_{\small\mbox{e}}}(t_n) - u^n =
+        I\cos\left(\omega n\Delta t\right) - I\cos\left(\tilde\omega n\Delta t\right){\thinspace .}
+        
+        
+
+In particular, we can use this expression to show *convergence* of the
+numerical scheme, i.e., :math:`e^n\rightarrow 0` as :math:`\Delta t\rightarrow 0`.
+We have that
+
+.. math::
+        
+        \lim_{\Delta t\rightarrow 0}
+        \tilde\omega = \lim_{\Delta t\rightarrow 0}
+        \frac{2}{\Delta t}\sin^{-1}\left(\frac{\omega\Delta t}{2}\right)
+        = \omega,
+        
+
+by L'Hopital's rule or simply asking
+``(2/x)*asin(w*x/2) as x->0`` in `WolframAlpha <http://www.wolframalpha.com/input/?i=%282%2Fx%29*asin%28w*x%2F2%29+as+x-%3E0>`__.
+Therefore, :math:`\tilde\omega\rightarrow\omega`, and the two terms in
+:math:`e^n` cancel each other in the limit :math:`\Delta t\rightarrow 0`.
+
+The error mesh function is ideal for verification purposes
+and you are strongly encouraged to make a test based on :eq:`vib:ode1:un:exact`
+by doing :ref:`vib:exer:discrete:omega`.
+
+The global error
+----------------
+
+.. index::
+   single: error; global
+
+To achieve more analytical insight into the nature of the global error,
+we can Taylor expand the error mesh function. Since :math:`\tilde\omega`
+contains :math:`\Delta t` in the denominator we use the series expansion
+for :math:`\tilde\omega` inside the cosine function:
+
+.. code-block:: python
+
+        >>> dt, w, t = symbols('dt w t')
+        >>> w_tilde_e = 2/dt*asin(w*dt/2)
+        >>> w_tilde_series = w_tilde_e.series(dt, 0, 4)
+        >>> # Get rid of O() term
+        >>> w_tilde_series = sum(w_tilde_series.as_ordered_terms()[:-1])
+        >>> w_tilde_series
+        dt**2*w**3/24 + w
+        >>> error = cos(w*t) - cos(w_tilde_series*t)
+        >>> error.series(dt, 0, 6)
+        dt**2*t*w**3*sin(t*w)/24 + dt**4*t**2*w**6*cos(t*w)/1152 + O(dt**6)
+        >>> error.series(dt, 0, 6).as_leading_term(dt)
+        dt**2*t*w**3*sin(t*w)/24
+
+This means that the leading order global (true) error at a point :math:`t`
+is proportional to :math:`\omega^3t\Delta t^2`. Setting :math:`t=n\Delta t` and
+replacing :math:`\sin(\omega t)` by its maximum value 1, we have the
+analytical leading-order expression
+
+.. math::
+         e^n = \frac{1}{24}n\omega^3\Delta t^3,
+
+and the :math:`\ell^2` norm of
+this error can be computed as
+
+.. math::
+         ||e^n||_{\ell^2}^2 = \Delta t\sum_{n=0}^{N_t} \frac{1}{24^2}n^2\omega^6\Delta t^6
+        =\frac{1}{24^2}\omega^6\Delta t^7 \sum_{n=0}^{N_t} n^2{\thinspace .}
+
+The sum :math:`\sum_{n=0}^{N_t} n^2` is approximately equal to
+:math:`\frac{1}{3}N_t^3`. Replacing :math:`N_t` by :math:`T/\Delta t` and taking
+the square root gives the expression
+
+.. math::
+         ||e^n||_{\ell^2} = \frac{1}{24}\sqrt{\frac{T^3}{3}}\omega^3\Delta t^2,
+
+which shows that also the integrated error is proportional to
+:math:`\Delta t^2`.
+
+Stability
+---------
+
+Looking at :eq:`vib:ode1:un:exact`, it appears that the numerical
+solution has constant and correct amplitude, but an error in the
+frequency (phase error). However, there is another error that
+is more serious, namely an unstable growing amplitude that can
+occur of :math:`\Delta t` is too large.
+
+We realize that
+a constant amplitude demands
+:math:`\tilde\omega` to be a real number. A complex :math:`\tilde\omega` is
+indeed possible if the argument :math:`x` of :math:`\sin^{-1}(x)` has magnitude
+larger than unity: :math:`|x|>1` (type ``asin(x)`` in `wolframalpha.com <http://www.wolframalpha.com>`__ to see basic properties of :math:`\sin^{-1} (x)`).
+A complex :math:`\tilde\omega` can be written :math:`\tilde\omega = \tilde\omega_r +
+i\tilde\omega_i`. Since :math:`\sin^{-1}(x)` has a *negative* imaginary part for
+:math:`x>1`, :math:`\tilde\omega_i < 0`, it means that
+:math:`\exp{(i\omega\tilde t)}=\exp{(-\tilde\omega_i t)}\exp{(i\tilde\omega_r t)}`
+will lead to exponential growth in time because
+:math:`\exp{(-\tilde\omega_i t)}` with :math:`\tilde\omega_i <0` has a positive
+exponent.
+
+.. index:: stability criterion
+
+We do not tolerate growth in the amplitude and we therefore
+have a *stability criterion* arising from requiring the argument
+:math:`\omega\Delta t/2` in the inverse sine function to be less than
+one:
+
+.. math::
+        
+        \frac{\omega\Delta t}{2} \leq 1\quad\Rightarrow\quad
+        \Delta t \leq \frac{2}{\omega}
+        {\thinspace .}
+        
+
+With :math:`\omega =2\pi`, :math:`\Delta t > \pi^{-1} = 0.3183098861837907` will give
+growing solutions. Figure :ref:`vib:ode1:dt:unstable`
+displays what happens when :math:`\Delta t =0.3184`,
+which is slightly above the critical value: :math:`\Delta t =\pi^{-1} + 9.01\cdot
+10^{-5}`.
+
+.. _vib:ode1:dt:unstable:
+
+.. figure:: vib_unstable.png
+   :width: 400
+
+   *Growing, unstable solution because of a time step slightly beyond the stability limit*
+
+About the accuracy at the stability limit
+-----------------------------------------
+
+An interesting question is whether the stability condition
+:math:`\Delta t < 2/\omega` is unfortunate, or more precisely:
+would it be meaningful to take larger time steps to speed up computations?
+The answer is a clear no. At the stability limit, we have that
+:math:`\sin^{-1}\omega\Delta t/2 = \sin^{-1} 1 = \pi/2`, and therefore
+:math:`\tilde\omega = \pi/\Delta t`. (Note that the approximate formula
+:eq:`vib:ode1:tildeomega:series` is very inaccurate for this
+value of :math:`\Delta t` as it predicts :math:`\tilde\omega = 2.34/pi`, which is
+a 25 percent reduction.) The corresponding
+period of the numerical solution
+is :math:`\tilde P=2\pi/\tilde\omega = 2\Delta t`, which means that there is
+just one time step :math:`\Delta t` between a peak and a through in the
+numerical solution. This is the shortest possible wave that can be
+represented in the mesh. In other words, it is not meaningful to
+use a larger time step than the stability limit.
+
+Also, the phase error when :math:`\Delta t = 2/\omega` is severe: Figure
+:ref:`vib:ode1:dt:stablimit` shows a comparison of the numerical and
+analytical solution with :math:`\omega = 2\pi` and
+:math:`\Delta t = 2/\omega = \pi^{-1}`. Already after one period, the
+numerical solution has a through while the exact solution has a peak (!).
+The error in frequency when :math:`\Delta t` is at the stability limit
+becomes :math:`\omega - \tilde\omega = \omega(1-\pi/2)\approx -0.57\omega`.
+The corresponding error in the period is :math:`P - \tilde P \approx 0.36P`.
+The error after :math:`m` periods is then :math:`0.36mP`. This error has reach
+half a period when :math:`m=1/(2\cdot 0.36)\approx 1.38`, which theoretically
+confirms the observations in Figure :ref:`vib:ode1:dt:stablimit`
+that the numerical solution is a through ahead of a peak already after
+one and a half period.
+
+.. _vib:ode1:dt:stablimit:
+
+.. figure:: vib_stability_limit.png
+   :width: 400
+
+   *Numerical solution with :math:`\Delta t` exactly at the stability limit*
+
+
+.. admonition:: Summary
+
+   From the accuracy and stability
+   analysis we can draw three important conclusions:
+   
+   1. The key parameter in the formulas is :math:`p=\omega\Delta t`.
+      The period of oscillations is :math:`P=2\pi/\omega`, and the
+      number of time steps per period is :math:`N_P=P/\Delta t`.
+      Therefore, :math:`p=\omega\Delta t = 2\pi N_P`, showing that the
+      critical parameter is the number of time steps per period.
+      The smallest possible :math:`N_P` is 2, showing that :math:`p\in (0,\pi]`.
+   
+   2. Provided :math:`p\leq 2`, the amplitude of the numerical solution is
+      constant.
+   
+   3. The numerical solution exhibits a relative phase error
+      :math:`\tilde\omega/\omega \approx 1 + \frac{1}{24}p^2`.
+      This error leads to wrongly displaced peaks of the numerical
+      solution, and the error in peak location grows linearly with time
+      (see :ref:`vib:exer:phase:err:growth`).
+
+
+
+
+.. _vib:model2x2:
+
+Alternative schemes based on 1st-order equations
+================================================
+
+A standard technique for solving second-order ODEs is
+to rewrite them as a system of first-order ODEs and then apply the
+vast collection of methods for first-order ODE systems.
+Given the second-order ODE problem
+
+.. math::
+         u'' + \omega^2 u = 0,\quad u(0)=I,\ u'(0)=0,
+
+we introduce the auxiliary variable :math:`v=u'` and express the ODE problem
+in terms of first-order derivatives of :math:`u` and :math:`v`:
+
+.. _Eq:vib:model2x2:ueq:
+
+.. math::
+   :label: vib:model2x2:ueq
+        
+        u' = v,
+        
+        
+
+.. _Eq:vib:model2x2:veq:
+
+.. math::
+   :label: vib:model2x2:veq
+          
+        v' = -\omega^2 u
+        
+        {\thinspace .}
+        
+
+The initial conditions become :math:`u(0)=I` and :math:`v(0)=0`.
+
+.. _vib:undamped:1stODE:
+
+Standard methods for 1st-order ODE systems
+==========================================
+
+The Forward Euler scheme
+------------------------
+
+A Forward Euler approximation to our :math:`2\times 2` system of ODEs
+:eq:`vib:model2x2:ueq`-:eq:`vib:model2x2:veq`
+becomes
+
+.. math::
+        
+        \lbrack D_t^+ u = v\rbrack^n,
+        \lbrack D_t^+ v = -\omega^2 u\rbrack^n,
+        
+
+or written out,
+
+.. _Eq:vib:undamped:FE1:
+
+.. math::
+   :label: vib:undamped:FE1
+        
+        u^{n+1} = u^n + \Delta t v^n,
+        
+        
+
+.. _Eq:vib:undamped:FE2:
+
+.. math::
+   :label: vib:undamped:FE2
+          
+        v^{n+1} = v^n -\Delta t \omega^2 u^n
+        
+        {\thinspace .}
+        
+
+Let us briefly compare this Forward Euler method with the
+centered difference scheme for the second-order differential
+equation. We have from :eq:`vib:undamped:FE1` and
+:eq:`vib:undamped:FE2` applied at levels :math:`n` and :math:`n-1` that
+
+.. math::
+         u^{n+1} = u^n + \Delta t v^n = u^n + \Delta t (v^{n-1} -\Delta t \omega^2 u^{n-1}{\thinspace .}
+
+Since from :eq:`vib:undamped:FE1`
+
+.. math::
+         v^{n-1} = \frac{1}{\Delta t}(u^{n}-u^{n-1}),
+
+it follows that
+
+.. math::
+         u^{n+1} = 2u^n - u^{n-1} -\Delta t^2\omega^2 u^{n-1},
+
+which is very close to the centered difference scheme, but
+the last term is evaluated at :math:`t_{n-1}` instead of :math:`t_n`.
+Dividing by :math:`\Delta t^2`, the left-hand side is an approximation to
+:math:`u''` at :math:`t_n`, while the right-hand side is sampled at :math:`t_{n-1}`.
+This inconsistency in the scheme turns out to be rather
+crucial for the accuracy of
+the Forward Euler method applied to vibration problems.
+
+The Backward Euler scheme
+-------------------------
+
+A Backward Euler approximation the ODE system is equally easy to
+write up in the operator notation:
+
+.. math::
+        
+        \lbrack D_t^- u = v\rbrack^{n+1},
+        
+
+.. math::
+          
+        \lbrack D_t^- v = -\omega u\rbrack^{n+1} {\thinspace .}
+        
+
+This becomes a coupled system for :math:`u^{n+1}` and :math:`v^{n+1}`:
+
+.. _Eq:vib:undamped:BE1:
+
+.. math::
+   :label: vib:undamped:BE1
+        
+        u^{n+1} - \Delta t v^{n+1} = u^{n},
+        
+        
+
+.. _Eq:vib:undamped:BE2:
+
+.. math::
+   :label: vib:undamped:BE2
+          
+        v^{n+1} + \Delta t \omega^2 u^{n+1} = v^{n}
+        
+        {\thinspace .}
+        
+
+We can compare :eq:`vib:undamped:BE1`-:eq:`vib:undamped:BE2` with
+central the scheme for the second-order differential equation.
+To this end, we eliminate :math:`v^{n+1}` in :eq:`vib:undamped:BE1`
+using :eq:`vib:undamped:BE2` solved with respect to :math:`v^{n+1}`.
+Thereafter, we eliminate :math:`v^n` using :eq:`vib:undamped:BE1`
+solved with respect to :math:`v^{n+1}` and replacing :math:`n+1` by :math:`n`.
+The resulting equation involving only :math:`u^{n+1}`, :math:`u^n`, and :math:`u^{n-1}`
+can be ordered as
+
+.. math::
+         \frac{u^{n+1}-2u^n+u^{n-1}}{\Delta t^2} = -\omega^2 u^{n+1},
+
+which has almost the same form as the centered scheme for the
+second-order differential equation, but the right-hand side is
+evaluated at :math:`u^{n+1}` and not :math:`u^n`. This obvious inconsistency has
+a dramatic effect on the numerical solution.
+
+The Crank-Nicolson scheme
+-------------------------
+
+The Crank-Nicolson scheme takes this form in the operator notation:
+
+.. math::
+        
+        \lbrack D_t u = \overline{v}^t\rbrack^{n+\frac{1}{2}},
+        
+
+.. math::
+          
+        \lbrack D_t v = -\omega \overline{u}^t\rbrack^{n+\frac{1}{2}}
+        {\thinspace .}
+        
+
+Writing the equations out shows that this is also a coupled system:
+
+.. math::
+        
+        u^{n+1} - \frac{1}{2}\Delta t v^{n+1} = u^{n} + \frac{1}{2}\Delta t v^{n},
+        
+
+.. math::
+          
+        v^{n+1} + \frac{1}{2}\Delta t \omega^2 u^{n+1} = v^{n}
+        - \frac{1}{2}\Delta t \omega^2 u^{n}
+        {\thinspace .}
+        
+
+Comparison of schemes
+---------------------
+
+We can easily compare methods like the ones above (and many more!)
+with the aid of the
+`Odespy <https://github.com/hplgit/odespy>`__ package. Below is
+a sketch of the code.
+
+.. code-block:: python
+
+        import odespy
+        import numpy as np
+        
+        def f(u, t, w=1):
+            u, v = u  # u is array of length 2 holding our [u, v]
+            return [v, -w**2*u]
+        
+        def run_solvers_and_plot(solvers, timesteps_per_period=20,
+                                 num_periods=1, I=1, w=2*np.pi):
+            P = 2*np.pi/w  # duration of one period
+            dt = P/timesteps_per_period
+            Nt = num_periods*timesteps_per_period
+            T = Nt*dt
+            t_mesh = np.linspace(0, T, Nt+1)
+        
+            legends = []
+            for solver in solvers:
+                solver.set(f_kwargs={'w': w})
+                solver.set_initial_condition([I, 0])
+                u, t = solver.solve(t_mesh)
+
+There is quite some more code dealing with plots also, and we refer
+to the source file `vib_undamped_odespy.py <http://tinyurl.com/nm5587k/vib/vib_undamped_odespy.py>`__
+for details. Observe that keyword arguments in ``f(u,t,w=1)`` can
+be supplied through a solver parameter ``f_kwargs`` (dictionary of
+additional keyword arguments to ``f``).
+
+Specification of the Forward Euler, Backward Euler, and
+Crank-Nicolson schemes is done like this:
+
+.. code-block:: python
+
+        solvers = [
+            odespy.ForwardEuler(f),
+            # Implicit methods must use Newton solver to converge
+            odespy.BackwardEuler(f, nonlinear_solver='Newton'),
+            odespy.CrankNicolson(f, nonlinear_solver='Newton'),
+            ]
+
+.. index:: phase plane plot
+
+The ``vib_undamped_odespy.py``
+program makes two plots of the computed solutions with the various
+methods in the ``solvers`` list: one plot with :math:`u(t)` versus :math:`t`, and
+one *phase plane plot* where :math:`v` is plotted against :math:`u`.
+That is, the phase plane plot is the curve :math:`(u(t),v(t))` parameterized
+by :math:`t`. Analytically, :math:`u=I\cos(\omega t)` and :math:`v=u'=-\omega I\sin(\omega t)`.
+The exact curve :math:`(u(t),v(t))` is therefore an ellipse, which often
+looks like a circle in a plot if the axes are automatically scaled. The
+important feature, however, is that exact curve :math:`(u(t),v(t))` is
+closed and repeats itself for every period. Not all numerical schemes
+are capable to do that, meaning that the amplitude instead shrinks or
+grows with time.
+
+The Forward Euler scheme in Figure
+:ref:`vib:ode1:1st:odespy:theta:phaseplane` has a pronounced spiral
+curve, pointing to the fact that the amplitude steadily grows, which
+is also evident in Figure :ref:`vib:ode1:1st:odespy:theta`.
+The Backward Euler scheme has a similar feature, except that the
+spriral goes inward and the amplitude is significantly damped.  The
+changing amplitude and the sprial form decreases with decreasing time
+step.  The Crank-Nicolson scheme looks much more
+accurate.  In fact, these plots tell that the Forward and Backward
+Euler schemes are not suitable for solving our ODEs with oscillating
+solutions.
+
+.. _vib:ode1:1st:odespy:theta:phaseplane:
+
+.. figure:: vib_theta_1_pp.png
+   :width: 600
+
+   *Comparison of classical schemes in the phase plane*
+
+.. _vib:ode1:1st:odespy:theta:
+
+.. figure:: vib_theta_1_u.png
+   :width: 600
+
+   *Comparison of classical schemes*
+
+Runge-Kutta methods
+-------------------
+
+We may run two popular standard methods for first-order ODEs, the 2nd-
+and 4th-order Runge-Kutta methods, to see how they perform. Figures
+:ref:`vib:ode1:1st:odespy:RK:phaseplane` and
+:ref:`vib:ode1:1st:odespy:RK` show the solutions with larger :math:`\Delta
+t` values than what was used in the previous two plots.
+
+.. _vib:ode1:1st:odespy:RK:phaseplane:
+
+.. figure:: vib_RK_1_pp.png
+   :width: 600
+
+   *Comparison of Runge-Kutta schemes in the phase plane*
+
+.. _vib:ode1:1st:odespy:RK:
+
+.. figure:: vib_RK_1_u.png
+   :width: 600
+
+   *Comparison of Runge-Kutta schemes*
+
+The visual impression is that the
+4th-order Runge-Kutta method is very accurate, under all circumstances
+in these tests, and the 2nd-order scheme suffer from amplitude errors
+unless the time step is very small.
+
+The corresponding results for the Crank-Nicolson scheme are shown in
+Figures :ref:`vib:ode1:1st:odespy:CN:long:phaseplane` and
+:ref:`vib:ode1:1st:odespy:CN:long`. It is clear that the Crank-Nicolson
+scheme outperforms the 2nd-order Runge-Kutta method. Both schemes have
+the same order of accuracy :math:`{\mathcal{O}(\Delta t^2)}`, but their differences
+in the accuracy that matters in a real physical application is very
+clearly pronounced in this example.  :ref:`vib:exer:undamped:odespy` invites you to investigate how
+
+.. _vib:ode1:1st:odespy:CN:long:phaseplane:
+
+.. figure:: vib_CN_10_pp.png
+   :width: 600
+
+   *Long-time behavior of the Crank-Nicolson scheme in the phase plane*
+
+.. _vib:ode1:1st:odespy:CN:long:
+
+.. figure:: vib_CN_10_u.png
+   :width: 600
+
+   *Long-time behavior of the Crank-Nicolson scheme*
+
+Analysis of the Forward Euler scheme
+------------------------------------
+
+We may try to find exact solutions of the discrete
+equations in the Forward Euler method. An "ansatz"
+is
+
+.. math::
+        
+        u^n &= IA^n,\\ 
+        v^n &= qIA^n,
+        
+
+where :math:`q` and :math:`A` are unknown numbers. We could have used a complex
+exponential form :math:`\exp{(i\tilde\omega n\Delta t)}` since we get
+oscillatory form, but the oscillations grow in the Forward Euler
+method, so the numerical frequency :math:`\tilde\omega` will be complex
+anyway (to produce an exponentially growing amplitude), so it is
+easier to just work with potentially complex :math:`A` and :math:`q` as introduced
+above.
+
+The Forward Euler scheme leads to
+
+.. math::
+        
+        A &= 1 + \Delta t q,\\ 
+        A &= 1 - \Delta t\omega^2 q^{-1}{\thinspace .}
+        
+
+We can easily eliminate :math:`A`, get :math:`q^2 + \omega^2=0`, and solve for
+
+.. math::
+         q = \pm i\omega,
+
+which gives
+
+.. math::
+         A = 1 \pm \Delta t i\omega{\thinspace .}
+
+We shall take the real part of :math:`A^n` as the solution. The two
+values of :math:`A` are complex conjugates, and the real part of
+:math:`A^n` will be the same for the two roots. This is easy to realize if
+we rewrite the complex numbers in polar form (:math:`re^{i\theta}`),
+which is also convenient
+for further analysis and understanding.
+The polar form of the two values for :math:`A` become
+
+.. math::
+         1 \pm \Delta t i\omega = \sqrt{1+\omega^2\Delta t^2}e^{\pm i\tan^{-1}(\omega\Delta t)}{\thinspace .}
+
+Now,
+
+.. math::
+         (1 \pm \Delta t i\omega)^n = (1+\omega^2\Delta t^2){n/2}e^{\pm ni\tan^{-1}(\omega\Delta t)}{\thinspace .}
+
+Since :math:`\cos (\theta n) = \cos (-\theta n)`, the real part of the two
+numbers become the same. We therefore continue with the solution that has
+the plus sign.
+
+The general solution is :math:`u^n = CA^n`, where
+:math:`C` is a constant. This is determined from the initial condition:
+:math:`u^0=C=I`.
+Then also :math:`v^n=qIA^n`. The final solutions
+consist of the real part of the expressions in polar form:
+
+.. math::
+         u^n=
+        I(1+\omega^2\Delta t^2){n/2}\cos (n\tan^{-1}(\omega\Delta t)),
+        \quad
+        v^n=- \omega
+        I(1+\omega^2\Delta t^2){n/2}\sin (n\tan^{-1}(\omega\Delta t)){\thinspace .}
+
+The expression :math:`(1+\omega^2\Delta t^2){n/2}` causes growth of
+the amplitude, since a number greater than one is raised to an
+integer power. By expanding first the square root, :math:`\sqrt{1+x^2}\approx
+1 + \frac{1}{2}x^2`, we realize that raising the approximation to
+any integer power, will give rise to a polynomial with leading terms
+:math:`1+x^2`, or with :math:`x=\omega\Delta` as in our case, the amplitude in
+the Forward Euler scheme grows
+as :math:`1+\omega^2\Delta t^2`.
+
+.. _vib:model1:energy:
+
+Energy considerations
+=====================
+
+.. index:: mechanical energy
+
+.. index:: energy principle
+
+The observations of various methods in the previous section can be
+better interpreted if we compute an quantity reflecting
+the total *energy of the system*. It turns out that this quantity,
+
+.. math::
+         E(t) = \frac{1}{2}(u')^2 + \frac{1}{2}\omega^2u^2,
+
+is *constant* for all :math:`t`. Checking that :math:`E(t)` really remains constant
+brings evidence that the numerical computations are sound.
+Such energy measures, when they exist, are much used to check numerical
+simulations.
+
+Derivation of the energy expression
+-----------------------------------
+
+We starting multiplying
+
+.. math::
+         u'' + \omega^2 u = 0,
+
+by :math:`u'` and integrating from :math:`0` to :math:`T`:
+
+.. math::
+         \int_0^T u''u' dt + \int_0^T\omega^2 u u' dt = 0{\thinspace .}
+
+Observing that
+
+.. math::
+         u''u' = \frac{d}{dt}\frac{1}{2}(u')^2,\quad uu' = \frac{d}{dt} {\frac{1}{2}}u^2,
+
+we get
+
+.. math::
+        
+        \int_0^T (\frac{d}{dt}\frac{1}{2}(u')^2 + \frac{d}{dt} \frac{1}{2}\omega^2u^2)dt = E(T) - E(0)=0,
+        
+
+where we have introduced the energy measure :math:`E(t)`
+
+.. _Eq:vib:model1:energy:balance1:
+
+.. math::
+   :label: vib:model1:energy:balance1
+        
+        E(t) = \frac{1}{2}(u')^2 + \frac{1}{2}\omega^2u^2{\thinspace .}
+        
+        
+
+The important result from this derivation is that the total energy
+is constant:
+
+.. math::
+         E(t) = E(0){\thinspace .}
+
+
+.. warning::
+    The quantity :math:`E(t)` derived above is physically not the energy of a
+    vibrating mechanical system, but the energy per unit mass. To see this,
+    we start with Newton's second law :math:`F=ma` (:math:`F` is the sum of forces, :math:`m`
+    is the mass of the system, and :math:`a` is the acceleration).
+    The displacement :math:`u` is related to :math:`a` through
+    :math:`a=u''`. With a spring force as the only force we have :math:`F=-ku`, where
+    :math:`k` is a spring constant measuring the stiffness of the spring.
+    Newton's second law then implies the differential equation
+    
+    .. math::
+             -ku = mu''\quad\Rightarrow mu'' + ku = 0{\thinspace .}
+    
+    This equation of motion can be turned into an energy balance equation
+    by finding the work done by each term during a time interval :math:`[0,T]`.
+    To this end, we multiply the equation by :math:`du=u'dt` and integrate:
+    
+    .. math::
+             \int_0^T muu'dt + \int_0^T kuu'dt = 0{\thinspace .}
+    
+    The result is
+    
+    .. math::
+             E(t) = E_k(t) + E_p(t) = 0,
+    
+    where
+    
+    .. _Eq:vib:model1:energy:kinetic:
+
+.. math::
+   :label: vib:model1:energy:kinetic
+            
+            E_k(t) = \frac{1}{}2mv^2,\quad v=u',
+            
+            
+    
+    is the *kinetic energy* of the system,
+    
+    .. _Eq:vib:model1:energy:potential:
+
+.. math::
+   :label: vib:model1:energy:potential
+            
+            E_p(t) = {\frac{1}{2}}ku^2
+            
+            
+    
+    is the *potential energy*, and the sum :math:`E(t)` is the total energy.
+    The derivation demonstrates the famous energy principle that any
+    change in the kinetic energy is due to a change in potential energy
+    and vice versa.
+    
+    The equation :math:`mu''+ku=0` can be divided by :math:`m` and written as
+    :math:`u'' + \omega^2u=0` for :math:`\omega=\sqrt{k/m}`. The energy expression
+    :math:`E(t)=\frac{1}{2}(u')^2 + \frac{1}{2}\omega^2u^2` derived earlier is then
+    simply the
+    true physical total
+    energy :math:`\frac{1}{2} m(u')^2 + {\frac{1}{2}}k^2u^2` divided by :math:`m`, i.e.,
+    total energy per unit mass.
+
+
+
+
+Energy of the exact solution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Analytically, we have :math:`u(t)=I\cos\omega t`, if :math:`u(0)=I` and :math:`u'(0)=0`,
+so we can easily check that the evolution of the energy :math:`E(t)` is
+constant:
+
+.. math::
+         E(t) = {\frac{1}{2}}I^2 (-\omega\sin\omega t)^2
+        + \frac{1}{2}\omega^2 I^2 \cos^2\omega t
+        = \frac{1}{2}\omega^2 (\sin^2\omega t + \cos^2\omega t) = \frac{1}{2}\omega^2
+        {\thinspace .}
+        
+
+An error measure based on total energy
+--------------------------------------
+
+The error in total energy, as a mesh function, can be computed by
+
+.. math::
+        
+        e_E^n = \frac{1}{2}\left(\frac{u^{n+1}-u^{n-1}}{2\Delta t}\right)^2
+        + \frac{1}{2}\omega^2 (u^n)^2 - E(0),
+        \quad n=1,\ldots,N_t-1,
+        
+
+where
+
+.. math::
+         E(0) = {\frac{1}{2}}V^2 + \frac{1}{2}\omega^2I^2,
+
+if :math:`u(0)=I` and :math:`u'(0)=V`.
+A useful norm can be the maximum absolute value of :math:`e_E^n`:
+
+.. math::
+         ||e_E^n||_{\ell^\infty} = \max_{1\leq n <N_t} |e_E^n|{\thinspace .}
+
+The corresponding Python implementation takes the form
+
+.. code-block:: python
+
+        # import numpy as np and compute u, t
+        dt = t[1]-t[0]
+        E = 0.5*((u[2:] - u[:-2])/(2*dt))**2 + 0.5*w**2*u[1:-1]**2
+        E0 = 0.5*V**2 + 0.5**w**2*I**2
+        e_E = E - E0
+        e_E_norm = np.abs(e_E).max()
+
+The convergence rates of the quantity ``e_E_norm`` can be used for verification.
+The value of ``e_E_norm`` is also useful for comparing schemes
+through their ability to preserve energy. Below is a table demonstrating
+the error in total energy for various schemes. We clearly see that
+the Crank-Nicolson and 4th-order Runge-Kutta schemes are superior to
+the 2nd-order Runge-Kutta method and even more superior to the Forward
+and Backward Euler schemes.
+
+=====================  ==========  ================  ========================================  
+        Method         :math:`T`   :math:`\Delta t`  :math:`\max \left\vert e_E^n\right\vert`  
+=====================  ==========  ================  ========================================  
+    Forward Euler      :math:`1`     :math:`0.05`           :math:`1.113\cdot 10^{2}`          
+    Forward Euler      :math:`1`    :math:`0.025`           :math:`3.312\cdot 10^{1}`          
+    Backward Euler     :math:`1`     :math:`0.05`           :math:`1.683\cdot 10^{1}`          
+    Backward Euler     :math:`1`    :math:`0.025`           :math:`1.231\cdot 10^{1}`          
+Runge-Kutta 2nd-order  :math:`1`     :math:`0.1`                  :math:`8.401`                
+Runge-Kutta 2nd-order  :math:`1`     :math:`0.05`           :math:`9.637\cdot 10^{-1}`         
+    Crank-Nicolson     :math:`1`     :math:`0.05`           :math:`9.389\cdot 10^{-1}`         
+    Crank-Nicolson     :math:`1`    :math:`0.025`           :math:`2.411\cdot 10^{-1}`         
+Runge-Kutta 4th-order  :math:`1`     :math:`0.1`                  :math:`2.387`                
+Runge-Kutta 4th-order  :math:`1`     :math:`0.05`           :math:`6.476\cdot 10^{-1}`         
+    Crank-Nicolson     :math:`10`    :math:`0.1`                  :math:`3.389`                
+    Crank-Nicolson     :math:`10`    :math:`0.05`           :math:`9.389\cdot 10^{-1}`         
+Runge-Kutta 4th-order  :math:`10`    :math:`0.1`                  :math:`3.686`                
+Runge-Kutta 4th-order  :math:`10`    :math:`0.05`           :math:`6.928\cdot 10^{-1}`         
+=====================  ==========  ================  ========================================  
+
+.. Should build a verification test on the energy error.
+
+.. Link phase plane plot to energy
+
+.. A phase plane plot shows the curve :math:`(u(t), u'(t))`.
+
+.. _vib:model2x2:EulerCromer:
+
+The Euler-Cromer method
+=======================
+
+While the 4th-order Runge-Kutta method and the a centered
+Crank-Nicolson scheme work well for the first-order formulation of the
+vibration model, both were inferior to the straightforward centered
+difference scheme for the second-order equation
+:math:`u''+\omega^2u=0`. However, there is a similarly successful scheme
+available for the first-order system :math:`u'=v`, :math:`v'=-\omega^2u`, to be
+presented next.
+
+.. index:: forward-backward Euler-Cromer scheme
+
+Forward-backward discretization
+-------------------------------
+
+The idea is to apply a Forward Euler discretization to the first
+equation and a Backward Euler discretization to the second. In operator
+notation this is stated as
+
+.. math::
+        
+        \lbrack D_t^+u = v\rbrack^n,
+        
+
+.. math::
+          
+        \lbrack D_t^-v = -\omega u\rbrack^{n+1}
+        {\thinspace .}
+        
+
+We can write out the formulas and collect the unknowns on the left-hand side:
+
+.. _Eq:vib:model2x2:EulerCromer:ueq1:
+
+.. math::
+   :label: vib:model2x2:EulerCromer:ueq1
+        
+        u^{n+1} = u^n + \Delta t v^n,
+        
+        
+
+.. _Eq:vib:model2x2:EulerCromer:veq1:
+
+.. math::
+   :label: vib:model2x2:EulerCromer:veq1
+          
+        v^{n+1} = v^n -\Delta t \omega^2u^{n+1}
+        
+        {\thinspace .}
+        
+
+We realize that :math:`u^{n+1}` can be computed from
+:eq:`vib:model2x2:EulerCromer:ueq1` and then :math:`v^{n+1}` from
+:eq:`vib:model2x2:EulerCromer:veq1` using the recently computed value
+:math:`u^{n+1}` on the right-hand side.
+
+In physics, it is more common to update the :math:`v` equation first, with
+a forward difference, and thereafter the :math:`u` equation, with a backward
+difference that applies the most recently computed :math:`v` value:
+
+.. _Eq:vib:model2x2:EulerCromer:veq1b:
+
+.. math::
+   :label: vib:model2x2:EulerCromer:veq1b
+        
+        v^{n+1} = v^n -\Delta t \omega^2u^{n},
+        
+        
+
+.. _Eq:vib:model2x2:EulerCromer:ueq1b:
+
+.. math::
+   :label: vib:model2x2:EulerCromer:ueq1b
+          
+        u^{n+1} = u^n + \Delta t v^{n+1}{\thinspace .}
+        
+        
+
+The advantage of this sequence of the first-order ODEs becomes evident
+when we turn to more complicated models. A typical vibration ODE can
+in general be written as
+
+.. math::
+         \ddot u + g(u, u', t)=0,
+
+which results in the system
+
+.. math::
+        
+        v' &= -g(u,v,t),\\ 
+        u' &= v,
+        
+
+and the scheme
+
+.. math::
+        
+        v^{n+1} &= v^n -\Delta t\, g(u^n,v^n,t),\\ 
+        u^{n+1} &= u^n + \Delta t\, v^{n+1}{\thinspace .}
+        
+
+We realize that the first update works well with any :math:`g` since old
+values :math:`u^n` and :math:`v^n` are used. Switching the equations would
+demand :math:`u^n{+1}` and :math:`v^{n+1}` values in :math:`g`.
+
+.. Despite using a backward difference, there is no need to solve a coupled
+
+.. system for :math:`u^{n+1}` and :math:`v^{n+1}` because the structure of the ODEs
+
+.. allows :eq:`vib:model2x2:EulerCromer:ueq1`
+
+The scheme
+:eq:`vib:model2x2:EulerCromer:ueq1b`-:eq:`vib:model2x2:EulerCromer:veq1b`
+goes under several names: Forward-backward scheme, `Semi-implicit Euler method <http://en.wikipedia.org/wiki/Semi-implicit_Euler_method>`__, symplectic
+Euler, semi-explicit Euler,
+Newton-Stormer-Verlet,
+and Euler-Cromer.
+We shall stick to the latter name.
+Since both time discretizations are based on first-order difference
+approximation, one may think that the scheme is only of first-order,
+but this is not true: the use of a forward and then a backward
+difference make errors cancel so that the overall error in the scheme
+is :math:`{\mathcal{O}(\Delta t^2)}`. This is explaned below.
+
+.. _vib:model2x2:EulerCromer:equiv:
+
+Equivalence with the scheme for the second-order ODE
+----------------------------------------------------
+
+We may eliminate the :math:`v^n` variable from
+:eq:`vib:model2x2:EulerCromer:ueq1`-:eq:`vib:model2x2:EulerCromer:veq1`
+or
+:eq:`vib:model2x2:EulerCromer:ueq1b`-:eq:`vib:model2x2:EulerCromer:veq1b`.
+The :math:`v^{n+1}` term in :eq:`vib:model2x2:EulerCromer:veq1b` can
+be eliminated from :eq:`vib:model2x2:EulerCromer:ueq1b`:
+
+.. _Eq:vib:model2x2:EulerCromer:elim1:
+
+.. math::
+   :label: vib:model2x2:EulerCromer:elim1
+        
+        u^{n+1} = u^n + \Delta t (v^n - \omega^2\Delta t^2 u^n){\thinspace .}
+        
+        
+
+The :math:`v^{n}` quantity can be expressed by :math:`u^n` and :math:`u^{n-1}`
+using :eq:`vib:model2x2:EulerCromer:ueq1b`:
+
+.. math::
+         v^{n} = \frac{u^n - u^{n-1}}{\Delta t},
+        
+
+and when this is inserted in :eq:`vib:model2x2:EulerCromer:elim1` we get
+
+.. math::
+        
+        u^{n+1} = 2u^n - u^{n-1} - \Delta t^2 \omega^2u^{n},
+        
+
+which is nothing but the centered scheme :eq:`vib:ode1:step4`!
+Therefore, the previous analysis of
+:eq:`vib:ode1:step4` also applies to the Euler-Cromer
+method. In particular, the amplitude is constant, given that the stability
+criterion is fulfilled, but there is always a phase error
+:eq:`vib:ode1:tildeomega:series`. :ref:`vib:exer:EulerCromer:analysis`
+gives guidance on how to derive the exact discrete solution of
+the two equations in the Euler-Cromer method.
+
+The initial condition :math:`u'=0` means :math:`u'=v=0`.  From
+:eq:`vib:model2x2:EulerCromer:ueq1b` we get :math:`v^1=-\omega^2 u^0`
+and :math:`u^1=u^0 - \omega^2\Delta t^2 u^0`, which is not exactly
+the same :math:`u^1` value as obtained by a centered
+approximation of :math:`v'(0)=0` and combined with the
+discretization :eq:`vib:ode1:step4` of the second-order ODE: a factor
+:math:`\frac{1}{2}` is missing in the second term.
+In fact, if we approximate :math:`u'(0)=0` by a backward difference,
+:math:`(u^0-u^{-1})/\Delta t =0`, we get :math:`u^{-1}=u^0`, and when combined
+with :eq:`vib:ode1:step4`, it results in
+:math:`u^1=u^0 - \omega^2\Delta t^2 u^0`. That is,
+the Euler-Cromer method based on
+:eq:`vib:model2x2:EulerCromer:ueq1b`-:eq:`vib:model2x2:EulerCromer:veq1b`
+corresponds to using only a first-order approximation to the initial condition
+in the method from the section :ref:`vib:ode1:fdm`.
+
+Correspondingly, using the formulation
+:eq:`vib:model2x2:EulerCromer:ueq1`-:eq:`vib:model2x2:EulerCromer:veq1`
+with :math:`v^n=0` leads to :math:`u^1=u^0`, which can be interpreted as using
+a forward difference approximation for the initial condition :math:`u'(0)=0`.
+Both Euler-Cromer formulations lead to slightly different values for
+:math:`u^1` compared to the method in the section :ref:`vib:ode1:fdm`.
+The error is :math:`\frac{1}{2}\omega^2\Delta t^2 u^0` and of the same order
+as the overall scheme.
+
+.. _vib:model2x2:EulerCromer:impl:
+
+Implementation  (2)
+-------------------
+
+The function below, found in `vib_EulerCromer.py <http://tinyurl.com/nm5587k/vib/vib_EulerCromer.py>`__ implements the Euler-Cromer scheme
+:eq:`vib:model2x2:EulerCromer:ueq1b`-:eq:`vib:model2x2:EulerCromer:veq1b`:
+
+.. code-block:: python
+
+        from numpy import zeros, linspace
+        
+        def solver(I, w, dt, T):
+            """
+            Solve v' = - w**2*u, u'=v for t in (0,T], u(0)=I and v(0)=0,
+            by an Euler-Cromer method.
+            """
+            dt = float(dt)
+            Nt = int(round(T/dt))
+            u = zeros(Nt+1)
+            v = zeros(Nt+1)
+            t = linspace(0, Nt*dt, Nt+1)
+        
+            v[0] = 0
+            u[0] = I
+            for n in range(0, Nt):
+                v[n+1] = v[n] - dt*w**2*u[n]
+                u[n+1] = u[n] + dt*v[n+1]
+            return u, v, t
+
+Since the Euler-Cromer scheme is equivalent to the finite difference
+method for the second-order ODE :math:`u''+\omega^2u=0` (see the section :ref:`vib:model2x2:EulerCromer:equiv`), the performance of the above
+``solver`` function is the same as for the ``solver`` function in the section :ref:`vib:impl1`. The only difference is the formula for the first time
+step, as discussed above.  This deviation in the Euler-Cromer scheme
+means that the discrete solution listed in the section :ref:`vib:ode1:analysis:sol` is not a solution of the Euler-Cromer
+scheme.  To verify the implementation of the Euler-Cromer method we
+can adjust ``v[1]`` so that the computer-generated values can be
+compared formula from in the section :ref:`vib:ode1:analysis:sol`. This
+adjustment is done in an alternative solver function, ``solver_ic_fix``
+in ``vib_EulerCromer.py``, and combined with a nose test in the function
+``test_solver`` that checks equality of computed values with the exact
+discrete solution to machine precision. Another function, ``demo``,
+visualizes the difference between Euler-Cromer scheme and the scheme
+for the second-oder ODE, arising from the mismatch in the first time level.
+
+.. is anything gained? is v of higher order than D_2t u from the
+
+.. other approach, i.e., if we need v, is this alg better? Probably not
+
+.. since v is related u through a difference
+
+.. make exercises:
+
+.. investigate how important the u^1 wrong formula really is on
+
+.. convergence rate
+
+.. new file: genealizations, systems,
+
+.. new file: apps
+
+.. exercise: damping analysis, see geophysics book first...
+
+The velocity Verlet algorithm
+-----------------------------
+
+Another very popular algorithm for vibration problems :math:`u''+\omega^2u=0`
+can be derived as follows. First, we step :math:`u` forward from :math:`t_n` to
+:math:`t_{n+1}` using a three-term Taylor series,
+
+.. math::
+         u(t_{n+1}) = u(t_n) + u'(t_n)\Delta t + \frac{1}{2}u''(t_n)\Delta t^2{\thinspace .}
+
+Using :math:`u'=v` and :math:`u''=-\omega^2u`, we get the updating formula
+
+.. math::
+         u^{n+1} = u^n + v^n\Delta t - \frac{1}{2}\Delta^2\omega^2u^n{\thinspace .}
+
+Second, the first-order equation for :math:`v`,
+
+.. math::
+         v'=-\omega^2u,
+
+is discretized by a centered difference
+in a Crank-Nicolson fashion at :math:`t_{n+\frac{1}{2}}`:
+
+.. math::
+         \frac{v^{n+1}-v^n}{\Delta t} = -\omega^2\frac{1}{2}(u^n + u^{n+1}),
+
+or in operator form that explicitly demonstrates the thinking:
+
+.. math::
+         [D_t u = -\omega^2\bar u^t]^{n+\frac{1}{2}}{\thinspace .}
+
+To summarize, we have the scheme
+
+.. _Eq:vib:model2x2:Verlet:dueq:
+
+.. math::
+   :label: vib:model2x2:Verlet:dueq
+        
+        u^{n+1} = u^n + v^n\Delta t - \frac{1}{2}\Delta^2\omega^2u^n
+         
+        
+
+.. _Eq:vib:model2x2:Verlet:dveq:
+
+.. math::
+   :label: vib:model2x2:Verlet:dveq
+          
+        v^{n+1} = v^n -\frac{1}{2}\Delta t\omega^2 (u^n + u^{n+1}),
+        
+        
+
+known as the *velocity Verlet* algorithm.
+Observe that this scheme is explicit since :math:`u^{n+1}` in
+:eq:`vib:model2x2:Verlet:dveq` is already computed
+from :eq:`vib:model2x2:Verlet:dueq`.
+
+The algorithm can be straightforwardly implemented as shown below.
+
+.. code-block:: python
+
+        from vib_undamped import (
+            zeros, linspace,
+            convergence_rates,
+            main)
+        
+        def solver(I, w, dt, T, return_v=False):
+            """
+            Solve u'=v, v'=-w**2*u for t in (0,T], u(0)=I and v(0)=0,
+            by the velocity Verlet method with time step dt.
+            """
+            dt = float(dt)
+            Nt = int(round(T/dt))
+            u = zeros(Nt+1)
+            v = zeros(Nt+1)
+            t = linspace(0, Nt*dt, Nt+1)
+        
+            u[0] = I
+            v[0] = 0
+            for n in range(Nt):
+                u[n+1] = u[n] + v[n]*dt - 0.5*dt**2*w**2*u[n]
+                v[n+1] = v[n] - 0.5*dt*w**2*(u[n] + u[n+1])
+            if return_v:
+                return u, v, t
+            else:
+                # Return just u and t as in the vib_undamped.py's solver
+                return u, t
+
+We provide the option that this ``solver`` function returns the same data
+as the ``solver`` function from the section :ref:`vib:impl1:solver` (if ``return_v``
+is ``False``), but we may return ``v`` along with ``u`` and ``t``.
+
+The error in the Taylor series expansion behind
+:eq:`vib:model2x2:Verlet:dueq` is :math:`{\mathcal{O}(\Delta t^3)}`, while the error
+in the central difference for :math:`v` is :math:`{\mathcal{O}(\Delta t^2)}`.  The overall
+error is then no better than :math:`{\mathcal{O}(\Delta t^2)}`, which can be verified
+empirically using the ``convergence_rates`` function from
+:ref:`vib:ode1:verify`:
+
+.. code-block:: python
+
+        >>> import vib_undamped_velocity_Verlet as m
+        >>> m.convergence_rates(4, solver_function=m.solver)
+        [2.0036366687367346, 2.0009497328124835, 2.000240105995295]
+
+.. The output confirms that the overall convergence rate is 2.
+

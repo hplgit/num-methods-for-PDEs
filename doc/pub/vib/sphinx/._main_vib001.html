@@ -1,0 +1,1802 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Finite difference discretization</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Finite difference methods for vibration problems" href="index.html" />
+    <link rel="next" title="Generalization: damping, nonlinear spring, and external excitation" href="._main_vib002.html" />
+    <link rel="prev" title="Finite difference methods for vibration problems" href="._main_vib000.html" />
+ 
+  
+   <style type="text/css">
+     div.admonition {
+       background-color: whiteSmoke;
+       border: 1px solid #bababa;
+     }
+   </style>
+  </head>
+
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_vib002.html" title="Generalization: damping, nonlinear spring, and external excitation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="._main_vib000.html" title="Finite difference methods for vibration problems"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Finite difference methods for vibration problems</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="finite-difference-discretization">
+<span id="vib-model1"></span><h1>Finite difference discretization<a class="headerlink" href="#finite-difference-discretization" title="Permalink to this headline">¶</a></h1>
+<p>Much of the numerical challenges with computing oscillatory
+solutions in ODEs and PDEs can be captured by the very simple
+ODE <span class="math">\(u'' + u =0\)</span> and this is therefore the starting point for
+method development, implementation, and analysis.</p>
+<div class="section" id="a-basic-model-for-vibrations">
+<h2>A basic model for vibrations<a class="headerlink" href="#a-basic-model-for-vibrations" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-0"></span><span class="target" id="index-1"></span><p id="index-2">A system that vibrates without damping and external forcing
+can be described by ODE problem</p>
+<div class="math" id="equation-vib:ode1">
+<span id="eq-vib-ode1"></span><span class="eqno">(1)</span>\[     u'' + \omega^2u = 0,\quad u(0)=I,\ u'(0)=0,\ t\in (0,T]
+     {\thinspace .}\]</div>
+<p>Here, <span class="math">\(\omega\)</span> and <span class="math">\(I\)</span> are given constants.
+The exact solution of <a href="#equation-vib:ode1">(1)</a> is</p>
+<span class="target" id="index-3"></span><span class="target" id="index-4"></span><div class="math" id="equation-vib:ode1:uex">
+<span id="eq-vib-ode1-uex"></span><span id="index-5"></span><span class="eqno">(2)</span>\[     u(t) = I\cos (\omega t)
+     {\thinspace .}\]</div>
+<p>That is, <span class="math">\(u\)</span> oscillates with constant amplitude <span class="math">\(I\)</span> and
+angular frequency <span class="math">\(\omega\)</span>.
+The corresponding period of oscillations (i.e., the time between two
+neighboring peaks in the cosine function) is <span class="math">\(P=2\pi/\omega\)</span>.
+The number of periods per second
+is <span class="math">\(f=\omega/(2\pi)\)</span> and measured in the unit Hz.
+Both <span class="math">\(f\)</span> and <span class="math">\(\omega\)</span> are referred to as frequency, but <span class="math">\(\omega\)</span>
+may be more precisely named angular frequency, measured in rad/s.</p>
+<p>In vibrating mechanical systems modeled by <a href="#equation-vib:ode1">(1)</a>, <span class="math">\(u(t)\)</span>
+very often represents a position or a displacement of a particular
+point in the system. The derivative <span class="math">\(u'(t)\)</span> then has the
+interpretation of the point&#8217;s velocity, and <span class="math">\(u''(t)\)</span> is the associated
+acceleration.  The model <a href="#equation-vib:ode1">(1)</a> is not only
+applicable to vibrating mechanical systems, but also to oscillations
+in electrical circuits.</p>
+</div>
+<div class="section" id="a-centered-finite-difference-scheme">
+<span id="vib-ode1-fdm"></span><h2>A centered finite difference scheme<a class="headerlink" href="#a-centered-finite-difference-scheme" title="Permalink to this headline">¶</a></h2>
+<p>To formulate a finite difference method for the model
+problem  <a href="#equation-vib:ode1">(1)</a> we follow the <a class="reference external" href="http://tinyurl.com/opdfafk/pub/sphinx-decay/main_decay.html#the-forward-euler-scheme">four steps</a> in <a class="reference internal" href="._main_vib002.html#ref1" id="id1">[Ref1]</a>.</p>
+<span class="target" id="index-6"></span><div class="section" id="step-1-discretizing-the-domain">
+<span id="index-7"></span><h3>Step 1: Discretizing the domain<a class="headerlink" href="#step-1-discretizing-the-domain" title="Permalink to this headline">¶</a></h3>
+<p>The domain is discretized by
+introducing a uniformly partitioned time mesh in the present problem.
+The points in the mesh are hence <span class="math">\(t_n=n\Delta t\)</span>, <span class="math">\(n=0,1,\ldots,N_t\)</span>,
+where <span class="math">\(\Delta t = T/N_t\)</span> is the constant length of the time steps.
+We introduce a mesh function <span class="math">\(u^n\)</span> for <span class="math">\(n=0,1,\ldots,N_t\)</span>, which
+approximates the exact solution at the mesh points. The mesh
+function will be computed from algebraic equations derived from
+the differential equation problem.</p>
+</div>
+<div class="section" id="step-2-fulfilling-the-equation-at-discrete-time-points">
+<h3>Step 2: Fulfilling the equation at discrete time points<a class="headerlink" href="#step-2-fulfilling-the-equation-at-discrete-time-points" title="Permalink to this headline">¶</a></h3>
+<p>The ODE is to be satisfied at each mesh point:</p>
+<div class="math" id="equation-vib:ode1:step2">
+<span id="eq-vib-ode1-step2"></span><span class="eqno">(3)</span>\[     u''(t_n) + \omega^2u(t_n) = 0,\quad n=1,\ldots,N_t
+     {\thinspace .}\]</div>
+<span class="target" id="index-8"></span></div>
+<div class="section" id="step-3-replacing-derivatives-by-finite-differences">
+<span id="index-9"></span><h3>Step 3: Replacing derivatives by finite differences<a class="headerlink" href="#step-3-replacing-derivatives-by-finite-differences" title="Permalink to this headline">¶</a></h3>
+<p>The derivative <span class="math">\(u''(t_n)\)</span> is to be replaced by a finite
+difference approximation. A common second-order accurate approximation
+to the second-order derivative is</p>
+<div class="math" id="equation-vib:ode1:step3">
+<span id="eq-vib-ode1-step3"></span><span class="eqno">(4)</span>\[     u''(t_n) \approx \frac{u^{n+1}-2u^n + u^{n-1}}{\Delta t^2}
+     {\thinspace .}\]</div>
+<p>Inserting <a href="#equation-vib:ode1:step3">(4)</a> in <a href="#equation-vib:ode1:step2">(3)</a>
+yields</p>
+<div class="math" id="equation-vib:ode1:step3b">
+<span id="eq-vib-ode1-step3b"></span><span class="eqno">(5)</span>\[     \frac{u^{n+1}-2u^n + u^{n-1}}{\Delta t^2} = -\omega^2 u^n
+     {\thinspace .}\]</div>
+<p>We also need to replace the derivative in the initial condition by
+a finite difference. Here we choose a centered difference, whose
+accuracy is similar to the centered difference we used for <span class="math">\(u''\)</span>:</p>
+<div class="math" id="equation-vib:ode1:step3c">
+<span id="eq-vib-ode1-step3c"></span><span class="eqno">(6)</span>\[     \frac{u^1-u^{-1}}{2\Delta t} = 0\]\[     {\thinspace .}\]</div>
+</div>
+<div class="section" id="step-4-formulating-a-recursive-algorithm">
+<h3>Step 4: Formulating a recursive algorithm<a class="headerlink" href="#step-4-formulating-a-recursive-algorithm" title="Permalink to this headline">¶</a></h3>
+<p>To formulate the computational algorithm, we assume that we
+have already computed <span class="math">\(u^{n-1}\)</span> and <span class="math">\(u^n\)</span> such that <span class="math">\(u^{n+1}\)</span> is the
+unknown value, which we can readily solve for:</p>
+<div class="math" id="equation-vib:ode1:step4">
+<span id="eq-vib-ode1-step4"></span><span class="eqno">(7)</span>\[     u^{n+1} = 2u^n - u^{n-1} - \Delta t^2\omega^2 u^n
+     {\thinspace .}\]</div>
+<p>The computational algorithm is simply to apply <a href="#equation-vib:ode1:step4">(7)</a>
+successively for <span class="math">\(n=1,2,\ldots,N_t-1\)</span>. This numerical scheme sometimes
+goes under the name
+Stormer&#8217;s
+method or <a class="reference external" href="http://en.wikipedia.org/wiki/Verlet_integration">Verlet integration</a>.</p>
+</div>
+<div class="section" id="computing-the-first-step">
+<h3>Computing the first step<a class="headerlink" href="#computing-the-first-step" title="Permalink to this headline">¶</a></h3>
+<p>We observe that <a href="#equation-vib:ode1:step4">(7)</a> cannot be used for <span class="math">\(n=0\)</span> since
+the computation of <span class="math">\(u^1\)</span> then involves the undefined value <span class="math">\(u^{-1}\)</span>
+at <span class="math">\(t=-\Delta t\)</span>. The discretization of the initial condition
+then come to rescue: <a href="#equation-vib:ode1:step3c">(6)</a> implies <span class="math">\(u^{-1} = u^1\)</span>
+and this relation can be combined with <a href="#equation-vib:ode1:step4">(7)</a>
+for <span class="math">\(n=1\)</span> to yield a value for <span class="math">\(u^1\)</span>:</p>
+<div class="math">
+\[u^1 = 2u^0 - u^{1} - \Delta t^2 \omega^2 u^0,\]</div>
+<p>which reduces to</p>
+<div class="math" id="equation-vib:ode1:step4b">
+<span id="eq-vib-ode1-step4b"></span><span class="eqno">(8)</span>\[     u^1 = u^0 - \frac{1}{2} \Delta t^2 \omega^2 u^0
+     {\thinspace .}\]</div>
+<p><a class="reference internal" href="._main_vib002.html#vib-exer-step4b-alt"><em>Exercise 5: Use a Taylor polynomial to compute </em></a> asks you to perform an alternative derivation
+and also to generalize the initial condition to <span class="math">\(u'(0)=V\neq 0\)</span>.</p>
+</div>
+<div class="section" id="the-computational-algorithm">
+<h3>The computational algorithm<a class="headerlink" href="#the-computational-algorithm" title="Permalink to this headline">¶</a></h3>
+<p>The steps for solving <a href="#equation-vib:ode1">(1)</a> becomes</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><span class="math">\(u^0=I\)</span></li>
+<li>compute <span class="math">\(u^1\)</span> from <a href="#equation-vib:ode1:step4b">(8)</a></li>
+<li>for <span class="math">\(n=1,2,\ldots,N_t-1\)</span>:</li>
+</ol>
+<blockquote>
+<div><ol class="arabic simple">
+<li>compute <span class="math">\(u^{n+1}\)</span> from <a href="#equation-vib:ode1:step4">(7)</a></li>
+</ol>
+</div></blockquote>
+</div></blockquote>
+<p>The algorithm is more precisely expressed directly in Python:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">t</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>  <span class="c"># mesh points in time</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>          <span class="c"># constant time step</span>
+<span class="n">u</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>           <span class="c"># solution</span>
+
+<span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">I</span>
+<span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">dt</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Nt</span><span class="p">):</span>
+    <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">-</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">dt</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="admonition-remark admonition">
+<p class="first admonition-title">Remark</p>
+<p class="last">In the code, we use <tt class="docutils literal"><span class="pre">w</span></tt> as the symbol for <span class="math">\(\omega\)</span>.
+The reason is that this author prefers <tt class="docutils literal"><span class="pre">w</span></tt> for readability
+and comparison with the mathematical <span class="math">\(\omega\)</span> instead of
+the full word <tt class="docutils literal"><span class="pre">omega</span></tt> as variable name.</p>
+</div>
+</div>
+<div class="section" id="operator-notation">
+<h3>Operator notation<a class="headerlink" href="#operator-notation" title="Permalink to this headline">¶</a></h3>
+<p>We may write the scheme using the compact difference notation
+(see
+<a class="reference external" href="http://tinyurl.com/opdfafk/pub/sphinx-decay/main_decay.html#compact-operator-notation-for-finite-differences">examples</a> in <a class="reference internal" href="._main_vib002.html#ref1" id="id2">[Ref1]</a>). The difference <a href="#equation-vib:ode1:step3">(4)</a> has the operator
+notation <span class="math">\([D_tD_t u]^n\)</span> such that we can write:</p>
+<div class="math" id="equation-vib:ode1:step4:op">
+<span id="eq-vib-ode1-step4-op"></span><span class="eqno">(9)</span>\[     [D_tD_t u  + \omega^2 u = 0]^n
+     {\thinspace .}\]</div>
+<p>Note that <span class="math">\([D_tD_t u]^n\)</span> means applying a central difference with step <span class="math">\(\Delta t/2\)</span> twice:</p>
+<div class="math">
+\[[D_t(D_t u)]^n = \frac{[D_t u]^{n+\frac{1}{2}} - [D_t u]^{n-\frac{1}{2}}}{\Delta t}\]</div>
+<p>which is written out as</p>
+<div class="math">
+\[\frac{1}{\Delta t}\left(\frac{u^{n+1}-u^n}{\Delta t} - \frac{u^{n}-u^{n-1}}{\Delta t}\right) = \frac{u^{n+1}-2u^n + u^{n-1}}{\Delta t^2}
+{\thinspace .}\]</div>
+<p>The discretization of initial conditions can in the operator notation
+be expressed as</p>
+<div class="math">
+\[[u = I]^0,\quad [D_{2t} u = 0]^0,\]</div>
+<p>where the operator <span class="math">\([D_{2t} u]^n\)</span> is defined as</p>
+<div class="math">
+\[[D_{2t} u]^n = \frac{u^{n+1} - u^{n-1}}{2\Delta t}
+{\thinspace .}\]</div>
+</div>
+</div>
+</div>
+<div class="section" id="implementation-1">
+<span id="vib-impl1"></span><h1>Implementation  (1)<a class="headerlink" href="#implementation-1" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="making-a-solver-function">
+<span id="vib-impl1-solver"></span><h2>Making a solver function<a class="headerlink" href="#making-a-solver-function" title="Permalink to this headline">¶</a></h2>
+<p>The algorithm from the previous section is readily translated to
+a complete Python function for computing (returning)
+<span class="math">\(u^0,u^1,\ldots,u^{N_t}\)</span> and <span class="math">\(t_0,t_1,\ldots,t_{N_t}\)</span>, given the
+input <span class="math">\(I\)</span>, <span class="math">\(\omega\)</span>, <span class="math">\(\Delta t\)</span>, and <span class="math">\(T\)</span>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">vib_empirical_analysis</span> <span class="kn">import</span> <span class="n">minmax</span><span class="p">,</span> <span class="n">periods</span><span class="p">,</span> <span class="n">amplitudes</span>
+
+<span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Solve u&#39;&#39; + w**2*u = 0 for t in (0,T], u(0)=I and u&#39;(0)=0,</span>
+<span class="sd">    by a central finite difference method with time step dt.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+    <span class="n">Nt</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="n">dt</span><span class="p">))</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Nt</span><span class="o">*</span><span class="n">dt</span><span class="p">,</span> <span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">I</span>
+    <span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">dt</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Nt</span><span class="p">):</span>
+        <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">-</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">dt</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">u</span><span class="p">,</span> <span class="n">t</span>
+</pre></div>
+</div>
+<p>A function for plotting the numerical and the exact solution is also
+convenient to have:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">u_exact</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">visualize</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
+    <span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="s">&#39;r--o&#39;</span><span class="p">)</span>
+    <span class="n">t_fine</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1001</span><span class="p">)</span>  <span class="c"># very fine mesh for u_e</span>
+    <span class="n">u_e</span> <span class="o">=</span> <span class="n">u_exact</span><span class="p">(</span><span class="n">t_fine</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
+    <span class="n">hold</span><span class="p">(</span><span class="s">&#39;on&#39;</span><span class="p">)</span>
+    <span class="n">plot</span><span class="p">(</span><span class="n">t_fine</span><span class="p">,</span> <span class="n">u_e</span><span class="p">,</span> <span class="s">&#39;b-&#39;</span><span class="p">)</span>
+    <span class="n">legend</span><span class="p">([</span><span class="s">&#39;numerical&#39;</span><span class="p">,</span> <span class="s">&#39;exact&#39;</span><span class="p">],</span> <span class="n">loc</span><span class="o">=</span><span class="s">&#39;upper left&#39;</span><span class="p">)</span>
+    <span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;t&#39;</span><span class="p">)</span>
+    <span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;u&#39;</span><span class="p">)</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">title</span><span class="p">(</span><span class="s">&#39;dt=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">dt</span><span class="p">)</span>
+    <span class="n">umin</span> <span class="o">=</span> <span class="mf">1.2</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">min</span><span class="p">();</span>  <span class="n">umax</span> <span class="o">=</span> <span class="o">-</span><span class="n">umin</span>
+    <span class="n">axis</span><span class="p">([</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">umin</span><span class="p">,</span> <span class="n">umax</span><span class="p">])</span>
+    <span class="n">savefig</span><span class="p">(</span><span class="s">&#39;vib1.png&#39;</span><span class="p">)</span>
+    <span class="n">savefig</span><span class="p">(</span><span class="s">&#39;vib1.pdf&#39;</span><span class="p">)</span>
+    <span class="n">savefig</span><span class="p">(</span><span class="s">&#39;vib1.eps&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A corresponding main program calling these functions for a simulation
+of a given number of periods (<tt class="docutils literal"><span class="pre">num_periods</span></tt>) may take the form</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">I</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">w</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">pi</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="mf">0.05</span>
+<span class="n">num_periods</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">P</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="n">w</span>    <span class="c">#  one period</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">P</span><span class="o">*</span><span class="n">num_periods</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+<span class="n">visualize</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Adjusting some of the input parameters on the command line can be
+handy. Here is a code segment using the <tt class="docutils literal"><span class="pre">ArgumentParser</span></tt> tool in
+the <tt class="docutils literal"><span class="pre">argparse</span></tt> module to define option value (<tt class="docutils literal"><span class="pre">--option</span> <span class="pre">value</span></tt>)
+pairs on the command line:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">argparse</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--I&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--w&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--dt&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--num_periods&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">a</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+<span class="n">I</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">num_periods</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">num_periods</span>
+</pre></div>
+</div>
+<p>A typical execution goes like</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python vib_undamped.py --num_periods 20 --dt 0.1
+</pre></div>
+</div>
+<div class="section" id="computing">
+<h3>Computing <span class="math">\(u'\)</span><a class="headerlink" href="#computing" title="Permalink to this headline">¶</a></h3>
+<p>In mechanical vibration applications one is often interested in
+computing the velocity <span class="math">\(v(t)=u'(t)\)</span> after <span class="math">\(u(t)\)</span> has been computed.
+This can be done by a central difference,</p>
+<div class="math">
+\[v(t_n)=u'(t_n) \approx v^n = \frac{u^{n+1}-u^{n-1}}{2\Delta t} = [D_{2t}u]^n
+{\thinspace .}\]</div>
+<p>This formula applies for all inner mesh points, <span class="math">\(n=1,\ldots,N_t-1\)</span>.
+For <span class="math">\(n=0\)</span> we have that <span class="math">\(v(0)\)</span> is given by the initial condition on <span class="math">\(u'(0)\)</span>,
+and for <span class="math">\(n=N_t\)</span> we can use a one-sided, backward difference:
+<span class="math">\(v^n=[D_t^-u]^n\)</span>.</p>
+<p>Appropriate vectorized Python code becomes</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+<span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span> <span class="o">-</span> <span class="n">u</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span>  <span class="c"># internal mesh points</span>
+<span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">V</span>                           <span class="c"># Given boundary condition u&#39;(0)</span>
+<span class="n">v</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">u</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="n">dt</span>         <span class="c"># backward difference</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="verification-1">
+<span id="vib-ode1-verify"></span><h2>Verification  (1)<a class="headerlink" href="#verification-1" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="manual-calculation">
+<h3>Manual calculation<a class="headerlink" href="#manual-calculation" title="Permalink to this headline">¶</a></h3>
+<p>The simplest type of verification, which is also instructive for understanding
+the algorithm, is to compute <span class="math">\(u^1\)</span>, <span class="math">\(u^2\)</span>, and <span class="math">\(u^3\)</span>
+with the aid of a calculator
+and make a function for comparing these results with those from the <tt class="docutils literal"><span class="pre">solver</span></tt>
+function. We refer to the <tt class="docutils literal"><span class="pre">test_three_steps</span></tt> function in
+the file <a class="reference external" href="http://tinyurl.com/nm5587k/vib/vib_undamped.py">vib_undamped.py</a>
+for details.</p>
+</div>
+<div class="section" id="testing-very-simple-solutions">
+<h3>Testing very simple solutions<a class="headerlink" href="#testing-very-simple-solutions" title="Permalink to this headline">¶</a></h3>
+<p>Constructing test problems where the exact solution is constant or
+linear helps initial debugging and verification as one expects any
+reasonable numerical method to reproduce such solutions to machine
+precision.  Second-order accurate methods will often also reproduce a
+quadratic solution.  Here <span class="math">\([D_tD_tt^2]^n=2\)</span>, which is the exact
+result. A solution <span class="math">\(u=t^2\)</span> leads to <span class="math">\(u''+\omega^2 u=2 + (\omega
+t)^2\neq 0\)</span>.  We must therefore add a source in the equation: <span class="math">\(u'' +
+\omega^2 u = f\)</span> to allow a solution <span class="math">\(u=t^2\)</span> for <span class="math">\(f=(\omega t)^2\)</span>.  By
+simple insertion we can show that the mesh function <span class="math">\(u^n = t_n^2\)</span> is
+also a solution of the discrete equations.  <a class="reference internal" href="._main_vib002.html#vib-exer-undamped-verify-linquad"><em>Problem 1: Use linear/quadratic functions for verification</em></a> asks you to carry out all
+details with showing that linear and quadratic solutions are solutions
+of the discrete equations. Such results are very useful for debugging
+and verification.</p>
+</div>
+<div class="section" id="checking-convergence-rates">
+<h3>Checking convergence rates<a class="headerlink" href="#checking-convergence-rates" title="Permalink to this headline">¶</a></h3>
+<p>Empirical computation of convergence rates, as explained for a simple <a class="reference external" href="http://tinyurl.com/opdfafk/pub/sphinx-decay/main_decay.html#computing-convergence-rates">ODE model</a>,
+yields a good method for verification. The function below</p>
+<blockquote>
+<div><ul class="simple">
+<li>performs <span class="math">\(m\)</span> simulations with halved time steps: <span class="math">\(2^{-i}\Delta t\)</span>, <span class="math">\(i=0,\ldots,m-1\)</span>,</li>
+<li>computes the <span class="math">\(L^2\)</span> norm of the error,
+<span class="math">\(E=\sqrt{2^{-i}\Delta t\sum_{n=0}^{N_t-1}(u^n-{u_{\small\mbox{e}}}(t_n))^2}\)</span> in each case,</li>
+<li>estimates the convergence rates <span class="math">\(r_i\)</span> based on two consecutive
+experiments <span class="math">\((\Delta t_{i-1}, E_{i-1})\)</span> and <span class="math">\((\Delta t_{i}, E_{i})\)</span>,
+assuming <span class="math">\(E_i=C\Delta t_i^{r_i}\)</span> and <span class="math">\(E_{i-1}=C\Delta t_{i-1}^{r_i}\)</span>.
+From these equations it follows that
+<span class="math">\(r_{i-1} = \ln (E_{i-1}/E_i)/\ln (\Delta t_{i-1}/\Delta t_i)\)</span>, for
+<span class="math">\(i=1,\ldots,m-1\)</span>.</li>
+</ul>
+</div></blockquote>
+<p>All the implementational details appear below.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">convergence_rates</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">solver_function</span><span class="p">,</span> <span class="n">num_periods</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return m-1 empirical estimates of the convergence rate</span>
+<span class="sd">    based on m simulations, where the time step is halved</span>
+<span class="sd">    for each simulation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="mf">0.35</span><span class="p">;</span> <span class="n">I</span> <span class="o">=</span> <span class="mf">0.3</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="n">w</span><span class="o">/</span><span class="mi">30</span>  <span class="c"># 30 time step per period 2*pi/w</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="n">w</span><span class="o">*</span><span class="n">num_periods</span>
+    <span class="n">dt_values</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">E_values</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver_function</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+        <span class="n">u_e</span> <span class="o">=</span> <span class="n">u_exact</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">E</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">dt</span><span class="o">*</span><span class="nb">sum</span><span class="p">((</span><span class="n">u_e</span><span class="o">-</span><span class="n">u</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">dt_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+        <span class="n">E_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">E</span><span class="p">)</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span><span class="o">/</span><span class="mi">2</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="p">[</span><span class="n">log</span><span class="p">(</span><span class="n">E_values</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">E_values</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">/</span>
+         <span class="n">log</span><span class="p">(</span><span class="n">dt_values</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">dt_values</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">r</span>
+</pre></div>
+</div>
+<p>The returned <tt class="docutils literal"><span class="pre">r</span></tt> list has its values equal to 2.00, which is in
+excellent agreement with what is expected from the second-order finite
+difference approximation <span class="math">\([D_tD_tu]^n\)</span> and other theoretical measures
+of the error in the numerical method.  The final <tt class="docutils literal"><span class="pre">r[-1]</span></tt> value is a
+good candidate for a unit test:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_convergence_rates</span><span class="p">():</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">convergence_rates</span><span class="p">(</span><span class="n">m</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">solver_function</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span> <span class="n">num_periods</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+    <span class="c"># Accept rate to 1 decimal place</span>
+    <span class="n">nt</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">places</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The complete code appears in the file <tt class="docutils literal"><span class="pre">vib_undamped.py</span></tt>.</p>
+</div>
+</div>
+</div>
+<div class="section" id="long-time-simulations">
+<span id="vib-ode1-longseries"></span><h1>Long time simulations<a class="headerlink" href="#long-time-simulations" title="Permalink to this headline">¶</a></h1>
+<p>Figure <a class="reference internal" href="#vib-ode1-2dt"><em>Effect of halving the time step</em></a> shows a comparison of the exact and numerical
+solution for <span class="math">\(\Delta t=0.1, 0.05\)</span> and <span class="math">\(w=2\pi\)</span>.
+From the plot we make the following observations:</p>
+<blockquote>
+<div><ul class="simple">
+<li>The numerical solution seems to have correct amplitude.</li>
+<li>There is a phase error which is reduced by reducing the time step.</li>
+<li>The total phase error grows with time.</li>
+</ul>
+</div></blockquote>
+<p>By phase error we mean that the peaks of the numerical solution have incorrect
+positions compared with the peaks of the exact cosine solution. This
+effect can be understood as if also the numerical solution is on
+the form <span class="math">\(I\cos\tilde\omega t\)</span>, but where <span class="math">\(\tilde\omega\)</span> is not exactly
+equal to <span class="math">\(\omega\)</span>. Later, we shall mathematically
+quantify this numerical frequency <span class="math">\(\tilde\omega\)</span>.</p>
+<div class="figure" id="vib-ode1-2dt">
+<a class="reference internal image-reference" href="_images/vib_phase_err1.png"><img alt="_images/vib_phase_err1.png" src="_images/vib_phase_err1.png" style="width: 600px;" /></a>
+<p class="caption"><em>Effect of halving the time step</em></p>
+</div>
+<div class="section" id="using-a-moving-plot-window">
+<h2>Using a moving plot window<a class="headerlink" href="#using-a-moving-plot-window" title="Permalink to this headline">¶</a></h2>
+<p>In vibration problems it is often of interest to investigate the system&#8217;s
+behavior over long time intervals. Errors in the phase may then show
+up as crucial. Let us investigate long
+time series by introducing a moving plot window that can move along with
+the <span class="math">\(p\)</span> most recently computed periods of the solution. The
+<a class="reference external" href="http://code.google.com/p/scitools">SciTools</a> package contains
+a convenient tool for this: <tt class="docutils literal"><span class="pre">MovingPlotWindow</span></tt>. Typing
+<tt class="docutils literal"><span class="pre">pydoc</span> <span class="pre">scitools.MovingPlotWindow</span></tt> shows a demo and description of usage.
+The function below illustrates the usage and is invoked in the
+<tt class="docutils literal"><span class="pre">vib_undamped.py</span></tt> code if the number of periods in the simulation exceeds
+10:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">visualize_front</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">savefig</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Visualize u and the exact solution vs t, using a</span>
+<span class="sd">    moving plot window and continuous drawing of the</span>
+<span class="sd">    curves as they evolve in time.</span>
+<span class="sd">    Makes it easy to plot very long time series.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">scitools.std</span> <span class="kn">as</span> <span class="nn">st</span>
+    <span class="kn">from</span> <span class="nn">scitools.MovingPlotWindow</span> <span class="kn">import</span> <span class="n">MovingPlotWindow</span>
+
+    <span class="n">P</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="n">w</span>  <span class="c"># one period</span>
+    <span class="n">umin</span> <span class="o">=</span> <span class="mf">1.2</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">min</span><span class="p">();</span>  <span class="n">umax</span> <span class="o">=</span> <span class="o">-</span><span class="n">umin</span>
+    <span class="n">plot_manager</span> <span class="o">=</span> <span class="n">MovingPlotWindow</span><span class="p">(</span>
+        <span class="n">window_width</span><span class="o">=</span><span class="mi">8</span><span class="o">*</span><span class="n">P</span><span class="p">,</span>
+        <span class="n">dt</span><span class="o">=</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">yaxis</span><span class="o">=</span><span class="p">[</span><span class="n">umin</span><span class="p">,</span> <span class="n">umax</span><span class="p">],</span>
+        <span class="n">mode</span><span class="o">=</span><span class="s">&#39;continuous drawing&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">u</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">plot_manager</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">plot_manager</span><span class="o">.</span><span class="n">first_index_in_plot</span>
+            <span class="n">st</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">s</span><span class="p">:</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="n">s</span><span class="p">:</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="s">&#39;r-1&#39;</span><span class="p">,</span>
+                    <span class="n">t</span><span class="p">[</span><span class="n">s</span><span class="p">:</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">I</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">t</span><span class="p">)[</span><span class="n">s</span><span class="p">:</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="s">&#39;b-1&#39;</span><span class="p">,</span>
+                    <span class="n">title</span><span class="o">=</span><span class="s">&#39;t=</span><span class="si">%6.3f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">],</span>
+                    <span class="n">axis</span><span class="o">=</span><span class="n">plot_manager</span><span class="o">.</span><span class="n">axis</span><span class="p">(),</span>
+                    <span class="n">show</span><span class="o">=</span><span class="ow">not</span> <span class="n">savefig</span><span class="p">)</span> <span class="c"># drop window if savefig</span>
+            <span class="k">if</span> <span class="n">savefig</span><span class="p">:</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="s">&#39;tmp_vib</span><span class="si">%04d</span><span class="s">.png&#39;</span> <span class="o">%</span> <span class="n">n</span>
+                <span class="n">st</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+                <span class="k">print</span> <span class="s">&#39;making plot file&#39;</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="s">&#39;at t=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="n">plot_manager</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Running</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python vib_undamped.py --dt 0.05 --num_periods 40
+</pre></div>
+</div>
+<p>makes the simulation last for 40 periods of the cosine function.
+With the moving plot window we can follow the numerical and exact
+solution as time progresses, and we see from this demo that
+the phase error is small in the beginning, but then becomes more
+prominent with time. Running <tt class="docutils literal"><span class="pre">vib_undamped.py</span></tt> with <span class="math">\(\Delta t=0.1\)</span>
+clearly shows that the phase errors become significant even earlier
+in the time series and destroys the solution.</p>
+</div>
+<div class="section" id="making-a-video">
+<h2>Making a video<a class="headerlink" href="#making-a-video" title="Permalink to this headline">¶</a></h2>
+<p id="index-10">The <tt class="docutils literal"><span class="pre">visualize_front</span></tt> function stores all the plots in
+files whose names are numbered:
+<tt class="docutils literal"><span class="pre">tmp_vib0000.png</span></tt>, <tt class="docutils literal"><span class="pre">tmp_vib0001.png</span></tt>, <tt class="docutils literal"><span class="pre">tmp_vib0002.png</span></tt>,
+and so on. From these files we may make a movie. The Flash
+format is popular,</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; avconv -r 12 -i tmp_vib%04d.png -c:v flv movie.flv
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">avconv</span></tt> program can be replaced by the <tt class="docutils literal"><span class="pre">ffmpeg</span></tt> program in
+the above command if desired. The <tt class="docutils literal"><span class="pre">-r</span></tt> option should come first and
+describes the number of frames per second in the movie. The
+<tt class="docutils literal"><span class="pre">-i</span></tt> option describes the name of the plot files.
+Other formats can be generated by changing the video codec
+and equipping the video file with the right extension:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="18%" />
+<col width="82%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Format</th>
+<th class="head">Codec and filename</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Flash</td>
+<td><tt class="docutils literal"><span class="pre">-c:v</span> <span class="pre">flv</span> <span class="pre">movie.flv</span></tt></td>
+</tr>
+<tr class="row-odd"><td>MP4</td>
+<td><tt class="docutils literal"><span class="pre">-c:v</span> <span class="pre">libx264</span> <span class="pre">movie.mp4</span></tt></td>
+</tr>
+<tr class="row-even"><td>Webm</td>
+<td><tt class="docutils literal"><span class="pre">-c:v</span> <span class="pre">libvpx</span> <span class="pre">movie.webm</span></tt></td>
+</tr>
+<tr class="row-odd"><td>Ogg</td>
+<td><tt class="docutils literal"><span class="pre">-c:v</span> <span class="pre">libtheora</span> <span class="pre">movie.ogg</span></tt></td>
+</tr>
+</tbody>
+</table>
+<p>The video file can be played by some video player like <tt class="docutils literal"><span class="pre">vlc</span></tt>, <tt class="docutils literal"><span class="pre">mplayer</span></tt>,
+<tt class="docutils literal"><span class="pre">gxine</span></tt>, or <tt class="docutils literal"><span class="pre">totem</span></tt>, e.g.,</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; vlc movie.webm
+</pre></div>
+</div>
+<p>A web page can also be used to play the movie. Today&#8217;s standard is
+to use the HTML5 <tt class="docutils literal"><span class="pre">video</span></tt> tag:</p>
+<div class="highlight-html"><div class="highlight"><pre><span class="nt">&lt;video</span> <span class="na">autoplay</span> <span class="na">loop</span> <span class="na">controls</span>
+       <span class="na">width=</span><span class="s">&#39;640&#39;</span> <span class="na">height=</span><span class="s">&#39;365&#39;</span> <span class="na">preload=</span><span class="s">&#39;none&#39;</span><span class="nt">&gt;</span>
+<span class="nt">&lt;source</span> <span class="na">src=</span><span class="s">&#39;movie.webm&#39;</span>  <span class="na">type=</span><span class="s">&#39;video/webm; codecs=&quot;vp8, vorbis&quot;&#39;</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/video&gt;</span>
+</pre></div>
+</div>
+<div class="admonition-caution-number-the-plot-files-correctly admonition">
+<p class="first admonition-title">Caution: number the plot files correctly</p>
+<p class="last">To ensure that the individual plot frames are shown in correct order,
+it is important to number the files with zero-padded numbers
+(0000, 0001, 0002, etc.). The printf format <tt class="docutils literal"><span class="pre">%04d</span></tt> specifies an
+integer in a field of width 4, padded with zeros from the left.
+A simple Unix wildcard file specification like <tt class="docutils literal"><span class="pre">tmp_vib*.png</span></tt>
+will then list the frames in the right order. If the numbers in the
+filenames were not zero-padded, the frame <tt class="docutils literal"><span class="pre">tmp_vib11.png</span></tt> would appear
+before <tt class="docutils literal"><span class="pre">tmp_vib2.png</span></tt> in the movie.</p>
+</div>
+</div>
+<div class="section" id="using-a-line-by-line-ascii-plotter">
+<h2>Using a line-by-line ascii plotter<a class="headerlink" href="#using-a-line-by-line-ascii-plotter" title="Permalink to this headline">¶</a></h2>
+<p>Plotting functions vertically, line by line, in the terminal window
+using ascii characters only is a simple, fast, and convenient
+visualization technique for long time series (the time arrow points
+downward). The tool
+<tt class="docutils literal"><span class="pre">scitools.avplotter.Plotter</span></tt> makes it easy to create such plots:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">visualize_front_ascii</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot u and the exact solution vs t line by line in a</span>
+<span class="sd">    terminal window (only using ascii characters).</span>
+<span class="sd">    Makes it easy to plot very long time series.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">scitools.avplotter</span> <span class="kn">import</span> <span class="n">Plotter</span>
+    <span class="kn">import</span> <span class="nn">time</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="n">w</span>
+    <span class="n">umin</span> <span class="o">=</span> <span class="mf">1.2</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">min</span><span class="p">();</span>  <span class="n">umax</span> <span class="o">=</span> <span class="o">-</span><span class="n">umin</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">Plotter</span><span class="p">(</span><span class="n">ymin</span><span class="o">=</span><span class="n">umin</span><span class="p">,</span> <span class="n">ymax</span><span class="o">=</span><span class="n">umax</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">symbols</span><span class="o">=</span><span class="s">&#39;+o&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">u</span><span class="p">)):</span>
+        <span class="k">print</span> <span class="n">p</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">I</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">])),</span> \
+              <span class="s">&#39;</span><span class="si">%.1f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">/</span><span class="n">P</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">fps</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+    <span class="nb">raw_input</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The call <tt class="docutils literal"><span class="pre">p.plot</span></tt> returns a line of text, with the <span class="math">\(t\)</span> axis marked and
+a symbol <tt class="docutils literal"><span class="pre">+</span></tt> for the first function (<tt class="docutils literal"><span class="pre">u</span></tt>) and <tt class="docutils literal"><span class="pre">o</span></tt> for the second
+function (the exact solution). Here we append this text
+a time counter reflecting how many periods the current time point
+corresponds to. A typical output (<span class="math">\(\omega =2\pi\)</span>, <span class="math">\(\Delta t=0.05\)</span>)
+looks like this:</p>
+<div class="highlight-text"><div class="highlight"><pre>                         |                       o+      14.0
+                         |                      + o      14.0
+                         |                  +    o       14.1
+                         |             +     o           14.1
+                         |     +        o                14.2
+                        +|       o                       14.2
+                +        |                               14.2
+         +       o       |                               14.3
+    +     o              |                               14.4
+ +   o                   |                               14.4
++o                       |                               14.5
+o +                      |                               14.5
+ o    +                  |                               14.6
+     o      +            |                               14.6
+          o        +     |                               14.7
+                 o       | +                             14.7
+                         |        +                      14.8
+                         |       o       +               14.8
+                         |              o     +          14.9
+                         |                   o   +       14.9
+                         |                       o+      15.0
+</pre></div>
+</div>
+</div>
+<div class="section" id="empirical-analysis-of-the-solution">
+<span id="vib-ode1-empirical"></span><h2>Empirical analysis of the solution<a class="headerlink" href="#empirical-analysis-of-the-solution" title="Permalink to this headline">¶</a></h2>
+<p>For oscillating functions like those in Figure <a class="reference internal" href="#vib-ode1-2dt"><em>Effect of halving the time step</em></a> we may
+compute the amplitude and frequency (or period) empirically.
+That is, we run through the discrete solution points <span class="math">\((t_n, u_n)\)</span> and
+find all maxima and minima points. The distance between two consecutive
+maxima (or minima) points can be used as estimate of the local period,
+while half the difference between the <span class="math">\(u\)</span> value at a maximum and a nearby
+minimum gives an estimate of the local amplitude.</p>
+<p>The local maxima are the points where</p>
+<div class="math">
+\[\begin{split}u^{n-1} &lt; u^n &gt; u^{n+1},\quad n=1,\ldots,N_t-1,\end{split}\]</div>
+<p>and the local minima are recognized by</p>
+<div class="math">
+\[\begin{split}u^{n-1} &gt; u^n &lt; u^{n+1},\quad n=1,\ldots,N_t-1
+{\thinspace .}\end{split}\]</div>
+<p>In computer code this becomes</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">minmax</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">):</span>
+    <span class="n">minima</span> <span class="o">=</span> <span class="p">[];</span> <span class="n">maxima</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">u</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">minima</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">maxima</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">minima</span><span class="p">,</span> <span class="n">maxima</span>
+</pre></div>
+</div>
+<p>Note that the returned objects are list of tuples.</p>
+<p>Let <span class="math">\((t_i, e_i)\)</span>, <span class="math">\(i=0,\ldots,M-1\)</span>, be the sequence of all
+the <span class="math">\(M\)</span> maxima points, where <span class="math">\(t_i\)</span>
+is the time value and <span class="math">\(e_i\)</span> the corresponding <span class="math">\(u\)</span> value.
+The local period can be defined as <span class="math">\(p_i=t_{i+1}-t_i\)</span>.
+With Python syntax this reads</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">periods</span><span class="p">(</span><span class="n">maxima</span><span class="p">):</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="p">[</span><span class="n">extrema</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">maxima</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+         <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">maxima</span><span class="p">))]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The list <tt class="docutils literal"><span class="pre">p</span></tt> created by a list comprehension is converted to an array
+since we probably want to compute with it, e.g., find the corresponding
+frequencies <tt class="docutils literal"><span class="pre">2*pi/p</span></tt>.</p>
+<p>Having the minima and the maxima, the local amplitude can be
+calculated as the difference between two neighboring minimum and
+maximum points:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">amplitudes</span><span class="p">(</span><span class="n">minima</span><span class="p">,</span> <span class="n">maxima</span><span class="p">):</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="p">[(</span><span class="nb">abs</span><span class="p">(</span><span class="n">maxima</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">minima</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="mi">1</span><span class="p">]))</span><span class="o">/</span><span class="mf">2.0</span>
+         <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">minima</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="n">maxima</span><span class="p">)))]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The code segments are found in the file <a class="reference external" href="http://tinyurl.com/nm5587k/vib/vib_empirical_analysis.py">vib_empirical_analysis.py</a>.</p>
+<p>Visualization of the periods <tt class="docutils literal"><span class="pre">p</span></tt> or the amplitudes <tt class="docutils literal"><span class="pre">a</span></tt>
+it is most conveniently done with just a counter
+on the horizontal axis, since <tt class="docutils literal"><span class="pre">a[i]</span></tt> and <tt class="docutils literal"><span class="pre">p[i]</span></tt> correspond to
+the <span class="math">\(i\)</span>-th amplitude estimate and the <span class="math">\(i\)</span>-th period estimate, respectively.
+There is no unique time point associated with either of these estimate
+since values at two different time points were used in the
+computations.</p>
+<p>In the analysis of very long time series, it is advantageous to
+compute and plot <tt class="docutils literal"><span class="pre">p</span></tt> and <tt class="docutils literal"><span class="pre">a</span></tt> instead of <span class="math">\(u\)</span> to get an impression of
+the development of the oscillations.</p>
+</div>
+</div>
+<div class="section" id="analysis-of-the-numerical-scheme">
+<span id="vib-ode1-analysis"></span><h1>Analysis of the numerical scheme<a class="headerlink" href="#analysis-of-the-numerical-scheme" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="deriving-a-solution-of-the-numerical-scheme">
+<h2>Deriving a solution of the numerical scheme<a class="headerlink" href="#deriving-a-solution-of-the-numerical-scheme" title="Permalink to this headline">¶</a></h2>
+<p>After having seen the phase error grow with time in the previous
+section, we shall now quantify this error through mathematical
+analysis.  The key tool in the analysis will be to establish an exact
+solution of the discrete equations.  The difference equation
+<a href="#equation-vib:ode1:step4">(7)</a> has constant coefficients and is
+homogeneous. The solution is then <span class="math">\(u^n=CA^n\)</span>, where <span class="math">\(A\)</span> is some number
+to be determined from the differential equation and <span class="math">\(C\)</span> is determined
+from the initial condition (<span class="math">\(C=I\)</span>).  Recall that <span class="math">\(n\)</span> in <span class="math">\(u^n\)</span> is a
+superscript labeling the time level, while <span class="math">\(n\)</span> in <span class="math">\(A^n\)</span> is an
+exponent.  With oscillating functions as solutions, the algebra will
+be considerably simplified if we seek an <span class="math">\(A\)</span> on the form</p>
+<div class="math">
+\[A=e^{i\tilde\omega \Delta t},\]</div>
+<p>and solve for the numerical frequency <span class="math">\(\tilde\omega\)</span> rather than
+<span class="math">\(A\)</span>. Note that <span class="math">\(i=\sqrt{-1}\)</span> is the imaginary unit. (Using a
+complex exponential function gives simpler arithmetics than working
+with a sine or cosine function.)
+We have</p>
+<div class="math">
+\[A^n = e^{i\tilde\omega \Delta t\, n}=e^{i\tilde\omega t} =
+\cos (\tilde\omega t) + i\sin(\tilde \omega t)
+{\thinspace .}\]</div>
+<p>The physically relevant numerical solution can
+be taken as the real part of this complex expression.</p>
+<p>The calculations goes as</p>
+<div class="math">
+\[\begin{split}[D_tD_t u]^n &amp;= \frac{u^{n+1} - 2u^n + u^{n-1}}{\Delta t^2}\\
+&amp;= I\frac{A^{n+1} - 2A^n + A^{n-1}}{\Delta t^2}\\
+&amp;= I\frac{\exp{(i\tilde\omega(t+\Delta t))} - 2\exp{(i\tilde\omega t)} + \exp{(i\tilde\omega(t-\Delta t))}}{\Delta t^2}\\
+&amp;= I\exp{(i\tilde\omega t)}\frac{1}{\Delta t^2}\left(\exp{(i\tilde\omega(\Delta t))} + \exp{(i\tilde\omega(-\Delta t))} - 2\right)\\
+&amp;= I\exp{(i\tilde\omega t)}\frac{2}{\Delta t^2}\left(\cosh(i\tilde\omega\Delta t) -1 \right)\\
+&amp;= I\exp{(i\tilde\omega t)}\frac{2}{\Delta t^2}\left(\cos(\tilde\omega\Delta t) -1 \right)\\
+&amp;= -I\exp{(i\tilde\omega t)}\frac{4}{\Delta t^2}\sin^2(\frac{\tilde\omega\Delta t}{2})\end{split}\]</div>
+<p>The last line follows from the relation
+<span class="math">\(\cos x - 1 = -2\sin^2(x/2)\)</span> (try <tt class="docutils literal"><span class="pre">cos(x)-1</span></tt> in
+<a class="reference external" href="http://www.wolframalpha.com">wolframalpha.com</a> to see the formula).</p>
+<p>The scheme <a href="#equation-vib:ode1:step4">(7)</a>
+with <span class="math">\(u^n=Ie^{i\omega\tilde\Delta t\, n}\)</span> inserted now gives</p>
+<div class="math">
+\[-Ie^{i\tilde\omega t}\frac{4}{\Delta t^2}\sin^2(\frac{\tilde\omega\Delta t}{2})
++ \omega^2 Ie^{i\tilde\omega t} = 0,\]</div>
+<p>which after dividing by <span class="math">\(Ie^{i\tilde\omega t}\)</span> results in</p>
+<div class="math">
+\[\frac{4}{\Delta t^2}\sin^2(\frac{\tilde\omega\Delta t}{2}) = \omega^2
+{\thinspace .}\]</div>
+<p>The first step in solving for the unknown <span class="math">\(\tilde\omega\)</span> is</p>
+<div class="math">
+\[\sin^2(\frac{\tilde\omega\Delta t}{2}) = \left(\frac{\omega\Delta t}{2}\right)^2
+{\thinspace .}\]</div>
+<p>Then, taking the square root, applying the inverse sine function, and
+multiplying by <span class="math">\(2/\Delta t\)</span>, results in</p>
+<div class="math" id="equation-vib:ode1:tildeomega">
+<span id="eq-vib-ode1-tildeomega"></span><span class="eqno">(10)</span>\[     \tilde\omega = \pm \frac{2}{\Delta t}\sin^{-1}\left(\frac{\omega\Delta t}{2}\right)
+     {\thinspace .}\]</div>
+<p>The first observation of <a href="#equation-vib:ode1:tildeomega">(10)</a> tells that
+there is a phase error since the numerical frequency <span class="math">\(\tilde\omega\)</span>
+never equals the exact frequency <span class="math">\(\omega\)</span>. But how good is
+the approximation <a href="#equation-vib:ode1:tildeomega">(10)</a>? That is, what
+is the error <span class="math">\(\omega - \tilde\omega\)</span> or <span class="math">\(\tilde\omega/\omega\)</span>?
+Taylor series expansion
+for small <span class="math">\(\Delta t\)</span> may give an expression that is easier to understand
+than the complicated function in <a href="#equation-vib:ode1:tildeomega">(10)</a>:</p>
+<div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dt</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;dt w&#39;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">w_tilde_e</span> <span class="o">=</span> <span class="mi">2</span><span class="o">/</span><span class="n">dt</span><span class="o">*</span><span class="n">asin</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">dt</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">w_tilde_series</span> <span class="o">=</span> <span class="n">w_tilde_e</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="k">print</span> <span class="n">w_tilde_series</span>
+<span class="n">w</span> <span class="o">+</span> <span class="n">dt</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">3</span><span class="o">/</span><span class="mi">24</span> <span class="o">+</span> <span class="n">O</span><span class="p">(</span><span class="n">dt</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This means that</p>
+<div class="math" id="equation-vib:ode1:tildeomega:series">
+<span id="eq-vib-ode1-tildeomega-series"></span><span class="eqno">(11)</span>\[     \tilde\omega = \omega\left( 1 + \frac{1}{24}\omega^2\Delta t^2\right)
+     + {\mathcal{O}(\Delta t^4)}
+     {\thinspace .}\]</div>
+<p>The error in the numerical frequency is of second-order in
+<span class="math">\(\Delta t\)</span>, and the error vanishes as <span class="math">\(\Delta t\rightarrow 0\)</span>.
+We see that <span class="math">\(\tilde\omega &gt; \omega\)</span> since the term <span class="math">\(\omega^3\Delta t^2/24 &gt;0\)</span>
+and this is by far the biggest term in the series expansion for small
+<span class="math">\(\omega\Delta t\)</span>. A numerical frequency that is too large gives an oscillating
+curve that oscillates too fast and therefore &#8220;lags behind&#8221; the exact
+oscillations, a feature that can be seen in the plots.</p>
+<p>Figure <a class="reference internal" href="#vib-ode1-tildeomega-plot"><em>Exact discrete frequency and its second-order series expansion</em></a> plots the discrete frequency
+<a href="#equation-vib:ode1:tildeomega">(10)</a>
+and its approximation <a href="#equation-vib:ode1:tildeomega:series">(11)</a> for <span class="math">\(\omega =1\)</span> (based
+on the program <a class="reference external" href="http://tinyurl.com/nm5587k/vib/vib_plot_freq.py">vib_plot_freq.py</a>).
+Although <span class="math">\(\tilde\omega\)</span> is a function of <span class="math">\(\Delta t\)</span> in
+<a href="#equation-vib:ode1:tildeomega:series">(11)</a>,
+it is misleading to think of <span class="math">\(\Delta t\)</span> as the important
+discretization parameter. It is the product <span class="math">\(\omega\Delta t\)</span> that is
+the key discretization parameter. This quantity reflects the
+<em>number of time steps per period</em> of the oscillations.
+To see this, we set <span class="math">\(P=N_P\Delta t\)</span>, where <span class="math">\(P\)</span> is the length of
+a period, and <span class="math">\(N_P\)</span> is the number of time steps during a period.
+Since <span class="math">\(P\)</span> and <span class="math">\(\omega\)</span> are related by <span class="math">\(P=2\pi/\omega\)</span>,
+we get that <span class="math">\(\omega\Delta t = 2\pi/N_P\)</span>, which shows that
+<span class="math">\(\omega\Delta t\)</span> is directly related to <span class="math">\(N_P\)</span>.</p>
+<p>The plot shows
+that at least <span class="math">\(N_P\sim 25-30\)</span> points per period are necessary for reasonable
+accuracy, but this depends on the length of the simulation (<span class="math">\(T\)</span>) as
+the total phase error due to the frequency error grows linearly with time
+(see <a class="reference internal" href="._main_vib002.html#vib-exer-phase-err-growth"><em>Exercise 2: Show linear growth of the phase with time</em></a>).</p>
+<div class="figure" id="vib-ode1-tildeomega-plot">
+<a class="reference internal image-reference" href="_images/discrete_freq.png"><img alt="_images/discrete_freq.png" src="_images/discrete_freq.png" style="width: 400px;" /></a>
+<p class="caption"><em>Exact discrete frequency and its second-order series expansion</em></p>
+</div>
+</div>
+<div class="section" id="exact-discrete-solution">
+<span id="vib-ode1-analysis-sol"></span><h2>Exact discrete solution<a class="headerlink" href="#exact-discrete-solution" title="Permalink to this headline">¶</a></h2>
+<p>Perhaps more important than the <span class="math">\(\tilde\omega = \omega + {\cal O}(\Delta t^2)\)</span>
+result found above is the fact that we have an exact discrete solution of
+the problem:</p>
+<div class="math" id="equation-vib:ode1:un:exact">
+<span id="eq-vib-ode1-un-exact"></span><span class="eqno">(12)</span>\[     u^n = I\cos\left(\tilde\omega n\Delta t\right),\quad
+     \tilde\omega = \frac{2}{\Delta t}\sin^{-1}\left(\frac{\omega\Delta t}{2}\right)
+     {\thinspace .}\]</div>
+<p>We can then compute the error mesh function</p>
+<div class="math" id="equation-vib:ode1:en">
+<span id="eq-vib-ode1-en"></span><span class="eqno">(13)</span>\[     e^n = {u_{\small\mbox{e}}}(t_n) - u^n =
+     I\cos\left(\omega n\Delta t\right) - I\cos\left(\tilde\omega n\Delta t\right){\thinspace .}\]</div>
+<p>In particular, we can use this expression to show <em>convergence</em> of the
+numerical scheme, i.e., <span class="math">\(e^n\rightarrow 0\)</span> as <span class="math">\(\Delta t\rightarrow 0\)</span>.
+We have that</p>
+<div class="math">
+\[\lim_{\Delta t\rightarrow 0}
+\tilde\omega = \lim_{\Delta t\rightarrow 0}
+\frac{2}{\Delta t}\sin^{-1}\left(\frac{\omega\Delta t}{2}\right)
+= \omega,\]</div>
+<p>by L&#8217;Hopital&#8217;s rule or simply asking
+<tt class="docutils literal"><span class="pre">(2/x)*asin(w*x/2)</span> <span class="pre">as</span> <span class="pre">x-&gt;0</span></tt> in <a class="reference external" href="http://www.wolframalpha.com/input/?i=%282%2Fx%29*asin%28w*x%2F2%29+as+x-%3E0">WolframAlpha</a>.
+Therefore, <span class="math">\(\tilde\omega\rightarrow\omega\)</span>, and the two terms in
+<span class="math">\(e^n\)</span> cancel each other in the limit <span class="math">\(\Delta t\rightarrow 0\)</span>.</p>
+<p>The error mesh function is ideal for verification purposes
+and you are strongly encouraged to make a test based on <a href="#equation-vib:ode1:un:exact">(12)</a>
+by doing <a class="reference internal" href="._main_vib002.html#vib-exer-discrete-omega"><em>Exercise 10: Use an exact discrete solution for verification</em></a>.</p>
+</div>
+<div class="section" id="the-global-error">
+<h2>The global error<a class="headerlink" href="#the-global-error" title="Permalink to this headline">¶</a></h2>
+<p id="index-11">To achieve more analytical insight into the nature of the global error,
+we can Taylor expand the error mesh function. Since <span class="math">\(\tilde\omega\)</span>
+contains <span class="math">\(\Delta t\)</span> in the denominator we use the series expansion
+for <span class="math">\(\tilde\omega\)</span> inside the cosine function:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">dt</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;dt w t&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">w_tilde_e</span> <span class="o">=</span> <span class="mi">2</span><span class="o">/</span><span class="n">dt</span><span class="o">*</span><span class="n">asin</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">dt</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">w_tilde_series</span> <span class="o">=</span> <span class="n">w_tilde_e</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Get rid of O() term</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">w_tilde_series</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">w_tilde_series</span><span class="o">.</span><span class="n">as_ordered_terms</span><span class="p">()[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">w_tilde_series</span>
+<span class="go">dt**2*w**3/24 + w</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">error</span> <span class="o">=</span> <span class="n">cos</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">t</span><span class="p">)</span> <span class="o">-</span> <span class="n">cos</span><span class="p">(</span><span class="n">w_tilde_series</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">error</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="go">dt**2*t*w**3*sin(t*w)/24 + dt**4*t**2*w**6*cos(t*w)/1152 + O(dt**6)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">error</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span><span class="o">.</span><span class="n">as_leading_term</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+<span class="go">dt**2*t*w**3*sin(t*w)/24</span>
+</pre></div>
+</div>
+<p>This means that the leading order global (true) error at a point <span class="math">\(t\)</span>
+is proportional to <span class="math">\(\omega^3t\Delta t^2\)</span>. Setting <span class="math">\(t=n\Delta t\)</span> and
+replacing <span class="math">\(\sin(\omega t)\)</span> by its maximum value 1, we have the
+analytical leading-order expression</p>
+<div class="math">
+\[e^n = \frac{1}{24}n\omega^3\Delta t^3,\]</div>
+<p>and the <span class="math">\(\ell^2\)</span> norm of
+this error can be computed as</p>
+<div class="math">
+\[||e^n||_{\ell^2}^2 = \Delta t\sum_{n=0}^{N_t} \frac{1}{24^2}n^2\omega^6\Delta t^6
+=\frac{1}{24^2}\omega^6\Delta t^7 \sum_{n=0}^{N_t} n^2{\thinspace .}\]</div>
+<p>The sum <span class="math">\(\sum_{n=0}^{N_t} n^2\)</span> is approximately equal to
+<span class="math">\(\frac{1}{3}N_t^3\)</span>. Replacing <span class="math">\(N_t\)</span> by <span class="math">\(T/\Delta t\)</span> and taking
+the square root gives the expression</p>
+<div class="math">
+\[||e^n||_{\ell^2} = \frac{1}{24}\sqrt{\frac{T^3}{3}}\omega^3\Delta t^2,\]</div>
+<p>which shows that also the integrated error is proportional to
+<span class="math">\(\Delta t^2\)</span>.</p>
+</div>
+<div class="section" id="stability">
+<h2>Stability<a class="headerlink" href="#stability" title="Permalink to this headline">¶</a></h2>
+<p>Looking at <a href="#equation-vib:ode1:un:exact">(12)</a>, it appears that the numerical
+solution has constant and correct amplitude, but an error in the
+frequency (phase error). However, there is another error that
+is more serious, namely an unstable growing amplitude that can
+occur of <span class="math">\(\Delta t\)</span> is too large.</p>
+<p>We realize that
+a constant amplitude demands
+<span class="math">\(\tilde\omega\)</span> to be a real number. A complex <span class="math">\(\tilde\omega\)</span> is
+indeed possible if the argument <span class="math">\(x\)</span> of <span class="math">\(\sin^{-1}(x)\)</span> has magnitude
+larger than unity: <span class="math">\(|x|&gt;1\)</span> (type <tt class="docutils literal"><span class="pre">asin(x)</span></tt> in <a class="reference external" href="http://www.wolframalpha.com">wolframalpha.com</a> to see basic properties of <span class="math">\(\sin^{-1} (x)\)</span>).
+A complex <span class="math">\(\tilde\omega\)</span> can be written <span class="math">\(\tilde\omega = \tilde\omega_r +
+i\tilde\omega_i\)</span>. Since <span class="math">\(\sin^{-1}(x)\)</span> has a <em>negative</em> imaginary part for
+<span class="math">\(x&gt;1\)</span>, <span class="math">\(\tilde\omega_i &lt; 0\)</span>, it means that
+<span class="math">\(\exp{(i\omega\tilde t)}=\exp{(-\tilde\omega_i t)}\exp{(i\tilde\omega_r t)}\)</span>
+will lead to exponential growth in time because
+<span class="math">\(\exp{(-\tilde\omega_i t)}\)</span> with <span class="math">\(\tilde\omega_i &lt;0\)</span> has a positive
+exponent.</p>
+<p id="index-12">We do not tolerate growth in the amplitude and we therefore
+have a <em>stability criterion</em> arising from requiring the argument
+<span class="math">\(\omega\Delta t/2\)</span> in the inverse sine function to be less than
+one:</p>
+<div class="math">
+\[\frac{\omega\Delta t}{2} \leq 1\quad\Rightarrow\quad
+\Delta t \leq \frac{2}{\omega}
+{\thinspace .}\]</div>
+<p>With <span class="math">\(\omega =2\pi\)</span>, <span class="math">\(\Delta t &gt; \pi^{-1} = 0.3183098861837907\)</span> will give
+growing solutions. Figure <a class="reference internal" href="#vib-ode1-dt-unstable"><em>Growing, unstable solution because of a time step slightly beyond the stability limit</em></a>
+displays what happens when <span class="math">\(\Delta t =0.3184\)</span>,
+which is slightly above the critical value: <span class="math">\(\Delta t =\pi^{-1} + 9.01\cdot
+10^{-5}\)</span>.</p>
+<div class="figure" id="vib-ode1-dt-unstable">
+<a class="reference internal image-reference" href="_images/vib_unstable.png"><img alt="_images/vib_unstable.png" src="_images/vib_unstable.png" style="width: 400px;" /></a>
+<p class="caption"><em>Growing, unstable solution because of a time step slightly beyond the stability limit</em></p>
+</div>
+</div>
+<div class="section" id="about-the-accuracy-at-the-stability-limit">
+<h2>About the accuracy at the stability limit<a class="headerlink" href="#about-the-accuracy-at-the-stability-limit" title="Permalink to this headline">¶</a></h2>
+<p>An interesting question is whether the stability condition
+<span class="math">\(\Delta t &lt; 2/\omega\)</span> is unfortunate, or more precisely:
+would it be meaningful to take larger time steps to speed up computations?
+The answer is a clear no. At the stability limit, we have that
+<span class="math">\(\sin^{-1}\omega\Delta t/2 = \sin^{-1} 1 = \pi/2\)</span>, and therefore
+<span class="math">\(\tilde\omega = \pi/\Delta t\)</span>. (Note that the approximate formula
+<a href="#equation-vib:ode1:tildeomega:series">(11)</a> is very inaccurate for this
+value of <span class="math">\(\Delta t\)</span> as it predicts <span class="math">\(\tilde\omega = 2.34/pi\)</span>, which is
+a 25 percent reduction.) The corresponding
+period of the numerical solution
+is <span class="math">\(\tilde P=2\pi/\tilde\omega = 2\Delta t\)</span>, which means that there is
+just one time step <span class="math">\(\Delta t\)</span> between a peak and a through in the
+numerical solution. This is the shortest possible wave that can be
+represented in the mesh. In other words, it is not meaningful to
+use a larger time step than the stability limit.</p>
+<p>Also, the phase error when <span class="math">\(\Delta t = 2/\omega\)</span> is severe: Figure
+<a class="reference internal" href="#vib-ode1-dt-stablimit"><em>Numerical solution with  \( Delta t \)  exactly at the stability limit</em></a> shows a comparison of the numerical and
+analytical solution with <span class="math">\(\omega = 2\pi\)</span> and
+<span class="math">\(\Delta t = 2/\omega = \pi^{-1}\)</span>. Already after one period, the
+numerical solution has a through while the exact solution has a peak (!).
+The error in frequency when <span class="math">\(\Delta t\)</span> is at the stability limit
+becomes <span class="math">\(\omega - \tilde\omega = \omega(1-\pi/2)\approx -0.57\omega\)</span>.
+The corresponding error in the period is <span class="math">\(P - \tilde P \approx 0.36P\)</span>.
+The error after <span class="math">\(m\)</span> periods is then <span class="math">\(0.36mP\)</span>. This error has reach
+half a period when <span class="math">\(m=1/(2\cdot 0.36)\approx 1.38\)</span>, which theoretically
+confirms the observations in Figure <a class="reference internal" href="#vib-ode1-dt-stablimit"><em>Numerical solution with  \( Delta t \)  exactly at the stability limit</em></a>
+that the numerical solution is a through ahead of a peak already after
+one and a half period.</p>
+<div class="figure" id="vib-ode1-dt-stablimit">
+<a class="reference internal image-reference" href="_images/vib_stability_limit.png"><img alt="_images/vib_stability_limit.png" src="_images/vib_stability_limit.png" style="width: 400px;" /></a>
+<p class="caption"><em>Numerical solution with  \( Delta t \)  exactly at the stability limit</em></p>
+</div>
+<div class="admonition-summary admonition">
+<p class="first admonition-title">Summary</p>
+<p>From the accuracy and stability
+analysis we can draw three important conclusions:</p>
+<ol class="last arabic simple">
+<li>The key parameter in the formulas is <span class="math">\(p=\omega\Delta t\)</span>.
+The period of oscillations is <span class="math">\(P=2\pi/\omega\)</span>, and the
+number of time steps per period is <span class="math">\(N_P=P/\Delta t\)</span>.
+Therefore, <span class="math">\(p=\omega\Delta t = 2\pi N_P\)</span>, showing that the
+critical parameter is the number of time steps per period.
+The smallest possible <span class="math">\(N_P\)</span> is 2, showing that <span class="math">\(p\in (0,\pi]\)</span>.</li>
+<li>Provided <span class="math">\(p\leq 2\)</span>, the amplitude of the numerical solution is
+constant.</li>
+<li>The numerical solution exhibits a relative phase error
+<span class="math">\(\tilde\omega/\omega \approx 1 + \frac{1}{24}p^2\)</span>.
+This error leads to wrongly displaced peaks of the numerical
+solution, and the error in peak location grows linearly with time
+(see <a class="reference internal" href="._main_vib002.html#vib-exer-phase-err-growth"><em>Exercise 2: Show linear growth of the phase with time</em></a>).</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="section" id="alternative-schemes-based-on-1st-order-equations">
+<span id="vib-model2x2"></span><h1>Alternative schemes based on 1st-order equations<a class="headerlink" href="#alternative-schemes-based-on-1st-order-equations" title="Permalink to this headline">¶</a></h1>
+<p>A standard technique for solving second-order ODEs is
+to rewrite them as a system of first-order ODEs and then apply the
+vast collection of methods for first-order ODE systems.
+Given the second-order ODE problem</p>
+<div class="math">
+\[u'' + \omega^2 u = 0,\quad u(0)=I,\ u'(0)=0,\]</div>
+<p>we introduce the auxiliary variable <span class="math">\(v=u'\)</span> and express the ODE problem
+in terms of first-order derivatives of <span class="math">\(u\)</span> and <span class="math">\(v\)</span>:</p>
+<div class="math" id="equation-vib:model2x2:ueq">
+<span id="eq-vib-model2x2-ueq"></span><span class="eqno">(14)</span>\[     u' = v,\]</div>
+<div class="math" id="equation-vib:model2x2:veq">
+<span id="eq-vib-model2x2-veq"></span><span class="eqno">(15)</span>\[     v' = -\omega^2 u\]\[     {\thinspace .}\]</div>
+<p>The initial conditions become <span class="math">\(u(0)=I\)</span> and <span class="math">\(v(0)=0\)</span>.</p>
+</div>
+<div class="section" id="standard-methods-for-1st-order-ode-systems">
+<span id="vib-undamped-1stode"></span><h1>Standard methods for 1st-order ODE systems<a class="headerlink" href="#standard-methods-for-1st-order-ode-systems" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="the-forward-euler-scheme">
+<h2>The Forward Euler scheme<a class="headerlink" href="#the-forward-euler-scheme" title="Permalink to this headline">¶</a></h2>
+<p>A Forward Euler approximation to our <span class="math">\(2\times 2\)</span> system of ODEs
+<a href="#equation-vib:model2x2:ueq">(14)</a>-<a href="#equation-vib:model2x2:veq">(15)</a>
+becomes</p>
+<div class="math">
+\[\lbrack D_t^+ u = v\rbrack^n,
+\lbrack D_t^+ v = -\omega^2 u\rbrack^n,\]</div>
+<p>or written out,</p>
+<div class="math" id="equation-vib:undamped:FE1">
+<span id="eq-vib-undamped-fe1"></span><span class="eqno">(16)</span>\[     u^{n+1} = u^n + \Delta t v^n,\]</div>
+<div class="math" id="equation-vib:undamped:FE2">
+<span id="eq-vib-undamped-fe2"></span><span class="eqno">(17)</span>\[     v^{n+1} = v^n -\Delta t \omega^2 u^n\]\[     {\thinspace .}\]</div>
+<p>Let us briefly compare this Forward Euler method with the
+centered difference scheme for the second-order differential
+equation. We have from <a href="#equation-vib:undamped:FE1">(16)</a> and
+<a href="#equation-vib:undamped:FE2">(17)</a> applied at levels <span class="math">\(n\)</span> and <span class="math">\(n-1\)</span> that</p>
+<div class="math">
+\[u^{n+1} = u^n + \Delta t v^n = u^n + \Delta t (v^{n-1} -\Delta t \omega^2 u^{n-1}{\thinspace .}\]</div>
+<p>Since from <a href="#equation-vib:undamped:FE1">(16)</a></p>
+<div class="math">
+\[v^{n-1} = \frac{1}{\Delta t}(u^{n}-u^{n-1}),\]</div>
+<p>it follows that</p>
+<div class="math">
+\[u^{n+1} = 2u^n - u^{n-1} -\Delta t^2\omega^2 u^{n-1},\]</div>
+<p>which is very close to the centered difference scheme, but
+the last term is evaluated at <span class="math">\(t_{n-1}\)</span> instead of <span class="math">\(t_n\)</span>.
+Dividing by <span class="math">\(\Delta t^2\)</span>, the left-hand side is an approximation to
+<span class="math">\(u''\)</span> at <span class="math">\(t_n\)</span>, while the right-hand side is sampled at <span class="math">\(t_{n-1}\)</span>.
+This inconsistency in the scheme turns out to be rather
+crucial for the accuracy of
+the Forward Euler method applied to vibration problems.</p>
+</div>
+<div class="section" id="the-backward-euler-scheme">
+<h2>The Backward Euler scheme<a class="headerlink" href="#the-backward-euler-scheme" title="Permalink to this headline">¶</a></h2>
+<p>A Backward Euler approximation the ODE system is equally easy to
+write up in the operator notation:</p>
+<div class="math">
+\[\lbrack D_t^- u = v\rbrack^{n+1},\]</div>
+<div class="math">
+\[\lbrack D_t^- v = -\omega u\rbrack^{n+1} {\thinspace .}\]</div>
+<p>This becomes a coupled system for <span class="math">\(u^{n+1}\)</span> and <span class="math">\(v^{n+1}\)</span>:</p>
+<div class="math" id="equation-vib:undamped:BE1">
+<span id="eq-vib-undamped-be1"></span><span class="eqno">(18)</span>\[     u^{n+1} - \Delta t v^{n+1} = u^{n},\]</div>
+<div class="math" id="equation-vib:undamped:BE2">
+<span id="eq-vib-undamped-be2"></span><span class="eqno">(19)</span>\[     v^{n+1} + \Delta t \omega^2 u^{n+1} = v^{n}\]\[     {\thinspace .}\]</div>
+<p>We can compare <a href="#equation-vib:undamped:BE1">(18)</a>-<a href="#equation-vib:undamped:BE2">(19)</a> with
+central the scheme for the second-order differential equation.
+To this end, we eliminate <span class="math">\(v^{n+1}\)</span> in <a href="#equation-vib:undamped:BE1">(18)</a>
+using <a href="#equation-vib:undamped:BE2">(19)</a> solved with respect to <span class="math">\(v^{n+1}\)</span>.
+Thereafter, we eliminate <span class="math">\(v^n\)</span> using <a href="#equation-vib:undamped:BE1">(18)</a>
+solved with respect to <span class="math">\(v^{n+1}\)</span> and replacing <span class="math">\(n+1\)</span> by <span class="math">\(n\)</span>.
+The resulting equation involving only <span class="math">\(u^{n+1}\)</span>, <span class="math">\(u^n\)</span>, and <span class="math">\(u^{n-1}\)</span>
+can be ordered as</p>
+<div class="math">
+\[\frac{u^{n+1}-2u^n+u^{n-1}}{\Delta t^2} = -\omega^2 u^{n+1},\]</div>
+<p>which has almost the same form as the centered scheme for the
+second-order differential equation, but the right-hand side is
+evaluated at <span class="math">\(u^{n+1}\)</span> and not <span class="math">\(u^n\)</span>. This obvious inconsistency has
+a dramatic effect on the numerical solution.</p>
+</div>
+<div class="section" id="the-crank-nicolson-scheme">
+<h2>The Crank-Nicolson scheme<a class="headerlink" href="#the-crank-nicolson-scheme" title="Permalink to this headline">¶</a></h2>
+<p>The Crank-Nicolson scheme takes this form in the operator notation:</p>
+<div class="math">
+\[\lbrack D_t u = \overline{v}^t\rbrack^{n+\frac{1}{2}},\]</div>
+<div class="math">
+\[\lbrack D_t v = -\omega \overline{u}^t\rbrack^{n+\frac{1}{2}}
+{\thinspace .}\]</div>
+<p>Writing the equations out shows that this is also a coupled system:</p>
+<div class="math">
+\[u^{n+1} - \frac{1}{2}\Delta t v^{n+1} = u^{n} + \frac{1}{2}\Delta t v^{n},\]</div>
+<div class="math">
+\[v^{n+1} + \frac{1}{2}\Delta t \omega^2 u^{n+1} = v^{n}
+- \frac{1}{2}\Delta t \omega^2 u^{n}
+{\thinspace .}\]</div>
+</div>
+<div class="section" id="comparison-of-schemes">
+<h2>Comparison of schemes<a class="headerlink" href="#comparison-of-schemes" title="Permalink to this headline">¶</a></h2>
+<p>We can easily compare methods like the ones above (and many more!)
+with the aid of the
+<a class="reference external" href="https://github.com/hplgit/odespy">Odespy</a> package. Below is
+a sketch of the code.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">odespy</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">u</span>  <span class="c"># u is array of length 2 holding our [u, v]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">v</span><span class="p">,</span> <span class="o">-</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">run_solvers_and_plot</span><span class="p">(</span><span class="n">solvers</span><span class="p">,</span> <span class="n">timesteps_per_period</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+                         <span class="n">num_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">):</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="n">w</span>  <span class="c"># duration of one period</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">P</span><span class="o">/</span><span class="n">timesteps_per_period</span>
+    <span class="n">Nt</span> <span class="o">=</span> <span class="n">num_periods</span><span class="o">*</span><span class="n">timesteps_per_period</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">Nt</span><span class="o">*</span><span class="n">dt</span>
+    <span class="n">t_mesh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">legends</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">solver</span> <span class="ow">in</span> <span class="n">solvers</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">f_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;w&#39;</span><span class="p">:</span> <span class="n">w</span><span class="p">})</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">set_initial_condition</span><span class="p">([</span><span class="n">I</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">t_mesh</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>There is quite some more code dealing with plots also, and we refer
+to the source file <a class="reference external" href="http://tinyurl.com/nm5587k/vib/vib_undamped_odespy.py">vib_undamped_odespy.py</a>
+for details. Observe that keyword arguments in <tt class="docutils literal"><span class="pre">f(u,t,w=1)</span></tt> can
+be supplied through a solver parameter <tt class="docutils literal"><span class="pre">f_kwargs</span></tt> (dictionary of
+additional keyword arguments to <tt class="docutils literal"><span class="pre">f</span></tt>).</p>
+<p>Specification of the Forward Euler, Backward Euler, and
+Crank-Nicolson schemes is done like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">solvers</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">odespy</span><span class="o">.</span><span class="n">ForwardEuler</span><span class="p">(</span><span class="n">f</span><span class="p">),</span>
+    <span class="c"># Implicit methods must use Newton solver to converge</span>
+    <span class="n">odespy</span><span class="o">.</span><span class="n">BackwardEuler</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">nonlinear_solver</span><span class="o">=</span><span class="s">&#39;Newton&#39;</span><span class="p">),</span>
+    <span class="n">odespy</span><span class="o">.</span><span class="n">CrankNicolson</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">nonlinear_solver</span><span class="o">=</span><span class="s">&#39;Newton&#39;</span><span class="p">),</span>
+    <span class="p">]</span>
+</pre></div>
+</div>
+<p id="index-13">The <tt class="docutils literal"><span class="pre">vib_undamped_odespy.py</span></tt>
+program makes two plots of the computed solutions with the various
+methods in the <tt class="docutils literal"><span class="pre">solvers</span></tt> list: one plot with <span class="math">\(u(t)\)</span> versus <span class="math">\(t\)</span>, and
+one <em>phase plane plot</em> where <span class="math">\(v\)</span> is plotted against <span class="math">\(u\)</span>.
+That is, the phase plane plot is the curve <span class="math">\((u(t),v(t))\)</span> parameterized
+by <span class="math">\(t\)</span>. Analytically, <span class="math">\(u=I\cos(\omega t)\)</span> and <span class="math">\(v=u'=-\omega I\sin(\omega t)\)</span>.
+The exact curve <span class="math">\((u(t),v(t))\)</span> is therefore an ellipse, which often
+looks like a circle in a plot if the axes are automatically scaled. The
+important feature, however, is that exact curve <span class="math">\((u(t),v(t))\)</span> is
+closed and repeats itself for every period. Not all numerical schemes
+are capable to do that, meaning that the amplitude instead shrinks or
+grows with time.</p>
+<p>The Forward Euler scheme in Figure
+<a class="reference internal" href="#vib-ode1-1st-odespy-theta-phaseplane"><em>Comparison of classical schemes in the phase plane</em></a> has a pronounced spiral
+curve, pointing to the fact that the amplitude steadily grows, which
+is also evident in Figure <a class="reference internal" href="#vib-ode1-1st-odespy-theta"><em>Comparison of classical schemes</em></a>.
+The Backward Euler scheme has a similar feature, except that the
+spriral goes inward and the amplitude is significantly damped.  The
+changing amplitude and the sprial form decreases with decreasing time
+step.  The Crank-Nicolson scheme looks much more
+accurate.  In fact, these plots tell that the Forward and Backward
+Euler schemes are not suitable for solving our ODEs with oscillating
+solutions.</p>
+<div class="figure" id="vib-ode1-1st-odespy-theta-phaseplane">
+<a class="reference internal image-reference" href="_images/vib_theta_1_pp.png"><img alt="_images/vib_theta_1_pp.png" src="_images/vib_theta_1_pp.png" style="width: 600px;" /></a>
+<p class="caption"><em>Comparison of classical schemes in the phase plane</em></p>
+</div>
+<div class="figure" id="vib-ode1-1st-odespy-theta">
+<a class="reference internal image-reference" href="_images/vib_theta_1_u.png"><img alt="_images/vib_theta_1_u.png" src="_images/vib_theta_1_u.png" style="width: 600px;" /></a>
+<p class="caption"><em>Comparison of classical schemes</em></p>
+</div>
+</div>
+<div class="section" id="runge-kutta-methods">
+<h2>Runge-Kutta methods<a class="headerlink" href="#runge-kutta-methods" title="Permalink to this headline">¶</a></h2>
+<p>We may run two popular standard methods for first-order ODEs, the 2nd-
+and 4th-order Runge-Kutta methods, to see how they perform. Figures
+<a class="reference internal" href="#vib-ode1-1st-odespy-rk-phaseplane"><em>Comparison of Runge-Kutta schemes in the phase plane</em></a> and
+<a class="reference internal" href="#vib-ode1-1st-odespy-rk"><em>Comparison of Runge-Kutta schemes</em></a> show the solutions with larger <span class="math">\(\Delta
+t\)</span> values than what was used in the previous two plots.</p>
+<div class="figure" id="vib-ode1-1st-odespy-rk-phaseplane">
+<a class="reference internal image-reference" href="_images/vib_RK_1_pp.png"><img alt="_images/vib_RK_1_pp.png" src="_images/vib_RK_1_pp.png" style="width: 600px;" /></a>
+<p class="caption"><em>Comparison of Runge-Kutta schemes in the phase plane</em></p>
+</div>
+<div class="figure" id="vib-ode1-1st-odespy-rk">
+<a class="reference internal image-reference" href="_images/vib_RK_1_u.png"><img alt="_images/vib_RK_1_u.png" src="_images/vib_RK_1_u.png" style="width: 600px;" /></a>
+<p class="caption"><em>Comparison of Runge-Kutta schemes</em></p>
+</div>
+<p>The visual impression is that the
+4th-order Runge-Kutta method is very accurate, under all circumstances
+in these tests, and the 2nd-order scheme suffer from amplitude errors
+unless the time step is very small.</p>
+<p>The corresponding results for the Crank-Nicolson scheme are shown in
+Figures <a class="reference internal" href="#vib-ode1-1st-odespy-cn-long-phaseplane"><em>Long-time behavior of the Crank-Nicolson scheme in the phase plane</em></a> and
+<a class="reference internal" href="#vib-ode1-1st-odespy-cn-long"><em>Long-time behavior of the Crank-Nicolson scheme</em></a>. It is clear that the Crank-Nicolson
+scheme outperforms the 2nd-order Runge-Kutta method. Both schemes have
+the same order of accuracy <span class="math">\({\mathcal{O}(\Delta t^2)}\)</span>, but their differences
+in the accuracy that matters in a real physical application is very
+clearly pronounced in this example.  <a class="reference internal" href="._main_vib002.html#vib-exer-undamped-odespy"><em>Exercise 12: Investigate the amplitude errors of many solvers</em></a> invites you to investigate how</p>
+<div class="figure" id="vib-ode1-1st-odespy-cn-long-phaseplane">
+<a class="reference internal image-reference" href="_images/vib_CN_10_pp.png"><img alt="_images/vib_CN_10_pp.png" src="_images/vib_CN_10_pp.png" style="width: 600px;" /></a>
+<p class="caption"><em>Long-time behavior of the Crank-Nicolson scheme in the phase plane</em></p>
+</div>
+<div class="figure" id="vib-ode1-1st-odespy-cn-long">
+<a class="reference internal image-reference" href="_images/vib_CN_10_u.png"><img alt="_images/vib_CN_10_u.png" src="_images/vib_CN_10_u.png" style="width: 600px;" /></a>
+<p class="caption"><em>Long-time behavior of the Crank-Nicolson scheme</em></p>
+</div>
+</div>
+<div class="section" id="analysis-of-the-forward-euler-scheme">
+<h2>Analysis of the Forward Euler scheme<a class="headerlink" href="#analysis-of-the-forward-euler-scheme" title="Permalink to this headline">¶</a></h2>
+<p>We may try to find exact solutions of the discrete
+equations in the Forward Euler method. An &#8220;ansatz&#8221;
+is</p>
+<div class="math">
+\[\begin{split}u^n &amp;= IA^n,\\
+v^n &amp;= qIA^n,\end{split}\]</div>
+<p>where <span class="math">\(q\)</span> and <span class="math">\(A\)</span> are unknown numbers. We could have used a complex
+exponential form <span class="math">\(\exp{(i\tilde\omega n\Delta t)}\)</span> since we get
+oscillatory form, but the oscillations grow in the Forward Euler
+method, so the numerical frequency <span class="math">\(\tilde\omega\)</span> will be complex
+anyway (to produce an exponentially growing amplitude), so it is
+easier to just work with potentially complex <span class="math">\(A\)</span> and <span class="math">\(q\)</span> as introduced
+above.</p>
+<p>The Forward Euler scheme leads to</p>
+<div class="math">
+\[\begin{split}A &amp;= 1 + \Delta t q,\\
+A &amp;= 1 - \Delta t\omega^2 q^{-1}{\thinspace .}\end{split}\]</div>
+<p>We can easily eliminate <span class="math">\(A\)</span>, get <span class="math">\(q^2 + \omega^2=0\)</span>, and solve for</p>
+<div class="math">
+\[q = \pm i\omega,\]</div>
+<p>which gives</p>
+<div class="math">
+\[A = 1 \pm \Delta t i\omega{\thinspace .}\]</div>
+<p>We shall take the real part of <span class="math">\(A^n\)</span> as the solution. The two
+values of <span class="math">\(A\)</span> are complex conjugates, and the real part of
+<span class="math">\(A^n\)</span> will be the same for the two roots. This is easy to realize if
+we rewrite the complex numbers in polar form (<span class="math">\(re^{i\theta}\)</span>),
+which is also convenient
+for further analysis and understanding.
+The polar form of the two values for <span class="math">\(A\)</span> become</p>
+<div class="math">
+\[1 \pm \Delta t i\omega = \sqrt{1+\omega^2\Delta t^2}e^{\pm i\tan^{-1}(\omega\Delta t)}{\thinspace .}\]</div>
+<p>Now,</p>
+<div class="math">
+\[(1 \pm \Delta t i\omega)^n = (1+\omega^2\Delta t^2){n/2}e^{\pm ni\tan^{-1}(\omega\Delta t)}{\thinspace .}\]</div>
+<p>Since <span class="math">\(\cos (\theta n) = \cos (-\theta n)\)</span>, the real part of the two
+numbers become the same. We therefore continue with the solution that has
+the plus sign.</p>
+<p>The general solution is <span class="math">\(u^n = CA^n\)</span>, where
+<span class="math">\(C\)</span> is a constant. This is determined from the initial condition:
+<span class="math">\(u^0=C=I\)</span>.
+Then also <span class="math">\(v^n=qIA^n\)</span>. The final solutions
+consist of the real part of the expressions in polar form:</p>
+<div class="math">
+\[u^n=
+I(1+\omega^2\Delta t^2){n/2}\cos (n\tan^{-1}(\omega\Delta t)),
+\quad
+v^n=- \omega
+I(1+\omega^2\Delta t^2){n/2}\sin (n\tan^{-1}(\omega\Delta t)){\thinspace .}\]</div>
+<p>The expression <span class="math">\((1+\omega^2\Delta t^2){n/2}\)</span> causes growth of
+the amplitude, since a number greater than one is raised to an
+integer power. By expanding first the square root, <span class="math">\(\sqrt{1+x^2}\approx
+1 + \frac{1}{2}x^2\)</span>, we realize that raising the approximation to
+any integer power, will give rise to a polynomial with leading terms
+<span class="math">\(1+x^2\)</span>, or with <span class="math">\(x=\omega\Delta\)</span> as in our case, the amplitude in
+the Forward Euler scheme grows
+as <span class="math">\(1+\omega^2\Delta t^2\)</span>.</p>
+</div>
+</div>
+<div class="section" id="energy-considerations">
+<span id="vib-model1-energy"></span><h1>Energy considerations<a class="headerlink" href="#energy-considerations" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="index-14"></span><p id="index-15">The observations of various methods in the previous section can be
+better interpreted if we compute an quantity reflecting
+the total <em>energy of the system</em>. It turns out that this quantity,</p>
+<div class="math">
+\[E(t) = \frac{1}{2}(u')^2 + \frac{1}{2}\omega^2u^2,\]</div>
+<p>is <em>constant</em> for all <span class="math">\(t\)</span>. Checking that <span class="math">\(E(t)\)</span> really remains constant
+brings evidence that the numerical computations are sound.
+Such energy measures, when they exist, are much used to check numerical
+simulations.</p>
+<div class="section" id="derivation-of-the-energy-expression">
+<h2>Derivation of the energy expression<a class="headerlink" href="#derivation-of-the-energy-expression" title="Permalink to this headline">¶</a></h2>
+<p>We starting multiplying</p>
+<div class="math">
+\[u'' + \omega^2 u = 0,\]</div>
+<p>by <span class="math">\(u'\)</span> and integrating from <span class="math">\(0\)</span> to <span class="math">\(T\)</span>:</p>
+<div class="math">
+\[\int_0^T u''u' dt + \int_0^T\omega^2 u u' dt = 0{\thinspace .}\]</div>
+<p>Observing that</p>
+<div class="math">
+\[u''u' = \frac{d}{dt}\frac{1}{2}(u')^2,\quad uu' = \frac{d}{dt} {\frac{1}{2}}u^2,\]</div>
+<p>we get</p>
+<div class="math">
+\[\int_0^T (\frac{d}{dt}\frac{1}{2}(u')^2 + \frac{d}{dt} \frac{1}{2}\omega^2u^2)dt = E(T) - E(0)=0,\]</div>
+<p>where we have introduced the energy measure <span class="math">\(E(t)\)</span></p>
+<div class="math" id="equation-vib:model1:energy:balance1">
+<span id="eq-vib-model1-energy-balance1"></span><span class="eqno">(20)</span>\[     E(t) = \frac{1}{2}(u')^2 + \frac{1}{2}\omega^2u^2{\thinspace .}\]</div>
+<p>The important result from this derivation is that the total energy
+is constant:</p>
+<div class="math">
+\[E(t) = E(0){\thinspace .}\]</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>The quantity <span class="math">\(E(t)\)</span> derived above is physically not the energy of a
+vibrating mechanical system, but the energy per unit mass. To see this,
+we start with Newton&#8217;s second law <span class="math">\(F=ma\)</span> (<span class="math">\(F\)</span> is the sum of forces, <span class="math">\(m\)</span>
+is the mass of the system, and <span class="math">\(a\)</span> is the acceleration).
+The displacement <span class="math">\(u\)</span> is related to <span class="math">\(a\)</span> through
+<span class="math">\(a=u''\)</span>. With a spring force as the only force we have <span class="math">\(F=-ku\)</span>, where
+<span class="math">\(k\)</span> is a spring constant measuring the stiffness of the spring.
+Newton&#8217;s second law then implies the differential equation</p>
+<div class="math">
+\[-ku = mu''\quad\Rightarrow mu'' + ku = 0{\thinspace .}\]</div>
+<p>This equation of motion can be turned into an energy balance equation
+by finding the work done by each term during a time interval <span class="math">\([0,T]\)</span>.
+To this end, we multiply the equation by <span class="math">\(du=u'dt\)</span> and integrate:</p>
+<div class="math">
+\[\int_0^T muu'dt + \int_0^T kuu'dt = 0{\thinspace .}\]</div>
+<p>The result is</p>
+<div class="math">
+\[E(t) = E_k(t) + E_p(t) = 0,\]</div>
+<p class="last">where</p>
+</div>
+<div class="math" id="equation-vib:model1:energy:kinetic">
+<span id="eq-vib-model1-energy-kinetic"></span><span class="eqno">(21)</span>\[         E_k(t) = \frac{1}{}2mv^2,\quad v=u',\]\[ is the *kinetic energy* of the system,\]\[ .. _Eq:vib:model1:energy:potential:\]</div>
+<div class="math" id="equation-vib:model1:energy:potential">
+<span class="eqno">(22)</span>\[         E_p(t) = {\frac{1}{2}}ku^2\]\[ is the *potential energy*, and the sum  \( E(t) \)  is the total energy.
+ The derivation demonstrates the famous energy principle that any
+ change in the kinetic energy is due to a change in potential energy
+ and vice versa.\]\[ The equation  \( mu''+ku=0 \)  can be divided by  \( m \)  and written as
+  \( u'' + \omega^2u=0 \)  for  \( \omega=\sqrt{k/m} \) . The energy expression
+  \( E(t)=\frac{1}{2}(u')^2 + \frac{1}{2}\omega^2u^2 \)  derived earlier is then
+ simply the
+ true physical total
+ energy  \( \frac{1}{2} m(u')^2 + {\frac{1}{2}}k^2u^2 \)  divided by  \( m \) , i.e.,
+ total energy per unit mass.\]</div>
+<div class="section" id="energy-of-the-exact-solution">
+<h3>Energy of the exact solution<a class="headerlink" href="#energy-of-the-exact-solution" title="Permalink to this headline">¶</a></h3>
+<p>Analytically, we have <span class="math">\(u(t)=I\cos\omega t\)</span>, if <span class="math">\(u(0)=I\)</span> and <span class="math">\(u'(0)=0\)</span>,
+so we can easily check that the evolution of the energy <span class="math">\(E(t)\)</span> is
+constant:</p>
+<div class="math">
+\[E(t) = {\frac{1}{2}}I^2 (-\omega\sin\omega t)^2
++ \frac{1}{2}\omega^2 I^2 \cos^2\omega t
+= \frac{1}{2}\omega^2 (\sin^2\omega t + \cos^2\omega t) = \frac{1}{2}\omega^2
+{\thinspace .}\]</div>
+</div>
+</div>
+<div class="section" id="an-error-measure-based-on-total-energy">
+<h2>An error measure based on total energy<a class="headerlink" href="#an-error-measure-based-on-total-energy" title="Permalink to this headline">¶</a></h2>
+<p>The error in total energy, as a mesh function, can be computed by</p>
+<div class="math">
+\[e_E^n = \frac{1}{2}\left(\frac{u^{n+1}-u^{n-1}}{2\Delta t}\right)^2
++ \frac{1}{2}\omega^2 (u^n)^2 - E(0),
+\quad n=1,\ldots,N_t-1,\]</div>
+<p>where</p>
+<div class="math">
+\[E(0) = {\frac{1}{2}}V^2 + \frac{1}{2}\omega^2I^2,\]</div>
+<p>if <span class="math">\(u(0)=I\)</span> and <span class="math">\(u'(0)=V\)</span>.
+A useful norm can be the maximum absolute value of <span class="math">\(e_E^n\)</span>:</p>
+<div class="math">
+\[\begin{split}||e_E^n||_{\ell^\infty} = \max_{1\leq n &lt;N_t} |e_E^n|{\thinspace .}\end{split}\]</div>
+<p>The corresponding Python implementation takes the form</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># import numpy as np and compute u, t</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">E</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">((</span><span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span> <span class="o">-</span> <span class="n">u</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">dt</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
+<span class="n">E0</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">V</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">**</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">I</span><span class="o">**</span><span class="mi">2</span>
+<span class="n">e_E</span> <span class="o">=</span> <span class="n">E</span> <span class="o">-</span> <span class="n">E0</span>
+<span class="n">e_E_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">e_E</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The convergence rates of the quantity <tt class="docutils literal"><span class="pre">e_E_norm</span></tt> can be used for verification.
+The value of <tt class="docutils literal"><span class="pre">e_E_norm</span></tt> is also useful for comparing schemes
+through their ability to preserve energy. Below is a table demonstrating
+the error in total energy for various schemes. We clearly see that
+the Crank-Nicolson and 4th-order Runge-Kutta schemes are superior to
+the 2nd-order Runge-Kutta method and even more superior to the Forward
+and Backward Euler schemes.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="24%" />
+<col width="11%" />
+<col width="18%" />
+<col width="46%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head"><span class="math">\(T\)</span></th>
+<th class="head"><span class="math">\(\Delta t\)</span></th>
+<th class="head"><span class="math">\(\max \left\vert e_E^n\right\vert\)</span></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Forward Euler</td>
+<td><span class="math">\(1\)</span></td>
+<td><span class="math">\(0.05\)</span></td>
+<td><span class="math">\(1.113\cdot 10^{2}\)</span></td>
+</tr>
+<tr class="row-odd"><td>Forward Euler</td>
+<td><span class="math">\(1\)</span></td>
+<td><span class="math">\(0.025\)</span></td>
+<td><span class="math">\(3.312\cdot 10^{1}\)</span></td>
+</tr>
+<tr class="row-even"><td>Backward Euler</td>
+<td><span class="math">\(1\)</span></td>
+<td><span class="math">\(0.05\)</span></td>
+<td><span class="math">\(1.683\cdot 10^{1}\)</span></td>
+</tr>
+<tr class="row-odd"><td>Backward Euler</td>
+<td><span class="math">\(1\)</span></td>
+<td><span class="math">\(0.025\)</span></td>
+<td><span class="math">\(1.231\cdot 10^{1}\)</span></td>
+</tr>
+<tr class="row-even"><td>Runge-Kutta 2nd-order</td>
+<td><span class="math">\(1\)</span></td>
+<td><span class="math">\(0.1\)</span></td>
+<td><span class="math">\(8.401\)</span></td>
+</tr>
+<tr class="row-odd"><td>Runge-Kutta 2nd-order</td>
+<td><span class="math">\(1\)</span></td>
+<td><span class="math">\(0.05\)</span></td>
+<td><span class="math">\(9.637\cdot 10^{-1}\)</span></td>
+</tr>
+<tr class="row-even"><td>Crank-Nicolson</td>
+<td><span class="math">\(1\)</span></td>
+<td><span class="math">\(0.05\)</span></td>
+<td><span class="math">\(9.389\cdot 10^{-1}\)</span></td>
+</tr>
+<tr class="row-odd"><td>Crank-Nicolson</td>
+<td><span class="math">\(1\)</span></td>
+<td><span class="math">\(0.025\)</span></td>
+<td><span class="math">\(2.411\cdot 10^{-1}\)</span></td>
+</tr>
+<tr class="row-even"><td>Runge-Kutta 4th-order</td>
+<td><span class="math">\(1\)</span></td>
+<td><span class="math">\(0.1\)</span></td>
+<td><span class="math">\(2.387\)</span></td>
+</tr>
+<tr class="row-odd"><td>Runge-Kutta 4th-order</td>
+<td><span class="math">\(1\)</span></td>
+<td><span class="math">\(0.05\)</span></td>
+<td><span class="math">\(6.476\cdot 10^{-1}\)</span></td>
+</tr>
+<tr class="row-even"><td>Crank-Nicolson</td>
+<td><span class="math">\(10\)</span></td>
+<td><span class="math">\(0.1\)</span></td>
+<td><span class="math">\(3.389\)</span></td>
+</tr>
+<tr class="row-odd"><td>Crank-Nicolson</td>
+<td><span class="math">\(10\)</span></td>
+<td><span class="math">\(0.05\)</span></td>
+<td><span class="math">\(9.389\cdot 10^{-1}\)</span></td>
+</tr>
+<tr class="row-even"><td>Runge-Kutta 4th-order</td>
+<td><span class="math">\(10\)</span></td>
+<td><span class="math">\(0.1\)</span></td>
+<td><span class="math">\(3.686\)</span></td>
+</tr>
+<tr class="row-odd"><td>Runge-Kutta 4th-order</td>
+<td><span class="math">\(10\)</span></td>
+<td><span class="math">\(0.05\)</span></td>
+<td><span class="math">\(6.928\cdot 10^{-1}\)</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="the-euler-cromer-method">
+<span id="vib-model2x2-eulercromer"></span><h1>The Euler-Cromer method<a class="headerlink" href="#the-euler-cromer-method" title="Permalink to this headline">¶</a></h1>
+<p>While the 4th-order Runge-Kutta method and the a centered
+Crank-Nicolson scheme work well for the first-order formulation of the
+vibration model, both were inferior to the straightforward centered
+difference scheme for the second-order equation
+<span class="math">\(u''+\omega^2u=0\)</span>. However, there is a similarly successful scheme
+available for the first-order system <span class="math">\(u'=v\)</span>, <span class="math">\(v'=-\omega^2u\)</span>, to be
+presented next.</p>
+<div class="section" id="forward-backward-discretization">
+<span id="index-16"></span><h2>Forward-backward discretization<a class="headerlink" href="#forward-backward-discretization" title="Permalink to this headline">¶</a></h2>
+<p>The idea is to apply a Forward Euler discretization to the first
+equation and a Backward Euler discretization to the second. In operator
+notation this is stated as</p>
+<div class="math">
+\[\lbrack D_t^+u = v\rbrack^n,\]</div>
+<div class="math">
+\[\lbrack D_t^-v = -\omega u\rbrack^{n+1}
+{\thinspace .}\]</div>
+<p>We can write out the formulas and collect the unknowns on the left-hand side:</p>
+<div class="math" id="equation-vib:model2x2:EulerCromer:ueq1">
+<span id="eq-vib-model2x2-eulercromer-ueq1"></span><span class="eqno">(23)</span>\[     u^{n+1} = u^n + \Delta t v^n,\]</div>
+<div class="math" id="equation-vib:model2x2:EulerCromer:veq1">
+<span id="eq-vib-model2x2-eulercromer-veq1"></span><span class="eqno">(24)</span>\[     v^{n+1} = v^n -\Delta t \omega^2u^{n+1}\]\[     {\thinspace .}\]</div>
+<p>We realize that <span class="math">\(u^{n+1}\)</span> can be computed from
+<a href="#equation-vib:model2x2:EulerCromer:ueq1">(23)</a> and then <span class="math">\(v^{n+1}\)</span> from
+<a href="#equation-vib:model2x2:EulerCromer:veq1">(24)</a> using the recently computed value
+<span class="math">\(u^{n+1}\)</span> on the right-hand side.</p>
+<p>In physics, it is more common to update the <span class="math">\(v\)</span> equation first, with
+a forward difference, and thereafter the <span class="math">\(u\)</span> equation, with a backward
+difference that applies the most recently computed <span class="math">\(v\)</span> value:</p>
+<div class="math" id="equation-vib:model2x2:EulerCromer:veq1b">
+<span id="eq-vib-model2x2-eulercromer-veq1b"></span><span class="eqno">(25)</span>\[     v^{n+1} = v^n -\Delta t \omega^2u^{n},\]</div>
+<div class="math" id="equation-vib:model2x2:EulerCromer:ueq1b">
+<span id="eq-vib-model2x2-eulercromer-ueq1b"></span><span class="eqno">(26)</span>\[     u^{n+1} = u^n + \Delta t v^{n+1}{\thinspace .}\]</div>
+<p>The advantage of this sequence of the first-order ODEs becomes evident
+when we turn to more complicated models. A typical vibration ODE can
+in general be written as</p>
+<div class="math">
+\[\ddot u + g(u, u', t)=0,\]</div>
+<p>which results in the system</p>
+<div class="math">
+\[\begin{split}v' &amp;= -g(u,v,t),\\
+u' &amp;= v,\end{split}\]</div>
+<p>and the scheme</p>
+<div class="math">
+\[\begin{split}v^{n+1} &amp;= v^n -\Delta t\, g(u^n,v^n,t),\\
+u^{n+1} &amp;= u^n + \Delta t\, v^{n+1}{\thinspace .}\end{split}\]</div>
+<p>We realize that the first update works well with any <span class="math">\(g\)</span> since old
+values <span class="math">\(u^n\)</span> and <span class="math">\(v^n\)</span> are used. Switching the equations would
+demand <span class="math">\(u^n{+1}\)</span> and <span class="math">\(v^{n+1}\)</span> values in <span class="math">\(g\)</span>.</p>
+<p>The scheme
+<a href="#equation-vib:model2x2:EulerCromer:ueq1b">(26)</a>-<a href="#equation-vib:model2x2:EulerCromer:veq1b">(25)</a>
+goes under several names: Forward-backward scheme, <a class="reference external" href="http://en.wikipedia.org/wiki/Semi-implicit_Euler_method">Semi-implicit Euler method</a>, symplectic
+Euler, semi-explicit Euler,
+Newton-Stormer-Verlet,
+and Euler-Cromer.
+We shall stick to the latter name.
+Since both time discretizations are based on first-order difference
+approximation, one may think that the scheme is only of first-order,
+but this is not true: the use of a forward and then a backward
+difference make errors cancel so that the overall error in the scheme
+is <span class="math">\({\mathcal{O}(\Delta t^2)}\)</span>. This is explaned below.</p>
+</div>
+<div class="section" id="equivalence-with-the-scheme-for-the-second-order-ode">
+<span id="vib-model2x2-eulercromer-equiv"></span><h2>Equivalence with the scheme for the second-order ODE<a class="headerlink" href="#equivalence-with-the-scheme-for-the-second-order-ode" title="Permalink to this headline">¶</a></h2>
+<p>We may eliminate the <span class="math">\(v^n\)</span> variable from
+<a href="#equation-vib:model2x2:EulerCromer:ueq1">(23)</a>-<a href="#equation-vib:model2x2:EulerCromer:veq1">(24)</a>
+or
+<a href="#equation-vib:model2x2:EulerCromer:ueq1b">(26)</a>-<a href="#equation-vib:model2x2:EulerCromer:veq1b">(25)</a>.
+The <span class="math">\(v^{n+1}\)</span> term in <a href="#equation-vib:model2x2:EulerCromer:veq1b">(25)</a> can
+be eliminated from <a href="#equation-vib:model2x2:EulerCromer:ueq1b">(26)</a>:</p>
+<div class="math" id="equation-vib:model2x2:EulerCromer:elim1">
+<span id="eq-vib-model2x2-eulercromer-elim1"></span><span class="eqno">(27)</span>\[     u^{n+1} = u^n + \Delta t (v^n - \omega^2\Delta t^2 u^n){\thinspace .}\]</div>
+<p>The <span class="math">\(v^{n}\)</span> quantity can be expressed by <span class="math">\(u^n\)</span> and <span class="math">\(u^{n-1}\)</span>
+using <a href="#equation-vib:model2x2:EulerCromer:ueq1b">(26)</a>:</p>
+<div class="math">
+\[v^{n} = \frac{u^n - u^{n-1}}{\Delta t},\]</div>
+<p>and when this is inserted in <a href="#equation-vib:model2x2:EulerCromer:elim1">(27)</a> we get</p>
+<div class="math">
+\[u^{n+1} = 2u^n - u^{n-1} - \Delta t^2 \omega^2u^{n},\]</div>
+<p>which is nothing but the centered scheme <a href="#equation-vib:ode1:step4">(7)</a>!
+Therefore, the previous analysis of
+<a href="#equation-vib:ode1:step4">(7)</a> also applies to the Euler-Cromer
+method. In particular, the amplitude is constant, given that the stability
+criterion is fulfilled, but there is always a phase error
+<a href="#equation-vib:ode1:tildeomega:series">(11)</a>. <a class="reference internal" href="._main_vib002.html#vib-exer-eulercromer-analysis"><em>Exercise 20: Analysis of the Euler-Cromer scheme</em></a>
+gives guidance on how to derive the exact discrete solution of
+the two equations in the Euler-Cromer method.</p>
+<p>The initial condition <span class="math">\(u'=0\)</span> means <span class="math">\(u'=v=0\)</span>.  From
+<a href="#equation-vib:model2x2:EulerCromer:ueq1b">(26)</a> we get <span class="math">\(v^1=-\omega^2 u^0\)</span>
+and <span class="math">\(u^1=u^0 - \omega^2\Delta t^2 u^0\)</span>, which is not exactly
+the same <span class="math">\(u^1\)</span> value as obtained by a centered
+approximation of <span class="math">\(v'(0)=0\)</span> and combined with the
+discretization <a href="#equation-vib:ode1:step4">(7)</a> of the second-order ODE: a factor
+<span class="math">\(\frac{1}{2}\)</span> is missing in the second term.
+In fact, if we approximate <span class="math">\(u'(0)=0\)</span> by a backward difference,
+<span class="math">\((u^0-u^{-1})/\Delta t =0\)</span>, we get <span class="math">\(u^{-1}=u^0\)</span>, and when combined
+with <a href="#equation-vib:ode1:step4">(7)</a>, it results in
+<span class="math">\(u^1=u^0 - \omega^2\Delta t^2 u^0\)</span>. That is,
+the Euler-Cromer method based on
+<a href="#equation-vib:model2x2:EulerCromer:ueq1b">(26)</a>-<a href="#equation-vib:model2x2:EulerCromer:veq1b">(25)</a>
+corresponds to using only a first-order approximation to the initial condition
+in the method from the section <a class="reference internal" href="#vib-ode1-fdm"><em>A centered finite difference scheme</em></a>.</p>
+<p>Correspondingly, using the formulation
+<a href="#equation-vib:model2x2:EulerCromer:ueq1">(23)</a>-<a href="#equation-vib:model2x2:EulerCromer:veq1">(24)</a>
+with <span class="math">\(v^n=0\)</span> leads to <span class="math">\(u^1=u^0\)</span>, which can be interpreted as using
+a forward difference approximation for the initial condition <span class="math">\(u'(0)=0\)</span>.
+Both Euler-Cromer formulations lead to slightly different values for
+<span class="math">\(u^1\)</span> compared to the method in the section <a class="reference internal" href="#vib-ode1-fdm"><em>A centered finite difference scheme</em></a>.
+The error is <span class="math">\(\frac{1}{2}\omega^2\Delta t^2 u^0\)</span> and of the same order
+as the overall scheme.</p>
+</div>
+<div class="section" id="implementation-2">
+<span id="vib-model2x2-eulercromer-impl"></span><h2>Implementation  (2)<a class="headerlink" href="#implementation-2" title="Permalink to this headline">¶</a></h2>
+<p>The function below, found in <a class="reference external" href="http://tinyurl.com/nm5587k/vib/vib_EulerCromer.py">vib_EulerCromer.py</a> implements the Euler-Cromer scheme
+<a href="#equation-vib:model2x2:EulerCromer:ueq1b">(26)</a>-<a href="#equation-vib:model2x2:EulerCromer:veq1b">(25)</a>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">zeros</span><span class="p">,</span> <span class="n">linspace</span>
+
+<span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Solve v&#39; = - w**2*u, u&#39;=v for t in (0,T], u(0)=I and v(0)=0,</span>
+<span class="sd">    by an Euler-Cromer method.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+    <span class="n">Nt</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="n">dt</span><span class="p">))</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Nt</span><span class="o">*</span><span class="n">dt</span><span class="p">,</span> <span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">I</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Nt</span><span class="p">):</span>
+        <span class="n">v</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">-</span> <span class="n">dt</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+</span> <span class="n">dt</span><span class="o">*</span><span class="n">v</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">t</span>
+</pre></div>
+</div>
+<p>Since the Euler-Cromer scheme is equivalent to the finite difference
+method for the second-order ODE <span class="math">\(u''+\omega^2u=0\)</span> (see the section <a class="reference internal" href="#vib-model2x2-eulercromer-equiv"><em>Equivalence with the scheme for the second-order ODE</em></a>), the performance of the above
+<tt class="docutils literal"><span class="pre">solver</span></tt> function is the same as for the <tt class="docutils literal"><span class="pre">solver</span></tt> function in the section <a class="reference internal" href="#vib-impl1"><em>Implementation  (1)</em></a>. The only difference is the formula for the first time
+step, as discussed above.  This deviation in the Euler-Cromer scheme
+means that the discrete solution listed in the section <a class="reference internal" href="#vib-ode1-analysis-sol"><em>Exact discrete solution</em></a> is not a solution of the Euler-Cromer
+scheme.  To verify the implementation of the Euler-Cromer method we
+can adjust <tt class="docutils literal"><span class="pre">v[1]</span></tt> so that the computer-generated values can be
+compared formula from in the section <a class="reference internal" href="#vib-ode1-analysis-sol"><em>Exact discrete solution</em></a>. This
+adjustment is done in an alternative solver function, <tt class="docutils literal"><span class="pre">solver_ic_fix</span></tt>
+in <tt class="docutils literal"><span class="pre">vib_EulerCromer.py</span></tt>, and combined with a nose test in the function
+<tt class="docutils literal"><span class="pre">test_solver</span></tt> that checks equality of computed values with the exact
+discrete solution to machine precision. Another function, <tt class="docutils literal"><span class="pre">demo</span></tt>,
+visualizes the difference between Euler-Cromer scheme and the scheme
+for the second-oder ODE, arising from the mismatch in the first time level.</p>
+</div>
+<div class="section" id="the-velocity-verlet-algorithm">
+<h2>The velocity Verlet algorithm<a class="headerlink" href="#the-velocity-verlet-algorithm" title="Permalink to this headline">¶</a></h2>
+<p>Another very popular algorithm for vibration problems <span class="math">\(u''+\omega^2u=0\)</span>
+can be derived as follows. First, we step <span class="math">\(u\)</span> forward from <span class="math">\(t_n\)</span> to
+<span class="math">\(t_{n+1}\)</span> using a three-term Taylor series,</p>
+<div class="math">
+\[u(t_{n+1}) = u(t_n) + u'(t_n)\Delta t + \frac{1}{2}u''(t_n)\Delta t^2{\thinspace .}\]</div>
+<p>Using <span class="math">\(u'=v\)</span> and <span class="math">\(u''=-\omega^2u\)</span>, we get the updating formula</p>
+<div class="math">
+\[u^{n+1} = u^n + v^n\Delta t - \frac{1}{2}\Delta^2\omega^2u^n{\thinspace .}\]</div>
+<p>Second, the first-order equation for <span class="math">\(v\)</span>,</p>
+<div class="math">
+\[v'=-\omega^2u,\]</div>
+<p>is discretized by a centered difference
+in a Crank-Nicolson fashion at <span class="math">\(t_{n+\frac{1}{2}}\)</span>:</p>
+<div class="math">
+\[\frac{v^{n+1}-v^n}{\Delta t} = -\omega^2\frac{1}{2}(u^n + u^{n+1}),\]</div>
+<p>or in operator form that explicitly demonstrates the thinking:</p>
+<div class="math">
+\[[D_t u = -\omega^2\bar u^t]^{n+\frac{1}{2}}{\thinspace .}\]</div>
+<p>To summarize, we have the scheme</p>
+<div class="math" id="equation-vib:model2x2:Verlet:dueq">
+<span id="eq-vib-model2x2-verlet-dueq"></span><span class="eqno">(28)</span>\[     u^{n+1} = u^n + v^n\Delta t - \frac{1}{2}\Delta^2\omega^2u^n\]</div>
+<div class="math" id="equation-vib:model2x2:Verlet:dveq">
+<span id="eq-vib-model2x2-verlet-dveq"></span><span class="eqno">(29)</span>\[     v^{n+1} = v^n -\frac{1}{2}\Delta t\omega^2 (u^n + u^{n+1}),\]</div>
+<p>known as the <em>velocity Verlet</em> algorithm.
+Observe that this scheme is explicit since <span class="math">\(u^{n+1}\)</span> in
+<a href="#equation-vib:model2x2:Verlet:dveq">(29)</a> is already computed
+from <a href="#equation-vib:model2x2:Verlet:dueq">(28)</a>.</p>
+<p>The algorithm can be straightforwardly implemented as shown below.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">vib_undamped</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">zeros</span><span class="p">,</span> <span class="n">linspace</span><span class="p">,</span>
+    <span class="n">convergence_rates</span><span class="p">,</span>
+    <span class="n">main</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">return_v</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Solve u&#39;=v, v&#39;=-w**2*u for t in (0,T], u(0)=I and v(0)=0,</span>
+<span class="sd">    by the velocity Verlet method with time step dt.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+    <span class="n">Nt</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="n">dt</span><span class="p">))</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Nt</span><span class="o">*</span><span class="n">dt</span><span class="p">,</span> <span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">I</span>
+    <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Nt</span><span class="p">):</span>
+        <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+</span> <span class="n">v</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">*</span><span class="n">dt</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">dt</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="n">v</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">return_v</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">t</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># Return just u and t as in the vib_undamped.py&#39;s solver</span>
+        <span class="k">return</span> <span class="n">u</span><span class="p">,</span> <span class="n">t</span>
+</pre></div>
+</div>
+<p>We provide the option that this <tt class="docutils literal"><span class="pre">solver</span></tt> function returns the same data
+as the <tt class="docutils literal"><span class="pre">solver</span></tt> function from the section <a class="reference internal" href="#vib-impl1-solver"><em>Making a solver function</em></a> (if <tt class="docutils literal"><span class="pre">return_v</span></tt>
+is <tt class="docutils literal"><span class="pre">False</span></tt>), but we may return <tt class="docutils literal"><span class="pre">v</span></tt> along with <tt class="docutils literal"><span class="pre">u</span></tt> and <tt class="docutils literal"><span class="pre">t</span></tt>.</p>
+<p>The error in the Taylor series expansion behind
+<a href="#equation-vib:model2x2:Verlet:dueq">(28)</a> is <span class="math">\({\mathcal{O}(\Delta t^3)}\)</span>, while the error
+in the central difference for <span class="math">\(v\)</span> is <span class="math">\({\mathcal{O}(\Delta t^2)}\)</span>.  The overall
+error is then no better than <span class="math">\({\mathcal{O}(\Delta t^2)}\)</span>, which can be verified
+empirically using the <tt class="docutils literal"><span class="pre">convergence_rates</span></tt> function from
+<a class="reference internal" href="#vib-ode1-verify"><em>Verification  (1)</em></a>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">vib_undamped_velocity_Verlet</span> <span class="kn">as</span> <span class="nn">m</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">convergence_rates</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">solver_function</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">solver</span><span class="p">)</span>
+<span class="go">[2.0036366687367346, 2.0009497328124835, 2.000240105995295]</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Finite difference discretization</a><ul>
+<li><a class="reference internal" href="#a-basic-model-for-vibrations">A basic model for vibrations</a></li>
+<li><a class="reference internal" href="#a-centered-finite-difference-scheme">A centered finite difference scheme</a><ul>
+<li><a class="reference internal" href="#step-1-discretizing-the-domain">Step 1: Discretizing the domain</a></li>
+<li><a class="reference internal" href="#step-2-fulfilling-the-equation-at-discrete-time-points">Step 2: Fulfilling the equation at discrete time points</a></li>
+<li><a class="reference internal" href="#step-3-replacing-derivatives-by-finite-differences">Step 3: Replacing derivatives by finite differences</a></li>
+<li><a class="reference internal" href="#step-4-formulating-a-recursive-algorithm">Step 4: Formulating a recursive algorithm</a></li>
+<li><a class="reference internal" href="#computing-the-first-step">Computing the first step</a></li>
+<li><a class="reference internal" href="#the-computational-algorithm">The computational algorithm</a></li>
+<li><a class="reference internal" href="#operator-notation">Operator notation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-1">Implementation  (1)</a><ul>
+<li><a class="reference internal" href="#making-a-solver-function">Making a solver function</a><ul>
+<li><a class="reference internal" href="#computing">Computing <span class="math">\(u'\)</span></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#verification-1">Verification  (1)</a><ul>
+<li><a class="reference internal" href="#manual-calculation">Manual calculation</a></li>
+<li><a class="reference internal" href="#testing-very-simple-solutions">Testing very simple solutions</a></li>
+<li><a class="reference internal" href="#checking-convergence-rates">Checking convergence rates</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#long-time-simulations">Long time simulations</a><ul>
+<li><a class="reference internal" href="#using-a-moving-plot-window">Using a moving plot window</a></li>
+<li><a class="reference internal" href="#making-a-video">Making a video</a></li>
+<li><a class="reference internal" href="#using-a-line-by-line-ascii-plotter">Using a line-by-line ascii plotter</a></li>
+<li><a class="reference internal" href="#empirical-analysis-of-the-solution">Empirical analysis of the solution</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#analysis-of-the-numerical-scheme">Analysis of the numerical scheme</a><ul>
+<li><a class="reference internal" href="#deriving-a-solution-of-the-numerical-scheme">Deriving a solution of the numerical scheme</a></li>
+<li><a class="reference internal" href="#exact-discrete-solution">Exact discrete solution</a></li>
+<li><a class="reference internal" href="#the-global-error">The global error</a></li>
+<li><a class="reference internal" href="#stability">Stability</a></li>
+<li><a class="reference internal" href="#about-the-accuracy-at-the-stability-limit">About the accuracy at the stability limit</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative-schemes-based-on-1st-order-equations">Alternative schemes based on 1st-order equations</a></li>
+<li><a class="reference internal" href="#standard-methods-for-1st-order-ode-systems">Standard methods for 1st-order ODE systems</a><ul>
+<li><a class="reference internal" href="#the-forward-euler-scheme">The Forward Euler scheme</a></li>
+<li><a class="reference internal" href="#the-backward-euler-scheme">The Backward Euler scheme</a></li>
+<li><a class="reference internal" href="#the-crank-nicolson-scheme">The Crank-Nicolson scheme</a></li>
+<li><a class="reference internal" href="#comparison-of-schemes">Comparison of schemes</a></li>
+<li><a class="reference internal" href="#runge-kutta-methods">Runge-Kutta methods</a></li>
+<li><a class="reference internal" href="#analysis-of-the-forward-euler-scheme">Analysis of the Forward Euler scheme</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#energy-considerations">Energy considerations</a><ul>
+<li><a class="reference internal" href="#derivation-of-the-energy-expression">Derivation of the energy expression</a><ul>
+<li><a class="reference internal" href="#energy-of-the-exact-solution">Energy of the exact solution</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#an-error-measure-based-on-total-energy">An error measure based on total energy</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-euler-cromer-method">The Euler-Cromer method</a><ul>
+<li><a class="reference internal" href="#forward-backward-discretization">Forward-backward discretization</a></li>
+<li><a class="reference internal" href="#equivalence-with-the-scheme-for-the-second-order-ode">Equivalence with the scheme for the second-order ODE</a></li>
+<li><a class="reference internal" href="#implementation-2">Implementation  (2)</a></li>
+<li><a class="reference internal" href="#the-velocity-verlet-algorithm">The velocity Verlet algorithm</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="._main_vib000.html"
+                        title="previous chapter">Finite difference methods for vibration problems</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_vib002.html"
+                        title="next chapter">Generalization: damping, nonlinear spring, and external excitation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_vib001.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_vib002.html" title="Generalization: damping, nonlinear spring, and external excitation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="._main_vib000.html" title="Finite difference methods for vibration problems"
+             >previous</a> |</li>
+        <li><a href="index.html">Finite difference methods for vibration problems</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

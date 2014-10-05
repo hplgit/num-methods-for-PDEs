@@ -15,6 +15,7 @@ solvers = [odespy.RK2(f),
            odespy.RK3(f),
            odespy.RK4(f),
            # BackwardEuler must use Newton solver to converge
+           # (Picard is default and leads to divergence)
            odespy.BackwardEuler(f, nonlinear_solver='Newton')]
 
 legends = []

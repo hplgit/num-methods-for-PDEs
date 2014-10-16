@@ -564,11 +564,31 @@ and hence <span class="math">\(c_0=2L^2/\pi^2\)</span>.</p>
 <span class="math">\(u(x)=x(L-x)\)</span>, while for <span class="math">\(N=0\)</span> the Galerkin and least squares method
 result in <span class="math">\(u(x)=8L^2\pi^{-3}\sin (\pi x/L)\)</span> and the
 collocation method leads to <span class="math">\(u(x)=2L^2\pi^{-2}\sin (\pi x/L)\)</span>.
-Since all methods fulfill the boundary conditions <span class="math">\(u(0)=u(L)=0\)</span>, we
-expect the largest discrepancy to occur at the midpoint of the domain:
-<span class="math">\(x=L/2\)</span>. The error at the midpoint becomes <span class="math">\(-0.008L^2\)</span> for the
-Galerkin and least squares method, and <span class="math">\(0.047L^2\)</span> for the collocation
-method.</p>
+We can quickly use <tt class="docutils literal"><span class="pre">sympy</span></tt> to verify that the maximum error
+occurs at the midpoint <span class="math">\(x=L/2\)</span> and find what the errors are:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sympy</span> <span class="kn">as</span> <span class="nn">sp</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Computing with Dirichlet conditions: -u&#39;&#39;=2 and sines</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="p">,</span> <span class="n">L</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s">&#39;x L&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">e_Galerkin</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="n">L</span><span class="o">-</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">8</span><span class="o">*</span><span class="n">L</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">x</span><span class="o">/</span><span class="n">L</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">e_colloc</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="n">L</span><span class="o">-</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">L</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">x</span><span class="o">/</span><span class="n">L</span><span class="p">)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Verify max error for x=L/2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dedx_Galerkin</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">e_Galerkin</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dedx_Galerkin</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">L</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+<span class="go">0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dedx_colloc</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">e_colloc</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dedx_colloc</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">L</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+<span class="go">0</span>
+
+<span class="go"># Compute max error: x=L/2, evaluate numerical, and simplify</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sp</span><span class="o">.</span><span class="n">simplify</span><span class="p">(</span><span class="n">e_Galerkin</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">L</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">evalf</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
+<span class="go">-0.00812*L**2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sp</span><span class="o">.</span><span class="n">simplify</span><span class="p">(</span><span class="n">e_colloc</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">L</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">evalf</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
+<span class="go">0.0473*L**2</span>
+</pre></div>
+</div>
+<p>The error in the collocation method is about 6 times larger than
+the error in the Galerkin or least squares method.</p>
 </div>
 </div>
 <div class="section" id="integration-by-parts">

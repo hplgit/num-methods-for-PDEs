@@ -874,11 +874,33 @@ In the present model problem, with :math:`f(x)=2`, the exact solution is
 :math:`u(x)=x(L-x)`, while for :math:`N=0` the Galerkin and least squares method
 result in :math:`u(x)=8L^2\pi^{-3}\sin (\pi x/L)` and the
 collocation method leads to :math:`u(x)=2L^2\pi^{-2}\sin (\pi x/L)`.
-Since all methods fulfill the boundary conditions :math:`u(0)=u(L)=0`, we
-expect the largest discrepancy to occur at the midpoint of the domain:
-:math:`x=L/2`. The error at the midpoint becomes :math:`-0.008L^2` for the
-Galerkin and least squares method, and :math:`0.047L^2` for the collocation
-method.
+We can quickly use ``sympy`` to verify that the maximum error
+occurs at the midpoint :math:`x=L/2` and find what the errors are:
+
+.. code-block:: python
+
+        >>> import sympy as sp
+        >>> # Computing with Dirichlet conditions: -u''=2 and sines
+        >>> x, L = sp.symbols('x L')
+        >>> e_Galerkin = x*(L-x) - 8*L**2*sp.pi**(-3)*sp.sin(sp.pi*x/L)
+        >>> e_colloc = x*(L-x) - 2*L**2*sp.pi**(-2)*sp.sin(sp.pi*x/L)
+        
+        >>> # Verify max error for x=L/2
+        >>> dedx_Galerkin = sp.diff(e_Galerkin, x)
+        >>> dedx_Galerkin.subs(x, L/2)
+        0
+        >>> dedx_colloc = sp.diff(e_colloc, x)
+        >>> dedx_colloc.subs(x, L/2)
+        0
+        
+        # Compute max error: x=L/2, evaluate numerical, and simplify
+        >>> sp.simplify(e_Galerkin.subs(x, L/2).evalf(n=3))
+        -0.00812*L**2
+        >>> sp.simplify(e_colloc.subs(x, L/2).evalf(n=3))
+        0.0473*L**2
+
+The error in the collocation method is about 6 times larger than
+the error in the Galerkin or least squares method.
 
 .. _fem:deq:1D:varform:
 

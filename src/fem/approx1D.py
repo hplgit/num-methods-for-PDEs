@@ -43,7 +43,10 @@ def least_squares(f, psi, Omega, symbolic=True):
         b[i,0] = I
     print
     print 'A:\n', A, '\nb:\n', b
-    c = A.LUsolve(b)  # symbolic solve
+    if symbolic:
+        c = A.LUsolve(b)  # symbolic solve
+    else:
+        c = sp.mpmath.lu_solve(A, b)  # numerical solve
     print 'coeff:', c
 
     # c is a sympy Matrix object, numbers are in c[i,0]
@@ -94,7 +97,8 @@ def least_squares_orth(f, psi, Omega, symbolic=True):
     print '...evaluating matrix...',
     for i in range(N+1):
         print '(%d,%d)' % (i, i)
-        # Assume orthogonal psi can be be integrated symbolically...
+        # Assume orthogonal psi can be be integrated symbolically
+        # and that this is a successful/possible integration
         A[i] = sp.integrate(psi[i]**2, (x, Omega[0], Omega[1]))
 
         # Fallback on numerical integration if f*psi is too difficult

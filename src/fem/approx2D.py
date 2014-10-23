@@ -8,7 +8,7 @@ from scitools.std import surfc, savefig, linspace, title, figure, \
      hot, axis, ndgrid, subplot
 
 
-def least_squares(f, psi, Omega):
+def least_squares(f, psi, Omega, symbolic=True):
     """
     Given a function f(x,y) on a rectangular domain
     Omega=[[xmin,xmax],[ymin,ymax]],
@@ -25,10 +25,11 @@ def least_squares(f, psi, Omega):
             print '(%d,%d)' % (i, j)
 
             integrand = psi[i]*psi[j]
-            I = sp.integrate(integrand,
-                             (x, Omega[0][0], Omega[0][1]),
-                             (y, Omega[1][0], Omega[1][1]))
-            if isinstance(I, sp.Integral):
+            if symbolic:
+                I = sp.integrate(integrand,
+                                 (x, Omega[0][0], Omega[0][1]),
+                                 (y, Omega[1][0], Omega[1][1]))
+            if not symbolic or isinstance(I, sp.Integral):
                 # Could not integrate symbolically, use numerical int.
                 print 'numerical integration of', integrand
                 integrand = sp.lambdify([x,y], integrand)
@@ -37,10 +38,11 @@ def least_squares(f, psi, Omega):
                                    [Omega[1][0], Omega[1][1]])
             A[i,j] = A[j,i] = I
         integrand = psi[i]*f
-        I = sp.integrate(integrand,
-                         (x, Omega[0][0], Omega[0][1]),
-                         (y, Omega[1][0], Omega[1][1]))
-        if isinstance(I, sp.Integral):
+        if symbolic:
+            I = sp.integrate(integrand,
+                             (x, Omega[0][0], Omega[0][1]),
+                             (y, Omega[1][0], Omega[1][1]))
+        if not symbolic or isinstance(I, sp.Integral):
             # Could not integrate symbolically, use numerical int.
             print 'numerical integration of', integrand
             integrand = sp.lambdify([x,y], integrand)
@@ -50,9 +52,13 @@ def least_squares(f, psi, Omega):
         b[i,0] = I
     print
     print 'A:\n', A, '\nb:\n', b
-    c = A.LUsolve(b)
+    if symbolic:
+        c = A.LUsolve(b)  # symbolic solve
+    else:
+        c = sp.mpmath.lu_solve(A, b)  # numerical solve
     print 'coeff:', c
-    # Alternative:
+
+    # c is a sympy Matrix object, numbers are in c[i,0]
     u = sum(c[i,0]*psi[i] for i in range(len(psi)))
     print 'approximation:', u
     print 'f:', sp.expand(f)
@@ -100,5 +106,3 @@ def comparison_plot(f, u, Omega, plotfile='tmp'):
 
 if __name__ == '__main__':
     print 'Module file not meant for execution.'
-
-

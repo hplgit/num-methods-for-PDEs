@@ -264,11 +264,11 @@ condition <span class="math">\(u(0)=0\)</span>, we must require <span class="mat
 The other term, <span class="math">\({\alpha}(u(L))v(L)u'(L)\)</span>,
 is used to impose the other boundary condition <span class="math">\(u'(L)=E\)</span>, resulting in</p>
 <div class="math">
-\[\int_0^L {\alpha}(u)\frac{du}{dx}\frac{dv}{dx}v{\, \mathrm{d}x} =
+\[\int_0^L {\alpha}(u)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} =
 \int_0^L f(u)v{\, \mathrm{d}x} + {\alpha}(u(L))v(L)E\quad\forall v\in V,\]</div>
 <p>or alternatively written more compactly as</p>
 <div class="math">
-\[({\alpha}(u)u', v') = (f(u),v) + {\alpha}(L)v(L)E\quad\forall v\in V
+\[({\alpha}(u)u', v') = (f(u),v) + {\alpha}(u(L))v(L)E\quad\forall v\in V
 {\thinspace .}\]</div>
 <p>Since the problem is nonlinear, we cannot identify a bilinear
 form <span class="math">\(a(u,v)\)</span> and a linear form <span class="math">\(L(v)\)</span>.
@@ -300,17 +300,55 @@ to handle the boundary condition <span class="math">\(u(1)=D\)</span> is <span c
 The variational formulation becomes</p>
 <div class="math">
 \[(u',v') = (2,v) - Cv(0)\quad\forall v\in V{\thinspace .}\]</div>
+<p>From inserting <span class="math">\(u=B + \sum_{j}c_j{\psi}_j\)</span> and choosing <span class="math">\(v={\psi}_i\)</span> we get</p>
+<div class="math">
+\[\sum_{j\in{\mathcal{I}_s}} ({\psi}_j',{\psi}_i')c_j = (2,{\psi}_i)
+- (B',{\psi}_i') - C{\psi}_i(0),\quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
 <p>The entries in the linear system are then</p>
 <div class="math">
-\[\begin{split}A_{i,j} &amp;= ({\psi}_j,{\psi}_i) = \int_{0}^1 {\psi}_i'(x){\psi}_j'(x){\, \mathrm{d}x}
-= \int_0^1 (i+1)(j+1)(1-x)^{i+j}{\, \mathrm{d}x} = \frac{ij + i + j + 1}{i + j + 1},\\
+\[\begin{split}A_{i,j} &amp;= ({\psi}_j',{\psi}_i') = \int_{0}^1 {\psi}_i'(x){\psi}_j'(x){\, \mathrm{d}x}
+= \int_0^1 (i+1)(j+1)(1-x)^{i+j}{\, \mathrm{d}x} = \frac{(i+1)(j+1)}{i + j + 1},\\
 b_i &amp;= (2,{\psi}_i) - (D,{\psi}_i') -C{\psi}_i(0)\\
 &amp;= \int_0^1\left( 2{\psi}_i(x) - D{\psi}_i'(x)\right){\, \mathrm{d}x} -C{\psi}_i(0)\\
-&amp;= \int_0^1 \left( 2(1-x)^{i+1} - D(i+1)(1-x)^i\right){\, \mathrm{d}x}  -C{\psi}_i(0)\\
-&amp;= \frac{2 - (2+i)(D+C)}{i+2}
+&amp;= \int_0^1 \left( 2(1-x)^{i+1} - D(i+1)(1-x)^i\right){\, \mathrm{d}x}  -C\\
+&amp;= \frac{(D-C)(i+2) + 2}{i+2} = D - C + \frac{2}{i+2}
 {\thinspace .}\end{split}\]</div>
-<p>With <span class="math">\(N=1\)</span>
-the global matrix system is</p>
+<p>Relevant <tt class="docutils literal"><span class="pre">sympy</span></tt> commands to help calculate these expressions are</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">x</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;x C D&#39;</span><span class="p">)</span>
+<span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;i j&#39;</span><span class="p">,</span> <span class="n">integer</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">positive</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">psi_i</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">x</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">psi_j</span> <span class="o">=</span> <span class="n">psi_i</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+<span class="n">integrand</span> <span class="o">=</span> <span class="n">diff</span><span class="p">(</span><span class="n">psi_i</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">diff</span><span class="p">(</span><span class="n">psi_j</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+<span class="n">integrand</span> <span class="o">=</span> <span class="n">simplify</span><span class="p">(</span><span class="n">integrand</span><span class="p">)</span>
+<span class="n">A_ij</span> <span class="o">=</span> <span class="n">integrate</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">A_ij</span> <span class="o">=</span> <span class="n">simplify</span><span class="p">(</span><span class="n">A_ij</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;A_ij:&#39;</span><span class="p">,</span> <span class="n">A_ij</span>
+<span class="n">f</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">b_i</span> <span class="o">=</span> <span class="n">integrate</span><span class="p">(</span><span class="n">f</span><span class="o">*</span><span class="n">psi_i</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">-</span> \
+      <span class="n">integrate</span><span class="p">(</span><span class="n">diff</span><span class="p">(</span><span class="n">D</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">diff</span><span class="p">(</span><span class="n">psi_i</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">-</span> \
+      <span class="n">C</span><span class="o">*</span><span class="n">psi_i</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">b_i</span> <span class="o">=</span> <span class="n">simplify</span><span class="p">(</span><span class="n">b_i</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;b_i:&#39;</span><span class="p">,</span> <span class="n">b_i</span>
+</pre></div>
+</div>
+<p>The output becomes</p>
+<div class="highlight-text"><div class="highlight"><pre>A_ij: (i + 1)*(j + 1)/(i + j + 1)
+b_i: ((-C + D)*(i + 2) + 2)/(i + 2)
+</pre></div>
+</div>
+<p>We can now choose some <span class="math">\(N\)</span> and form the linear system, say for <span class="math">\(N=1\)</span>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">N</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;fresh b:&#39;</span><span class="p">,</span> <span class="n">b</span>
+<span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">A</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">A_ij</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+    <span class="n">b</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">b_i</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The system becomes</p>
 <div class="math">
 \[\begin{split}\left(\begin{array}{cc}
 1 &amp; 1\\
@@ -322,18 +360,35 @@ c_1
 \end{array}\right)
 =
 \left(\begin{array}{c}
--C+D+1\\
+1-C+D\\
 2/3 -C + D
 \end{array}\right)\end{split}\]</div>
-<p>The solution becomes <span class="math">\(c_0=-C+D+2\)</span> and <span class="math">\(c_1=-1\)</span>, resulting in</p>
+<p>The solution (<tt class="docutils literal"><span class="pre">c</span> <span class="pre">=</span> <span class="pre">A.LUsolve(b)</span></tt>)
+becomes <span class="math">\(c_0=2 -C+D\)</span> and <span class="math">\(c_1=-1\)</span>, resulting in</p>
 <div class="math">
 \[u(x) = 1 -x^2 + D + C(x-1),\]</div>
-<p>The exact solution is found by.
-integrating twice and applying the boundary conditions, either
-by hand or using <tt class="docutils literal"><span class="pre">sympy</span></tt> as shown in the section <a class="reference internal" href="._main_fem012.html#fem-deq-1d-models-simple"><em>Simple model problems</em></a>.
-It appears that the numerical solution coincides with the exact one.
-This result is to be expected because if <span class="math">\(({u_{\small\mbox{e}}} - B)\in V\)</span>, <span class="math">\(u = {u_{\small\mbox{e}}}\)</span>,
-as proved next.</p>
+<p>We can form this <span class="math">\(u\)</span> in <tt class="docutils literal"><span class="pre">sympy</span></tt> and check that the differential equation
+and the boundary conditions are satisfied:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">u</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">psi_i</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span> <span class="o">+</span> <span class="n">D</span><span class="o">*</span><span class="n">x</span>
+<span class="k">print</span> <span class="s">&#39;u:&#39;</span><span class="p">,</span> <span class="n">simplify</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;u&#39;&#39;:&quot;</span><span class="p">,</span> <span class="n">simplify</span><span class="p">(</span><span class="n">diff</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
+<span class="k">print</span> <span class="s">&#39;BC x=0:&#39;</span><span class="p">,</span> <span class="n">simplify</span><span class="p">(</span><span class="n">diff</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="k">print</span> <span class="s">&#39;BC x=1:&#39;</span><span class="p">,</span> <span class="n">simplify</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The output becomes</p>
+<div class="highlight-text"><div class="highlight"><pre>u: C*x - C + D - x**2 + 1
+u&#39;&#39;: -2
+BC x=0: C
+BC x=1: D
+</pre></div>
+</div>
+<p>The complete <tt class="docutils literal"><span class="pre">sympy</span></tt> code is found in <a class="reference external" href="http://tinyurl.com/nm5587k/fem/u_xx_2_CD.py">u_xx_2_CD.py</a>.</p>
+<p>The exact solution is found by integrating twice and applying the
+boundary conditions, either by hand or using <tt class="docutils literal"><span class="pre">sympy</span></tt> as shown in
+the section <a class="reference internal" href="._main_fem012.html#fem-deq-1d-models-simple"><em>Simple model problems</em></a>.  It appears that the numerical
+solution coincides with the exact one.  This result is to be expected
+because if <span class="math">\(({u_{\small\mbox{e}}} - B)\in V\)</span>, <span class="math">\(u = {u_{\small\mbox{e}}}\)</span>, as proved next.</p>
 </div>
 <div class="section" id="when-the-numerical-method-is-exact">
 <h2>When the numerical method is exact<a class="headerlink" href="#when-the-numerical-method-is-exact" title="Permalink to this headline">¶</a></h2>
@@ -341,14 +396,24 @@ as proved next.</p>
 <span class="math">\(a(u,v)=L(u)\ \forall V\)</span>. The exact solution also fulfills
 <span class="math">\(a({u_{\small\mbox{e}}},v)=L(v)\)</span>, but normally <span class="math">\(({u_{\small\mbox{e}}} -B)\)</span> lies in a much larger
 (infinite-dimensional) space. Suppose, nevertheless, that
-<span class="math">\({u_{\small\mbox{e}}} = B + E\)</span>, where <span class="math">\(E\in V\)</span>. That is, apart from Dirichlet conditions,
-<span class="math">\({u_{\small\mbox{e}}}\)</span> lines in our finite-dimensional space <span class="math">\(V\)</span> we use to compute <span class="math">\(u\)</span>.
-Writing also <span class="math">\(u\)</span> on the same form <span class="math">\(u=B+F\)</span>, we have</p>
+<span class="math">\({u_{\small\mbox{e}}} - B = E\)</span>, where <span class="math">\(E\in V\)</span>. That is, apart from Dirichlet conditions,
+<span class="math">\({u_{\small\mbox{e}}}\)</span> lies in our finite-dimensional space <span class="math">\(V\)</span> we use to compute <span class="math">\(u\)</span>.
+Writing also <span class="math">\(u\)</span> on the same form <span class="math">\(u=B+F\)</span>, <span class="math">\(F\in V\)</span>, we have</p>
 <div class="math">
 \[\begin{split}a(B+E,v) &amp;= L(v)\quad\forall v\in V,\\
 a(B+F,v) &amp;= L(v)\quad\forall v\in V{\thinspace .}\end{split}\]</div>
-<p>Subtracting the equations show that <span class="math">\(a(E-F,v)=0\)</span> for all <span class="math">\(v\in V\)</span>, and
-therefore <span class="math">\(E-F=0\)</span> and <span class="math">\(u={u_{\small\mbox{e}}}\)</span>.</p>
+<p>Since these are two variational statements in the same space, we
+can subtract them and use the bilinear property of <span class="math">\(a(\cdot,\cdot)\)</span>:</p>
+<div class="math">
+\[\begin{split}a(B+E,v) - a(B+F, v) &amp;= L(v) - L(v)\\
+a(B+E-(B+F),v) &amp;= 0\\
+a(E-F),v) &amp;= 0\end{split}\]</div>
+<p>If <span class="math">\(a(E-F),v) = 0\)</span> for all <span class="math">\(v\)</span> in <span class="math">\(V\)</span>, then <span class="math">\(E-F\)</span> must be zero everywhere
+in the domain, i.e., <span class="math">\(E=F\)</span>. Or in other words: <span class="math">\(u={u_{\small\mbox{e}}}\)</span>. This proves
+that the exact solution is recovered if <span class="math">\({u_{\small\mbox{e}}} - B\)</span> lies in <span class="math">\(V\)</span>., i.e.,
+can expressed as <span class="math">\(\sum_{j\in{\mathcal{I}_s}}d_j{\psi}_j\)</span> if <span class="math">\(\{{\psi}_j\}_{j\in{\mathcal{I}_s}}\)</span>
+is a basis for <span class="math">\(V\)</span>. The method will then compute the solution <span class="math">\(c_j=d_j\)</span>,
+<span class="math">\(j\in{\mathcal{I}_s}\)</span>.</p>
 <p>The case treated in the section <a class="reference internal" href="#fem-deq-1d-varform-ex-dn-case"><em>Computing with Dirichlet and Neumann conditions</em></a>
 is of the type where <span class="math">\({u_{\small\mbox{e}}} - B\)</span> is a quadratic function that is 0
 at <span class="math">\(x=1\)</span>, and therefore <span class="math">\(({u_{\small\mbox{e}}} -B)\in V\)</span>, and the method

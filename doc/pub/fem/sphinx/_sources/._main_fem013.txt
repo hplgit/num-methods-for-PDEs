@@ -300,14 +300,14 @@ The other term, :math:`{\alpha}(u(L))v(L)u'(L)`,
 is used to impose the other boundary condition :math:`u'(L)=E`, resulting in
 
 .. math::
-         \int_0^L {\alpha}(u)\frac{du}{dx}\frac{dv}{dx}v{\, \mathrm{d}x} =
+         \int_0^L {\alpha}(u)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} =
         \int_0^L f(u)v{\, \mathrm{d}x} + {\alpha}(u(L))v(L)E\quad\forall v\in V,
         
 
 or alternatively written more compactly as
 
 .. math::
-         ({\alpha}(u)u', v') = (f(u),v) + {\alpha}(L)v(L)E\quad\forall v\in V
+         ({\alpha}(u)u', v') = (f(u),v) + {\alpha}(u(L))v(L)E\quad\forall v\in V
         {\thinspace .}
         
 
@@ -359,21 +359,67 @@ The variational formulation becomes
 .. math::
          (u',v') = (2,v) - Cv(0)\quad\forall v\in V{\thinspace .} 
 
+From inserting :math:`u=B + \sum_{j}c_j{\psi}_j` and choosing :math:`v={\psi}_i` we get
+
+.. math::
+         \sum_{j\in{\mathcal{I}_s}} ({\psi}_j',{\psi}_i')c_j = (2,{\psi}_i)
+        - (B',{\psi}_i') - C{\psi}_i(0),\quad i\in{\mathcal{I}_s}{\thinspace .}
+
 The entries in the linear system are then
 
 .. math::
         
-        A_{i,j} &= ({\psi}_j,{\psi}_i) = \int_{0}^1 {\psi}_i'(x){\psi}_j'(x){\, \mathrm{d}x}
-        = \int_0^1 (i+1)(j+1)(1-x)^{i+j}{\, \mathrm{d}x} = \frac{ij + i + j + 1}{i + j + 1},\\ 
+        A_{i,j} &= ({\psi}_j',{\psi}_i') = \int_{0}^1 {\psi}_i'(x){\psi}_j'(x){\, \mathrm{d}x}
+        = \int_0^1 (i+1)(j+1)(1-x)^{i+j}{\, \mathrm{d}x} = \frac{(i+1)(j+1)}{i + j + 1},\\ 
         b_i &= (2,{\psi}_i) - (D,{\psi}_i') -C{\psi}_i(0)\\ 
         &= \int_0^1\left( 2{\psi}_i(x) - D{\psi}_i'(x)\right){\, \mathrm{d}x} -C{\psi}_i(0)\\ 
-        &= \int_0^1 \left( 2(1-x)^{i+1} - D(i+1)(1-x)^i\right){\, \mathrm{d}x}  -C{\psi}_i(0)\\ 
-        &= \frac{2 - (2+i)(D+C)}{i+2}
+        &= \int_0^1 \left( 2(1-x)^{i+1} - D(i+1)(1-x)^i\right){\, \mathrm{d}x}  -C\\ 
+        &= \frac{(D-C)(i+2) + 2}{i+2} = D - C + \frac{2}{i+2}
         {\thinspace .}
         
 
-With :math:`N=1`
-the global matrix system is
+Relevant ``sympy`` commands to help calculate these expressions are
+
+.. code-block:: python
+
+        from sympy import *
+        x, C, D = symbols('x C D')
+        i, j = symbols('i j', integer=True, positive=True)
+        psi_i = (1-x)**(i+1)
+        psi_j = psi_i.subs(i, j)
+        integrand = diff(psi_i, x)*diff(psi_j, x)
+        integrand = simplify(integrand)
+        A_ij = integrate(integrand, (x, 0, 1))
+        A_ij = simplify(A_ij)
+        print 'A_ij:', A_ij
+        f = 2
+        b_i = integrate(f*psi_i, (x, 0, 1)) - \ 
+              integrate(diff(D*x, x)*diff(psi_i, x), (x, 0, 1)) - \ 
+              C*psi_i.subs(x, 0)
+        b_i = simplify(b_i)
+        print 'b_i:', b_i
+
+The output becomes
+
+.. code-block:: text
+
+        A_ij: (i + 1)*(j + 1)/(i + j + 1)
+        b_i: ((-C + D)*(i + 2) + 2)/(i + 2)
+
+We can now choose some :math:`N` and form the linear system, say for :math:`N=1`:
+
+.. code-block:: python
+
+        N = 1
+        A = zeros((N+1, N+1))
+        b = zeros(N+1)
+        print 'fresh b:', b
+        for r in range(N+1):
+            for s in range(N+1):
+                A[r,s] = A_ij.subs(i, r).subs(j, s)
+            b[r,0] = b_i.subs(i, r)
+
+The system becomes
 
 .. math::
         
@@ -387,24 +433,46 @@ the global matrix system is
         \end{array}\right)
         =
         \left(\begin{array}{c}
-        -C+D+1\\ 
+        1-C+D\\ 
         2/3 -C + D
         \end{array}\right)
         
 
-The solution becomes :math:`c_0=-C+D+2` and :math:`c_1=-1`, resulting in
+The solution (``c = A.LUsolve(b)``)
+becomes :math:`c_0=2 -C+D` and :math:`c_1=-1`, resulting in
 
 .. math::
         
         u(x) = 1 -x^2 + D + C(x-1),
         
 
-The exact solution is found by.
-integrating twice and applying the boundary conditions, either
-by hand or using ``sympy`` as shown in the section :ref:`fem:deq:1D:models:simple`.
-It appears that the numerical solution coincides with the exact one.
-This result is to be expected because if :math:`({u_{\small\mbox{e}}} - B)\in V`, :math:`u = {u_{\small\mbox{e}}}`,
-as proved next.
+We can form this :math:`u` in ``sympy`` and check that the differential equation
+and the boundary conditions are satisfied:
+
+.. code-block:: python
+
+        u = sum(c[r,0]*psi_i.subs(i, r) for r in range(N+1)) + D*x
+        print 'u:', simplify(u)
+        print "u'':", simplify(diff(u, x, x))
+        print 'BC x=0:', simplify(diff(u, x).subs(x, 0))
+        print 'BC x=1:', simplify(u.subs(x, 1))
+
+The output becomes
+
+.. code-block:: text
+
+        u: C*x - C + D - x**2 + 1
+        u'': -2
+        BC x=0: C
+        BC x=1: D
+
+The complete ``sympy`` code is found in `u_xx_2_CD.py <http://tinyurl.com/nm5587k/fem/u_xx_2_CD.py>`__.
+
+The exact solution is found by integrating twice and applying the
+boundary conditions, either by hand or using ``sympy`` as shown in
+the section :ref:`fem:deq:1D:models:simple`.  It appears that the numerical
+solution coincides with the exact one.  This result is to be expected
+because if :math:`({u_{\small\mbox{e}}} - B)\in V`, :math:`u = {u_{\small\mbox{e}}}`, as proved next.
 
 When the numerical method is exact
 ----------------------------------
@@ -413,9 +481,9 @@ We have some variational formulation: find :math:`(u-B)\in V` such that
 :math:`a(u,v)=L(u)\ \forall V`. The exact solution also fulfills
 :math:`a({u_{\small\mbox{e}}},v)=L(v)`, but normally :math:`({u_{\small\mbox{e}}} -B)` lies in a much larger
 (infinite-dimensional) space. Suppose, nevertheless, that
-:math:`{u_{\small\mbox{e}}} = B + E`, where :math:`E\in V`. That is, apart from Dirichlet conditions,
-:math:`{u_{\small\mbox{e}}}` lines in our finite-dimensional space :math:`V` we use to compute :math:`u`.
-Writing also :math:`u` on the same form :math:`u=B+F`, we have
+:math:`{u_{\small\mbox{e}}} - B = E`, where :math:`E\in V`. That is, apart from Dirichlet conditions,
+:math:`{u_{\small\mbox{e}}}` lies in our finite-dimensional space :math:`V` we use to compute :math:`u`.
+Writing also :math:`u` on the same form :math:`u=B+F`, :math:`F\in V`, we have
 
 .. math::
         
@@ -423,8 +491,22 @@ Writing also :math:`u` on the same form :math:`u=B+F`, we have
         a(B+F,v) &= L(v)\quad\forall v\in V{\thinspace .}
         
 
-Subtracting the equations show that :math:`a(E-F,v)=0` for all :math:`v\in V`, and
-therefore :math:`E-F=0` and :math:`u={u_{\small\mbox{e}}}`.
+Since these are two variational statements in the same space, we
+can subtract them and use the bilinear property of :math:`a(\cdot,\cdot)`:
+
+.. math::
+        
+        a(B+E,v) - a(B+F, v) &= L(v) - L(v)\\ 
+        a(B+E-(B+F),v) &= 0\\ 
+        a(E-F),v) &= 0
+        
+
+If :math:`a(E-F),v) = 0` for all :math:`v` in :math:`V`, then :math:`E-F` must be zero everywhere
+in the domain, i.e., :math:`E=F`. Or in other words: :math:`u={u_{\small\mbox{e}}}`. This proves
+that the exact solution is recovered if :math:`{u_{\small\mbox{e}}} - B` lies in :math:`V`., i.e.,
+can expressed as :math:`\sum_{j\in{\mathcal{I}_s}}d_j{\psi}_j` if :math:`\{{\psi}_j\}_{j\in{\mathcal{I}_s}}`
+is a basis for :math:`V`. The method will then compute the solution :math:`c_j=d_j`,
+:math:`j\in{\mathcal{I}_s}`.
 
 The case treated in the section :ref:`fem:deq:1D:varform:ex:DN:case`
 is of the type where :math:`{u_{\small\mbox{e}}} - B` is a quadratic function that is 0

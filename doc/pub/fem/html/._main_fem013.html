@@ -1011,13 +1011,13 @@ The term \( \dfc(u(0))v(0)u'(0)=0 \) since \( v(0) \).
 The other term, \( \dfc(u(L))v(L)u'(L) \),
 is used to impose the other boundary condition \( u'(L)=E \), resulting in
 
-$$ \int_0^L \dfc(u)\frac{du}{dx}\frac{dv}{dx}v\dx =
+$$ \int_0^L \dfc(u)\frac{du}{dx}\frac{dv}{dx}\dx =
 \int_0^L f(u)v\dx + \dfc(u(L))v(L)E\quad\forall v\in V,
 $$
 
 or alternatively written more compactly as
 
-$$ (\dfc(u)u', v') = (f(u),v) + \dfc(L)v(L)E\quad\forall v\in V
+$$ (\dfc(u)u', v') = (f(u),v) + \dfc(u(L))v(L)E\quad\forall v\in V
 \tp
 $$
 
@@ -1066,24 +1066,73 @@ The variational formulation becomes
 
 $$ (u',v') = (2,v) - Cv(0)\quad\forall v\in V\tp $$
 
+From inserting \( u=B + \sum_{j}c_j\baspsi_j \) and choosing \( v=\baspsi_i \) we get
+
+$$ \sum_{j\in\If} (\baspsi_j',\baspsi_i')c_j = (2,\baspsi_i)
+- (B',\baspsi_i') - C\baspsi_i(0),\quad i\in\If\tp$$
+
 The entries in the linear system are then
 
 $$
 \begin{align*}
-A_{i,j} &= (\baspsi_j,\baspsi_i) = \int_{0}^1 \baspsi_i'(x)\baspsi_j'(x)\dx
-= \int_0^1 (i+1)(j+1)(1-x)^{i+j}\dx = \frac{ij + i + j + 1}{i + j + 1},\\ 
+A_{i,j} &= (\baspsi_j',\baspsi_i') = \int_{0}^1 \baspsi_i'(x)\baspsi_j'(x)\dx
+= \int_0^1 (i+1)(j+1)(1-x)^{i+j}\dx = \frac{(i+1)(j+1)}{i + j + 1},\\ 
 b_i &= (2,\baspsi_i) - (D,\baspsi_i') -C\baspsi_i(0)\\ 
 &= \int_0^1\left( 2\baspsi_i(x) - D\baspsi_i'(x)\right)\dx -C\baspsi_i(0)\\ 
-&= \int_0^1 \left( 2(1-x)^{i+1} - D(i+1)(1-x)^i\right)\dx  -C\baspsi_i(0)\\ 
-&= \frac{2 - (2+i)(D+C)}{i+2}
+&= \int_0^1 \left( 2(1-x)^{i+1} - D(i+1)(1-x)^i\right)\dx  -C\\ 
+&= \frac{(D-C)(i+2) + 2}{i+2} = D - C + \frac{2}{i+2}
 \tp
 \end{align*}
 $$
 
+Relevant <code>sympy</code> commands to help calculate these expressions are
 
 <p>
-With \( N=1 \)
-the global matrix system is
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
+x, C, D <span style="color: #666666">=</span> symbols(<span style="color: #BA2121">&#39;x C D&#39;</span>)
+i, j <span style="color: #666666">=</span> symbols(<span style="color: #BA2121">&#39;i j&#39;</span>, integer<span style="color: #666666">=</span><span style="color: #008000">True</span>, positive<span style="color: #666666">=</span><span style="color: #008000">True</span>)
+psi_i <span style="color: #666666">=</span> (<span style="color: #666666">1-</span>x)<span style="color: #666666">**</span>(i<span style="color: #666666">+1</span>)
+psi_j <span style="color: #666666">=</span> psi_i<span style="color: #666666">.</span>subs(i, j)
+integrand <span style="color: #666666">=</span> diff(psi_i, x)<span style="color: #666666">*</span>diff(psi_j, x)
+integrand <span style="color: #666666">=</span> simplify(integrand)
+A_ij <span style="color: #666666">=</span> integrate(integrand, (x, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>))
+A_ij <span style="color: #666666">=</span> simplify(A_ij)
+<span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;A_ij:&#39;</span>, A_ij
+f <span style="color: #666666">=</span> <span style="color: #666666">2</span>
+b_i <span style="color: #666666">=</span> integrate(f<span style="color: #666666">*</span>psi_i, (x, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>)) <span style="color: #666666">-</span> \ 
+      integrate(diff(D<span style="color: #666666">*</span>x, x)<span style="color: #666666">*</span>diff(psi_i, x), (x, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>)) <span style="color: #666666">-</span> \ 
+      C<span style="color: #666666">*</span>psi_i<span style="color: #666666">.</span>subs(x, <span style="color: #666666">0</span>)
+b_i <span style="color: #666666">=</span> simplify(b_i)
+<span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;b_i:&#39;</span>, b_i
+</pre></div>
+<p>
+The output becomes
+
+<p>
+
+<!-- code=text (!bc dat) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">A_ij: (i + 1)*(j + 1)/(i + j + 1)
+b_i: ((-C + D)*(i + 2) + 2)/(i + 2)
+</pre></div>
+<p>
+We can now choose some \( N \) and form the linear system, say for \( N=1 \):
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">N <span style="color: #666666">=</span> <span style="color: #666666">1</span>
+A <span style="color: #666666">=</span> zeros((N<span style="color: #666666">+1</span>, N<span style="color: #666666">+1</span>))
+b <span style="color: #666666">=</span> zeros(N<span style="color: #666666">+1</span>)
+<span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;fresh b:&#39;</span>, b
+<span style="color: #008000; font-weight: bold">for</span> r <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(N<span style="color: #666666">+1</span>):
+    <span style="color: #008000; font-weight: bold">for</span> s <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(N<span style="color: #666666">+1</span>):
+        A[r,s] <span style="color: #666666">=</span> A_ij<span style="color: #666666">.</span>subs(i, r)<span style="color: #666666">.</span>subs(j, s)
+    b[r,<span style="color: #666666">0</span>] <span style="color: #666666">=</span> b_i<span style="color: #666666">.</span>subs(i, r)
+</pre></div>
+<p>
+The system becomes
 
 $$
 \begin{equation*}
@@ -1097,13 +1146,14 @@ c_1
 \end{array}\right)
 =
 \left(\begin{array}{c}
--C+D+1\\ 
+1-C+D\\ 
 2/3 -C + D
 \end{array}\right)
 \end{equation*}
 $$
 
-The solution becomes \( c_0=-C+D+2 \) and \( c_1=-1 \), resulting in
+The solution (<code>c = A.LUsolve(b)</code>)
+becomes \( c_0=2 -C+D \) and \( c_1=-1 \), resulting in
 
 $$
 \begin{equation}
@@ -1111,14 +1161,38 @@ u(x) = 1 -x^2 + D + C(x-1),
 \end{equation}
 $$
 
+We can form this \( u \) in <code>sympy</code> and check that the differential equation
+and the boundary conditions are satisfied:
 
 <p>
-The exact solution is found by.
-integrating twice and applying the boundary conditions, either
-by hand or using <code>sympy</code> as shown in the section <a href="._main_fem012.html#fem:deq:1D:models:simple">Simple model problems</a>.
-It appears that the numerical solution coincides with the exact one.
-This result is to be expected because if \( (\uex - B)\in V \), \( u = \uex \),
-as proved next.
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">u <span style="color: #666666">=</span> <span style="color: #008000">sum</span>(c[r,<span style="color: #666666">0</span>]<span style="color: #666666">*</span>psi_i<span style="color: #666666">.</span>subs(i, r) <span style="color: #008000; font-weight: bold">for</span> r <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(N<span style="color: #666666">+1</span>)) <span style="color: #666666">+</span> D<span style="color: #666666">*</span>x
+<span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;u:&#39;</span>, simplify(u)
+<span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&quot;u&#39;&#39;:&quot;</span>, simplify(diff(u, x, x))
+<span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;BC x=0:&#39;</span>, simplify(diff(u, x)<span style="color: #666666">.</span>subs(x, <span style="color: #666666">0</span>))
+<span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;BC x=1:&#39;</span>, simplify(u<span style="color: #666666">.</span>subs(x, <span style="color: #666666">1</span>))
+</pre></div>
+<p>
+The output becomes
+
+<p>
+
+<!-- code=text (!bc dat) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">u: C*x - C + D - x**2 + 1
+u&#39;&#39;: -2
+BC x=0: C
+BC x=1: D
+</pre></div>
+<p>
+The complete <code>sympy</code> code is found in <a href="http://tinyurl.com/nm5587k/fem/u_xx_2_CD.py" target="_self"><tt>u_xx_2_CD.py</tt></a>.
+
+<p>
+The exact solution is found by integrating twice and applying the
+boundary conditions, either by hand or using <code>sympy</code> as shown in
+the section <a href="._main_fem012.html#fem:deq:1D:models:simple">Simple model problems</a>.  It appears that the numerical
+solution coincides with the exact one.  This result is to be expected
+because if \( (\uex - B)\in V \), \( u = \uex \), as proved next.
 
 <h2 id="___sec131">When the numerical method is exact <a name="___sec131"></a></h2>
 
@@ -1127,9 +1201,9 @@ We have some variational formulation: find \( (u-B)\in V \) such that
 \( a(u,v)=L(u)\ \forall V \). The exact solution also fulfills
 \( a(\uex,v)=L(v) \), but normally \( (\uex -B) \) lies in a much larger
 (infinite-dimensional) space. Suppose, nevertheless, that
-\( \uex = B + E \), where \( E\in V \). That is, apart from Dirichlet conditions,
-\( \uex \) lines in our finite-dimensional space \( V \) we use to compute \( u \).
-Writing also \( u \) on the same form \( u=B+F \), we have
+\( \uex - B = E \), where \( E\in V \). That is, apart from Dirichlet conditions,
+\( \uex \) lies in our finite-dimensional space \( V \) we use to compute \( u \).
+Writing also \( u \) on the same form \( u=B+F \), \( F\in V \), we have
 
 $$
 \begin{align*}
@@ -1138,8 +1212,23 @@ a(B+F,v) &= L(v)\quad\forall v\in V\tp
 \end{align*}
 $$
 
-Subtracting the equations show that \( a(E-F,v)=0 \) for all \( v\in V \), and
-therefore \( E-F=0 \) and \( u=\uex \).
+Since these are two variational statements in the same space, we
+can subtract them and use the bilinear property of \( a(\cdot,\cdot) \):
+
+$$
+\begin{align*}
+a(B+E,v) - a(B+F, v) &= L(v) - L(v)\\ 
+a(B+E-(B+F),v) &= 0\\ 
+a(E-F),v) &= 0
+\end{align*}
+$$
+
+If \( a(E-F),v) = 0 \) for all \( v \) in \( V \), then \( E-F \) must be zero everywhere
+in the domain, i.e., \( E=F \). Or in other words: \( u=\uex \). This proves
+that the exact solution is recovered if \( \uex - B \) lies in \( V \)., i.e.,
+can expressed as \( \sum_{j\in\If}d_j\baspsi_j \) if \( \{\baspsi_j\}_{j\in\If} \)
+is a basis for \( V \). The method will then compute the solution \( c_j=d_j \),
+\( j\in\If \).
 
 <p>
 The case treated in the section <a href="#fem:deq:1D:varform:ex:DN:case">Computing with Dirichlet and Neumann conditions</a>

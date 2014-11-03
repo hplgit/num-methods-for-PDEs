@@ -46,7 +46,9 @@ MathJax.Hub.Config({
 
 <!-- newcommands_keep.tex -->
 $$
+\newcommand{\uex}{{u_{\small\mbox{e}}}}
 \newcommand{\tp}{\thinspace .}
+\newcommand{\If}{\mathcal{I}_s}     % for FEM
 \newcommand{\basphi}{\varphi}
 $$
 
@@ -139,59 +141,78 @@ Relevant background material consists of
  <li> <a href="http://tinyurl.com/k3sdbuv/pub/sphinx-wave/._main_wave004.html" target="_self">Analysis of wave equations</a>, which builds on <a href="http://tinyurl.com/k3sdbuv/pub/pub/sphinx-vib/._main_vib000.html#analysis-of-the-numerical-scheme" target="_self">analysis of vibration equations</a>.</li>
 </ul>
 
-The finite element solution is written as
+Introduce a set of \( N_n=N-1 \) nodes numbered from left to right, with
+coordinates \( x_0,x_1,\ldots,x_N \). Associated with these nodes are a
+set of basis functions \( \{\basphi_0(x),\ldots,\basphi_N(x)\} \).
+
+<p>
+Let \( \uex(x,t) \) be the exact solution of the
+initial-boundary value problem. After discretization in time by
+finite differences, we get a set of time-discrete problems for \( \uex^n(x) \),
+where \( \uex^n(x)\approx \uex(x,t_n) \).
+These functions of space are then approximated by finite
+element expansions
 
 $$
 \begin{equation}
-u^n(x) \equiv u(x,t_n) = \sum_{j=0}^N c_j^n\basphi_j(x),
+\uex^n(x) \approx u^n(x) = \sum_{j\in\If} c_j^n\basphi_j(x),
 \label{fem:wave:u1expansion}
 \end{equation}
 $$
 
-where \( N=N_n \), \( N_n \) being the number of nodes. Number the cells and nodes
-from left to right. The expansion \eqref{fem:wave:u1expansion} requires
-the Dirichlet boundary condition at \( x=0 \) to be incorporated by modifying
-the linear systems. Alternatively, we can seek
+in case the linear system for the coefficients
+\( \{c^n_j\}_{j\in\If} \) is modified such that
+\( c_0^j=U_0(t_n) \). The unknown coefficients now involve \( u \) at all
+the nodes and consequently \( \If = \{0,\ldots,N\} \).
+
+<p>
+Alternatively, one can use a boundary function to take care of
+the Dirichlet condition at \( x=0 \):
 
 $$
 \begin{equation}
 u^n(x) \equiv
-u(x,t_n) = U_0(t_n)\basphi_0(x) + \sum_{j=0}^N c_j^n\basphi_{j+1}(x)\tp
+u(x,t_n) = U_0(t_n)\basphi_0(x) + \sum_{j\in\If} c_j^n\basphi_{j+1}(x)\tp
 \label{fem:wave:u2expansion}
 \end{equation}
 $$
 
+Now, \( \If = \{0,\ldots,N-1\} \) and the unknowns \( c_0^n,\ldots,c_{N-1}^n \)
+are the values of \( u \) at the \( N \) nodes \( x_1,\ldots,x_N \), i.e., all the nodes
+where we do not have Dirichlet conditions.
 
 <p>
 <b>a)</b>
-Set up equations for the coefficients \( c_j^0 \) associated with the
+Set up equations for the coefficients \( c_j^0 \), \( j\in\If \), associated with the
 initial condition \( u(x,0)=I(x) \).
-Use two methods: Galerkin and
-collocation/interpolation.
+Use two methods: Galerkin and collocation/interpolation.
 
 <p>
 <b>b)</b>
 Use a finite difference method in time to formulate a sequence of
-spatial problems for \( u^n(x) \), \( n=0,1,\ldots,N \). A special problem
+spatial problems for \( \uex^n(x) \), \( n=0,1,\ldots,N_t \). A special problem
 is needed for \( n=1 \) in order to incorporate the boundary condition with
 \( u_t(x,t) \).
 
 <p>
 <b>c)</b>
-Use a Galerkin method to derive a variational form of each of the
-spatial problems. Integrate the \( u_{xx} \) term by parts.
+Apply Galerkin's method to derive a variational form of each of the
+spatial problems. Integrate the term with the second-order derivative
+by parts. Express the variational form in terms of \( u^{n+1} \), \( u^n \), and
+\( u^{n-1} \).
 
 <p>
 <b>d)</b>
-Derive the linear system to be solved at each time level and express
-it in the form
+Insert \eqref{fem:wave:u1expansion} or \eqref{fem:wave:u2expansion}
+in the variational form and
+derive the linear system to be solved at each time level.
+Express the system in the form
 
 $$ Mc^{n+1} = 2Mc^{n} - Mc^{n-1} - \Delta t^2 c^2 Kc^{n},$$
 
 where \( M \) and \( K \) are matrices,
-\( c^n=(c_0^n,c_1^n,\ldots,c^n_{N}) \),
-\( c_j^n \) being the coefficients in the expansion \( u^n = \sum_{j=0}^{N}
-c_j\varphi_j(x) \). Set up the formulas for the matrix entries
+\( c^n=\{c_j^n\}_{j\in\If} \).
+Set up the formulas for the matrix entries
 \( M_{i,j} \) and \( K_{i,j} \).
 
 <p>
@@ -203,7 +224,7 @@ a new time level.
 
 <p>
 <b>e)</b>
-Assume P1 elements and
+Use P1 elements and
 compute element matrices and vectors corresponding to the \( M \) and \( K \)
 matrices. Assemble the element contributions to a global matrices.
 
@@ -226,9 +247,11 @@ $$
 
 <p>
 <b>Hint.</b>
-Write out equation number \( i \) and group the \( c_j \) terms to mimic the
-differences above. Then substitute \( c_j \) by \( u_j \) (or \( u_{j+1} \), depending
-on how the Dirichlet condition is implemented) to write the finite element
+Write out an arbitrary equation in the linear system
+and group the unknown coefficients to mimic the
+differences above. Then substitute the coefficients by their
+corresponding \( u \) values, using a notation \( u^n_i \) as the
+finite element approximation of \( \uex(x_i,t_n) \), and write the finite element
 equation in the same form as a finite difference scheme.
 
 <p>

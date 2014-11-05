@@ -1,0 +1,397 @@
+.. !split
+
+.. _nonlin:systems:alg:
+
+Systems of nonlinear algebraic equations
+========================================
+
+Implicit time discretization methods for a system of ODEs, or a PDE,
+lead to *systems* of nonlinear algebraic equations, written
+compactly as
+
+.. math::
+         F(u) = 0,
+
+where :math:`u` is a vector of unknowns :math:`u=(u_0,\ldots,u_N)`, and
+:math:`F` is a vector function: :math:`F=(F_0,\ldots,F_N)`.
+Sometimes the equation system has a special structure because of the
+underlying problem, e.g.,
+
+.. math::
+         A(u)u = b(u),
+
+with :math:`A(u)` as
+an :math:`(N+1)\times (N+1)` matrix function of :math:`u` and :math:`b` as a vector
+function: :math:`b=(b_0,\ldots,b_N)`.
+
+We shall next explain how Picard iteration and Newton's method
+can be applied to systems like :math:`F(u)=0` and :math:`A(u)u=b(u)`.
+The exposition has a focus on ideas and practical computations.
+More theoretical considerations, including quite general results
+on convergence properties
+of these methods, can be found in Kelley [Ref1]_.
+
+.. _nonlin:systems:alg:Picard:
+
+Picard iteration  (2)
+---------------------
+
+We cannot apply Picard iteration to nonlinear equations unless there is
+some special structure. For the commonly arising case
+:math:`A(u)u=b(u)` we can linearize the
+product :math:`A(u)u` to :math:`A(u^{-})u` and :math:`b(u)` as :math:`b(u^{-})`.
+That is, we use the most previously
+computed approximation in :math:`A` and :math:`b` to arrive at a *linear system* for
+:math:`u`:
+
+.. math::
+         A(u^{-})u = b(u^{-}){\thinspace .}
+
+A relaxed iteration takes the form
+
+.. math::
+         A(u^{-})u^* = b(u^{-}),\quad u = \omega u^* + (1-\omega)u^{-}{\thinspace .}
+
+In other words, we solve a system of nonlinear algebraic equations as
+a sequence of linear systems.
+
+
+.. admonition:: Algorithm for relaxed Picard iteration
+
+   Given :math:`A(u)u=b(u)` and an initial guess :math:`u^{-}`, iterate until convergence:
+   
+   1. solve :math:`A(u^{-})u^* = b(u^{-})` with respect to :math:`u^*`
+   
+   2. :math:`u = \omega u^* + (1-\omega) u^{-}`
+   
+   3. :math:`u^{-}\ \leftarrow\ u`
+
+
+
+
+.. The iteration is stopped when the
+
+.. change in the unknown, :math:`|u - u^{-}|`, or the residual, :math:`|A(u)u-b|`,
+
+.. is sufficiently small.
+
+.. _nonlin:systems:alg:Newton:
+
+Newton's method  (2)
+--------------------
+
+The natural starting point for Newton's method is the general
+nonlinear vector equation :math:`F(u)=0`.
+As for a scalar equation, the idea is to approximate :math:`F`
+around a known value :math:`u^{-}` by a linear function :math:`\hat F`,
+calculated from the first two terms of a Taylor expansion of
+:math:`F`. In the multi-variate case these two terms become
+
+.. math::
+         F(u^{-}) + J(u^{-}) \cdot (u - u^{-}),
+
+where :math:`J` is the *Jacobian* of :math:`F`, defined by
+
+.. math::
+         J_{i,j} = \frac{\partial F_i}{\partial u_j}{\thinspace .}
+
+So, the original nonlinear system is approximated by
+
+.. math::
+         \hat F(u) = F(u^{-}) + J(u^{-}) \cdot (u - u^{-})=0,
+
+which is linear in :math:`u` and can be solved in a two-step procedure:
+first solve :math:`J\delta u = -F(u^{-})` with respect to the vector :math:`\delta u`
+and then update :math:`u = u^{-} + \delta u`.
+A relaxation parameter can easily be incorporated:
+
+.. math::
+         u = \omega(u^{-} +\delta u)
+        + (1-\omega)u^{-} = u^{-}  + \omega\delta u{\thinspace .}
+        
+
+
+.. admonition:: Algorithm for Newton's method
+
+   Given :math:`F(u)=0` and an initial guess :math:`u^{-}`, iterate until convergence:
+   
+   1. solve :math:`J\delta u = -F(u^{-})` with respect to :math:`\delta u`
+   
+   2. :math:`u = u^{-} + \omega\delta u`
+   
+   3. :math:`u^{-}\ \leftarrow\ u`
+
+
+
+
+For the special system with structure :math:`A(u)u=b(u)`,
+
+.. math::
+         F_i = \sum_k A_{i,k}(u)u_k - b_i(u),
+
+one gets
+
+.. math::
+        
+        J_{i,j} = \sum_k \frac{\partial A_{i,k}}{\partial u_j}u_k
+        + A_{i,j} -
+        \frac{\partial b_i}{\partial u_j}{\thinspace .}
+        
+
+We realize that the Jacobian needed in Newton's method consists of
+:math:`A(u^{-})` as in the Picard iteration plus two additional terms
+arising from the differentiation. Using the notation :math:`A^{\prime}(u)` for
+:math:`\partial A/\partial u` (a quantity with three indices: :math:`\partial
+A_{i,k}/\partial u_j`), and :math:`b^{\prime}(u)` for :math:`\partial b/\partial u` (a
+quantity with two indices: :math:`\partial b_i/\partial u_j`), we can write
+the linear system to be solved as
+
+.. math::
+         (A + A^{\prime}u + b^{\prime})\delta u = -Au + b,
+
+or
+
+.. math::
+         (A(u^{-}) + A^{\prime}(u^{-})u^{-} + b^{\prime}(u^{-}))\delta u
+        = -A(u^{-})u^{-} + b(u^{-}){\thinspace .}
+
+Rearranging the terms demonstrates the difference from the system
+solved in each Picard iteration:
+
+.. math::
+         \underbrace{A(u^{-})(u^{-}+\delta u) - b(u^{-})}_{\hbox{Picard system}}
+        +\, \gamma (A^{\prime}(u^{-})u^{-} + b^{\prime}(u^{-}))\delta u
+        = 0{\thinspace .}
+
+Here we have inserted a parameter :math:`\gamma` such that :math:`\gamma=0`
+gives the Picard system and :math:`\gamma=1` gives the Newton system.
+Such a parameter can be handy in software to easily switch between
+the methods.
+
+
+.. admonition:: Combined algorithm for Picard and Newton iteration
+
+   Given :math:`A(u)`, :math:`b(u)`, and an initial guess :math:`u^{-}`, iterate until convergence:
+   
+   1. solve :math:`(A + \gamma(A^{\prime}(u^{-})u^{-} +
+      b^{\prime}(u^{-})))\delta u = -A(u^{-})u^{-} + b(u^{-})`
+      with respect to :math:`\delta u`
+   
+   2. :math:`u = u^{-} + \omega\delta u`
+   
+   3. :math:`u^{-}\ \leftarrow\ u`
+   
+   :math:`\gamma =1` gives a Newton method while :math:`\gamma =0` corresponds to
+   Picard iteration.
+
+
+
+
+.. _nonlin:systems:alg:terminate:
+
+Stopping criteria  (2)
+----------------------
+
+.. index:: stopping criteria (nonlinear problems)
+
+Let :math:`||\cdot||` be the standard Eucledian vector norm. Four termination
+criteria are much in use:
+
+ * Absolute change in solution: :math:`||u - u^{-}||\leq \epsilon_u`
+
+ * Relative change in solution: :math:`||u - u^{-}||\leq \epsilon_u ||u_0||`,
+   where :math:`u_0` denotes the start value of :math:`u^{-}` in the iteration
+
+ * Absolute residual: :math:`||F(u)|| \leq \epsilon_r`
+
+ * Relative residual: :math:`||F(u)|| \leq \epsilon_r ||F(u_0)||`
+
+To prevent divergent iterations to run forever,
+one terminates the iterations when
+the current number of iterations :math:`k` exceeds a maximum value :math:`k_{\max}`.
+
+The relative criteria are most used since they are not sensitive to
+the characteristic size of :math:`u`. Nevertheless, the relative criteria
+can be misleading when the initial start value for the iteration is
+very close to the solution, since an unnecessary reduction in
+the error measure is enforced. In such cases the absolute criteria
+work better. It is common to combine the absolute and relative measures
+of the size of the residual,
+as in
+
+.. math::
+        
+        ||F(u)|| \leq \epsilon_{rr} ||F(u_0)|| + \epsilon_{ra},
+        
+
+where :math:`\epsilon_{rr}` is the tolerance in the relative criterion
+and :math:`\epsilon_{ra}` is the tolerance in the absolute criterion.
+With a very good initial guess for the iteration
+(typically the solution of a differential
+equation at the previous time level), the term :math:`||F(u_0)||` is small
+and :math:`\epsilon_{ra}` is the dominating tolerance. Otherwise,
+:math:`\epsilon_{rr} ||F(u_0)||` and the relative criterion dominates.
+
+With the change in solution as criterion we can formulate a combined
+absolute and relative measure of the change in the solution:
+
+.. math::
+        
+        ||\delta u|| \leq \epsilon_{ur} ||u_0|| + \epsilon_{ua},
+        
+
+The ultimate termination criterion, combining the residual and
+the change in solution with a test on the maximum number
+of iterations allow, can be expressed as
+
+.. math::
+        
+        ||F(u)|| \leq \epsilon_{rr} ||F(u_0)|| + \epsilon_{ra}
+        \quad\hbox{or}\quad
+        ||\delta u|| \leq \epsilon_{ur} ||u_0|| + \epsilon_{ua}
+        \quad\hbox{or}\quad
+        k>k_{\max}{\thinspace .}
+        
+
+.. _nonlin:systems:alg:SI:
+
+Example: A nonlinear ODE model from epidemiology
+------------------------------------------------
+
+The simplest model spreading of a disease, such as a flu, takes
+the form of a :math:`2\times 2` ODE system
+
+.. math::
+        
+        S^{\prime} = -\beta SI,
+        
+
+.. math::
+          
+        I^{\prime} = \beta SI - \nu I,
+        
+
+where :math:`S(t)` is the number of people who can get ill (susceptibles)
+and :math:`I(t)` is the number of people who are ill (infected).
+The constants :math:`\beta >0` and :math:`\nu >0` must be given along with
+initial conditions :math:`S(0)` and :math:`I(0)`.
+
+Implicit time discretization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A Crank-Nicolson scheme leads to a :math:`2\times 2` system of nonlinear
+algebraic equations in the unknowns :math:`S^{n+1}` and :math:`I^{n+1}`:
+
+.. math::
+        
+        \frac{S^{n+1}-S^n}{\Delta t} = -\beta [SI]^{n+\frac{1}{2}}
+        \approx -\frac{\beta}{2}(S^nI^n + S^{n+1}I^{n+1}),
+        
+
+.. math::
+          
+        \frac{I^{n+1}-I^n}{\Delta t} = \beta [SI]^{n+\frac{1}{2}} -
+        \nu I^{n+\frac{1}{2}}
+        \approx \frac{\beta}{2}(S^nI^n + S^{n+1}I^{n+1}) -
+        \frac{\nu}{2}(I^n + I^{n+1}){\thinspace .}
+        
+
+Introducing :math:`S` for :math:`S^{n+1}`, :math:`S^{(1)}` for :math:`S^n`, :math:`I` for :math:`I^{n+1}`,
+:math:`I^{(1)}` for :math:`I^n`, we can rewrite the system as
+
+.. _Eq:nonlin:systems:alg:SI:CN:FS:
+
+.. math::
+   :label: nonlin:systems:alg:SI:CN:FS
+        
+        F_S(S,I) = S - S^{(1)} +
+        \frac{1}{2}\Delta t\beta(S^{(1)}I^{(1)} + SI) = 0,
+        
+        
+        
+
+.. _Eq:nonlin:systems:alg:SI:CN:FI:
+
+.. math::
+   :label: nonlin:systems:alg:SI:CN:FI
+          
+        F_I(S,I) = I - I^{(1)} -
+        \frac{1}{2}\Delta t\beta(S^{(1)}I^{(1)} + SI) -
+        \frac{1}{2}\Delta t\nu(I^{(1)} + I) =0{\thinspace .}
+        
+        
+
+A Picard iteration
+~~~~~~~~~~~~~~~~~~
+
+We assume that we have approximations :math:`S_{-}` and :math:`I_{-}` to :math:`S` and :math:`I`.
+A way of linearizing the only nonlinear term :math:`SI` is to write
+:math:`I_{-}S` in the :math:`F_S=0` equation and :math:`S_{-}I` in the :math:`F_I=0` equation,
+which also *decouples* the equations. Solving the resulting linear
+equations with respect to the unknowns :math:`S` and :math:`I` gives
+
+.. math::
+        
+        S &= \frac{S^{(1)} - \frac{1}{2}\Delta t\beta S^{(1)}I^{(1)}}
+        {1 + \frac{1}{2}\Delta t\beta I_{-}},
+        \\ 
+        I &= \frac{I^{(1)} + \frac{1}{2}\Delta t\beta S^{(1)}I^{(1)}}
+        {1 - \frac{1}{2}\Delta t\beta S_{-} + \nu}{\thinspace .}
+        
+
+Before a new iteration, we must update :math:`S^{-}\ \leftarrow\ S` and
+:math:`I^{-}\ \leftarrow\ I`.
+
+Newton's method  (3)
+~~~~~~~~~~~~~~~~~~~~
+
+The nonlinear system
+:eq:`nonlin:systems:alg:SI:CN:FS`-:eq:`nonlin:systems:alg:SI:CN:FI`
+can be written as :math:`F(u)=0` with :math:`F=(F_S,F_I)` and :math:`u=(S,I)`.  The
+Jacobian becomes
+
+.. math::
+        
+        \renewcommand*{\arraystretch}{2}
+        J = \left(\begin{array}{cc}
+        \frac{\partial}{\partial S} F_S & \frac{\partial}{\partial I}F_S\\ 
+        \frac{\partial}{\partial S} F_I & \frac{\partial}{\partial I}F_I
+        \end{array}\right)
+        = \left(\begin{array}{cc}
+        1 + \frac{1}{2}\Delta t\beta I & \frac{1}{2}\Delta t\beta\\ 
+        - \frac{1}{2}\Delta t\beta S & 1 - \frac{1}{2}\Delta t\beta I -
+        \frac{1}{2}\Delta t\nu
+        \end{array}\right)
+        {\thinspace .}
+        
+
+The Newton system :math:`J(u^{-})\delta u = -F(u^{-})`
+to be solved in each iteration is then
+
+.. math::
+        
+        \renewcommand*{\arraystretch}{1.5}
+        &
+        \left(\begin{array}{cc}
+        1 + \frac{1}{2}\Delta t\beta I_{-} & \frac{1}{2}\Delta t\beta S_{-}\\ 
+        - \frac{1}{2}\Delta t\beta S_{-} & 1 - \frac{1}{2}\Delta t\beta I_{-} -
+        \frac{1}{2}\Delta t\nu
+        \end{array}\right)
+        \left(\begin{array}{c}
+        \delta S\\ 
+        \delta I
+        \end{array}\right)
+        =\\ 
+        & \qquad\qquad
+        \left(\begin{array}{c}
+        S_{-} - S^{(1)} + \frac{1}{2}\Delta t\beta(S^{(1)}I^{(1)} + S_{-}I_{-})\\ 
+        I_{-} - I^{(1)} - \frac{1}{2}\Delta t\beta(S^{(1)}I^{(1)} + S_{-}I_{-}) -
+        \frac{1}{2}\Delta t\nu(I^{(1)} + I_{-})
+        \end{array}\right)
+        
+
+**Remark.**
+For this particular system of ODEs, explicit time integration methods work very
+well. The 4-th order Runge-Kutta method is an excellent
+balance between high accuracy, high efficiency, and simplicity.
+

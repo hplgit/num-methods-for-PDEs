@@ -1,0 +1,363 @@
+.. !split
+
+Multi-dimensional PDE problems
+==============================
+
+.. _nonlin:alglevel:dD:fe:
+
+Finite element discretization
+-----------------------------
+
+The derivation of :math:`F_i` and :math:`J_{i,j}` in the 1D model problem
+is easily generalized to multi-dimensional problems.
+For example, Backward Euler discretization of the
+PDE
+
+.. _Eq:nonlin:alglevel:dD:fe:PDE:
+
+.. math::
+   :label: nonlin:alglevel:dD:fe:PDE
+        
+        u_t = \nabla\cdot({\alpha}(u)\nabla u) + f(u),
+        
+        
+
+gives the nonlinear time-discrete PDEs
+
+.. math::
+         u^n - \Delta t\nabla\cdot({\alpha}(u^n)\nabla u^n) + f(u^n) = u^{n-1},
+
+or with :math:`u^n` simply as :math:`u` and :math:`u^{n-1}` as :math:`u^{(1)}`,
+
+.. math::
+         u - \Delta t\nabla\cdot({\alpha}(u^n)\nabla u) - \Delta t f(u) = u^{(1)}{\thinspace .}
+
+The variational form, assuming homogeneous Neumann conditions
+for simplicity, becomes
+
+.. _Eq:nonlin:alglevel:dD:fe:varform:
+
+.. math::
+   :label: nonlin:alglevel:dD:fe:varform
+        
+        \int_\Omega (uv + \Delta t{\alpha}(u)\nabla u\cdot\nabla v
+        - \Delta t f(u)v - u^{(1)} v){\, \mathrm{d}x}{\thinspace .}
+        
+        
+
+The nonlinear algebraic equations follow from setting :math:`v={\psi}_i`
+and using the representation :math:`u=\sum_kc_k{\psi}_k`, which we
+just write as
+
+.. _Eq:nonlin:alglevel:dD:fe:Fi:
+
+.. math::
+   :label: nonlin:alglevel:dD:fe:Fi
+        
+        F_i =
+        \int_\Omega (u{\psi}_i + \Delta t{\alpha}(u)\nabla u\cdot\nabla {\psi}_i
+        - \Delta t f(u){\psi}_i - u^{(1)}{\psi}_i){\, \mathrm{d}x}{\thinspace .}
+        
+        
+
+Picard iteration needs a linearization where we use
+the most recent approximation :math:`u^{-}` to :math:`u` in
+:math:`{\alpha}` and :math:`f`:
+
+.. _Eq:nonlin:alglevel:dD:fe:Fi:Picard:
+
+.. math::
+   :label: nonlin:alglevel:dD:fe:Fi:Picard
+        
+        F_i \approx \hat F_i =
+        \int_\Omega (u{\psi}_i + \Delta t{\alpha}(u^{-})\nabla u\cdot\nabla {\psi}_i
+        - \Delta t f(u^{-}){\psi}_i - u^{(1)}{\psi}_i){\, \mathrm{d}x}{\thinspace .}
+        
+        
+
+The equations :math:`\hat F_i=0` are now linear and we can easily derive
+a linear system for the unknown coefficients
+:math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` by inserting :math:`u=\sum_jc_j{\psi}_j`.
+
+In Newton's method we need to evaluate :math:`F_i` with the known value
+:math:`u^{-}` for :math:`u`:
+
+.. _Eq:nonlin:alglevel:dD:fe:Fi:Newton:
+
+.. math::
+   :label: nonlin:alglevel:dD:fe:Fi:Newton
+        
+        F_i \approx \hat F_i =
+        \int_\Omega (u^{-}{\psi}_i + \Delta t{\alpha}(u^{-})
+        \nabla u^{-}\cdot\nabla {\psi}_i
+        - \Delta t f(u^{-}){\psi}_i - u^{(1)}{\psi}_i){\, \mathrm{d}x}{\thinspace .}
+        
+        
+
+The Jacobian is obtained by differentiating
+:eq:`nonlin:alglevel:dD:fe:Fi` and using :math:`\partial u/\partial c_j={\psi}_j`:
+
+.. math::
+        
+        J_{i,j} = \frac{\partial F_i}{\partial c_j} =
+        \int_\Omega  ({\psi}_j{\psi}_i + \Delta t{\alpha}^{\prime}(u){\psi}_j
+        \nabla u\cdot\nabla {\psi}_i +
+        \Delta t{\alpha}(u)\nabla{\psi}_j\cdot\nabla{\psi}_i - \nonumber
+        
+
+.. _Eq:nonlin:alglevel:dD:fe:Jij:
+
+.. _Eq:nonlin:alglevel:dD:fe:Jij:
+
+.. math::
+   :label: nonlin:alglevel:dD:fe:Jij
+          
+        \ \Delta t f^{\prime}(u){\psi}_j{\psi}_i){\, \mathrm{d}x}{\thinspace .}
+        
+        
+
+The evaluation of :math:`J_{i,j}` as the coefficient matrix in the linear
+system in Newton's method applies the known approximation :math:`u^{-}`
+for :math:`u`:
+
+.. math::
+        
+        J_{i,j} =
+        \int_\Omega  ({\psi}_j{\psi}_i + \Delta t{\alpha}^{\prime}(u^{-}){\psi}_j
+        \nabla u^{-}\cdot\nabla {\psi}_i +
+        \Delta t{\alpha}(u^{-})\nabla{\psi}_j\cdot\nabla{\psi}_i - \nonumber
+        
+
+.. _Eq:nonlin:alglevel:dD:fe:Jij:
+
+.. _Eq:nonlin:alglevel:dD:fe:Jij:
+
+.. math::
+   :label: nonlin:alglevel:dD:fe:Jij
+          
+        \ \Delta t f^{\prime}(u^{-}){\psi}_j{\psi}_i){\, \mathrm{d}x}{\thinspace .}
+        
+        
+
+Hopefully, these example also show how convenient the notation
+with :math:`u` and :math:`u^{-}` is: the unknown to be computed is always :math:`u` and
+linearization by inserting known (previously computed) values
+is a matter of adding an underscore.
+One can take great advantage of this quick notation in
+software [Ref2]_.
+
+Non-homogeneous Neumann conditions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A natural physical flux condition for the PDE :eq:`nonlin:alglevel:dD:fe:PDE`
+takes the form of a non-homogeneous Neumann condition
+
+.. _Eq:nonlin:alglevel:dD:fe:Neumann:
+
+.. math::
+   :label: nonlin:alglevel:dD:fe:Neumann
+        
+        -{\alpha}(u)\frac{\partial u}{\partial n} = g,\quad\boldsymbol{x}\in\partial\Omega_N,
+        
+        
+
+where :math:`g` is a prescribed function and :math:`\partial\Omega_N` is a part
+of the boundary of the domain :math:`\Omega`. From integrating
+:math:`\int_\Omega\nabla\cdot({\alpha}\nabla u){\, \mathrm{d}x}` by parts, we get a boundary term
+
+.. _Eq:nonlin:alglevel:dD:fe:boundary:integral:
+
+.. math::
+   :label: nonlin:alglevel:dD:fe:boundary:integral
+        
+        \int_{\partial\Omega_N}{\alpha}(u)\frac{\partial u}{\partial u}v{\, \mathrm{d}s}{\thinspace .}
+        
+        
+
+Inserting the condition :eq:`nonlin:alglevel:dD:fe:Neumann` into
+this term results in an integral over prescribed values: :math:`-\int_{\partial\Omega_N}gv{\, \mathrm{d}s}`. The nonlinearity in the :math:`{\alpha}(u)` coefficient condition
+:eq:`nonlin:alglevel:dD:fe:Neumann` therefore does not contribute with
+a nonlinearity in the variational form.
+
+Robin conditions
+~~~~~~~~~~~~~~~~
+
+Heat conduction problems often apply a kind of Newton's cooling law,
+also known as a Robin condition, at the boundary:
+
+.. _Eq:nonlin:alglevel:dD:fe:Robin:
+
+.. math::
+   :label: nonlin:alglevel:dD:fe:Robin
+        
+        -{\alpha}(u)\frac{\partial u}{\partial u} = h_T(u)(u-T_s(t)),\quad\boldsymbol{x}\in\partial\Omega_R,
+        
+        
+
+where :math:`h_T(u)` is a heat transfer coefficient between the body (:math:`\Omega`)
+and its surroundings, :math:`T_s` is the temperature of the surroundings,
+and :math:`\partial\Omega_R` is a part of the boundary where this Robin
+condition applies. The boundary integral
+:eq:`nonlin:alglevel:dD:fe:boundary:integral` now becomes
+
+.. math::
+         \int_{\partial\Omega_R}h_T(u)(u-T_s(T))v{\, \mathrm{d}s},
+
+by replacing :math:`{\alpha}(u)\partial u/\partial u` by :math:`h_T(u-T_s)`.
+Often, :math:`h_T(u)` can be taken as constant, and then the boundary
+term is linear in :math:`u`, otherwise it is nonlinear and contributes
+to the Jacobian in a Newton method.
+Linearization in a Picard method will typically use a known value
+in :math:`h_T`, but keep the :math:`u` in :math:`u-T_s` as unknown:
+:math:`h_T(u^{-})(u-T_s(t))`.
+
+Finite difference discretization
+--------------------------------
+
+A typical diffusion equation
+
+.. math::
+         u_t = \nabla\cdot({\alpha}(u)\nabla u) + f(u),
+
+can be discretized by (e.g.) a Backward Euler scheme,
+which in 2D can be written
+
+.. math::
+         [D_t^- u = D_x\overline{{\alpha}}^xD_x u
+        + D_y\overline{{\alpha}}^yD_y u + f(u)]_{i,j}^n{\thinspace .}
+        
+
+We do not dive into details of boundary conditions now. Dirichlet and
+Neumann conditions are handled as in linear diffusion problems.
+
+Writing the scheme out, putting the unknown values on the
+left-hand side and known values on the right-hand side, and
+introducing :math:`\Delta x=\Delta y=h` to save some writing, one gets
+
+.. math::
+        
+        u^n_{i,j} &- \frac{\Delta t}{h^2}(
+         \frac{1}{2}({\alpha}(u_{i,j}^n)   + {\alpha}(u_{i+1,j}^n))(u_{i+1,j}^n-u_{i,j}^n)\\ 
+        &\quad -
+        \frac{1}{2}({\alpha}(u_{i-1,j}^n) + {\alpha}(u_{i,j}^n))(u_{i,j}^n-u_{i-1,j}^n) \\ 
+        &\quad +
+         \frac{1}{2}({\alpha}(u_{i,j}^n)   + {\alpha}(u_{i,j+1}^n))(u_{i,j+1}^n-u_{i,j}^n)\\ 
+        &\quad -
+         \frac{1}{2}({\alpha}(u_{i,j-1}^n) + {\alpha}(u_{i,j}^n))(u_{i,j}^n-u_{i-1,j-1}^n))
+        - \Delta tf(u_{i,j}^n) = u^{n-1}_{i,j}
+        
+
+This defines a nonlinear algebraic system :math:`A(u)u=b(u)`.
+A Picard iteration applies old values :math:`u^{-}` in :math:`{\alpha}` and :math:`f`,
+or equivalently, old values for :math:`u` in :math:`A(u)` and :math:`b(u)`.
+The result is a linear system of the same type as those arising
+from :math:`u_t = \nabla\cdot ({\alpha}(\boldsymbol{x})\nabla u) + f(\boldsymbol{x},t)`.
+
+Newton's method is as usual more involved. We first define
+the nonlinear algebraic equations to be solved, drop the
+superscript :math:`n`, and introduce :math:`u^{(1)}` for :math:`u^{n-1}`:
+
+.. math::
+        
+        F_{i,j} &= u^n_{i,j} - \frac{\Delta t}{h^2}(\\ 
+        &\quad \frac{1}{2}({\alpha}(u_{i,j}^n)   + {\alpha}(u_{i+1,j}^n))(u_{i+1,j}^n-u_{i,j}^n) -
+         \frac{1}{2}({\alpha}(u_{i-1,j}^n) + {\alpha}(u_{i,j}^n))(u_{i,j}^n-u_{i-1,j}^n) + \\ 
+        &\quad
+         \frac{1}{2}({\alpha}(u_{i,j}^n)   + {\alpha}(u_{i,j+1}^n))(u_{i,j+1}^n-u_{i,j}^n) -
+         \frac{1}{2}({\alpha}(u_{i,j-1}^n) + {\alpha}(u_{i,j}^n))(u_{i,j}^n-u_{i-1,j-1}^n)) -\\ 
+        &\quad \Delta tf(u_{i,j}^n) - u^{n-1}_{i,j} = 0{\thinspace .}
+        
+
+It is convenient to work with two indices :math:`i` and :math:`j` in 2D
+finite difference discretizations, but it complicates
+the derivation of the Jacobian, which then gets four indices.
+The left-hand expression of an equation :math:`F_{i,j}=0` is to be
+differentiated with respect to each of the unknowns :math:`u_{r,s}`
+(short for :math:`u_{r,s}^n`), :math:`r\in{\mathcal{I}_x}`, :math:`s\in{\mathcal{I}_y}`,
+
+.. math::
+         J_{i,j,r,s} = \frac{\partial F_{i,j}}{\partial u_{r,s}}{\thinspace .} 
+
+Given :math:`i` and :math:`j`, only a few :math:`r` and :math:`s` indices give nonzero
+contribution since :math:`F_{i,j}` contains :math:`u_{i\pm 1,j}`, :math:`u_{i,j\pm 1}`,
+and :math:`u_{i,j}`. Therefore, :math:`J_{i,j,r,s}` is very sparse and we
+can set up the left-hand side of the Newton system as
+
+.. math::
+        
+         J_{i,j,r,s}\delta u_{r,s} =
+        J_{i,j,i,j}\delta u_{i,j} & +
+        J_{i,j,i-1,j}\delta u_{i-1,j} +
+        J_{i,j,i+1,j}\delta u_{i+1,j} +
+        J_{i,j,i,j-1}\delta u_{i,j-1}\\ 
+        & +
+        J_{i,j,i,j+1}\delta u_{i,j+1}
+        
+
+The specific derivatives become
+
+.. math::
+        
+        J_{i,j,i-1,j} &= \frac{\partial F_{i,j}}{\partial u_{i-1,j}}\\ 
+        &= \frac{\Delta t}{h^2}({\alpha}^{\prime}(u_{i-1,j})(u_{i,j}-u_{i-1,j})
+        + {\alpha}(u_{i-1,j})(-1))\\ 
+        J_{i,j,i+1,j} &= \frac{\partial F_{i,j}}{\partial u_{i+1,j}}\\ 
+        &= \frac{\Delta t}{h^2}(-{\alpha}^{\prime}(u_{i+1,j})(u_{i+1,j}-u_{i,j})
+        - {\alpha}(u_{i-1,j}))\\ 
+        J_{i,j,i,j-1} &= \frac{\partial F_{i,j}}{\partial u_{i,j-1}}\\ 
+        &= \frac{\Delta t}{h^2}({\alpha}^{\prime}(u_{i,j-1})(u_{i,j}-u_{i,j-1})
+        + {\alpha}(u_{i,j-1})(-1))\\ 
+        J_{i,j,i,j+1} &= \frac{\partial F_{i,j}}{\partial u_{i,j+1}}\\ 
+        &= \frac{\Delta t}{h^2}(-{\alpha}^{\prime}(u_{i,j+1})(u_{i,j+1}-u_{i,j})
+        - {\alpha}(u_{i,j-1}))
+        
+
+The :math:`J_{i,j,i,j}` entry has a few more terms.
+Inserting :math:`u^{-}` for :math:`u` in the :math:`J` formula and then
+forming :math:`J\delta u=-F` gives the linear system to be solved
+in each Newton iteration.
+
+Continuation methods
+--------------------
+
+.. index:: continuation method
+
+Picard iteration or Newton's method may diverge when solving PDEs with
+severe nonlinearities. Relaxation with :math:`\omega <1`
+may help, but in highly nonlinear problems it can be
+necessary to introduce a *continuation parameter* :math:`\Lambda` in
+the problem: :math:`\Lambda =0` gives a version of the
+problem that is easy to solve, while
+:math:`\Lambda =1` is the target problem. The idea is then
+to increase :math:`\Lambda` in steps, :math:`\Lambda_0=0 ,\Lambda_1 <\cdots <\Lambda_n=1`,
+and use the solution from the problem with :math:`\Lambda_{i-1}` as
+initial guess for the iterations in the problem corresponding
+to :math:`\Lambda_i`.
+
+The continuation method is easiest to understand through an example.
+Suppose we intend to solve
+
+.. math::
+         -\nabla\cdot\left( ||\nabla u||^q\nabla u\right) = f, 
+
+which is an equation modeling the flow of a non-Newtonian fluid through
+i channel or pipe. For :math:`q=0` we have the Poisson equation (corresponding
+to a Newtonian fluid) and the problem is linear. A typical
+value for pseudo-plastic fluids may be :math:`q_n=-0.8`. We can introduce
+the continuation parameter :math:`\Lambda\in [0,1]` such that
+:math:`q=q_n\Lambda`. Let :math:`\{\Lambda_\ell\}_{\ell=0}^n` be the sequence of
+:math:`\Lambda` values in :math:`[0,1]`, with corresponding :math:`q` values
+:math:`\{q_\ell\}_{\ell=0}^n`. We can then solve a sequence of problems
+
+.. math::
+        
+        -\nabla\cdot\left( ||\nabla u||^q_\ell\nabla u^\ell\right) = f,\quad
+        \ell = 0,\ldots,n,
+
+where the initial guess for iterating on :math:`u^{\ell}` is the
+previously computed solution :math:`u^{\ell-1}`. If a particular :math:`\Lambda_\ell`
+leads to convergence problems, one may try a smaller
+increase in :math:`\Lambda`:
+:math:`\Lambda_* = \frac{1}{2} (\Lambda_{\ell-1}+\Lambda_\ell)`,
+and repeat halving the step in :math:`\Lambda` until convergence is reestablished.
+

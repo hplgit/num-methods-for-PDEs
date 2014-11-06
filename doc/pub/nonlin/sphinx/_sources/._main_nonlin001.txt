@@ -315,16 +315,16 @@ Since we need to perform the iteration at every time level, the
 time level counter is often also included:
 
 .. math::
-         au^{n+1,k} u^{n+1,k+1} + bu^{n+1,k+1} - u^{n} = 0\quad\Rightarrow\quad u^{n+1,k+1}
-        = \frac{u^n}{au^{n+1,k} + b},\quad k=0,1,\ldots,
+         au^{n,k} u^{n,k+1} + bu^{n,k+1} - u^{n-1} = 0\quad\Rightarrow\quad u^{n,k+1}
+        = \frac{u^n}{au^{n,k} + b},\quad k=0,1,\ldots,
 
 with the start value :math:`u^{n,0}=u^{n-1}` and the final converged value
-:math:`u^{n+1}=u^{n+1,k}` for sufficiently large :math:`k`.
+:math:`u^{n}=u^{n,k}` for sufficiently large :math:`k`.
 
 However, we will normally apply a mathematical notation in our
 final formulas that is as close as possible to what we aim to write
 in a computer code and then it becomes natural to use :math:`u` and :math:`u^{-}`
-instead of :math:`u^{k+1}` and :math:`u^k` or :math:`u^{n+1,k+1}` and :math:`u^{n+1,k}`.
+instead of :math:`u^{k+1}` and :math:`u^k` or :math:`u^{n,k+1}` and :math:`u^{n,k}`.
 
 .. index:: stopping criteria (nonlinear problems)
 
@@ -669,7 +669,7 @@ the logistic equation.
         
                     def F(u):
                         return a*u**2 + b*u + c
-        <
+        
                     def dF(u):
                         return 2*a*u + b
         
@@ -756,31 +756,6 @@ but :math:`\omega=0.5` again brings the average number of iterations down to 2.
 
    *Comparison of the number of iterations at various time levels for Picard and Newton iteration*
 
-Experiments with this program reveal the relative performance
-of the methods as summarized in the table below.
-The Picard and Newton columns reflect the typical number of
-iterations with these methods before the curve starts to flatten out
-and the number of iterations is significantly reduced since
-the solution of the nonlinear algebraic equation is very close to
-the starting value for the iterations (the solution at the previous
-time level). Increasing :math:`\Delta t` moves the starting value further
-away from the solution of the nonlinear equation and one expects
-an increase in the number of iterations. Picard iteration is
-very much more sensitive to the size of :math:`\Delta t` than Newton's method.
-The tolerance :math:`\epsilon_r` in residual-based
-stopping criterion takes on a low and high value in the experiments.
-
-================  ==================  ======  ======  
-:math:`\Delta t`  :math:`\epsilon_r`  Picard  Newton  
-================  ==================  ======  ======  
-:math:`0.2`       :math:`10^{-7}`          5       2  
-:math:`0.2`       :math:`10^{-3}`          2       1  
-:math:`0.4`       :math:`10^{-7}`         12       3  
-:math:`0.4`       :math:`10^{-3}`          4       2  
-:math:`0.8`       :math:`10^{-7}`         58       3  
-:math:`0.8`       :math:`10^{-3}`          4       2  
-================  ==================  ======  ======  
-
 **Remark.**
 The simple Crank-Nicolson method with a geometric mean for the quadratic
 nonlinearity gives visually more accurate solutions than the
@@ -826,28 +801,75 @@ Approximating :math:`u^{\prime}` by a backward difference leads to a Backward Eu
 scheme, which can be written as
 
 .. math::
-         F(u^n) = u^{n} - \Delta t f(u^n, t_n) - u^{n-1}=0,
+         F(u^n) = u^{n} - \Delta t\, f(u^n, t_n) - u^{n-1}=0,
 
 or alternatively
 
 .. math::
-         F(u) = u - \Delta t f(u, t_n) - u^{(1)} = 0{\thinspace .}
+         F(u) = u - \Delta t\, f(u, t_n) - u^{(1)} = 0{\thinspace .}
 
 A simple Picard iteration, not knowing anything about the nonlinear
 structure of :math:`f`, must approximate :math:`f(u,t_n)` by :math:`f(u^{-},t_n)`:
 
 .. math::
-         \hat F(u) = u - \Delta t f(u^{-},t_n) - u^{(1)}{\thinspace .}
+         \hat F(u) = u - \Delta t\, f(u^{-},t_n) - u^{(1)}{\thinspace .}
 
 The iteration starts with :math:`u^{-}=u^{(1)}` and proceeds with repeating
 
 .. math::
-         u^* = \Delta t f(u^{-},t_n) + u^{(1)},\quad u = \omega u^* + (1-\omega)u^{-},
+         u^* = \Delta t\, f(u^{-},t_n) + u^{(1)},\quad u = \omega u^* + (1-\omega)u^{-},
         \quad u^{-}\ \leftarrow\ u,
 
 until a stopping criterion is fulfilled.
 
-Newton's method requires the computation of the derivative
+
+.. admonition:: Explicit vs implicit treatment of nonlinear terms
+
+   Evaluating :math:`f` for a known :math:`u^{-}` is referred to as *explicit* treatment of
+   :math:`f`, while if :math:`f(u,t)` has some structure, say :math:`f(u,t) = u^3`, parts of
+   :math:`f` can involve the known :math:`u`, as in the manual linearization
+   like :math:`(u^{-})^2u`, and then the treatment of :math:`f` is "more implicit"
+   and "less explicit". This terminology is inspired by time discretization
+   of :math:`u^{\prime}=f(u,t)`, where evaluating :math:`f` for known :math:`u` values gives
+   explicit schemes, while treating :math:`f` or parts of :math:`f` implicitly,
+   makes :math:`f` contribute to the unknown terms in the equation at the new
+   time level.
+   
+   Explicit treatment of :math:`f` usually means stricter conditions on
+   :math:`\Delta t` for stability of time discretization schemes. The same goes
+   for iterations techniques for nonlinear algebraic equations: the more
+   :math:`f` can involve unknowns to be solved for, the faster the convergence
+   may be.
+   
+   We may say that :math:`f(u,t)=u^3` is treated explicitly if we evaluate :math:`f`
+   as :math:`(u^{-})^3`, partially implicit if we linearize as :math:`(u^{-})^2u`
+   and fully implicit if we represent :math:`f` by :math:`u^3`. (Of course, the
+   fully implicit representation will require further linearization,
+   but with :math:`f(u,t)=u^2` a fully implicit treatment is possible if
+   the resulting quadratic equation is solved with a formula.)
+   
+   For the ODE :math:`u^{\prime}=-u^3` with :math:`f(u,t)=-u^3` and coarse
+   time resolution :math:`\Delta t = 0.4`, Picard iteration with :math:`(u^{-})^2u`
+   requires 8 iterations with :math:`\epsilon_r = 10^{-3}` for the first
+   time step, while :math:`(u^{-})^3` leads to 22 iterations. After about 10
+   time steps both approaches are down to about 2 iterations per time
+   step, but this example shows a potential of treating :math:`f` more
+   implicitly.
+   
+   A trick to treat :math:`f` implicitly in Picard iteration is to
+   evaluate it as :math:`f(u^{-},t)u/u^{-}`. For a polynomial :math:`f`, :math:`f(u,t)=u^m`,
+   this corresponds to :math:`(u^{-})^{m-1}u`. Sometimes this more implicit
+   treatment has no effect, as with :math:`f(u,t)=exp(-u)` and :math:`f(u,t)=\ln (1+u)`,
+   but with :math:`f(u,t)=sin(2(u+1))`, the :math:`f(u^{-},t)u/u^{-}` trick
+   leads to 7, 9, and 11 iterations during the first three steps, while
+   :math:`f(u^{-},t)` demands 17, 21, and 20 iterations.
+   (Experiments can be done with the code `ODE_Picard_tricks.py <http://tinyurl.com/nm5587k/nonlin/ODE_Picard_tricks.py>`__.)
+
+
+
+
+Newton's method applied to :math:`u^{\prime}=f(u,t)`
+requires the computation of the derivative
 
 .. math::
          F^{\prime}(u) = 1 - \Delta t\frac{\partial f}{\partial u}(u,t_n){\thinspace .}
@@ -867,8 +889,9 @@ we can just use the standard formula
         
         
 
-The geometric mean trick cannot be used unless we know that :math:`f` has
-a special structure with quadratic expressions in :math:`u`.
+.. The geometric mean trick cannot be used unless we know that :math:`f` has
+
+.. a special structure with quadratic expressions in :math:`u`.
 
 Crank-Nicolson discretization  (1)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -892,7 +915,7 @@ We can write the scheme as a nonlinear algebraic equation
         
         
 
-A Picard iteration scheme must in general employ the linearization,
+A Picard iteration scheme must in general employ the linearization
 
 .. math::
          \hat F(u) = u - u^{(1)} - \Delta t{\frac{1}{2}}f(u^{-},t_{n+1}) -

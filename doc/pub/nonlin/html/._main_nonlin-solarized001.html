@@ -607,17 +607,17 @@ $$ au^k u^{k+1} + bu^{k+1} + c = 0\quad\Rightarrow\quad u^{k+1}
 Since we need to perform the iteration at every time level, the
 time level counter is often also included:
 
-$$ au^{n+1,k} u^{n+1,k+1} + bu^{n+1,k+1} - u^{n} = 0\quad\Rightarrow\quad u^{n+1,k+1}
-= \frac{u^n}{au^{n+1,k} + b},\quad k=0,1,\ldots,$$
+$$ au^{n,k} u^{n,k+1} + bu^{n,k+1} - u^{n-1} = 0\quad\Rightarrow\quad u^{n,k+1}
+= \frac{u^n}{au^{n,k} + b},\quad k=0,1,\ldots,$$
 
 with the start value \( u^{n,0}=u^{n-1} \) and the final converged value
-\( u^{n+1}=u^{n+1,k} \) for sufficiently large \( k \).
+\( u^{n}=u^{n,k} \) for sufficiently large \( k \).
 
 <p>
 However, we will normally apply a mathematical notation in our
 final formulas that is as close as possible to what we aim to write
 in a computer code and then it becomes natural to use \( u \) and \( u^{-} \)
-instead of \( u^{k+1} \) and \( u^k \) or \( u^{n+1,k+1} \) and \( u^{n+1,k} \).
+instead of \( u^{k+1} \) and \( u^k \) or \( u^{n,k+1} \) and \( u^{n,k} \).
 
 <h3>Stopping criteria  <a name="___sec5"></a></h3>
 
@@ -938,7 +938,7 @@ the logistic equation.
 
             <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">F</span>(u):
                 <span style="color: #8B008B; font-weight: bold">return</span> a*u**<span style="color: #B452CD">2</span> + b*u + c
-&lt;
+
             <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">dF</span>(u):
                 <span style="color: #8B008B; font-weight: bold">return</span> <span style="color: #B452CD">2</span>*a*u + b
 
@@ -1032,35 +1032,6 @@ but \( \omega=0.5 \) again brings the average number of iterations down to 2.
 </center>
 
 <p>
-Experiments with this program reveal the relative performance
-of the methods as summarized in the table below.
-The Picard and Newton columns reflect the typical number of
-iterations with these methods before the curve starts to flatten out
-and the number of iterations is significantly reduced since
-the solution of the nonlinear algebraic equation is very close to
-the starting value for the iterations (the solution at the previous
-time level). Increasing \( \Delta t \) moves the starting value further
-away from the solution of the nonlinear equation and one expects
-an increase in the number of iterations. Picard iteration is
-very much more sensitive to the size of \( \Delta t \) than Newton's method.
-The tolerance \( \epsilon_r \) in residual-based
-stopping criterion takes on a low and high value in the experiments.
-
-<p>
-<table border="1">
-<thead>
-<tr><td align="center">\( \Delta t \)</td> <td align="center">\( \epsilon_r \)</td> <th align="center">Picard</th> <th align="center">Newton</th> </tr>
-</thead>
-<tbody>
-<tr><td align="left">   \( 0.2 \)         </td> <td align="left">   \( 10^{-7} \)       </td> <td align="right">   5         </td> <td align="right">   2         </td> </tr>
-<tr><td align="left">   \( 0.2 \)         </td> <td align="left">   \( 10^{-3} \)       </td> <td align="right">   2         </td> <td align="right">   1         </td> </tr>
-<tr><td align="left">   \( 0.4 \)         </td> <td align="left">   \( 10^{-7} \)       </td> <td align="right">   12        </td> <td align="right">   3         </td> </tr>
-<tr><td align="left">   \( 0.4 \)         </td> <td align="left">   \( 10^{-3} \)       </td> <td align="right">   4         </td> <td align="right">   2         </td> </tr>
-<tr><td align="left">   \( 0.8 \)         </td> <td align="left">   \( 10^{-7} \)       </td> <td align="right">   58        </td> <td align="right">   3         </td> </tr>
-<tr><td align="left">   \( 0.8 \)         </td> <td align="left">   \( 10^{-3} \)       </td> <td align="right">   4         </td> <td align="right">   2         </td> </tr>
-</tbody>
-</table>
-<p>
 <b>Remark.</b>
 The simple Crank-Nicolson method with a geometric mean for the quadratic
 nonlinearity gives visually more accurate solutions than the
@@ -1101,26 +1072,77 @@ pose any difficulties.
 Approximating \( u^{\prime} \) by a backward difference leads to a Backward Euler
 scheme, which can be written as
 
-$$ F(u^n) = u^{n} - \Delta t f(u^n, t_n) - u^{n-1}=0,$$
+$$ F(u^n) = u^{n} - \Delta t\, f(u^n, t_n) - u^{n-1}=0,$$
 
 or alternatively
 
-$$ F(u) = u - \Delta t f(u, t_n) - u^{(1)} = 0\tp$$
+$$ F(u) = u - \Delta t\, f(u, t_n) - u^{(1)} = 0\tp$$
 
 A simple Picard iteration, not knowing anything about the nonlinear
 structure of \( f \), must approximate \( f(u,t_n) \) by \( f(u^{-},t_n) \):
 
-$$ \hat F(u) = u - \Delta t f(u^{-},t_n) - u^{(1)}\tp$$
+$$ \hat F(u) = u - \Delta t\, f(u^{-},t_n) - u^{(1)}\tp$$
 
 The iteration starts with \( u^{-}=u^{(1)} \) and proceeds with repeating
 
-$$ u^* = \Delta t f(u^{-},t_n) + u^{(1)},\quad u = \omega u^* + (1-\omega)u^{-},
+$$ u^* = \Delta t\, f(u^{-},t_n) + u^{(1)},\quad u = \omega u^* + (1-\omega)u^{-},
 \quad u^{-}\ \leftarrow\ u,$$
 
 until a stopping criterion is fulfilled.
 
 <p>
-Newton's method requires the computation of the derivative
+<div class="alert alert-block alert-notice alert-text-normal">
+<b>Explicit vs implicit treatment of nonlinear terms.</b>
+<p>
+Evaluating \( f \) for a known \( u^{-} \) is referred to as <em>explicit</em> treatment of
+\( f \), while if \( f(u,t) \) has some structure, say \( f(u,t) = u^3 \), parts of
+\( f \) can involve the known \( u \), as in the manual linearization
+like \( (u^{-})^2u \), and then the treatment of \( f \) is &quot;more implicit&quot;
+and &quot;less explicit&quot;. This terminology is inspired by time discretization
+of \( u^{\prime}=f(u,t) \), where evaluating \( f \) for known \( u \) values gives
+explicit schemes, while treating \( f \) or parts of \( f \) implicitly,
+makes \( f \) contribute to the unknown terms in the equation at the new
+time level.
+
+<p>
+Explicit treatment of \( f \) usually means stricter conditions on
+\( \Delta t \) for stability of time discretization schemes. The same goes
+for iterations techniques for nonlinear algebraic equations: the more
+\( f \) can involve unknowns to be solved for, the faster the convergence
+may be.
+
+<p>
+We may say that \( f(u,t)=u^3 \) is treated explicitly if we evaluate \( f \)
+as \( (u^{-})^3 \), partially implicit if we linearize as \( (u^{-})^2u \)
+and fully implicit if we represent \( f \) by \( u^3 \). (Of course, the
+fully implicit representation will require further linearization,
+but with \( f(u,t)=u^2 \) a fully implicit treatment is possible if
+the resulting quadratic equation is solved with a formula.)
+
+<p>
+For the ODE \( u^{\prime}=-u^3 \) with \( f(u,t)=-u^3 \) and coarse
+time resolution \( \Delta t = 0.4 \), Picard iteration with \( (u^{-})^2u \)
+requires 8 iterations with \( \epsilon_r = 10^{-3} \) for the first
+time step, while \( (u^{-})^3 \) leads to 22 iterations. After about 10
+time steps both approaches are down to about 2 iterations per time
+step, but this example shows a potential of treating \( f \) more
+implicitly.
+
+<p>
+A trick to treat \( f \) implicitly in Picard iteration is to
+evaluate it as \( f(u^{-},t)u/u^{-} \). For a polynomial \( f \), \( f(u,t)=u^m \),
+this corresponds to \( (u^{-})^{m-1}u \). Sometimes this more implicit
+treatment has no effect, as with \( f(u,t)=exp(-u) \) and \( f(u,t)=\ln (1+u) \),
+but with \( f(u,t)=sin(2(u+1)) \), the \( f(u^{-},t)u/u^{-} \) trick
+leads to 7, 9, and 11 iterations during the first three steps, while
+\( f(u^{-},t) \) demands 17, 21, and 20 iterations.
+(Experiments can be done with the code <a href="http://tinyurl.com/nm5587k/nonlin/ODE_Picard_tricks.py" target="_self"><tt>ODE_Picard_tricks.py</tt></a>.)
+</div>
+
+
+<p>
+Newton's method applied to \( u^{\prime}=f(u,t) \)
+requires the computation of the derivative
 
 $$ F^{\prime}(u) = 1 - \Delta t\frac{\partial f}{\partial u}(u,t_n)\tp$$
 
@@ -1139,8 +1161,8 @@ $$
 
 
 <p>
-The geometric mean trick cannot be used unless we know that \( f \) has
-a special structure with quadratic expressions in \( u \).
+<!-- The geometric mean trick cannot be used unless we know that \( f \) has -->
+<!-- a special structure with quadratic expressions in \( u \). -->
 
 <h3>Crank-Nicolson discretization  <a name="___sec14"></a></h3>
 
@@ -1161,7 +1183,7 @@ F(u) = u - u^{(1)} - \Delta t{\half}f(u,t_{n+1}) -
 \end{equation}
 $$
 
-A Picard iteration scheme must in general employ the linearization,
+A Picard iteration scheme must in general employ the linearization
 
 $$ \hat F(u) = u - u^{(1)} - \Delta t{\half}f(u^{-},t_{n+1}) -
 \Delta t{\half}f(u^{(1)},t_{n}),$$

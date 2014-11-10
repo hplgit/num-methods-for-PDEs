@@ -2,8 +2,8 @@
 
 .. _nonlin:alglevel:1D:
 
-Discretization of stationary nonlinear differential equations
-=============================================================
+Discretization of 1D stationary nonlinear differential equations
+================================================================
 
 The section :ref:`nonlin:pdelevel` presents methods for linearizing
 time-discrete PDEs directly prior to discretization in space.  We can
@@ -26,12 +26,40 @@ We shall work with the 1D problem
         
         
 
-This problem is of the same nature as those arising from implicit
-time integration of a nonlinear diffusion PDE as outlined in
-the section :ref:`nonlin:pdelevel:Picard` (set :math:`a=1/\Delta t` and let
-:math:`f(u)` incorporate the nonlinear source term as well as
-known terms with the time-dependent unknown function at the previous
-time level).
+The problem :eq:`nonlin:alglevel:1D:pde` arises from the stationary
+limit of a diffusion equation,
+
+.. _Eq:nonlin:alglevel:1D:pde:tver:
+
+.. math::
+   :label: nonlin:alglevel:1D:pde:tver
+        
+        \frac{\partial u}{\partial t} = \frac{\partial}{\partial x}\left(
+        \alpha(u)\frac{\partial u}{\partial x}\right) + au + f(u),
+        
+        
+
+as :math:`t\rightarrow\infty` and :math:`\partial u/\partial t\rightarrow 0`.
+Alternatively, the problem :eq:`nonlin:alglevel:1D:pde` arises
+at each time level from implicit time discretization of
+:eq:`nonlin:alglevel:1D:pde:tver`. For example, a Backward Euler
+scheme for :eq:`nonlin:alglevel:1D:pde:tver` with :math:`a=0` leads to
+
+.. _Eq:nonlin:alglevel:1D:pde:tver:BE:
+
+.. math::
+   :label: nonlin:alglevel:1D:pde:tver:BE
+        
+        \frac{u^{n}-u^{n-1}}{\Delta t} =
+        \frac{\partial}{\partial x}\left(
+        \alpha(u^n)\frac{\partial u^n}{\partial x}\right) - f(u^n){\thinspace .}
+        
+        
+
+Introducing :math:`u(x)` for :math:`u^n(x)`, :math:`u^{(1)}` for :math:`u^{n-1}`, and letting :math:`f(u)`
+in :eq:`nonlin:alglevel:1D:pde` be :math:`f(u) + u^{n-1}/\Delta t` in
+:eq:`nonlin:alglevel:1D:pde:tver:BE`, gives
+:eq:`nonlin:alglevel:1D:pde` with :math:`a=1/\Delta t`.
 
 .. _nonlin:alglevel:1D:fd:
 
@@ -169,7 +197,7 @@ of the form :math:`A(u)u = b(u)` with
         b_i &= f(u_i){\thinspace .}
         
 
-The matrix :math:`A(u)` is tridiagonal: :math:`A_{i,j}=0` for :math:`j>1+1` and :math:`j<i-1`.
+The matrix :math:`A(u)` is tridiagonal: :math:`A_{i,j}=0` for :math:`j > 1+1` and :math:`j < i-1`.
 
 The above expressions are valid for internal mesh points :math:`1\leq i\leq N_x-1`.
 For :math:`i=0` we need to express :math:`u_{i-1}=u_{-1}` in terms of :math:`u_1` using
@@ -191,11 +219,11 @@ Regarding the last equation, its form depends on whether we include
 the Dirichlet condition :math:`u(L)=D`, meaning :math:`u_{N_x}=D`, in the
 nonlinear algebraic equation system or not. Suppose we choose
 :math:`(u_0,u_1,\ldots,u_{N_x-1})` as unknowns, later referred to as
-*equations without Dirichlet conditions*. The last equation
+*systems without Dirichlet conditions*. The last equation
 corresponds to :math:`i=N_x-1`. It involves the boundary value :math:`u_{N_x}`,
 which is substituted by :math:`D`. If the unknown vector includes the
 boundary value, :math:`(u_0,u_1,\ldots,u_{N_x})`, later referred to as
-*equations including Dirichlet conditions*, the equation for :math:`i=N_x-1`
+*system including Dirichlet conditions*, the equation for :math:`i=N_x-1`
 just involves the unknown :math:`u_{N_x}`, and the final equation becomes
 :math:`u_{N_x}=D`, corresponding to :math:`A_{i,i}=1` and :math:`b_i=D` for :math:`i=N_x`.
 
@@ -204,27 +232,26 @@ Picard iteration  (3)
 
 The obvious Picard iteration scheme is to use previously computed
 values of :math:`u_i` in :math:`A(u)` and :math:`b(u)`, as described more in detail in
-the section :ref:`nonlin:systems:alg`. The system :math:`F(u)=0` is then solved
-with respect to :math:`u`, where :math:`F=(F_0,F_1,\ldots,F_m)`, :math:`u=(u_0,u_1,\ldots,u_m)`,
-and the :math:`F_i` expression is given above. The index :math:`m` is :math:`N_x` in
-equations including the Dirichlet condition and :math:`N_x-1` when the Dirichlet
-condition is excluded.
+the section :ref:`nonlin:systems:alg`. With the notation :math:`u^{-}` for the
+most recently computed value of :math:`u`, we have the system :math:`F(u)\approx
+\hat F(u) = A(u^{-})u - b(u^{-})`, with :math:`F=(F_0,F_1,\ldots,F_m)`,
+:math:`u=(u_0,u_1,\ldots,u_m)`.  The index :math:`m` is :math:`N_x` if the system
+includes the Dirichlet condition as a separate equation and :math:`N_x-1`
+otherwise.  The matrix :math:`A(u^{-})` is tridiagonal, so the solution
+procedure is to fill a tridiagonal matrix data structure and the
+right-hand side vector with the right numbers and call a Gaussian
+elimination routine for tridiagonal linear systems.
 
-To write out the mathematical details, we introduce :math:`u^{-}` as the
-most recent approximation to solution vector :math:`u`, and :math:`u^{-}_i`
-is the :math:`i`-th component in :math:`u`, which is the most recently computed
-value of the unknown :math:`u_i`. For the case :math:`N_x=2` we get the following
-system to solve in case we omit the Dirichlet condition from the system:
+To write out all the mathematical details in a specific
+case, let us look at the case :math:`N_x=2`. We use :math:`u^{-}_i`
+for the :math:`i`-th component in :math:`u^{-}`. In case we omit the Dirichlet
+condition from the system we get the following :math:`2\times 2` system,
 
 .. math::
         
         \left(\begin{array}{cc}
-        \frac{1}{2\Delta x^2}(-{\alpha}(u_{1}^{-}) + 2{\alpha}(u_{0}^{-})
-        -{\alpha}(u_{1}^{-})) + a &
-        -\frac{1}{2\Delta x^2}({\alpha}(u_{0}^{-}) + {\alpha}(u_{1}^{-}))\\ 
-        -\frac{1}{2\Delta x^2}({\alpha}(u_{0}^{-}) + {\alpha}(u_{1}^{-})) &
-        \frac{1}{2\Delta x^2}(-{\alpha}(u_{0}^{-}) + 2{\alpha}(u_{1}^{-})
-        -{\alpha}(u_{2})) + a
+        A_{0,0}& A_{0,1}\\ 
+        A_{1,0} & A_{1,1}
         \end{array}\right)
         \left(\begin{array}{c}
         u_0\\ 
@@ -232,9 +259,48 @@ system to solve in case we omit the Dirichlet condition from the system:
         \end{array}\right)
         =
         \left(\begin{array}{c}
-        f(u_0^{-})\\ 
-        f(u_1^{-})
+        b_0\\ 
+        b_1
         \end{array}\right)
+        
+
+The matrix and right-hand side entries are given by
+
+.. math::
+        
+        A_{0,0} = \frac{1}{2\Delta x^2}(-{\alpha}(u_{1}^{-}) + 2{\alpha}(u_{0}^{-})
+        -{\alpha}(u_{1}^{-})) + a
+        
+
+.. math::
+          
+        A_{0,1} =
+        -\frac{1}{2\Delta x^2}({\alpha}(u_{0}^{-}) + {\alpha}(u_{1}^{-})),
+        
+
+.. math::
+          
+        A_{1,0} =
+        -\frac{1}{2\Delta x^2}({\alpha}(u_{0}^{-}) + {\alpha}(u_{1}^{-})),
+        
+
+.. math::
+          
+        A_{1,1} =
+        \frac{1}{2\Delta x^2}(-{\alpha}(u_{0}^{-}) + 2{\alpha}(u_{1}^{-})
+        -{\alpha}(u_{2})) + a,
+        
+
+.. math::
+          
+        b_0 =
+        f(u_0^{-}),
+        
+
+.. math::
+          
+        b_1 =
+        f(u_1^{-}),
         
 
 where :math:`u_{-1}` must be substituted by
@@ -245,14 +311,9 @@ The system with the Dirichlet condition becomes
 .. math::
         
         \left(\begin{array}{ccc}
-        \frac{1}{2\Delta x^2}(-{\alpha}(u_{1}^{-}) + 2{\alpha}(u_{0}^{-})
-        -{\alpha}(u_{1}^{-})) + a & 0 \\ 
-        -\frac{1}{2\Delta x^2}({\alpha}(u_{0}^{-}) + {\alpha}(u_{1}^{-}))\\ 
-        -\frac{1}{2\Delta x^2}({\alpha}(u_{0}^{-}) + {\alpha}(u_{1}^{-})) &
-        \frac{1}{2\Delta x^2}(-{\alpha}(u_{0}^{-}) + 2{\alpha}(u_{1}^{-})
-        -{\alpha}(u_{2})) + a &
-        -\frac{1}{2\Delta x^2}({\alpha}(u_{1}) + {\alpha}(u_{2}))\\ 
-        0 & 0 & 1
+        A_{0,0}& A_{0,1} & A_{0,2}\\ 
+        A_{1,0} & A_{1,1} & A_{1,2}\\ 
+        A_{2,0} & A_{2,1} & A_{2,2}
         \end{array}\right)
         \left(\begin{array}{c}
         u_0\\ 
@@ -261,10 +322,19 @@ The system with the Dirichlet condition becomes
         \end{array}\right)
         =
         \left(\begin{array}{c}
-        f(u_0^{-})\\ 
-        f(u_1^{-})\\ 
-        D
-        \end{array}\right)
+        b_0\\ 
+        b_1\\ 
+        b_2
+        \end{array}\right),
+        
+
+with entries for :math:`A_{i,j}` and :math:`b_i` as above for :math:`i,j=1,2`, keeping
+:math:`u_2` as unknown in :math:`A_{1,1}`, and
+
+.. math::
+        
+        A_{0,2}=A_{2,0}=A_{2,1}=0,\ A_{1,2}=
+        -\frac{1}{2\Delta x^2}({\alpha}(u_{1}) + {\alpha}(u_{2})),\ A_{2,2}=1,\ b_2=D{\thinspace .}
         
 
 Newton's method  (4)
@@ -343,7 +413,7 @@ The explicit expression for nonlinear equation number :math:`i`,
 
 .. math::
         
-        F_i = = -\frac{1}{2\Delta x^2}
+        F_i = -\frac{1}{2\Delta x^2}
         \left(({\alpha}(u_i)+{\alpha}(u_{i+1}))(u_{i+1}-u_i) -
         ({\alpha}(u_{i-1})+{\alpha}(u_{i}))(u_{i}-u_{i-1})\right)\nonumber
         
@@ -395,7 +465,8 @@ factor to 0 or 1 to generate the Picard or Newton system.
 Galerkin-type discretizations
 -----------------------------
 
-For the finite element discretization we first need to derive the
+For a Galerkin-type discretization, which may be developed into
+a finite element method, we first need to derive the
 variational problem. Let :math:`V` be an appropriate function space
 with basis functions :math:`\left\{ {{\psi}}_i \right\}_{i\in{\mathcal{I}_s}}`. Because of the
 Dirichlet condition at :math:`x=L` we require :math:`{\psi}_i(L)=0`, :math:`i\in{\mathcal{I}_s}`.
@@ -532,7 +603,7 @@ The principal advantages of the group finite element method are two-fold:
 1. Complicated nonlinear expressions can be simplified to increase
    the efficiency of numerical computations.
 
-2. One can derive *symbolic form* of the difference equations arising
+2. One can derive *symbolic forms* of the difference equations arising
    from the finite element method in nonlinear problems.
    The symbolic form is useful for comparing finite element and finite
    difference equations of nonlinear differential equation problems.
@@ -683,7 +754,7 @@ points are the nodes, we have
 .. math::
         
         \int_0^L f(\sum_k u_k{\varphi}_k)(x){\varphi}_i(x){\, \mathrm{d}x}
-        \approx h\sum_{\ell=0}^{N_n} f(u_\ell)\delta_{i\ell} - \mathcal{C}\\ 
+        \approx h\sum_{\ell=0}^{N_n} f(u_\ell)\delta_{i\ell} - \mathcal{C}
         = hf(u_i){\thinspace .}
         
 
@@ -977,11 +1048,19 @@ Newton's method defined from the variational form
 Application of Newton's method to the nonlinear variational
 form :eq:`nonlin:alglevel:1D:pde:varform` arising from
 the problem :eq:`nonlin:alglevel:1D:pde` requires identification
-of the nonlinear algebraic equations :math:`F_i(c_0,\ldots,c_N)=0`, :math:`i\in{\mathcal{I}_s}`,
-and the Jacobian :math:`J_{i,j}=\partial F_i/\partial c_j` for
+of the nonlinear algebraic equations :math:`F_i=0`.
+Although we originally denoted the unknowns in nonlinear
+algebraic equations by :math:`u_0,\ldots,u_N`, it is in the present
+context most natural to have the unknowns as :math:`c_0,\ldots,c_N`
+and write
+
+.. math::
+         F_i(c_0,\ldots,c_N)=0, \quad i\in{\mathcal{I}_s},
+
+and define the Jacobian as :math:`J_{i,j}=\partial F_i/\partial c_j` for
 :math:`i,j\in{\mathcal{I}_s}`.
 
-The equations :math:`F_i=0` follows from the variational form
+The specific form of the equations :math:`F_i=0` follows from the variational form
 
 .. math::
         

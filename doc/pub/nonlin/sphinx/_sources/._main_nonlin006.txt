@@ -44,8 +44,8 @@ All other symbols are known quantities.
 
 .. _nonlin:exer:relax:formula:
 
-Exercise 2: Derive a formula
-----------------------------
+Exercise 2: Derive a relaxation formula
+---------------------------------------
 
 Derive :ref:`(2.9) <Eq:nonlin:timediscrete:logistic:relaxation:Newton:formula>`
 in the section :ref:`nonlin:timediscrete:logistic:relaxation`.
@@ -84,10 +84,22 @@ and repeat with 0.85 replaced by 0.8.
 
 .. --- begin exercise ---
 
+.. _nonlin:exer:vib:Jacobian:
+
+Problem 4: Compute the Jacobian of a :math:`2\times 2` system
+-------------------------------------------------------------
+
+Write up the system :ref:`(2.13) <Eq:nonlin:ode:generic:sys:pendulum:u0>`-:ref:`(2.14) <Eq:nonlin:ode:generic:sys:pendulum:u1>` in the form :math:`F(u)=0`, :math:`F=(F_0,F_1)`, :math:`u=(u_0,u_1)`,
+and compute the Jacobian :math:`J_{i,j}=\partial F_i/\partial u_j`.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
 .. _nonlin:exer:vib:geometric:mean:
 
-Problem 4: Linearize a nonlinear vibration ODE
-----------------------------------------------
+Problem 5: Solve nonlinear equations arising from a vibration ODE
+-----------------------------------------------------------------
 
 Consider a nonlinear vibration problem
 
@@ -103,21 +115,130 @@ vibration problems where :math:`s(u)` is a spring or restoring force,
 :math:`mu^{\prime\prime}` is mass times acceleration, and
 :math:`bu^{\prime}|u^{\prime}|` models water or air drag.
 
-Rewrite the equation for :math:`u` as a system of two first-order ODEs, and
-discretize this system by a Crank-Nicolson (centered difference)
-method. With :math:`v=u^\prime`, we get a nonlinear term
-:math:`v^{n+\frac{1}{2}}|v^{n+\frac{1}{2}}|`. Use both a geometric and an
-arithmetic average for :math:`v^{n+\frac{1}{2}}`. In the latter case,
-explain how to apply Newton's method to solve the nonlinear equations
-at each time level.
-
-.. v at n+1/2 and a and u at n). Should be in vib first
-
-.. ma + bv|v| + s(u) = F(t), v'=a, u'=v (staggered is natural,
+.. 2DO: b) Newmark scheme
 
 .. derive it logically and connect it to the centered diff scheme
 
-.. 2DO: b) Newmark scheme
+.. ma + bv|v| + s(u) = F(t), v'=a, u'=v (staggered is natural,
+
+.. v at n+1/2 and a and u at n). Should be in vib first
+
+**a)**
+Rewrite the equation for :math:`u` as a system of two first-order ODEs, and
+discretize this system by a Crank-Nicolson (centered difference)
+method. With :math:`v=u^\prime`, we get a nonlinear term
+:math:`v^{n+\frac{1}{2}}|v^{n+\frac{1}{2}}|`. Use a geometric
+average for :math:`v^{n+\frac{1}{2}}`.
+
+**b)**
+Formulate a Picard iteration method to solve the system of nonlinear
+algebraic equations.
+
+**c)**
+Explain how to apply Newton's method to solve the nonlinear equations
+at each time level.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _nonlin:exer:products:arith:mean:
+
+Exercise 6: Find the truncation error of arithmetic mean of products
+--------------------------------------------------------------------
+
+In the section :ref:`nonlin:pdelevel:Picard:CN` we introduce alternative
+arithmetic means of a product. Say the product is :math:`P(t)Q(t)` evaluated
+at :math:`t=t_{n+\frac{1}{2}}`. The exact value is
+
+.. math::
+         [PQ]^{n+\frac{1}{2}} = P^{n+\frac{1}{2}}Q^{n+\frac{1}{2}} 
+
+There are two obvious candidates for evaluating :math:`[PQ]^{n+\frac{1}{2}}`
+as a mean of values of :math:`P` and :math:`Q` at :math:`t_n` and :math:`t_{n+1}`. Either
+we can take the arithmetic mean of each factor :math:`P` and :math:`Q`,
+
+.. _Eq:nonlin:exer:products:arith:mean:f:
+
+.. math::
+   :label: nonlin:exer:products:arith:mean:f
+        
+        [PQ]^{n+\frac{1}{2}} \approx \frac{1}{2}(P^n + P^{n+1})\frac{1}{2}(Q^n + Q^{n+1}),
+        
+        
+
+or we can take the arithmetic mean of the product :math:`PQ`:
+
+.. _Eq:nonlin:exer:products:arith:mean:p:
+
+.. math::
+   :label: nonlin:exer:products:arith:mean:p
+        
+        [PQ]^{n+\frac{1}{2}} \approx \frac{1}{2}(P^nQ^n + P^{n+1}Q^{n+1}){\thinspace .}
+        
+        
+
+The arithmetic average
+of :math:`P(t_{n+\frac{1}{2}})` is :math:`{\mathcal{O}(\Delta t^2)}`:
+
+.. math::
+         P(t_{n+\frac{1}{2}}) = \frac{1}{2}(P^n + P^{n+1}) +{\mathcal{O}(\Delta t^2)}{\thinspace .}
+
+A fundamental question is whether :eq:`nonlin:exer:products:arith:mean:f`
+and :eq:`nonlin:exer:products:arith:mean:p` have different
+orders of accuracy in :math:`\Delta t = t_{n+1}-t_n`. To investigate
+this question, expand quantities at :math:`t_{n+1}` and :math:`t_n` in
+Taylor series around :math:`t_{n+\frac{1}{2}}`, and subtract the true
+value :math:`[PQ]^{n+\frac{1}{2}}` from the approximations
+:eq:`nonlin:exer:products:arith:mean:f` and
+:eq:`nonlin:exer:products:arith:mean:p` to see what the
+order of the error terms are.
+
+.. --- begin hint in exercise ---
+
+**Hint.**
+You may explore ``sympy`` for carrying out the tedious calculations.
+A general Taylor series expansion of :math:`P(t+\frac{1}{2}\Delta t)` around :math:`t`
+involving just a general function :math:`P(t)` can be
+created as follows:
+
+.. code-block:: python
+
+        >>> from sympy import *
+        >>> t, dt = symbols('t dt')
+        >>> P = symbols('P', cls=Function)
+        >>> P(t).series(t, 0, 4)
+        P(0) + t*Subs(Derivative(P(_x), _x), (_x,), (0,)) +
+        t**2*Subs(Derivative(P(_x), _x, _x), (_x,), (0,))/2 +
+        t**3*Subs(Derivative(P(_x), _x, _x, _x), (_x,), (0,))/6 + O(t**4)
+        >>> P_p = P(t).series(t, 0, 4).subs(t, dt/2)
+        >>> P_p
+        P(0) + dt*Subs(Derivative(P(_x), _x), (_x,), (0,))/2 +
+        dt**2*Subs(Derivative(P(_x), _x, _x), (_x,), (0,))/8 +
+        dt**3*Subs(Derivative(P(_x), _x, _x, _x), (_x,), (0,))/48 + O(dt**4)
+
+The error of the arithmetic mean, :math:`\frac{1}{2}(P(-\frac{1}{2}\Delta t)
++ P(-\frac{1}{2}\Delta t))` for :math:`t=0` is then
+
+.. code-block:: python
+
+        >>> P_m = P(t).series(t, 0, 4).subs(t, -dt/2)
+        >>> mean = Rational(1,2)*(P_m + P_p)
+        >>> error = simplify(expand(mean) - P(0))
+        >>> error
+        dt**2*Subs(Derivative(P(_x), _x, _x), (_x,), (0,))/8 + O(dt**4)
+
+Use these examples to investigate the error of
+:eq:`nonlin:exer:products:arith:mean:f` and
+:eq:`nonlin:exer:products:arith:mean:p` for :math:`n=0`. (Choosing :math:`n=0`
+is necessary for making the expressions too complicated for ``sympy``,
+but there is of course no lack of generality by using :math:`n=0` rather
+than an arbitrary :math:`n` - the main point is the product and addition
+of Taylor series.)
+
+.. --- end hint in exercise ---
+
+Filename: ``product_arith_mean.py``.
 
 .. --- end exercise ---
 
@@ -125,7 +246,7 @@ at each time level.
 
 .. _nonlin:exer:sparsity:Jacobian:
 
-Exercise 5: Find the sparsity of the Jacobian
+Exercise 7: Find the sparsity of the Jacobian
 ---------------------------------------------
 
 Consider a typical nonlinear Laplace term like
@@ -150,7 +271,7 @@ Filename: ``nonlin_sparsity_Jacobian.pdf``.
 
 .. _nonlin:exer:Newton:linear:
 
-Exercise 6: Newton's method for linear problems
+Exercise 8: Newton's method for linear problems
 -----------------------------------------------
 
 Suppose we have a linear system :math:`F(u) = Au- b=0`. Apply Newton's method
@@ -163,7 +284,7 @@ Filename: ``nonlin_Newton_linear.pdf``.
 
 .. _nonlin:exer:grad:pow:term:
 
-Exercise 7: Differentiate a highly nonlinear term
+Exercise 9: Differentiate a highly nonlinear term
 -------------------------------------------------
 
 The operator :math:`\nabla\cdot({\alpha}(u)\nabla u)` with
@@ -185,8 +306,8 @@ Filename: ``nonlin_differentiate.pdf``.
 
 .. _nonlin:exer:1D:1pu2:fem:
 
-Problem 8: Discretize a 1D problem with a nonlinear coefficient
----------------------------------------------------------------
+Problem 10: Discretize a 1D problem with a nonlinear coefficient
+----------------------------------------------------------------
 
 We consider the problem
 
@@ -217,8 +338,8 @@ Filename: ``nonlin_1D_coeff_discretize.pdf``.
 
 .. _nonlin:exer:1D:1pu2:PicardNewton:
 
-Problem 9: Linearize a 1D problem with a nonlinear coefficient
---------------------------------------------------------------
+Problem 11: Linearize a 1D problem with a nonlinear coefficient
+---------------------------------------------------------------
 
 We have a two-point boundary value problem
 
@@ -257,7 +378,7 @@ Filename: ``nonlin_1D_coeff_linearize.pdf``.
 
 .. _nonlin:exer:1D:fu:discretize:fd:
 
-Problem 10: Finite differences for the 1D Bratu problem
+Problem 12: Finite differences for the 1D Bratu problem
 -------------------------------------------------------
 
 We address the so-called Bratu problem
@@ -311,7 +432,7 @@ Filename: ``nonlin_1D_Bratu_fd.pdf``.
 
 .. _nonlin:exer:fu:fem:int:
 
-Problem 11: Integrate functions of finite element expansions
+Problem 13: Integrate functions of finite element expansions
 ------------------------------------------------------------
 
 .. index:: latex.codecogs.com web site
@@ -415,7 +536,7 @@ Filename: ``fu_fem_int.py``.
 
 .. _nonlin:exer:1D:fu:discretize:fe:
 
-Problem 12: Finite elements for the 1D Bratu problem
+Problem 14: Finite elements for the 1D Bratu problem
 ----------------------------------------------------
 
 We address the same 1D Bratu problem as described in
@@ -438,7 +559,7 @@ Filename: ``nonlin_1D_Bratu_fe.pdf``.
 
 .. _nonlin:exer:dD:heat:nonlinear:c:a:
 
-Problem 13: Derive the Newton system from a variational form
+Problem 15: Derive the Newton system from a variational form
 ------------------------------------------------------------
 
 We study the multi-dimensional heat conduction PDE
@@ -484,7 +605,7 @@ Filename: ``nonlin_heat_Newton.pdf``.
 
 .. _nonlin:exer:1D:heat:nonlinear:c:a:
 
-Problem 14: Derive algebraic equations for nonlinear 1D heat conduction
+Problem 16: Derive algebraic equations for nonlinear 1D heat conduction
 -----------------------------------------------------------------------
 
 Consider a 1D heat conduction PDE
@@ -516,7 +637,7 @@ Filename: ``nonlin_1D_heat_PDE.pdf``.
 
 .. _nonlin:exer:continuation:1DnNflow:
 
-Problem 15: Investigate a 1D problem with a continuation method
+Problem 17: Investigate a 1D problem with a continuation method
 ---------------------------------------------------------------
 
 .. index:: continuation method

@@ -3,14 +3,19 @@
 Multi-dimensional PDE problems
 ==============================
 
+The fundamental ideas in the
+derivation of :math:`F_i` and :math:`J_{i,j}` in the 1D model problem
+is easily generalized to multi-dimensional problems.
+Nevertheless, the expressions involved are slightly different, with
+derivatives in :math:`x` replaced by :math:`\nabla`, so we present some
+examples below in detail.
+
 .. _nonlin:alglevel:dD:fe:
 
 Finite element discretization
 -----------------------------
 
-The derivation of :math:`F_i` and :math:`J_{i,j}` in the 1D model problem
-is easily generalized to multi-dimensional problems.
-For example, Backward Euler discretization of the
+As an example, Backward Euler discretization of the
 PDE
 
 .. _Eq:nonlin:alglevel:dD:fe:PDE:
@@ -25,15 +30,24 @@ PDE
 gives the nonlinear time-discrete PDEs
 
 .. math::
-         u^n - \Delta t\nabla\cdot({\alpha}(u^n)\nabla u^n) + f(u^n) = u^{n-1},
+         u^n - \Delta t\nabla\cdot({\alpha}(u^n)\nabla u^n) + f(u^n) = u^{n-1}{\thinspace .}
 
-or with :math:`u^n` simply as :math:`u` and :math:`u^{n-1}` as :math:`u^{(1)}`,
+We may alternatively write this equation
+with :math:`u` for :math:`u^n` and :math:`u^{(1)}` for :math:`u^{n-1}`:
 
 .. math::
          u - \Delta t\nabla\cdot({\alpha}(u^n)\nabla u) - \Delta t f(u) = u^{(1)}{\thinspace .}
 
+(Note that the mathematical meaning of the symbol :math:`u` changes in
+these equations: :math:`u(\boldsymbol{x},t)` is the exact solution of :eq:`nonlin:alglevel:dD:fe:PDE`, :math:`u^n(\boldsymbol{x})` is an approximation to the exact solution at :math:`t=t_n`,
+while :math:`u(\boldsymbol{x})` in the latter equation is a synonym for :math:`u^n`.
+Below, this :math:`u(\boldsymbol{x})` will be approximated by a new
+:math:`u=\sum_kc_k{\psi}_k(\boldsymbol{x})` in space, and then the actual :math:`u` symbol used
+in the Picard and Newton iterations is a further approximation of
+:math:`\sum_kc_k{\psi}_k` arising from the nonlinear iteration algorithm.)
+
 The variational form, assuming homogeneous Neumann conditions
-for simplicity, becomes
+for simplicity in the boundary term, becomes
 
 .. _Eq:nonlin:alglevel:dD:fe:varform:
 
@@ -41,7 +55,7 @@ for simplicity, becomes
    :label: nonlin:alglevel:dD:fe:varform
         
         \int_\Omega (uv + \Delta t{\alpha}(u)\nabla u\cdot\nabla v
-        - \Delta t f(u)v - u^{(1)} v){\, \mathrm{d}x}{\thinspace .}
+        - \Delta t f(u)v - u^{(1)} v){\, \mathrm{d}x},\quad \forall v\in V{\thinspace .}
         
         
 
@@ -76,8 +90,16 @@ the most recent approximation :math:`u^{-}` to :math:`u` in
         
 
 The equations :math:`\hat F_i=0` are now linear and we can easily derive
-a linear system for the unknown coefficients
-:math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` by inserting :math:`u=\sum_jc_j{\psi}_j`.
+a linear system :math:`\sum_{j\in{\mathcal{I}_s}}A_{i,j}c_j=b_i`, :math:`i\in{\mathcal{I}_s}`,
+for the unknown coefficients
+:math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` by inserting :math:`u=\sum_jc_j{\psi}_j`. We get
+
+.. math::
+         A_{i,j} =
+        \int_\Omega ({\varphi}_j{\psi}_i + \Delta t{\alpha}(u^{-})\nabla {\varphi}_j
+        \cdot\nabla {\psi}_i){\, \mathrm{d}x},\quad b_i =
+        \int_\Omega (\Delta t f(u^{-}){\psi}_i + u^{(1)}{\psi}_i){\, \mathrm{d}x}{\thinspace .}
+        
 
 In Newton's method we need to evaluate :math:`F_i` with the known value
 :math:`u^{-}` for :math:`u`:
@@ -95,7 +117,21 @@ In Newton's method we need to evaluate :math:`F_i` with the known value
         
 
 The Jacobian is obtained by differentiating
-:eq:`nonlin:alglevel:dD:fe:Fi` and using :math:`\partial u/\partial c_j={\psi}_j`:
+:eq:`nonlin:alglevel:dD:fe:Fi` and using
+
+.. math::
+        
+        \frac{\partial u}{\partial c_j} = sum_k\frac{\partial}{\partial c_j}
+        c_k{\psi}_k = {\psi}_j,
+        
+
+.. math::
+          
+        \frac{\partial \nabla u}{\partial c_j} = sum_k\frac{\partial}{\partial c_j}
+        c_k\nabla {\psi}_k = \nabla {\psi}_j{\thinspace .}
+        
+
+The result becomes
 
 .. math::
         
@@ -139,7 +175,7 @@ for :math:`u`:
         
         
 
-Hopefully, these example also show how convenient the notation
+Hopefully, this example also shows how convenient the notation
 with :math:`u` and :math:`u^{-}` is: the unknown to be computed is always :math:`u` and
 linearization by inserting known (previously computed) values
 is a matter of adding an underscore.

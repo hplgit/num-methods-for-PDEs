@@ -1,0 +1,233 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Study guide: Numerical solution of the Navier-Stokes equations">
+
+<title>Study guide: Numerical solution of the Navier-Stokes equations</title>
+
+
+<style type="text/css">
+/* bloodish style */
+
+body {
+  font-family: Helvetica, Verdana, Arial, Sans-serif;
+  color: #404040;
+  background: #ffffff;
+}
+h1 { font-size: 1.8em;  color: #8A0808; }
+h2 { font-size: 1.6em;  color: #8A0808; }
+h3 { font-size: 1.4em;  color: #8A0808; }
+h4 { color: #8A0808; }
+a { color: #8A0808; text-decoration:none; }
+tt { font-family: "Courier New", Courier; }
+/* pre style removed because it will interfer with pygments */
+p { text-indent: 0px; }
+hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+p.caption { width: 80%; font-style: normal; text-align: left; }
+hr.figure { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+
+div { text-align: justify; text-justify: inter-word; }
+</style>
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [(' The physical and mathematical problem ',
+               1,
+               'ns:mathphys',
+               'ns:mathphys'),
+              (' Lots of physical applications involve fluid flow ',
+               2,
+               None,
+               '___sec1'),
+              (' The physical assumptions behind the Navier-Stokes equations ',
+               2,
+               None,
+               '___sec2'),
+              (' The Navier-Stokes equations ', 2, None, '___sec3'),
+              (' Boundary conditions ', 2, None, '___sec4'),
+              (' The classical splitting method ', 1, None, '___sec5'),
+              (' A simple, naive approach ', 2, None, '___sec6'),
+              (' A working scheme ', 2, None, '___sec7'),
+              (' We solve the implicit system by a splitting technique ',
+               2,
+               None,
+               '___sec8'),
+              (' A Poisson equation must be solved to ensure $\\nabla\\cdot\\u = 0$ ',
+               2,
+               None,
+               '___sec9'),
+              (' Summary ', 2, None, '___sec10'),
+              (' Boundary conditions ', 2, None, '___sec11'),
+              (' Spatial discretization by the finite element method ',
+               2,
+               None,
+               '___sec12'),
+              (' Increasing the implicitness ', 2, None, '___sec13'),
+              (' Methods based on slight compressibility ',
+               1,
+               None,
+               '___sec14'),
+              (' Applications ', 1, None, '___sec15')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\tp}{\thinspace .}
+\newcommand{\normalvec}{\boldsymbol{n}}
+\newcommand{\x}{\boldsymbol{x}}
+\renewcommand{\u}{\boldsymbol{u}}
+\renewcommand{\v}{\boldsymbol{v}}
+\newcommand{\f}{\boldsymbol{f}}
+\newcommand{\stress}{\boldsymbol{\sigma}}
+\newcommand{\dx}{\, \mathrm{d}x}
+\newcommand{\ds}{\, \mathrm{d}s}
+$$
+
+
+
+
+    
+<a name="part0015"></a>
+<p>
+<!-- begin top navigation -->
+<table style="width: 100%"><tr><td>
+<div style="text-align: left;"><a href="._lecture_ns014.html"><img src="http://hplgit.github.io/doconce/bundled/html_images/prev1.png" border=0 alt="&laquo; Previous"></a></div>
+</td><td>
+<div style="text-align: right;"><a href="._lecture_ns016.html"><img src="http://hplgit.github.io/doconce/bundled/html_images/next1.png" border=0 alt="Next &raquo;"></a></div>
+</td></tr></table>
+<!-- end top navigation -->
+</p>
+
+<p>
+<!-- !split -->
+
+<h2>Increasing the implicitness  <a name="___sec13"></a></h2>
+
+<p>
+Stability (due to Forward Euler-style scheme):
+
+$$
+\begin{equation}
+\Delta t \leq \frac{h^2}{2\nu + Uh}
+\tp
+\end{equation}
+$$
+
+\( h \): minimum element size, \( U \): typical velocity.
+
+<p>
+Better stability by a Backward Euler scheme:
+
+$$
+\begin{align}
+\u^{n+1} &= \u^n - \Delta t(\u^{n+1}\cdot\nabla)\u^{n+1}
+-\frac{\Delta t}{\varrho}
+\nabla p^{n+1} + \Delta t\,\nu\nabla^2\u^{n+1} + \Delta t\f^{n+1},
+\tag{5}\\
+\nabla\cdot\u^{n+1} &= 0
+\tp
+\end{align}
+$$
+
+
+<p>
+Intermediate velocity (\( \nabla p^{n+1}\rightarrow \beta p^n \)):
+
+$$
+\u^{*} = \u^n - \Delta t(\u^{*}\cdot\nabla)\u^{*} -
+\beta\frac{\Delta t}{\varrho}
+p^{n+1} + \Delta t\,\nu\nabla^2\u^{*} + \Delta t\f^{n+1}
+\tag{6}
+\thinspace
+$$
+
+
+<p>
+Deal with nonlinearity in a simple way (1 Pickard it.):
+
+$$
+\begin{equation}
+(\u^{*}\cdot\nabla)\u^{*} \approx (\u^{n}\cdot\nabla)\u^{*}
+\tp
+\end{equation}
+$$
+
+
+<p>
+Then we have a linear problem for \( \u^* \):
+
+$$
+\u^{*} = \u^n - \Delta t(\u^{n}\cdot\nabla)\u^{*} -
+\beta\frac{\Delta t}{\varrho}
+\nabla p^{n} + \Delta t\,\nu\nabla^2\u^{*} + \Delta t\f^{n+1}
+\tag{7}
+\thinspace
+$$
+
+
+<p>
+Correction (assume \( \u^{n+1}-\u^* \) small):
+
+$$
+\delta\u =
+\Delta t((\u^{n+1}\cdot\nabla)\u^{n+1} - (\u^{n}\cdot\nabla)\u^{*})
+-\frac{\Delta t}{\varrho}
+\nabla \Phi + \Delta t\,\nu (\nabla^2 (\u^{n+1} - \u^*)
+\approx -\frac{\Delta t}{\varrho}
+\nabla \Phi
+\tp $$
+
+
+<p>
+So, as before,
+
+$$ \nabla^2 \Phi = \frac{\varrho}{\Delta t}\nabla\cdot\u^* $$
+
+
+<ul>
+ <p><li> Need to solve an implicit equation (linear system) for \( \u^* \)</li>
+ <p><li> The other steps are the same</li>
+ <p><li> A Crank-Nicolson method is more accurate (also implicit scheme for \( \u^* \))</li>
+</ul>
+
+<p>
+<!-- begin bottom navigation -->
+<table style="width: 100%"><tr><td>
+<div style="text-align: left;"><a href="._lecture_ns014.html"><img src="http://hplgit.github.io/doconce/bundled/html_images/prev1.png" border=0 alt="&laquo; Previous"></a></div>
+</td><td>
+<div style="text-align: right;"><a href="._lecture_ns016.html"><img src="http://hplgit.github.io/doconce/bundled/html_images/next1.png" border=0 alt="Next &raquo;"></a></div>
+</td></tr></table>
+<!-- end bottom navigation -->
+</p>
+
+<!-- ------------------- end of main content --------------- -->
+
+
+</body>
+</html>
+    
+

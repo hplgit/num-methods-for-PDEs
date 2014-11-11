@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Study guide: Numerical solution of the Navier-Stokes equations">
+
+<title>Study guide: Numerical solution of the Navier-Stokes equations</title>
+
+
+
+
+
+
+
+<!-- reveal.js: http://lab.hakim.se/reveal-js/ -->
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+<link rel="stylesheet" href="reveal.js/css/reveal.css">
+<link rel="stylesheet" href="reveal.js/css/theme/beige.css" id="theme">
+<!--
+<link rel="stylesheet" href="reveal.js/css/reveal.css">
+<link rel="stylesheet" href="reveal.js/css/theme/beige.css" id="theme">
+<link rel="stylesheet" href="reveal.js/css/theme/beigesmall.css" id="theme">
+<link rel="stylesheet" href="reveal.js/css/theme/solarized.css" id="theme">
+<link rel="stylesheet" href="reveal.js/css/theme/serif.css" id="theme">
+<link rel="stylesheet" href="reveal.js/css/theme/night.css" id="theme">
+<link rel="stylesheet" href="reveal.js/css/theme/moon.css" id="theme">
+<link rel="stylesheet" href="reveal.js/css/theme/simple.css" id="theme">
+<link rel="stylesheet" href="reveal.js/css/theme/sky.css" id="theme">
+<link rel="stylesheet" href="reveal.js/css/theme/darkgray.css" id="theme">
+<link rel="stylesheet" href="reveal.js/css/theme/default.css" id="theme">
+<link rel="stylesheet" href="reveal.js/css/theme/cbc.css" id="theme">
+<link rel="stylesheet" href="reveal.js/css/theme/simula.css" id="theme">
+-->
+
+<!-- For syntax highlighting -->
+<link rel="stylesheet" href="reveal.js/lib/css/zenburn.css">
+
+<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+<script>
+document.write( '<link rel="stylesheet" href="reveal.js/css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+</script>
+
+<style type="text/css">
+    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+    p.caption { width: 80%; font-size: 60%; font-style: italic; text-align: left; }
+    hr.figure { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+    .reveal .alert-text-small   { font-size: 80%;  }
+    .reveal .alert-text-large   { font-size: 130%; }
+    .reveal .alert-text-normal  { font-size: 90%;  }
+    .reveal .alert {
+             padding:8px 35px 8px 14px; margin-bottom:18px;
+             text-shadow:0 1px 0 rgba(255,255,255,0.5);
+             border:5px solid #bababa;
+             -webkit-border-radius: 14px; -moz-border-radius: 14px;
+             border-radius:14px
+             background-position: 10px 10px;
+             background-repeat: no-repeat;
+             background-size: 38px;
+             padding-left: 30px; /* 55px; if icon */
+     }
+     .reveal .alert-block {padding-top:14px; padding-bottom:14px}
+     .reveal .alert-block > p, .alert-block > ul {margin-bottom:1em}
+     /*.reveal .alert li {margin-top: 1em}*/
+     .reveal .alert-block p+p {margin-top:5px}
+     /*.reveal .alert-notice { background-image: url(http://hplgit.github.io/doconce/bundled/html_images/small_gray_notice.png); }
+     .reveal .alert-summary  { background-image:url(http://hplgit.github.io/doconce/bundled/html_images/small_gray_summary.png); }
+     .reveal .alert-warning { background-image: url(http://hplgit.github.io/doconce/bundled/html_images/small_gray_warning.png); }
+     .reveal .alert-question {background-image:url(http://hplgit.github.io/doconce/bundled/html_images/small_gray_question.png); } */
+
+</style>
+
+
+
+<!-- Styles for table layout of slides -->
+<style type="text/css">
+td.padding {
+  padding-top:20px;
+  padding-bottom:20px;
+  padding-right:50px;
+  padding-left:50px;
+}
+</style>
+
+</head>
+
+<body>
+<div class="reveal">
+
+<!-- Any section element inside the <div class="slides"> container
+     is displayed as a slide -->
+
+<div class="slides">
+
+
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\tp}{\thinspace .}
+\newcommand{\normalvec}{\boldsymbol{n}}
+\newcommand{\x}{\boldsymbol{x}}
+\renewcommand{\u}{\boldsymbol{u}}
+\renewcommand{\v}{\boldsymbol{v}}
+\newcommand{\f}{\boldsymbol{f}}
+\newcommand{\stress}{\boldsymbol{\sigma}}
+\newcommand{\dx}{\, \mathrm{d}x}
+\newcommand{\ds}{\, \mathrm{d}s}
+$$
+
+
+
+
+    
+
+
+
+<section>
+<!-- ------------------- main content ---------------------- -->
+
+
+
+<center><h1 style="text-align: center;">Study guide: Numerical solution of the Navier-Stokes equations</h1></center>  <!-- document title -->
+
+<p>
+<!-- author(s): Hans Petter Langtangen -->
+
+<center>
+<b>Hans Petter Langtangen</b> [1, 2]
+</center>
+
+
+<p>&nbsp;<br>
+<!-- institution(s) -->
+
+<center>[1] <b>Center for Biomedical Computing, Simula Research Laboratory</b></center>
+<center>[2] <b>Department of Informatics, University of Oslo</b></center>
+<p>&nbsp;<br>
+<center><h4>Nov 11, 2014</h4></center> <!-- date -->
+<p>
+
+</section>
+
+
+<section>
+
+<h1 style="text-align: center;">The physical and mathematical problem <a name="ns:mathphys"></a></h1>
+
+<p>
+<!-- MOVIE: [http://www.youtube.com/watch?v=P8VcZzgdfSc] -->
+
+<p>
+
+<iframe width="420" height="315" src="http://www.youtube.com/embed/P8VcZzgdfSc" frameborder="0" allowfullscreen></iframe>
+
+
+<p>
+
+<iframe width="420" height="315" src="http://www.youtube.com/embed/sI2uCHH3qIM" frameborder="0" allowfullscreen></iframe>
+
+
+<p>
+
+</section>
+
+
+<section>
+
+<h2>Lots of physical applications involve fluid flow  <a name="___sec1"></a></h2>
+
+<ul>
+ <p><li> Weather (flow in the atmosphere)</li>
+ <p><li> Ocean currents</li>
+ <p><li> Flight</li>
+ <p><li> Drag on cars</li>
+ <p><li> Blood circulation</li>
+ <p><li> Breathing</li>
+</ul>
+<p>
+
+
+</section>
+
+
+<section>
+
+<h2>The physical assumptions behind the Navier-Stokes equations  <a name="___sec2"></a></h2>
+
+<p>
+Assumptions:
+
+<ul>
+  <p><li> Incompressible flow (velocity \( < 1/3 \) of the speed of sound)</li>
+  <p><li> Laminar flow</li>
+  <p><li> Simple fluids (constant viscosity \( \nu \))</li>
+</ul>
+<p>
+
+Primary unknowns:
+
+<ul>
+  <p><li> velocity \( \u(\x,t) \)</li>
+  <p><li> pressure \( p(\x,t) \)</li>
+</ul>
+<p>
+
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 1:  Flow around a cylinder. </p></center>
+<p><img src="fig-ns/flow_around_cylinder.png" align="bottom" width=600></p>
+</center>
+
+<p>
+
+</section>
+
+
+<section>
+
+<h2>The Navier-Stokes equations  <a name="___sec3"></a></h2>
+
+<p>
+Momentum balance (Newton's 2nd law):
+
+<p>&nbsp;<br>
+$$
+ \u_t + (\u\cdot\nabla) \u = -\frac{1}{\varrho}\nabla p + \nu\nabla^2\u + \f
+$$
+<p>&nbsp;<br>
+
+
+<p>
+Mass balance (eq. of continuity):
+
+<p>&nbsp;<br>
+$$
+\nabla\cdot\u = 0
+$$
+<p>&nbsp;<br>
+
+
+<p>
+
+</section>
+
+
+<section>
+
+<h2>Boundary conditions  <a name="___sec4"></a></h2>
+
+<ul>
+ <p><li> Dirichlet conditions: components of \( \u \) are known</li>
+ <p><li> Neumann conditions:</li>
+
+<ul>
+    <p><li> Stress condition: components of the stress vector \( \stress\cdot\normalvec \) are prescribed</li>
+    <p><li> Outflow or symmetry condition: \( \partial\u/\partial n=0 \) (or
+      components of this vector are zero)</li>
+</ul>
+<p>
+
+ <p><li> Pressure known at <em>a single point</em></li>
+</ul>
+<p>
+
+
+</section>
+
+
+<section>
+
+<h1 style="text-align: center;">The classical splitting method  <a name="___sec5"></a></h1>
+
+<p>
+Idea: split the N-S equations into simpler problems (<em>operator splitting</em>).
+
+<p>
+
+</section>
+
+
+<section>
+
+<h2>A simple, naive approach  <a name="___sec6"></a></h2>
+
+<p>
+The equation for \( \u \) looks like a diffusion equation...why not
+a Forward Euler scheme?
+
+<p>&nbsp;<br>
+$$
+ \u_t + (\u\cdot\nabla) \u = -\frac{1}{\varrho}\nabla p + \nu\nabla^2\u + \f
+$$
+<p>&nbsp;<br>
+
+
+<p>&nbsp;<br>
+$$
+\frac{\u^{n+1}-\u^n}{\Delta t} + (\u^n\cdot\nabla)\u^n = -\frac{1}{\varrho}
+\nabla p^n + \nu\nabla^2\u^n + \f^n
+$$
+<p>&nbsp;<br>
+
+
+<p>&nbsp;<br>
+$$
+\u^{n+1} = \u^n - \Delta t(\u^n\cdot\nabla)\u^n -\frac{\Delta t}{\varrho}
+\nabla p^n + \Delta t\,\nu\nabla^2\u^n + \Delta t\f^n
+$$
+<p>&nbsp;<br>
+
+
+<p>
+Two fundamental problems:
+
+<ol>
+<p><li> \( \nabla\cdot\u^{n+1}\neq 0 \) (that equation is not used!)</li>
+<p><li> no computation of \( p^{n+1} \)</li>
+</ol>
+<p>
+
+
+</section>
+
+
+<section>
+
+<h2>A working scheme  <a name="___sec7"></a></h2>
+
+<p>
+Idea: Forward Euler in time, but evaluate \( \nabla p \) at \( t_{n+1} \)
+and enforce \( \nabla\cdot\u^{n+1} = 0 \).
+
+<p>&nbsp;<br>
+$$
+\begin{align*}
+\u^{n+1} &= \u^n - \Delta t(\u^n\cdot\nabla)\u^n -\frac{\Delta t}{\varrho}
+\nabla p^{n+1} + \Delta t\,\nu\nabla^2\u^n + \Delta t\f^n,\\
+\nabla\cdot\u^{n+1} &= 0
+\thinspace
+\end{align*}
+$$
+<p>&nbsp;<br>
+
+
+<p>
+Note: <em>implicit system</em> for \( \u^{n+1} \) and \( p^{n+1} \)
+
+<p>
+
+</section>
+
+
+<section>
+
+<h2>We solve the implicit system by a splitting technique  <a name="___sec8"></a></h2>
+
+<ul>
+  <p><li> Use old \( \beta\nabla p^n \) for \( \nabla p^{n+1} \)
+    and advance to intermediate velocity \( \u^* \)</li>
+  <p><li> Correct the \( \u^* \) velocity by \( \nabla\cdot\u^{n+1} = 0 \)</li>
+</ul>
+<p>
+
+Intermediate velocity (Forward Euler):
+
+<p>&nbsp;<br>
+$$
+\u^{*} = \u^n - \Delta t(\u^n\cdot\nabla)\u^n - \beta\frac{\Delta t}{\varrho}
+\nabla p^{n} + \Delta t\,\nu\nabla^2\u^n + \Delta t\f^n
+$$
+<p>&nbsp;<br>
+
+
+<p>
+Seek correction \( \delta\u \) such that
+
+<p>&nbsp;<br>
+$$
+\u^{n+1} = \u^* + \delta\u
+$$
+<p>&nbsp;<br>
+
+fulfills
+
+<p>&nbsp;<br>
+$$ \nabla\cdot \u^{n+1} = 0 $$
+<p>&nbsp;<br>
+
+
+<p>
+
+</section>
+
+
+<section>
+
+<h2>A Poisson equation must be solved to ensure \( \nabla\cdot\u = 0 \)  <a name="___sec9"></a></h2>
+
+<p>
+Subtract \( \u^* \) equation from original \( \u^{n+1} \) equation to
+find \( \delta\u \):
+
+<p>&nbsp;<br>
+$$
+\delta\u = \u^{n+1} - \u^* = -\frac{\Delta t}{\varrho}\nabla\Phi
+$$
+<p>&nbsp;<br>
+
+where
+
+<p>&nbsp;<br>
+$$
+\Phi = p^{n+1} - \beta p^n
+$$
+<p>&nbsp;<br>
+
+
+<p>
+The oldest methods had \( \beta=0 \), but \( \beta\neq 0 \) gives in general
+better speed and accuracy.
+
+<p>
+\( \nabla\cdot \u^{n+1} = 0 \) implies
+
+<p>&nbsp;<br>
+$$ \nabla\cdot\delta\u = - \nabla\cdot \u^* $$
+<p>&nbsp;<br>
+
+which gives
+
+<p>&nbsp;<br>
+$$
+\nabla^2 \Phi = \frac{\varrho}{\Delta t}\nabla\cdot\u^*
+$$
+<p>&nbsp;<br>
+
+
+<p>
+When \( \Phi \) is computed,
+
+<p>&nbsp;<br>
+$$
+\u^{n+1}  = \u^* -\frac{\Delta t}{\varrho}\nabla\Phi
+$$
+<p>&nbsp;<br>
+
+and
+
+<p>&nbsp;<br>
+$$ p^{n+1} = \Phi + \beta p^n $$
+<p>&nbsp;<br>
+
+
+<p>
+
+</section>
+
+
+<section>
+
+<h2>Summary  <a name="___sec10"></a></h2>
+
+<ol>
+<p><li> Compute the intermediate velocity \( \u^* \)</li>
+<p><li> Solve the Poisson equation for \( \Phi \)</li>
+<p><li> Update the velocity: \( \u^{n+1}  = \u^* -\frac{\Delta t}{\varrho}\nabla\Phi \)</li>
+<p><li> Update the pressure: \( p^{n+1} = \Phi + \beta p^n \)</li>
+</ol>
+<p>
+
+Basically, we have \( u=f \) approximation problems (1, 3, 4) and a
+Poisson equation to solve.
+
+<p>
+
+</section>
+
+
+<section>
+
+<h2>Boundary conditions  <a name="___sec11"></a></h2>
+
+<p>
+Problem: \( p \) condition at one point only in the original N-S equations.
+Now we need boundary conditions for \( \Phi \) along the whole boundary
+(Poisson equation).
+
+<ul>
+ <p><li> Use conditions for \( \u \) also for \( \u^* \)</li>
+ <p><li> Known pressure: known \( \Phi \)</li>
+ <p><li> Known pressure gradient: known \( \partial\Phi/\partial n \)</li>
+ <p><li> Otherwise \( \partial\Phi/\partial n = 0 \)</li>
+</ul>
+<p>
+
+
+</section>
+
+
+<section>
+
+<h2>Spatial discretization by the finite element method  <a name="___sec12"></a></h2>
+
+<ul>
+ <p><li> \( \u^*,\u^{n+1}\in V^{(u)} \) (modulo nonzero Dirichlet cond.)</li>
+ <p><li> \( p^{n+1}\in V^{(\Phi)} \) (modulo nonzero Dirichlet cond.)</li>
+ <p><li> Test function \( \v^{(u)}\in V^{(u)} \) for vector equations (velocity)</li>
+ <p><li> Test function \( v^{(\Phi)}\in V^{(\Phi)} \) for scalar equations (pressure)</li>
+ <p><li> Take inner product of vector equation and \( \v^{(u)} \)</li>
+ <p><li> Integrate \( \nabla^2\u\cdot \v^{(u)} \) by parts</li>
+ <p><li> Integrate \( \nabla p\cdot \v^{(u)} \) by parts (optional)</li>
+ <p><li> Notation: \( \u \) is \( \u^{n+1} \), \( \u_1 \) is \( \u^n \), \( p \) is \( p^{n+1} \),
+   \( p_1 \) is \( p^n \) (as in code)</li>
+</ul>
+<p>
+
+<p>&nbsp;<br>
+$$
+\begin{align}
+\int_\Omega \bigl( \u^*\cdot\v^{(u)} &+
+\Delta t((\u_1\cdot\nabla)\nabla\u_1)\cdot\v^{(u)}
+- \frac{\Delta t}{\varrho}p\nabla\cdot\v^{(u)} + \nonumber\\
+& \Delta t\,\nu\nabla\u_1\cdot\nabla\v^{(u)} - \Delta t f_1\bigr)\dx
++ \int_{\partial\Omega_{N,u}}\left(
+\nu\frac{\partial\u}{\partial n} - p\normalvec\right)\cdot\v^{(u)}\ds,
+\tag{1}
+\end{align}
+$$
+<p>&nbsp;<br>
+
+\( \forall\v^{(u)}\in V^{(u)} \).
+
+<p>
+Natural boundary condition:
+
+<p>&nbsp;<br>
+$$ \nu\frac{\partial\u}{\partial n} - p\normalvec \quad (=0)$$
+<p>&nbsp;<br>
+
+Usually \( {\partial\u /\partial n}=0 \) and \( p=0 \) at outlets.
+
+<p>
+Pressure Poisson equation:
+
+<p>&nbsp;<br>
+$$
+\begin{equation}
+\int_\Omega\nabla\Phi\cdot\nabla v^{(\Phi)}\dx =
+\frac{\varrho}{\Delta t}\int_\Omega \nabla\cdot\u^*\, v^{(\Phi)}\dx
++ \int_{\partial\Omega_{N,p}} \frac{\partial\Phi}{\partial n}v^{(\Phi)}\ds,
+\quad\forall v^{(\Phi)}\in V^{(\Phi)}
+\tp
+\tag{2}
+\end{equation}
+$$
+<p>&nbsp;<br>
+
+
+<p>
+Velocity update:
+
+<p>&nbsp;<br>
+$$
+\begin{equation}
+\int_\Omega \u\cdot\v^{(u)}\dx = \int_{\Omega} (\u^* -\frac{\Delta t}{\varrho}
+\nabla\Phi)\cdot\v^{(u)}\dx,\quad\forall\v^{(u)}\in V^{(u)}
+\tp
+\tag{3}
+\end{equation}
+$$
+<p>&nbsp;<br>
+
+
+<p>
+Pressure update:
+
+<p>&nbsp;<br>
+$$
+\begin{equation}
+\int_\Omega p v^{(\Phi)}\dx = \int_{\Omega} (\Phi + \beta p_1)v^{(\Phi)}\dx,
+\quad\forall v^{(\Phi)}\in V^{(\Phi)}
+\tp
+\tag{4}
+\end{equation}
+$$
+<p>&nbsp;<br>
+
+
+<p>
+
+</section>
+
+
+<section>
+
+<h2>Increasing the implicitness  <a name="___sec13"></a></h2>
+
+<p>
+Stability (due to Forward Euler-style scheme):
+
+<p>&nbsp;<br>
+$$
+\begin{equation}
+\Delta t \leq \frac{h^2}{2\nu + Uh}
+\tp
+\end{equation}
+$$
+<p>&nbsp;<br>
+
+\( h \): minimum element size, \( U \): typical velocity.
+
+<p>
+Better stability by a Backward Euler scheme:
+
+<p>&nbsp;<br>
+$$
+\begin{align}
+\u^{n+1} &= \u^n - \Delta t(\u^{n+1}\cdot\nabla)\u^{n+1}
+-\frac{\Delta t}{\varrho}
+\nabla p^{n+1} + \Delta t\,\nu\nabla^2\u^{n+1} + \Delta t\f^{n+1},
+\tag{5}\\
+\nabla\cdot\u^{n+1} &= 0
+\tp
+\end{align}
+$$
+<p>&nbsp;<br>
+
+
+<p>
+Intermediate velocity (\( \nabla p^{n+1}\rightarrow \beta p^n \)):
+
+<p>&nbsp;<br>
+$$
+\u^{*} = \u^n - \Delta t(\u^{*}\cdot\nabla)\u^{*} -
+\beta\frac{\Delta t}{\varrho}
+p^{n+1} + \Delta t\,\nu\nabla^2\u^{*} + \Delta t\f^{n+1}
+\tag{6}
+\thinspace
+$$
+<p>&nbsp;<br>
+
+
+<p>
+Deal with nonlinearity in a simple way (1 Pickard it.):
+
+<p>&nbsp;<br>
+$$
+\begin{equation}
+(\u^{*}\cdot\nabla)\u^{*} \approx (\u^{n}\cdot\nabla)\u^{*}
+\tp
+\end{equation}
+$$
+<p>&nbsp;<br>
+
+
+<p>
+Then we have a linear problem for \( \u^* \):
+
+<p>&nbsp;<br>
+$$
+\u^{*} = \u^n - \Delta t(\u^{n}\cdot\nabla)\u^{*} -
+\beta\frac{\Delta t}{\varrho}
+\nabla p^{n} + \Delta t\,\nu\nabla^2\u^{*} + \Delta t\f^{n+1}
+\tag{7}
+\thinspace
+$$
+<p>&nbsp;<br>
+
+
+<p>
+Correction (assume \( \u^{n+1}-\u^* \) small):
+
+<p>&nbsp;<br>
+$$
+\delta\u =
+\Delta t((\u^{n+1}\cdot\nabla)\u^{n+1} - (\u^{n}\cdot\nabla)\u^{*})
+-\frac{\Delta t}{\varrho}
+\nabla \Phi + \Delta t\,\nu (\nabla^2 (\u^{n+1} - \u^*)
+\approx -\frac{\Delta t}{\varrho}
+\nabla \Phi
+\tp $$
+<p>&nbsp;<br>
+
+
+<p>
+So, as before,
+
+<p>&nbsp;<br>
+$$ \nabla^2 \Phi = \frac{\varrho}{\Delta t}\nabla\cdot\u^* $$
+<p>&nbsp;<br>
+
+
+<ul>
+ <p><li> Need to solve an implicit equation (linear system) for \( \u^* \)</li>
+ <p><li> The other steps are the same</li>
+ <p><li> A Crank-Nicolson method is more accurate (also implicit scheme for \( \u^* \))</li>
+</ul>
+<p>
+
+
+</section>
+
+
+<section>
+
+<h1 style="text-align: center;">Methods based on slight compressibility  <a name="___sec14"></a></h1>
+
+<p>
+\( \nabla\cdot\u=0 \) is problematic. Allow slight compressibility in
+the fluid:
+
+<p>&nbsp;<br>
+$$ p_t  + c^2\nabla\cdot\u =0 \tp  $$
+<p>&nbsp;<br>
+
+\( c \): speed of sound.
+
+<p>
+Now we have evolution equations for \( \u \) and \( p \):
+
+<p>&nbsp;<br>
+$$
+\begin{align}
+\u_t &= -(\u\cdot\nabla) \u -\frac{1}{\varrho}\nabla p + \nu\nabla^2\u + \f,\\
+p_t  &= - c^2\nabla\cdot\u
+\tp
+\end{align}
+$$
+<p>&nbsp;<br>
+
+
+<p>
+Forward Euler:
+
+<p>&nbsp;<br>
+$$
+\begin{align}
+\u^{n+1} &= \u^n - \Delta t (\u^n\cdot\nabla) \u^n -\frac{\Delta t}{\varrho}\nabla p^n + \Delta t\,\nu\nabla^2\u^n + \Delta t\f^n,\\
+p^{n+1}  &= p^n - \Delta t c^2\nabla\cdot\u^n
+\tp
+\end{align}
+$$
+<p>&nbsp;<br>
+
+
+<ul>
+ <p><li> Stability requires \( \Delta t\sim h^2/c \)</li>
+ <p><li> \( c \) is large</li>
+ <p><li> Remedy: choose smaller \( c \) ("pseudo sound speed")</li>
+ <p><li> Can use Runge-Kutta methods</li>
+ <p><li> Can use implicit methods (but then the other scheme with \( \nabla\cdot\u=0 \)
+   is not more complicated)</li>
+</ul>
+<p>
+
+
+</section>
+
+
+<section>
+
+<h1 style="text-align: center;">Applications  <a name="___sec15"></a></h1>
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 2:  Flow in a channel. <a name="ns:app:figs:channel"></a> </p></center>
+<p><img src="fig-ns/flow_in_channel.png" align="bottom" width=600></p>
+</center>
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 3:  Flow in a half a channel with a symmetry line. <a name="ns:app:figs:channel:symm"></a> </p></center>
+<p><img src="fig-ns/flow_in_channel_symm.png" align="bottom" width=600></p>
+</center>
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 4:  Flow over a backward facing step. <a name="ns:app:figs:channel:bfs"></a> </p></center>
+<p><img src="fig-ns/flow_over_bfs.png" align="bottom" width=600></p>
+</center>
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 5:  Flow around a cylinder. <a name="ns:app:figs:cylinder"></a> </p></center>
+<p><img src="fig-ns/flow_around_cylinder.png" align="bottom" width=600></p>
+</center>
+
+
+</section>
+
+
+
+</div> <!-- class="slides" -->
+</div> <!-- class="reveal" -->
+
+<script src="reveal.js/lib/js/head.min.js"></script>
+<script src="reveal.js/js/reveal.min.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+    // Display navigation controls in the bottom right corner
+    controls: true,
+
+    // Display progress bar (below the horiz. slider)
+    progress: true,
+
+    // Display the page number of the current slide
+    slideNumber: true,
+
+    // Push each slide change to the browser history
+    history: false,
+
+    // Enable keyboard shortcuts for navigation
+    keyboard: true,
+
+    // Enable the slide overview mode
+    overview: true,
+
+    // Vertical centering of slides
+    //center: true,
+    center: false,
+
+    // Enables touch navigation on devices with touch input
+    touch: true,
+
+    // Loop the presentation
+    loop: false,
+
+    // Change the presentation direction to be RTL
+    rtl: false,
+
+    // Turns fragments on and off globally
+    fragments: true,
+
+    // Flags if the presentation is running in an embedded mode,
+    // i.e. contained within a limited portion of the screen
+    embedded: false,
+
+    // Number of milliseconds between automatically proceeding to the
+    // next slide, disabled when set to 0, this value can be overwritten
+    // by using a data-autoslide attribute on your slides
+    autoSlide: 0,
+
+    // Stop auto-sliding after user input
+    autoSlideStoppable: true,
+
+    // Enable slide navigation via mouse wheel
+    mouseWheel: false,
+
+    // Hides the address bar on mobile devices
+    hideAddressBar: true,
+
+    // Opens links in an iframe preview overlay
+    previewLinks: false,
+
+    // Transition style
+    transition: 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+    // Transition speed
+    transitionSpeed: 'default', // default/fast/slow
+
+    // Transition style for full page slide backgrounds
+    backgroundTransition: 'default', // default/none/slide/concave/convex/zoom
+
+    // Number of slides away from the current that are visible
+    viewDistance: 3,
+
+    // Parallax background image
+    //parallaxBackgroundImage: '', // e.g. "'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg'"
+
+    // Parallax background size
+    //parallaxBackgroundSize: '' // CSS syntax, e.g. "2100px 900px"
+
+    theme: Reveal.getQueryHash().theme, // available themes are in reveal.js/css/theme
+    transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/none
+
+});
+
+Reveal.initialize({
+    dependencies: [
+        // Cross-browser shim that fully implements classList - https://github.com/eligrey/classList.js/
+        { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+
+        // Interpret Markdown in <section> elements
+        { src: 'reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+        { src: 'reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+
+        // Syntax highlight for <code> elements
+        { src: 'reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+
+        // Zoom in and out with Alt+click
+        { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+
+        // Speaker notes
+        { src: 'reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
+
+        // Remote control your reveal.js presentation using a touch device
+        //{ src: 'reveal.js/plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } },
+
+        // MathJax
+        //{ src: 'reveal.js/plugin/math/math.js', async: true }
+    ]
+});
+
+Reveal.initialize({
+
+    // The "normal" size of the presentation, aspect ratio will be preserved
+    // when the presentation is scaled to fit different resolutions. Can be
+    // specified using percentage units.
+    width: 1170,  // original: 960,
+    height: 700,
+
+    // Factor of the display size that should remain empty around the content
+    margin: 0.1,
+
+    // Bounds for smallest/largest possible scale to apply to content
+    minScale: 0.2,
+    maxScale: 1.0
+
+});
+</script>
+
+<!-- begin footer logo
+<div style="position: absolute; bottom: 0px; left: 0; margin-left: 0px">
+<img src="somelogo.png">
+</div>
+     end footer logo -->
+
+
+
+</body>
+</html>

@@ -36,7 +36,6 @@ def visualize(u, t, I, w):
     axis([t[0], t[-1], umin, umax])
     savefig('vib1.png')
     savefig('vib1.pdf')
-    savefig('vib1.eps')
 
 import nose.tools as nt
 

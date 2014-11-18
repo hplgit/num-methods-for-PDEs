@@ -2,71 +2,71 @@ from numpy import *
 #from matplotlib.pyplot import *
 from scitools.easyviz.matplotlib_ import *
 
-def A_exact(Fo, p):
-    return exp(-4*Fo*p**2)
+def A_exact(F, p):
+    return exp(-4*F*p**2)
 
-def A_FE(Fo, p):
-    return 1 - 4*Fo*sin(p)**2
+def A_FE(F, p):
+    return 1 - 4*F*sin(p)**2
 
-def A_BE(Fo, p):
-    return 1/(1 + 4*Fo*sin(p)**2)
+def A_BE(F, p):
+    return 1/(1 + 4*F*sin(p)**2)
 
-def A_FoN(Fo, p):
-    return (1 - 2*Fo*sin(p)**2)/(1 + 2*Fo*sin(p)**2)
+def A_CN(F, p):
+    return (1 - 2*F*sin(p)**2)/(1 + 2*F*sin(p)**2)
 
-def compare_plot(Fo, p):
+def compare_plot(F, p):
     figure()
-    plot(p, A_BE(Fo, p),
-         p, A_exact(Fo, p),
-         p, A_CN(Fo, p),
-         p, A_FE(Fo, p),)
+    plot(p, A_BE(F, p),
+         p, A_exact(F, p),
+         p, A_CN(F, p),
+         p, A_FE(F, p),)
     legend(['BE', 'exact', 'CN', 'FE'])
-    title('Fo=%g' % Fo)
-    print 'Fo:', Fo
-    if 0.2 >= Fo > 0.02:
+    title('F=%g' % F)
+    print 'F:', F
+    if 0.2 >= F > 0.02:
         axis([p[0], p[-1], 0.3, 1])
-    elif Fo <= 0.02:
+    elif F <= 0.02:
         axis([p[0], p[-1], 0.75, 1])
     else:
         axis([p[0], p[-1], -1.2, 1])
     xlabel('$p=k\Delta x$')
-    savefig('A_Fo%s.pdf' % (str(Fo).replace('.', '')))
-    savefig('A_Fo%s.png' % (str(Fo).replace('.', '')))
+    savefig('A_F%s.pdf' % (str(F).replace('.', '')))
+    savefig('A_F%s.png' % (str(F).replace('.', '')))
 
 
 p = linspace(0, pi/2, 101)
-#for Fo in 20, 2, 0.5, 0.25, 0.1, 0.01:
-#    compare_plot(Fo, p)
+#for F in 20, 2, 0.5, 0.25, 0.1, 0.01:
+#    compare_plot(F, p)
 
 from sympy import *
-Fo, p, dx, dt = symbols('Fo p dx dt')
-#A_err_FE = A_FE(Fo, p)/A_exact(Fo, p)
-A_err_FE = A_exact(Fo, p) - A_FE(Fo, p)
-A_err_FE = A_FE(Fo, p)/A_exact(Fo, p)
-#print 'Error in A, FE:', A_err_FE.series(Fo, 0, 6)
-A_err_FE = A_err_FE.subs('Fo', 'dt/dx**2').subs('p', 'dx')
+F, p, dx, dt = symbols('F p dx dt')
+#A_err_FE = A_FE(F, p)/A_exact(F, p)
+A_err_FE = A_exact(F, p) - A_FE(F, p)
+A_err_FE = A_FE(F, p)/A_exact(F, p)
+#print 'Error in A, FE:', A_err_FE.series(F, 0, 6)
+A_err_FE = A_err_FE.subs('F', 'dt/dx**2').subs('p', 'dx')
 print 'Error in A, FE:', A_err_FE.series(dt, 0, 6)
-print latex(A_err_FE.series(Fo, 0, 6))
-A_err_BE = A_exact(Fo, p) - A_BE(Fo, p)
-A_err_BE = A_BE(Fo, p)/A_exact(Fo, p)
-print 'Error in A, BE:', A_err_BE.series(Fo, 0, 6)
-print latex(A_err_BE.series(Fo, 0, 6))
-A_err_CN = A_exact(Fo, p) - A_CN(Fo, p)
-A_err_CN = A_CN(Fo, p)/A_exact(Fo, p)
-print 'Error in A, CN:', A_err_CN.series(Fo, 0, 6)
-print latex(A_err_CN.series(Fo, 0, 6))
+print latex(A_err_FE.series(F, 0, 6))
+A_err_BE = A_exact(F, p) - A_BE(F, p)
+A_err_BE = A_BE(F, p)/A_exact(F, p)
+print 'Error in A, BE:', A_err_BE.series(F, 0, 6)
+print latex(A_err_BE.series(F, 0, 6))
+A_err_CN = A_exact(F, p) - A_CN(F, p)
+A_err_CN = A_CN(F, p)/A_exact(F, p)
+print 'Error in A, CN:', A_err_CN.series(F, 0, 6)
+print latex(A_err_CN.series(F, 0, 6))
 
 raw_input()
 
 show()
 
 """
-doconce combine_images A_Fo20.pdf A_Fo2.pdf diffusion_A_Fo20_Fo2.pdf
-doconce combine_images A_Fo20.png A_Fo2.png diffusion_A_Fo20_Fo2.png
+doconce combine_images A_F20.pdf A_F2.pdf diffusion_A_F20_F2.pdf
+doconce combine_images A_F20.png A_F2.png diffusion_A_F20_F2.png
 
-doconce combine_images A_Fo05.png A_Fo025.png diffusion_A_Fo05_Fo025.png
-doconce combine_images A_Fo05.pdf A_Fo025.pdf diffusion_A_Fo05_Fo025.pdf
+doconce combine_images A_F05.png A_F025.png diffusion_A_F05_F025.png
+doconce combine_images A_F05.pdf A_F025.pdf diffusion_A_F05_F025.pdf
 
-doconce combine_images A_Fo01.pdf A_Fo001.pdf diffusion_A_Fo01_Fo001.pdf
-doconce combine_images A_Fo01.png A_Fo001.png diffusion_A_Fo01_Fo001.png
+doconce combine_images A_F01.pdf A_F001.pdf diffusion_A_F01_F001.pdf
+doconce combine_images A_F01.png A_F001.png diffusion_A_F01_F001.png
 """

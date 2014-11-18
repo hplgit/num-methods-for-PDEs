@@ -198,26 +198,19 @@ Solving with respect to this unknown is easy:
 .. math::
    :label: diffu:pde1:step4
         
-        u^{n+1}_i = u^n_i + Fo\left(
-        u^{n}_{i+1} - 2u^n_i + u^n_{i-1}\right),
+        u^{n+1}_i = u^n_i + F\left(
+        u^{n}_{i+1} - 2u^n_i + u^n_{i-1}\right){\thinspace .}
         
         
 
-where we have introduced the *mesh Fourier number*
 
-.. math::
-        
-        Fo = {\alpha}\frac{\Delta t}{\Delta x^2}{\thinspace .}
-        
+.. admonition:: :math:`F` is the key parameter in the discrete diffusion equation
 
-
-.. admonition:: :math:`Fo` is the key parameter in the discrete diffusion equation
-
-   Note that :math:`Fo` is a *dimensionless* number that lumps the key physical
+   Note that :math:`F` is a *dimensionless* number that lumps the key physical
    parameter in the problem, :math:`{\alpha}`, and the discretization parameters
    :math:`\Delta x` and :math:`\Delta t` into a single parameter. All the properties
    of the numerical method are critically dependent upon the value of
-   :math:`Fo` (see the section :ref:`diffu:pde1:analysis` for details).
+   :math:`F` (see the section :ref:`diffu:pde1:analysis` for details).
 
 
 
@@ -242,7 +235,7 @@ The algorithm is compactly fully specified in Python:
         dx = x[1] - x[0]
         t = linspace(0, T, Nt+1)    # mesh points in time
         dt = t[1] - t[0]
-        Fo = a*dt/dx**2
+        F = a*dt/dx**2
         u   = zeros(Nx+1)           # unknown u at new time level
         u_1 = zeros(Nx+1)           # u at the previous time level
         
@@ -253,7 +246,7 @@ The algorithm is compactly fully specified in Python:
         for n in range(0, Nt):
             # Compute u at inner mesh points
             for i in range(1, Nx):
-                u[i] = u_1[i] + Fo*(u_1[i-1] - 2*u_1[i] + u_1[i+1])
+                u[i] = u_1[i] + F*(u_1[i-1] - 2*u_1[i] + u_1[i+1])
         
             # Insert boundary conditions
             u[0] = 0;  u[Nx] = 0
@@ -268,15 +261,15 @@ runs the case with :math:`I(x)` as a discontinuous plug or a smooth
 Gaussian function, respectively. Experiments with these two functions
 reveal some important observations:
 
- * The Forward Euler scheme leads to growing solutions if :math:`Fo>\frac{1}{2}`.
+ * The Forward Euler scheme leads to growing solutions if :math:`F>\frac{1}{2}`.
 
  * :math:`I(x)` as a discontinuous plug leads to a saw tooth-like noise
-   for :math:`Fo=\frac{1}{2}`, see `movie <http://tinyurl.com/opdfafk/pub/mov-diffu/diffu1D_u0_FE_plug/movie.ogg>`__, which is absent for :math:`Fo\leq\frac{1}{4}`, see
-   `movie <http://tinyurl.com/opdfafk/pub/mov-diffu/diffu1D_u0_FE_plug_Fo025/movie.ogg>`__.
+   for :math:`F=\frac{1}{2}`, see `movie <http://tinyurl.com/opdfafk/pub/mov-diffu/diffu1D_u0_FE_plug/movie.ogg>`__, which is absent for :math:`F\leq\frac{1}{4}`, see
+   `movie <http://tinyurl.com/opdfafk/pub/mov-diffu/diffu1D_u0_FE_plug_F025/movie.ogg>`__.
 
  * The smooth Gaussian initial function leads to a smooth solution,
    see `movie <http://tinyurl.com/opdfafk/pub/mov-diffu/diffu1D_u0_FE_plug_gaussian1/movie.ogg>`__
-   for :math:`Fo=\frac{1}{2}`.
+   for :math:`F=\frac{1}{2}`.
 
 .. _diffu:pde1:BE:
 
@@ -329,12 +322,12 @@ unknown new values :math:`u^n_1` and :math:`u^n_2` on the left-hand side gives
 
 .. math::
         
-        \left(1+  2Fo\right) u^{n}_1 - Fo u^{n}_{2}    = u^{n-1}_1,
+        \left(1+  2F\right) u^{n}_1 - F u^{n}_{2}    = u^{n-1}_1,
         
 
 .. math::
           
-        - Fo u^{n}_{1} + \left(1+  2Fo\right) u^{n}_2  = u^{n-1}_2{\thinspace .}
+        - F u^{n}_{1} + \left(1+  2F\right) u^{n}_2  = u^{n-1}_2{\thinspace .}
         
 
 This is a coupled :math:`2\times 2` system of algebraic equations for
@@ -342,8 +335,8 @@ the unknowns :math:`u^n_1` and :math:`u^n_2`. The equivalent matrix form is
 
 .. math::
          \left(\begin{array}{cc}
-        1+  2Fo &   - Fo\\ 
-        - Fo    & 1+  2Fo
+        1+  2F &   - F\\ 
+        - F    & 1+  2F
         \end{array}\right)
         \left(\begin{array}{c}
         u^{n}_1\\ 
@@ -383,12 +376,19 @@ Collecting the unknowns on the left-hand side,
 .. math::
    :label: diffu:pde1:step4BE
         
-        - F_o u^n_{i-1} + \left(1+  2F_o \right) u^{n}_i - F_o u^n_{i+1} =
+        - F u^n_{i-1} + \left(1+  2F \right) u^{n}_i - F u^n_{i+1} =
         u_{i-1}^{n-1},
         
         
 
-for :math:`i=1,\ldots,Nx-1`.
+for :math:`i=1,\ldots,Nx-1`. Here,
+we have introduced the *mesh Fourier number*
+
+.. math::
+        
+        F = {\alpha}\frac{\Delta t}{\Delta x^2}{\thinspace .}
+        
+
 One can either view these equations as a system for where the
 :math:`u^{n}_i` values at the internal mesh points, :math:`i=1,\ldots,N_x-1`, are
 unknown, or we may append the boundary values :math:`u^n_0` and :math:`u^n_{N_x}`
@@ -455,17 +455,17 @@ The nonzero elements are given by
 
 .. math::
         
-        A_{i,i-1} = -F_o
+        A_{i,i-1} = -F
         
 
 .. math::
           
-        A_{i,i} = 1+ 2F_o
+        A_{i,i} = 1+ 2F
         
 
 .. math::
           
-        A_{i,i+1} = -F_o
+        A_{i,i+1} = -F
         
 
 for the equations for internal points, :math:`i=1,\ldots,N_x-1`. The equations
@@ -541,9 +541,9 @@ with Python code:
         b = zeros(Nx+1)
         
         for i in range(1, Nx):
-            A[i,i-1] = -Fo
-            A[i,i+1] = -Fo
-            A[i,i] = 1 + 2*Fo
+            A[i,i-1] = -F
+            A[i,i+1] = -F
+            A[i,i] = 1 + 2*F
         A[0,0] = A[Nx,Nx] = 1
         
         # Set initial condition u(x,0) = I(x)
@@ -592,9 +592,9 @@ can store only the main diagonal and the upper and lower diagonals.
         b     = zeros(Nx+1)
         
         # Precompute sparse matrix
-        main[:] = 1 + 2*Fo
-        lower[:] = -Fo  #1
-        upper[:] = -Fo  #1
+        main[:] = 1 + 2*F
+        lower[:] = -F  #1
+        upper[:] = -F  #1
         # Insert boundary conditions
         main[0] = 1
         main[Nx] = 1
@@ -677,8 +677,8 @@ and collecting all unknown terms on the left-hand side, we get
 
 .. math::
         
-        u^{n+1}_i - \frac{1}{2} Fo(u^{n+1}_{i-1} - 2u^{n+1}_i + u^{n+1}_{i+1})
-        = u^{n}_i + \frac{1}{2} Fo(u^{n}_{i-1} - 2u^{n}_i + u^{n}_{i+1}){\thinspace .}
+        u^{n+1}_i - \frac{1}{2} F(u^{n+1}_{i-1} - 2u^{n+1}_i + u^{n+1}_{i+1})
+        = u^{n}_i + \frac{1}{2} F(u^{n}_{i-1} - 2u^{n}_i + u^{n}_{i+1}){\thinspace .}
         
 
 Also here, as in the Backward Euler scheme, the new unknowns
@@ -689,17 +689,17 @@ different entries:
 
 .. math::
         
-        A_{i,i-1} = -\frac{1}{2} F_o
+        A_{i,i-1} = -\frac{1}{2} F
         
 
 .. math::
           
-        A_{i,i} = \frac{1}{2} + F_o
+        A_{i,i} = \frac{1}{2} + F
         
 
 .. math::
           
-        A_{i,i+1} = -\frac{1}{2} F_o
+        A_{i,i+1} = -\frac{1}{2} F
         
 
 for the equations for internal points, :math:`i=1,\ldots,N_x-1`. The equations
@@ -767,13 +767,13 @@ Applied to the 1D diffusion problem we have
 This scheme also leads to a matrix system with entries
 
 .. math::
-         A_{i,i-1} = -F_o\theta,\quad A_{i,i} = 1+2F_o\theta\quad,
-        A_{i,i+1} = -F_o\theta,
+         A_{i,i-1} = -F\theta,\quad A_{i,i} = 1+2F\theta\quad,
+        A_{i,i+1} = -F\theta,
 
 while right-hand side entry :math:`b_i` is
 
 .. math::
-         b_i = u^n_{i} + F_o(1-\theta)
+         b_i = u^n_{i} + F(1-\theta)
         \frac{u^{n}_{i+1} - 2u^n_i + u^n_{i-1}}{\Delta x^2}
         
 
@@ -797,7 +797,7 @@ Similarly, Poisson's equation :math:`-u_{xx}=f` arises from solving
 Technically in a program, we can simulate :math:`t\rightarrow\infty`
 by just taking one large time step,
 or equivalently, set :math:`{\alpha}` to a large value. All we need is to have
-:math:`F_o` large. As :math:`F_o\rightarrow\infty`, we can from the schemes see that
+:math:`F` large. As :math:`F\rightarrow\infty`, we can from the schemes see that
 the limiting discrete equation becomes
 
 .. math::
@@ -808,7 +808,7 @@ which is nothing but the discretization :math:`[D_xD_x u]^{n+1}_i=0` of
 
 The Backward Euler scheme can solve the limit equation directly and
 hence produce a solution of the 1D Laplace equation.
-With the Forward Euler scheme we must do the time stepping since :math:`F_o>1/2`
+With the Forward Euler scheme we must do the time stepping since :math:`F > 1/2`
 is illegal and leads to instability. We may interpret this time stepping
 as solving the equation system from :math:`u_{xx}` by iterating on a time
 pseudo time variable.
@@ -1218,7 +1218,7 @@ and consequently
 
 .. math::
         
-        A = 1 -4F_o\sin^2\left(
+        A = 1 -4F\sin^2\left(
         \frac{k\Delta x}{2}\right),
         
 
@@ -1226,7 +1226,7 @@ where
 
 .. math::
         
-        F_o = \frac{\alpha\Delta t}{\Delta x^2}
+        F = \frac{\alpha\Delta t}{\Delta x^2}
         
 
 is the *numerical Fourier number*.
@@ -1234,7 +1234,7 @@ The complete numerical solution is then
 
 .. math::
         
-        u^n_q = \left(1 -4F_o\sin^2\left(
+        u^n_q = \left(1 -4F\sin^2\left(
         \frac{k\Delta x}{2}\right)\right)^ne^{ikq\Delta x}
         {\thinspace .}
         
@@ -1247,7 +1247,7 @@ which will lead
 to growth of a numerical wave component. The criterion :math:`A\geq -1` implies
 
 .. math::
-         4F_o\sin^2 (p/2)\leq 2
+         4F\sin^2 (p/2)\leq 2
         {\thinspace .}
         
 
@@ -1256,7 +1256,7 @@ stability is
 
 .. math::
         
-        F_o\leq {\frac{1}{2}},
+        F\leq {\frac{1}{2}},
         
 
 or expressed as a condition on :math:`\Delta t`:
@@ -1275,37 +1275,37 @@ The method hence becomes very expensive for fine spatial meshes.
 Accuracy  (2)
 ~~~~~~~~~~~~~
 
-Since :math:`A` is expressed in terms of :math:`F_o` and the parameter we now call
-:math:`p=k\Delta x/2`, we also express :math:`{A_{\small\mbox{e}}}` by :math:`F_o` and :math:`p`:
+Since :math:`A` is expressed in terms of :math:`F` and the parameter we now call
+:math:`p=k\Delta x/2`, we also express :math:`{A_{\small\mbox{e}}}` by :math:`F` and :math:`p`:
 
 .. math::
-         {A_{\small\mbox{e}}} = \exp{(-\alpha k^2\Delta t)} = \exp{(-4F_op^2)}
+         {A_{\small\mbox{e}}} = \exp{(-\alpha k^2\Delta t)} = \exp{(-4Fp^2)}
         {\thinspace .} 
 
 Computing
-the Taylor series expansion of :math:`A/{A_{\small\mbox{e}}}` in terms of :math:`F_o`
+the Taylor series expansion of :math:`A/{A_{\small\mbox{e}}}` in terms of :math:`F`
 can easily be done with aid of ``sympy``:
 
 .. code-block:: python
 
-        def A_exact(Fo, p):
-            return exp(-4*Fo*p**2)
+        def A_exact(F, p):
+            return exp(-4*F*p**2)
         
-        def A_FE(Fo, p):
-            return 1 - 4*Fo*sin(p)**2
+        def A_FE(F, p):
+            return 1 - 4*F*sin(p)**2
         
         from sympy import *
-        Fo, p = symbols('Fo p')
-        A_err_FE = A_FE(Fo, p)/A_exact(Fo, p)
-        print A_err_FE.series(Fo, 0, 6)
+        F, p = symbols('F p')
+        A_err_FE = A_FE(F, p)/A_exact(F, p)
+        print A_err_FE.series(F, 0, 6)
 
 The result is
 
 .. math::
-         \frac{A}{{A_{\small\mbox{e}}}} = 1 - 4 F_o \sin^{2}p + 2F_o p^{2} - 16F_o^{2} p^{2} \sin^{2}p + 8 F_o^{2} p^{4} + \cdots
+         \frac{A}{{A_{\small\mbox{e}}}} = 1 - 4 F \sin^{2}p + 2F p^{2} - 16F^{2} p^{2} \sin^{2}p + 8 F^{2} p^{4} + \cdots
         
 
-Recalling that :math:`F_o=\alpha\Delta t/\Delta x`, :math:`p=k\Delta x/2`, and that
+Recalling that :math:`F=\alpha\Delta t/\Delta x`, :math:`p=k\Delta x/2`, and that
 :math:`\sin^2p\leq 1`, we
 realize that the dominating error terms are at most
 
@@ -1348,7 +1348,7 @@ and then
 .. math::
    :label: diffu:pde1:analysis:BE:A
         
-        A = \left(1  + 4F_o\sin^2p\right)^{-1}
+        A = \left(1  + 4F\sin^2p\right)^{-1}
         
         {\thinspace .}
         
@@ -1357,7 +1357,7 @@ The complete numerical solution can be written
 
 .. math::
         
-        u^n_q = \left(1  + 4F_o\sin^2 p\right)^{-n}
+        u^n_q = \left(1  + 4F\sin^2 p\right)^{-n}
         e^{ikq\Delta x} {\thinspace .}
         
 
@@ -1408,7 +1408,7 @@ and after some more algebra,
 
 .. math::
         
-        A = \frac{ 1 - 2F_o\sin^2p}{1 + 2F_o\sin^2p}
+        A = \frac{ 1 - 2F\sin^2p}{1 + 2F\sin^2p}
         {\thinspace .}
         
 
@@ -1416,7 +1416,7 @@ The exact numerical solution is hence
 
 .. math::
         
-        u^n_q = \left(\frac{ 1 - 2F_o\sin^2p}{1 + 2F_o\sin^2p}\right)^ne^{ikp\Delta x}
+        u^n_q = \left(\frac{ 1 - 2F\sin^2p}{1 + 2F\sin^2p}\right)^ne^{ikp\Delta x}
         {\thinspace .}
         
 
@@ -1429,38 +1429,38 @@ Summary of accuracy of amplification factors
 --------------------------------------------
 
 We can plot the various amplification factors against :math:`p=k\Delta x/2` for
-different choices of the :math:`F_o` parameter. Figures :ref:`diffu:pde1:fig:A:err:C20`,
+different choices of the :math:`F` parameter. Figures :ref:`diffu:pde1:fig:A:err:C20`,
 :ref:`diffu:pde1:fig:A:err:C0.5`, and :ref:`diffu:pde1:fig:A:err:C0.1`
 show how long and small waves are damped by the various schemes compared
 to the exact damping. As long as all schemes are stable, the amplification
-factor is positive, except for Crank-Nicolson when :math:`F_o>0.5`.
+factor is positive, except for Crank-Nicolson when :math:`F>0.5`.
 
 .. _diffu:pde1:fig:A:err:C20:
 
-.. figure:: diffusion_A_Fo20_Fo2_FDM.png
+.. figure:: diffusion_A_F20_F2_FDM.png
    :width: 800
 
    *Amplification factors for large time steps*
 
 .. _diffu:pde1:fig:A:err:C0.5:
 
-.. figure:: diffusion_A_Fo05_Fo025_FDM.png
+.. figure:: diffusion_A_F05_F025_FDM.png
    :width: 800
 
    *Amplification factors for time steps around the Forward Euler stability limit*
 
 .. _diffu:pde1:fig:A:err:C0.1:
 
-.. figure:: diffusion_A_Fo01_Fo001_FDM.png
+.. figure:: diffusion_A_F01_F001_FDM.png
    :width: 800
 
    *Amplification factors for small time steps*
 
 The effect of negative amplification factors is that :math:`A^n` changes sign
 from one time level to the next, thereby giving rise to oscillations in
-time in an animation of the solution. We see from Figure :ref:`diffu:pde1:fig:A:err:C20` that for :math:`F_o=20`, waves with :math:`p\geq \pi/2` undergo a damping close to
+time in an animation of the solution. We see from Figure :ref:`diffu:pde1:fig:A:err:C20` that for :math:`F=20`, waves with :math:`p\geq \pi/2` undergo a damping close to
 :math:`-1`, which means that the amplitude does not decay and that the wave component
-jumps up and down in time. For :math:`F_o=2` we have a damping of a factor of 0.5
+jumps up and down in time. For :math:`F=2` we have a damping of a factor of 0.5
 from one time level to the next, which is very much smaller than the
 exact damping. Short waves will therefore fail to be effectively dampened.
 These waves will manifest themselves as high frequency
@@ -1476,7 +1476,7 @@ choose an initial condition that leads to short waves with
 significant amplitude. A discontinuous :math:`I(x)` will in particular serve
 this purpose.
 
-Run :math:`F_o=...`...
+Run :math:`F=...`...
 
 .. --- begin exercise ---
 

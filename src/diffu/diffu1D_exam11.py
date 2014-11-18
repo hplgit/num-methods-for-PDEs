@@ -3,7 +3,7 @@ from scipy.sparse.linalg import spsolve, use_solver
 from numpy import linspace, zeros
 import time
 
-def solver(I, a, L, Nx, Fo, T, theta=0.5, u_L=0, u_R=0,
+def solver(I, a, L, Nx, F, T, theta=0.5, u_L=0, u_R=0,
            user_action=None):
     """
     Solve the diffusion equation u_t = a*u_xx on (0,L) with
@@ -14,8 +14,8 @@ def solver(I, a, L, Nx, Fo, T, theta=0.5, u_L=0, u_R=0,
 
     Nx is the total number of mesh cells; mesh points are numbered
     from 0 to Nx.
-    Fo is the dimensionless number a*dt/dx**2 and implicitly specifies the
-    time step. No restriction on Fo.
+    F is the dimensionless number a*dt/dx**2 and implicitly specifies the
+    time step. No restriction on F.
     T is the stop time for the simulation.
     I is a function of x.
 
@@ -32,7 +32,7 @@ def solver(I, a, L, Nx, Fo, T, theta=0.5, u_L=0, u_R=0,
 
     x = linspace(0, L, Nx+1)   # mesh points in space
     dx = x[1] - x[0]
-    dt = Fo*dx**2/a
+    dt = F*dx**2/a
     Nt = int(round(T/float(dt)))
     print 'Nt:', Nt
     t = linspace(0, T, Nt+1)    # mesh points in time
@@ -47,11 +47,11 @@ def solver(I, a, L, Nx, Fo, T, theta=0.5, u_L=0, u_R=0,
     b        = zeros(Nx+1)
 
     # Precompute sparse matrix (scipy format)
-    Fol = Fo*theta
-    For = Fo*(1-theta)
-    diagonal[:] = 1 + 2*Fol
-    lower[:] = -Fol  #1
-    upper[:] = -Fol  #1
+    Fl = F*theta
+    Fr = F*(1-theta)
+    diagonal[:] = 1 + 2*Fl
+    lower[:] = -Fl  #1
+    upper[:] = -Fl  #1
     # Insert boundary conditions
     # (upper[1:] and lower[:-1] are the active alues)
     upper[0:2] = 0
@@ -72,7 +72,7 @@ def solver(I, a, L, Nx, Fo, T, theta=0.5, u_L=0, u_R=0,
 
     # Time loop
     for n in range(0, Nt):
-        b[1:-1] = u_1[1:-1] + For*(u_1[:-2] - 2*u_1[1:-1] + u_1[2:])
+        b[1:-1] = u_1[1:-1] + Fr*(u_1[:-2] - 2*u_1[1:-1] + u_1[2:])
         b[0] = u_L; b[-1] = u_R  # boundary conditions
         u[:] = spsolve(A, b)
 
@@ -107,21 +107,21 @@ a = 1
 def I(x):
     return 0 if x > L/2. else 1
 
-# Command-line arguments: Nx Fo theta
+# Command-line arguments: Nx F theta
 import sys
 Nx = 15
-Fo = 0.5
+F = 0.5
 theta = 0
 T = 3
 #theta = 1
 #Nx = int(sys.argv[1])
-#Fo = float(sys.argv[2])
+#F = float(sys.argv[2])
 #theta = float(sys.argv[3])
 
 cases = [(7, 5, 0.5, 3), (15, 0.5, 0, 0.5),]
-for Nx, Fo, theta, T in cases:
-    print 'theta=%g, Fo=%g, Nx=%d' % (theta, Fo, Nx)
-    u, x, t, cpu = solver(I, a, L, Nx, Fo, T,
+for Nx, F, theta, T in cases:
+    print 'theta=%g, F=%g, Nx=%d' % (theta, F, Nx)
+    u, x, t, cpu = solver(I, a, L, Nx, F, T,
                           theta=theta, u_L=1, u_R=0,
                           user_action=plot_u)
     raw_input('CR: ')

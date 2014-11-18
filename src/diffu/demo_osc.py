@@ -3,7 +3,7 @@ from scipy.sparse.linalg import spsolve, use_solver
 from numpy import linspace, zeros
 import time, os, sys, shutil
 
-def solver(I, a, L, Nx, Fo, T, theta=0.5, u_L=0, u_R=0,
+def solver(I, a, L, Nx, F, T, theta=0.5, u_L=0, u_R=0,
            user_action=None):
     """
     Solve the diffusion equation u_t = a*u_xx on (0,L) with
@@ -14,8 +14,8 @@ def solver(I, a, L, Nx, Fo, T, theta=0.5, u_L=0, u_R=0,
 
     Nx is the total number of mesh cells; mesh points are numbered
     from 0 to Nx.
-    Fo is the dimensionless number a*dt/dx**2 and implicitly specifies the
-    time step. No restriction on Fo.
+    F is the dimensionless number a*dt/dx**2 and implicitly specifies the
+    time step. No restriction on F.
     T is the stop time for the simulation.
     I is a function of x.
 
@@ -32,7 +32,7 @@ def solver(I, a, L, Nx, Fo, T, theta=0.5, u_L=0, u_R=0,
 
     x = linspace(0, L, Nx+1)    # mesh points in space
     dx = x[1] - x[0]
-    dt = Fo*dx**2/a
+    dt = F*dx**2/a
     Nt = int(round(T/float(dt)))
     print 'Number of time steps:', Nt
     t = linspace(0, T, Nt+1)    # mesh points in time
@@ -47,11 +47,11 @@ def solver(I, a, L, Nx, Fo, T, theta=0.5, u_L=0, u_R=0,
     b        = zeros(Nx+1)
 
     # Precompute sparse matrix (scipy format)
-    Fol = Fo*theta
-    For = Fo*(1-theta)
-    diagonal[:] = 1 + 2*Fol
-    lower[:] = -Fol  #1
-    upper[:] = -Fol  #1
+    Fl = F*theta
+    Fr = F*(1-theta)
+    diagonal[:] = 1 + 2*Fl
+    lower[:] = -Fl  #1
+    upper[:] = -Fl  #1
     # Insert boundary conditions
     # (upper[1:] and lower[:-1] are the active alues)
     upper[0:2] = 0
@@ -72,7 +72,7 @@ def solver(I, a, L, Nx, Fo, T, theta=0.5, u_L=0, u_R=0,
 
     # Time loop
     for n in range(0, Nt):
-        b[1:-1] = u_1[1:-1] + For*(u_1[:-2] - 2*u_1[1:-1] + u_1[2:])
+        b[1:-1] = u_1[1:-1] + Fr*(u_1[:-2] - 2*u_1[1:-1] + u_1[2:])
         b[0] = u_L; b[-1] = u_R  # boundary conditions
         u[:] = spsolve(A, b)
 
@@ -92,15 +92,15 @@ theta2name = {1: 'BE', 0: 'FE', 0.5: 'CN'}
 
 
 class PlotU:
-    def __init__(self, theta, Fo, Nx, L):
-        self.theta, self.Fo, self.Nx, self.L  = theta, Fo, Nx, L
+    def __init__(self, theta, F, Nx, L):
+        self.theta, self.F, self.Nx, self.L  = theta, F, Nx, L
         self._make_plotdir()
 
     def __call__(self, u, x, t, n):
         from scitools.std import plot, savefig
         umin = -0.1; umax = 1.1  # axis limits for plotting
-        title = 'Method: %s, Fo=%g, t=%f' % \
-                (theta2name[self.theta], self.Fo, t[n])
+        title = 'Method: %s, F=%g, t=%f' % \
+                (theta2name[self.theta], self.F, t[n])
         plot(x, u, 'r-',
              axis=[0, self.L, umin, umax],
              title=title)
@@ -113,7 +113,7 @@ class PlotU:
             time.sleep(0.2)
 
     def _make_plotdir(self):
-        self.plotdir = '%s_Fo%g' % (theta2name[self.theta], self.Fo)
+        self.plotdir = '%s_F%g' % (theta2name[self.theta], self.F)
         if os.path.isdir(self.plotdir):
             shutil.rmtree(self.plotdir)
         os.mkdir(self.plotdir)
@@ -135,12 +135,12 @@ def I(x):
 
 
 def run_command_line_args():
-    # Command-line arguments: Nx Fo theta
+    # Command-line arguments: Nx F theta
     Nx = int(sys.argv[1])
-    Fo = float(sys.argv[2])
+    F = float(sys.argv[2])
     theta = float(sys.argv[3])
-    plot_u = PlotU(theta, Fo, Nx, L=1)
-    u, x, t, cpu = solver(I, a=1, L=1, Nx=Nx, Fo=Fo, T=T,
+    plot_u = PlotU(theta, F, Nx, L=1)
+    u, x, t, cpu = solver(I, a=1, L=1, Nx=Nx, F=F, T=T,
                           theta=theta, u_L=1, u_R=0,
                           user_action=plot_u)
     plot_u.make_movie()
@@ -149,10 +149,10 @@ def run_BE_CN_FE():
     # cases: list of (Nx, C, theta, T) values
     cases = [(7, 5, 0.5, 3), (15, 0.5, 0, 0.25),
              (15, 0.5, 1, 0.12),]
-    for Nx, Fo, theta, T in cases:
-        print 'theta=%g, Fo=%g, Nx=%d' % (theta, Fo, Nx)
-        plot_u = PlotU(theta, Fo, Nx, L=1)
-        u, x, t, cpu = solver(I, a=1, L=1, Nx=Nx, Fo=Fo, T=T,
+    for Nx, F, theta, T in cases:
+        print 'theta=%g, F=%g, Nx=%d' % (theta, F, Nx)
+        plot_u = PlotU(theta, F, Nx, L=1)
+        u, x, t, cpu = solver(I, a=1, L=1, Nx=Nx, F=F, T=T,
                               theta=theta, u_L=1, u_R=0,
                               user_action=plot_u)
         plot_u.make_movie()

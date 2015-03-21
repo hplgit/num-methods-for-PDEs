@@ -1,0 +1,490 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Classes for problem and solution method</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Scientific software engineering with a simple ODE model as example" href="index.html" />
+    <link rel="next" title="Automating scientific experiments" href="._main_softeng1005.html" />
+    <link rel="prev" title="Tests for verifying implementations" href="._main_softeng1003.html" />
+ 
+  
+   <style type="text/css">
+     div.admonition {
+       background-color: whiteSmoke;
+       border: 1px solid #bababa;
+     }
+   </style>
+  </head>
+
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_softeng1005.html" title="Automating scientific experiments"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="._main_softeng1003.html" title="Tests for verifying implementations"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Scientific software engineering with a simple ODE model as example</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="classes-for-problem-and-solution-method">
+<span id="softeng1-prog-se-class"></span><h1>Classes for problem and solution method<a class="headerlink" href="#classes-for-problem-and-solution-method" title="Permalink to this headline">¶</a></h1>
+<p>The <span class="math">\(\theta\)</span>-rule was compactly and conveniently implemented in
+a function <tt class="docutils literal"><span class="pre">solver</span></tt> in the section <a class="reference internal" href="._main_softeng1001.html#softeng1-basic-math"><em>Mathematical problem and solution technique</em></a>.
+In more complicated problems it might
+be beneficial to use classes and introduce a class <tt class="docutils literal"><span class="pre">Problem</span></tt> to
+hold the definition of the physical problem, and a class <tt class="docutils literal"><span class="pre">Solver</span></tt>
+to hold the data and methods needed to numerically solve the problem.
+This idea will now be illustrated, resulting in code that represents
+an alternative to the <tt class="docutils literal"><span class="pre">solver</span></tt> and <tt class="docutils literal"><span class="pre">experiment_*</span></tt> functions found
+in the <tt class="docutils literal"><span class="pre">decay</span></tt> module.</p>
+<p>Explaining the details of class programming in Python is considered
+beyond the scope of this text.  Readers who are unfamiliar with Python
+class programming should first consult one of the many electronic
+Python tutorials or textbooks to come up to speed with concepts and
+syntax of Python classes before reading on. The author has a gentle
+introduction to class programming for scientific applications
+in <a class="reference internal" href="._main_softeng1007.html#ref1" id="id1">[Ref1]</a>, see Chapter 7 and 9 and Appendix E.
+Other useful resources are</p>
+<blockquote>
+<div><ul class="simple">
+<li>The Python Tutorial: <a class="reference external" href="http://docs.python.org/2/tutorial/classes.html">http://docs.python.org/2/tutorial/classes.html</a></li>
+<li>Wiki book on Python Programming: <a class="reference external" href="http://en.wikibooks.org/wiki/Python_Programming/Classes">http://en.wikibooks.org/wiki/Python_Programming/Classes</a></li>
+<li>tutorialspoint.com: <a class="reference external" href="http://www.tutorialspoint.com/python/python_classes_objects.htm">http://www.tutorialspoint.com/python/python_classes_objects.htm</a></li>
+</ul>
+</div></blockquote>
+<div class="section" id="the-problem-class-1">
+<h2>The problem class  (1)<a class="headerlink" href="#the-problem-class-1" title="Permalink to this headline">¶</a></h2>
+<p id="index-0">The purpose of the problem class is to store all information about
+the mathematical model. This usually means the physical parameters
+and formulas
+in the problem. Looking at our model problem
+<a class="reference internal" href="._main_softeng1001.html#eq-softeng1-ode"><em>(2.1)</em></a>-<a class="reference internal" href="._main_softeng1001.html#eq-softeng1-u0"><em>(2.2)</em></a>, the physical data cover
+<span class="math">\(I\)</span>, <span class="math">\(a\)</span>, and <span class="math">\(T\)</span>. Since we have an analytical solution of
+the ODE problem, we may add this solution in terms of a Python
+function (or method) to the problem class as well.
+A possible problem class is therefore</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">exp</span>
+
+<span class="k">class</span> <span class="nc">Problem</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">I</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">T</span>
+
+    <span class="k">def</span> <span class="nf">u_exact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="n">I</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span>
+        <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We could in the <tt class="docutils literal"><span class="pre">u_exact</span></tt> method have written
+<tt class="docutils literal"><span class="pre">self.I*exp(-self.a*t)</span></tt>, but using local variables <tt class="docutils literal"><span class="pre">I</span></tt> and <tt class="docutils literal"><span class="pre">a</span></tt> allows
+the formula <tt class="docutils literal"><span class="pre">I*exp(-a*t)</span></tt> which looks closer to the mathematical
+expression <span class="math">\(Ie^{-at}\)</span>.  This is not an important issue with the
+current compact formula, but is beneficial in more complicated
+problems with longer formulas to obtain the closest possible
+relationship between code and mathematics. My coding style is to strip
+off the <tt class="docutils literal"><span class="pre">self</span></tt> prefix when the code expresses mathematical formulas.</p>
+<p>The class data can be set either as arguments in the constructor or
+at any time later, e.g.,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">problem</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">problem</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">problem</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="mf">1.5</span>
+</pre></div>
+</div>
+<p>(Some programmers prefer <tt class="docutils literal"><span class="pre">set</span></tt> and <tt class="docutils literal"><span class="pre">get</span></tt> functions for setting and getting
+data in classes, often implemented via <em>properties</em> in Python, but
+I consider that overkill when we just have a few data items in a class.)</p>
+<p>It would be convenient if class <tt class="docutils literal"><span class="pre">Problem</span></tt> could also initialize
+the data from the command line. To this end, we add a method for
+defining a set of command-line options and a method that sets the
+local attributes equal to what was found on the command line.
+The default values associated with the command-line options are taken
+as the values provided to the constructor. Class <tt class="docutils literal"><span class="pre">Problem</span></tt> now becomes</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Problem</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">I</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">T</span>
+
+    <span class="k">def</span> <span class="nf">define_command_line_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return updated (parser) or new ArgumentParser object.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">argparse</span>
+            <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s">&#39;--I&#39;</span><span class="p">,</span> <span class="s">&#39;--initial_condition&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;initial condition, u(0)&#39;</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;I&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s">&#39;--a&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s">&#39;coefficient in ODE&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;a&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s">&#39;--T&#39;</span><span class="p">,</span> <span class="s">&#39;--stop_time&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;end time of simulation&#39;</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;T&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">parser</span>
+
+    <span class="k">def</span> <span class="nf">init_from_command_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load attributes from ArgumentParser into instance.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="k">def</span> <span class="nf">u_exact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the exact solution u(t)=I*exp(-a*t).&quot;&quot;&quot;</span>
+        <span class="n">I</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span>
+        <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Observe that if the user already has an <tt class="docutils literal"><span class="pre">ArgumentParser</span></tt> object it can be
+supplied, but if she does not have any, class <tt class="docutils literal"><span class="pre">Problem</span></tt> makes one.
+Python&#8217;s <tt class="docutils literal"><span class="pre">None</span></tt> object is used to indicate that a variable is not
+initialized with a proper value.</p>
+</div>
+<div class="section" id="the-solver-class-1">
+<h2>The solver class  (1)<a class="headerlink" href="#the-solver-class-1" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-1"></span><p id="index-2">The solver class stores data related to the numerical solution method
+and provides a function <tt class="docutils literal"><span class="pre">solve</span></tt> for solving the problem.
+A problem object must be given to the constructor so that the solver
+can easily look up physical data. In the present example, the
+data related to the numerical solution method consists of <span class="math">\(\Delta t\)</span>
+and <span class="math">\(\theta\)</span>. We add, as in the problem class, functionality for
+reading <span class="math">\(\Delta t\)</span> and <span class="math">\(\theta\)</span> from the command line:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Solver</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span> <span class="o">=</span> <span class="n">problem</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">),</span> <span class="n">theta</span>
+
+    <span class="k">def</span> <span class="nf">define_command_line_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return updated (parser) or new ArgumentParser object.&quot;&quot;&quot;</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s">&#39;--scheme&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;CN&#39;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s">&#39;FE, BE, or CN&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s">&#39;--dt&#39;</span><span class="p">,</span> <span class="s">&#39;--time_step_values&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">],</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;time step values&#39;</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;dt&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;+&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;dt_values&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">parser</span>
+
+    <span class="k">def</span> <span class="nf">init_from_command_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load attributes from ArgumentParser into instance.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">theta</span>
+
+    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return norm of error at the mesh points.&quot;&quot;&quot;</span>
+        <span class="n">u_e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">u_exact</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">)</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">u_e</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">u</span>
+        <span class="n">E</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="o">*</span><span class="nb">sum</span><span class="p">(</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">E</span>
+</pre></div>
+</div>
+<p>Note that the <tt class="docutils literal"><span class="pre">solve</span></tt> method is just a <em>wrapper</em>
+of the previously developed stand-alone <tt class="docutils literal"><span class="pre">solver</span></tt> function.</p>
+<div class="section" id="combining-the-objects">
+<h3>Combining the objects<a class="headerlink" href="#combining-the-objects" title="Permalink to this headline">¶</a></h3>
+<p>Eventually we need to show how the classes <tt class="docutils literal"><span class="pre">Problem</span></tt> and <tt class="docutils literal"><span class="pre">Solver</span></tt>
+play together:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">experiment_classes</span><span class="p">():</span>
+    <span class="n">problem</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">()</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">Solver</span><span class="p">(</span><span class="n">problem</span><span class="p">)</span>
+
+    <span class="c"># Read input from the command line</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">problem</span><span class="o">.</span><span class="n">define_command_line_options</span><span class="p">()</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span> <span class="n">define_command_line_options</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="n">problem</span><span class="o">.</span><span class="n">init_from_command_line</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">solver</span><span class="o">.</span> <span class="n">init_from_command_line</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="c"># Solve and plot</span>
+    <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+    <span class="n">t_e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1001</span><span class="p">)</span>    <span class="c"># very fine mesh for u_e</span>
+    <span class="n">u_e</span> <span class="o">=</span> <span class="n">problem</span><span class="o">.</span><span class="n">u_exact</span><span class="p">(</span><span class="n">t_e</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span>   <span class="n">u</span><span class="p">,</span>   <span class="s">&#39;r--o&#39;</span><span class="p">)</span>       <span class="c"># dashed red line with circles</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">u_e</span><span class="p">,</span> <span class="s">&#39;b-&#39;</span><span class="p">)</span>         <span class="c"># blue line for u_e</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s">&#39;numerical, theta=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">theta</span><span class="p">,</span> <span class="s">&#39;exact&#39;</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;t&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;u&#39;</span><span class="p">)</span>
+    <span class="n">plotfile</span> <span class="o">=</span> <span class="s">&#39;tmp&#39;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plotfile</span> <span class="o">+</span> <span class="s">&#39;.png&#39;</span><span class="p">);</span>  <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plotfile</span> <span class="o">+</span> <span class="s">&#39;.pdf&#39;</span><span class="p">)</span>
+
+    <span class="n">error</span> <span class="o">=</span> <span class="n">problem</span><span class="o">.</span><span class="n">u_exact</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">-</span> <span class="n">u</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dt</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">error</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">print</span> <span class="s">&#39;Error norm:&#39;</span><span class="p">,</span> <span class="n">E</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">experiment_compare_dt</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="improving-the-problem-and-solver-classes">
+<span id="softeng1-prog-se-class2"></span><h2>Improving the problem and solver classes<a class="headerlink" href="#improving-the-problem-and-solver-classes" title="Permalink to this headline">¶</a></h2>
+<p>The previous <tt class="docutils literal"><span class="pre">Problem</span></tt> and <tt class="docutils literal"><span class="pre">Solver</span></tt> classes containing parameters
+soon get much repetitive code when the number of parameters increases.
+Much of this code can be parameterized and be made more compact.
+For this purpose, we decide to collect all parameters in a dictionary,
+<tt class="docutils literal"><span class="pre">self.prm</span></tt>, with two associated dictionaries <tt class="docutils literal"><span class="pre">self.type</span></tt> and
+<tt class="docutils literal"><span class="pre">self.help</span></tt> for holding associated object types and help strings.
+For the specific ODE example we deal with, such dictionaries are</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Problem data</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">prm</span>  <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">help</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="s">&#39;initial condition, u(0)&#39;</span><span class="p">,</span>
+                 <span class="n">a</span><span class="o">=</span><span class="s">&#39;coefficient in ODE&#39;</span><span class="p">,</span>
+                 <span class="n">T</span><span class="o">=</span><span class="s">&#39;end time of simulation&#39;</span><span class="p">)</span>
+<span class="c"># Solver data</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">prm</span>  <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">help</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="s">&#39;time step value&#39;</span><span class="p">,</span>
+                 <span class="n">theta</span><span class="o">=</span><span class="s">&#39;time discretization parameter&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Provided a problem or solver class defines these three
+dictionaries in the constructor, using default or user-supplied values
+of the parameters, we can create a super class <tt class="docutils literal"><span class="pre">Parameters</span></tt> with general code
+for defining command-line options and reading them as well as
+methods for setting and getting a parameter. A <tt class="docutils literal"><span class="pre">Problem</span></tt> or <tt class="docutils literal"><span class="pre">Solver</span></tt> for
+a particular mathematical problem can then
+inherit most of the needed functionality and code
+from the <tt class="docutils literal"><span class="pre">Parameters</span></tt> class.</p>
+<div class="section" id="a-generic-class-for-parameters">
+<h3>A generic class for parameters<a class="headerlink" href="#a-generic-class-for-parameters" title="Permalink to this headline">¶</a></h3>
+<p>A simplified version of the parameter class looks as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Parameters</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">parameters</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prm</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prm</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s">&#39;Illegal parameter name </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return value of parameter with given name.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prm</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">define_command_line_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Automatic registering of options.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">argparse</span>
+            <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prm</span><span class="p">:</span>
+            <span class="n">tp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="k">else</span> <span class="nb">str</span>
+            <span class="n">help</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">help</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">help</span> <span class="k">else</span> <span class="bp">None</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+                <span class="s">&#39;--&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">metavar</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="n">tp</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="n">help</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">parser</span>
+
+    <span class="k">def</span> <span class="nf">init_from_command_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prm</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prm</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The file <a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/decay_oo.py">decay_oo.py</a> contains
+a slightly more advanced version of class <tt class="docutils literal"><span class="pre">Parameters</span></tt> where we
+in the <tt class="docutils literal"><span class="pre">set</span></tt> and <tt class="docutils literal"><span class="pre">get</span></tt> functions test for valid parameter names and
+raise exceptions with informative messages if any name is not registered.</p>
+</div>
+<div class="section" id="the-problem-class-2">
+<h3>The problem class  (2)<a class="headerlink" href="#the-problem-class-2" title="Permalink to this headline">¶</a></h3>
+<p id="index-3">A class <tt class="docutils literal"><span class="pre">Problem</span></tt> for the problem <span class="math">\(u'=-au\)</span>, <span class="math">\(u(0)=I\)</span>, <span class="math">\(t\in (0,T]\)</span>, with
+parameters input <span class="math">\(a\)</span>, <span class="math">\(I\)</span>, and <span class="math">\(T\)</span> can now be coded as</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Problem</span><span class="p">(</span><span class="n">Parameters</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Physical parameters for the problem u&#39;=-a*u, u(0)=I,</span>
+<span class="sd">    with t in [0,T].</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prm</span>  <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">help</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="s">&#39;initial condition, u(0)&#39;</span><span class="p">,</span>
+                         <span class="n">a</span><span class="o">=</span><span class="s">&#39;coefficient in ODE&#39;</span><span class="p">,</span>
+                         <span class="n">T</span><span class="o">=</span><span class="s">&#39;end time of simulation&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">u_exact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="n">I</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;I&#39;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="the-solver-class-2">
+<h3>The solver class  (2)<a class="headerlink" href="#the-solver-class-2" title="Permalink to this headline">¶</a></h3>
+<p id="index-4">Also the solver class is derived from class <tt class="docutils literal"><span class="pre">Parameters</span></tt> and works with
+the <tt class="docutils literal"><span class="pre">prms</span></tt>, <tt class="docutils literal"><span class="pre">types</span></tt>, and <tt class="docutils literal"><span class="pre">help</span></tt> dictionaries in the same way as class
+<tt class="docutils literal"><span class="pre">Problem</span></tt>. Otherwise, the code is very similar to the previous class <tt class="docutils literal"><span class="pre">Solver</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Solver</span><span class="p">(</span><span class="n">Parameters</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span> <span class="o">=</span> <span class="n">problem</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prm</span>  <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">help</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="s">&#39;time step value&#39;</span><span class="p">,</span>
+                         <span class="n">theta</span><span class="o">=</span><span class="s">&#39;time discretization parameter&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">decay_mod</span> <span class="kn">import</span> <span class="n">solver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;I&#39;</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;T&#39;</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;dt&#39;</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;theta&#39;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">u_e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">u_exact</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">)</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="n">u_e</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">u</span>
+            <span class="n">E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;dt&#39;</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="n">E</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="n">E</span>
+</pre></div>
+</div>
+<p>The advantage with the <tt class="docutils literal"><span class="pre">Parameters</span></tt> class is that it scales to problems
+with a large number of physical and numerical parameters:
+as long as the parameters are defined once via a dictionary,
+the compact code in class <tt class="docutils literal"><span class="pre">Parameters</span></tt> can handle any collection of
+parameters of any size.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Classes for problem and solution method</a><ul>
+<li><a class="reference internal" href="#the-problem-class-1">The problem class  (1)</a></li>
+<li><a class="reference internal" href="#the-solver-class-1">The solver class  (1)</a><ul>
+<li><a class="reference internal" href="#combining-the-objects">Combining the objects</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#improving-the-problem-and-solver-classes">Improving the problem and solver classes</a><ul>
+<li><a class="reference internal" href="#a-generic-class-for-parameters">A generic class for parameters</a></li>
+<li><a class="reference internal" href="#the-problem-class-2">The problem class  (2)</a></li>
+<li><a class="reference internal" href="#the-solver-class-2">The solver class  (2)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="._main_softeng1003.html"
+                        title="previous chapter">Tests for verifying implementations</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_softeng1005.html"
+                        title="next chapter">Automating scientific experiments</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_softeng1004.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_softeng1005.html" title="Automating scientific experiments"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="._main_softeng1003.html" title="Tests for verifying implementations"
+             >previous</a> |</li>
+        <li><a href="index.html">Scientific software engineering with a simple ODE model as example</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

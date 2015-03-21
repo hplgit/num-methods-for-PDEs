@@ -199,13 +199,13 @@ $$
       <li class="dropdown">
         <a href="#" class="dropdown-toggle" data-toggle="dropdown">Contents <b class="caret"></b></a>
         <ul class="dropdown-menu">
-     <!-- navigation toc: --> <li><a href="._main_softeng1000.html#softeng1:basic" style="font-size: 80%;">Basic implementations</a></li>
-     <!-- navigation toc: --> <li><a href="._main_softeng1000.html#___sec7" style="font-size: 80%;">User interfaces</a></li>
-     <!-- navigation toc: --> <li><a href="._main_softeng1000.html#___sec15" style="font-size: 80%;">Tests for verifying implementations</a></li>
-     <!-- navigation toc: --> <li><a href="._main_softeng1000.html#softeng1:prog:se:class" style="font-size: 80%;">Classes for problem and solution method</a></li>
-     <!-- navigation toc: --> <li><a href="._main_softeng1000.html#softeng1:experiments" style="font-size: 80%;">Automating scientific experiments</a></li>
-     <!-- navigation toc: --> <li><a href="._main_softeng1000.html#___sec53" style="font-size: 80%;">Exercises</a></li>
-     <!-- navigation toc: --> <li><a href="#___sec60" style="font-size: 80%;">Bibliography</a></li>
+     <!-- navigation toc: --> <li><a href="#softeng1:basic" style="font-size: 80%;">Basic implementations</a></li>
+     <!-- navigation toc: --> <li><a href="._main_softeng1002.html#___sec7" style="font-size: 80%;">User interfaces</a></li>
+     <!-- navigation toc: --> <li><a href="._main_softeng1003.html#___sec15" style="font-size: 80%;">Tests for verifying implementations</a></li>
+     <!-- navigation toc: --> <li><a href="._main_softeng1004.html#softeng1:prog:se:class" style="font-size: 80%;">Classes for problem and solution method</a></li>
+     <!-- navigation toc: --> <li><a href="._main_softeng1005.html#softeng1:experiments" style="font-size: 80%;">Automating scientific experiments</a></li>
+     <!-- navigation toc: --> <li><a href="._main_softeng1006.html#___sec53" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._main_softeng1007.html#___sec60" style="font-size: 80%;">Bibliography</a></li>
 
         </ul>
       </li>
@@ -221,25 +221,594 @@ $$
 <a name="part0001"></a>
 <!-- !split -->
 
-<h1 id="___sec60">Bibliography </h1>
+<h1 id="softeng1:basic">Basic implementations</h1>
+
+<h2 id="softeng1:basic:math">Mathematical problem and solution technique</h2>
 
 <p>
-<!-- begin bibliography -->
+We address the perhaps simplest possible differential equation problem
+
+$$
+\begin{align}
+u'(t) &= -au(t), \quad t \in (0,T], \tag{1}\\ 
+u(0)  &= I,                         \tag{2}
+\end{align}
+$$
+
+where \( a \), \( I \), and \( T \) are prescribed parameters, and \( u(t) \) is
+the unknown function to be estimated. This mathematical model
+is relevant for physical phenomena featuring exponential decay
+in time, e.g., vertical pressure variation in the atmosphere,
+cooling of an object, and radioactive decay.
+
+<p>
+The time domain is discretized with points \( 0 = t_0 < t_1 \cdots < t_{N_t}=T \),
+here with a constant spacing \( \Delta t \) between the
+mesh points: \( \Delta t = t_{n}-t_{n-1} \), \( n=1,\ldots,N_t \). Let
+\( u^n \) be the numerical approximation to the exact solution at \( t_n \).
+A family of popular numerical methods can be written in the form
+
+$$
+\begin{equation}
+u^{n+1} = \frac{1 - (1-\theta) a\Delta t}{1 + \theta a\Delta t}u^n,
+\tag{3}
+\end{equation}
+$$
+
+for \( n=0,1,\ldots,N_t-1 \). This numerical scheme corresponds to
+the <a href="http://en.wikipedia.org/wiki/Forward_Euler_method" target="_self">Forward Euler</a>
+scheme when \( \theta=0 \),
+the <a href="http://en.wikipedia.org/wiki/Backward_Euler_method" target="_self">Backward Euler</a>
+scheme when \( \theta=1 \),
+and the <a href="http://en.wikipedia.org/wiki/Crank-Nicolson" target="_self">Crank-Nicolson</a>
+scheme when \( \theta=1/2 \).
+The initial condition <a href="#mjx-eqn-2">(2)</a> is key to start
+the recursion with a value for \( u^0 \).
+
+<h2 id="softeng1:basic:impl1">A first, quick implementation</h2>
+
+<p>
+Solving <a href="#mjx-eqn-3">(3)</a> in a program is very straightforward:
+just make a loop over \( n \) and evaluate the formula. The \( u(t_n \))
+values for discrete \( n \) can be stored in an array. This makes it easy
+to also plot the solution. We may with little work add the exact
+solution \( u(t)=Ie^{-at} \) to the plot. A typical program is listed
+below.
+
+<p>
+
+<!-- code=python (!bc pypro) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
+
+A <span style="color: #666666">=</span> <span style="color: #666666">1</span>
+a <span style="color: #666666">=</span> <span style="color: #666666">2</span>
+T <span style="color: #666666">=</span> <span style="color: #666666">4</span>
+dt <span style="color: #666666">=</span> <span style="color: #666666">0.2</span>
+N <span style="color: #666666">=</span> <span style="color: #008000">int</span>(<span style="color: #008000">round</span>(T<span style="color: #666666">/</span>dt))
+y <span style="color: #666666">=</span> zeros(N<span style="color: #666666">+1</span>)
+t <span style="color: #666666">=</span> linspace(<span style="color: #666666">0</span>, T, N<span style="color: #666666">+1</span>)
+theta <span style="color: #666666">=</span> <span style="color: #666666">1</span>
+y[<span style="color: #666666">0</span>] <span style="color: #666666">=</span> A
+<span style="color: #008000; font-weight: bold">for</span> n <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">0</span>, N):
+    y[n<span style="color: #666666">+1</span>] <span style="color: #666666">=</span> (<span style="color: #666666">1</span> <span style="color: #666666">-</span> (<span style="color: #666666">1-</span>theta)<span style="color: #666666">*</span>a<span style="color: #666666">*</span>dt)<span style="color: #666666">/</span>(<span style="color: #666666">1</span> <span style="color: #666666">+</span> theta<span style="color: #666666">*</span>dt<span style="color: #666666">*</span>a)<span style="color: #666666">*</span>y[n]
+
+y_e <span style="color: #666666">=</span> A<span style="color: #666666">*</span>exp(<span style="color: #666666">-</span>a<span style="color: #666666">*</span>t) <span style="color: #666666">-</span> y
+error <span style="color: #666666">=</span> y_e <span style="color: #666666">-</span> y
+E <span style="color: #666666">=</span> sqrt(dt<span style="color: #666666">*</span><span style="color: #008000">sum</span>(error<span style="color: #666666">**2</span>))
+<span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;Norm of the error: </span><span style="color: #BB6688; font-weight: bold">%.3E</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> E
+plot(t, y, <span style="color: #BA2121">&#39;r--o&#39;</span>)
+t_e <span style="color: #666666">=</span> linspace(<span style="color: #666666">0</span>, T, <span style="color: #666666">1001</span>)
+y_e <span style="color: #666666">=</span> A<span style="color: #666666">*</span>exp(<span style="color: #666666">-</span>a<span style="color: #666666">*</span>t_e)
+plot(t_e, y_e, <span style="color: #BA2121">&#39;b-&#39;</span>)
+legend([<span style="color: #BA2121">&#39;numerical, theta=</span><span style="color: #BB6688; font-weight: bold">%g</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> theta, <span style="color: #BA2121">&#39;exact&#39;</span>])
+xlabel(<span style="color: #BA2121">&#39;t&#39;</span>)
+ylabel(<span style="color: #BA2121">&#39;y&#39;</span>)
+show()
+</pre></div>
+<p>
+This program is very easy to read, and as long it is correct, many will
+claim that it has sufficient quality. Nevertheless, this program suffers
+from serious bad habits that might be crucial for writing correct
+programs for more complicated mathematical problems. First we list
+two really serious issues:
 
 <ol>
- <li> <div id="Langtangen_2012"></div> <b>H. P. Langtangen</b>. 
-    <em>A Primer on Scientific Programming With Python</em>,
-    Springer,
-    2014.</li>
+<li> The notation in the program does not correspond exactly to
+   the notation in the mathematical problem: the solution is called
+   <code>y</code> and corresponds to \( u \) in the mathematical description,
+   the variable <code>A</code> corresponds to the mathematical parameter \( I \),
+   <code>N</code> in the program is called \( N_t \) in the mathematics.</li>
+<li> There are no comments in the program.</li>
 </ol>
 
-<!-- end bibliography -->
+Fixing notation and comments results in
 
+<p>
+
+<!-- code=python (!bc pypro) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
+
+I <span style="color: #666666">=</span> <span style="color: #666666">1</span>
+a <span style="color: #666666">=</span> <span style="color: #666666">2</span>
+T <span style="color: #666666">=</span> <span style="color: #666666">4</span>
+dt <span style="color: #666666">=</span> <span style="color: #666666">0.2</span>
+Nt <span style="color: #666666">=</span> <span style="color: #008000">int</span>(<span style="color: #008000">round</span>(T<span style="color: #666666">/</span>dt))     <span style="color: #408080; font-style: italic"># no of time intervals</span>
+u <span style="color: #666666">=</span> zeros(Nt<span style="color: #666666">+1</span>)           <span style="color: #408080; font-style: italic"># array of u[n] values</span>
+t <span style="color: #666666">=</span> linspace(<span style="color: #666666">0</span>, T, Nt<span style="color: #666666">+1</span>)  <span style="color: #408080; font-style: italic"># time mesh</span>
+theta <span style="color: #666666">=</span> <span style="color: #666666">1</span>                 <span style="color: #408080; font-style: italic"># Backward Euler method</span>
+
+u[<span style="color: #666666">0</span>] <span style="color: #666666">=</span> I                  <span style="color: #408080; font-style: italic"># assign initial condition</span>
+<span style="color: #008000; font-weight: bold">for</span> n <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">0</span>, Nt):    <span style="color: #408080; font-style: italic"># n=0,1,...,Nt-1</span>
+    u[n<span style="color: #666666">+1</span>] <span style="color: #666666">=</span> (<span style="color: #666666">1</span> <span style="color: #666666">-</span> (<span style="color: #666666">1-</span>theta)<span style="color: #666666">*</span>a<span style="color: #666666">*</span>dt)<span style="color: #666666">/</span>(<span style="color: #666666">1</span> <span style="color: #666666">+</span> theta<span style="color: #666666">*</span>dt<span style="color: #666666">*</span>a)<span style="color: #666666">*</span>u[n]
+
+<span style="color: #408080; font-style: italic"># Compute norm of the error</span>
+u_e <span style="color: #666666">=</span> I<span style="color: #666666">*</span>exp(<span style="color: #666666">-</span>a<span style="color: #666666">*</span>t) <span style="color: #666666">-</span> u     <span style="color: #408080; font-style: italic"># exact u at the mesh points</span>
+error <span style="color: #666666">=</span> u_e <span style="color: #666666">-</span> u
+E <span style="color: #666666">=</span> sqrt(dt<span style="color: #666666">*</span><span style="color: #008000">sum</span>(error<span style="color: #666666">**2</span>))
+<span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;Norm of the error: </span><span style="color: #BB6688; font-weight: bold">%.3E</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> E
+
+<span style="color: #408080; font-style: italic"># Compare numerical (u) and exact solution (u_e) in a plot</span>
+plot(t, u, <span style="color: #BA2121">&#39;r--o&#39;</span>)               <span style="color: #408080; font-style: italic"># red dashes w/circles</span>
+t_e <span style="color: #666666">=</span> linspace(<span style="color: #666666">0</span>, T, <span style="color: #666666">1001</span>)       <span style="color: #408080; font-style: italic"># very fine mesh for u_e</span>
+u_e <span style="color: #666666">=</span> I<span style="color: #666666">*</span>exp(<span style="color: #666666">-</span>a<span style="color: #666666">*</span>t_e)
+plot(t_e, u_e, <span style="color: #BA2121">&#39;b-&#39;</span>)             <span style="color: #408080; font-style: italic"># blue line for u_e</span>
+legend([<span style="color: #BA2121">&#39;numerical, theta=</span><span style="color: #BB6688; font-weight: bold">%g</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> theta, <span style="color: #BA2121">&#39;exact&#39;</span>])
+xlabel(<span style="color: #BA2121">&#39;t&#39;</span>)
+ylabel(<span style="color: #BA2121">&#39;u&#39;</span>)
+show()
+</pre></div>
+<p>
+At first sight, this is a good starting point for playing around
+with the example: we can just change parameters and rerun.
+Let us embed the program in an IPython notebook such that we
+can get the plot up in the notebook, see Figure <a href="#softeng1:ipynb">1</a>.
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 1:  Flat experimental code in a notebook. <div id="softeng1:ipynb"></div> </p></center>
+<p><img src="fig-softeng1/ipynb_flat.png" align="bottom" width=700></p>
+</center>
+
+<p>
+Although such an interactive session is good for initial exploration,
+one will soon extend the experiments and start developing the code
+further. Say we want to compare \( \theta =0,1,0.5 \) in the same
+plot. This extension requires changes all over the code and quickly
+lead to errors. To do something serious with
+this program we have to break it into smaller pieces and make sure
+each piece is well tested, is general, and can be reused in new
+contexts without changes.
+The next natural step is therefore to isolate the numerical computations and
+the visualization in separate functions.
+
+<h2 id="softeng1:basic:func">Isolating the numerical algorithm in a function</h2>
+
+<p>
+The solution formula <a href="#mjx-eqn-3">(3)</a> is completely general and
+should be available as a Python function with all input data as
+function arguments and all output data returned to the calling code:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">solver</span>(I, a, T, dt, theta):
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;Solve u&#39;=-a*u, u(0)=I, for t in (0,T] with steps of dt.&quot;&quot;&quot;</span>
+    dt <span style="color: #666666">=</span> <span style="color: #008000">float</span>(dt)               <span style="color: #408080; font-style: italic"># avoid integer division</span>
+    Nt <span style="color: #666666">=</span> <span style="color: #008000">int</span>(<span style="color: #008000">round</span>(T<span style="color: #666666">/</span>dt))        <span style="color: #408080; font-style: italic"># no of time intervals</span>
+    T <span style="color: #666666">=</span> Nt<span style="color: #666666">*</span>dt                    <span style="color: #408080; font-style: italic"># adjust T to fit time step dt</span>
+    u <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros(Nt<span style="color: #666666">+1</span>)           <span style="color: #408080; font-style: italic"># array of u[n] values</span>
+    t <span style="color: #666666">=</span> np<span style="color: #666666">.</span>linspace(<span style="color: #666666">0</span>, T, Nt<span style="color: #666666">+1</span>)  <span style="color: #408080; font-style: italic"># time mesh</span>
+
+    u[<span style="color: #666666">0</span>] <span style="color: #666666">=</span> I                  <span style="color: #408080; font-style: italic"># assign initial condition</span>
+    <span style="color: #008000; font-weight: bold">for</span> n <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">0</span>, Nt):    <span style="color: #408080; font-style: italic"># n=0,1,...,Nt-1</span>
+        u[n<span style="color: #666666">+1</span>] <span style="color: #666666">=</span> (<span style="color: #666666">1</span> <span style="color: #666666">-</span> (<span style="color: #666666">1-</span>theta)<span style="color: #666666">*</span>a<span style="color: #666666">*</span>dt)<span style="color: #666666">/</span>(<span style="color: #666666">1</span> <span style="color: #666666">+</span> theta<span style="color: #666666">*</span>dt<span style="color: #666666">*</span>a)<span style="color: #666666">*</span>u[n]
+    <span style="color: #008000; font-weight: bold">return</span> u, t
+</pre></div>
+<p>
+<div class="alert alert-block alert-success alert-text-normal"><b>Tip: Always use a doc string to document a function!</b>
+Python has a convention for documenting the purpose and usage of
+a function in a <em>doc string</em>: simply place the documentation
+in a one- or multi-line triple-quoted string right after the
+function header.
+</div>
+
+
+<p>
+<div class="alert alert-block alert-success alert-text-normal"><b>Be careful with unintended integer division!</b>
+Note that we in the <code>solver</code> function explicitly covert <code>dt</code> to a
+<code>float</code> object. If not, the updating formula for <code>u[n+1]</code> may evaluate
+to zero because of integer division when <code>theta</code>, <code>a</code>, and <code>dt</code> are integers!
+</div>
+
+
+<p>
+With the aid of the <code>solver</code> function, we can solve any problem
+of the type <a href="#mjx-eqn-1">(1)</a>-<a href="#mjx-eqn-2">(2)</a> by a one-line
+statement:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">u, t <span style="color: #666666">=</span> solver(I<span style="color: #666666">=1</span>, a<span style="color: #666666">=2</span>, T<span style="color: #666666">=4</span>, dt<span style="color: #666666">=0.2</span>, theta<span style="color: #666666">=0.5</span>)
+</pre></div>
+<p>
+One of the most serious flaws in computational work is to have several
+slightly different implementations of the same computational algorithms
+lying around in various program files. This is very likely to happen,
+because busy scientists often want to test a slight variation of a code to see
+what happens. A quick copy and edit do the task, but such quick hacks have
+a tendency to survive. When a real correction is needed in the implementation,
+it is difficult to ensure that the correction is done in all relevant files.
+In fact, this is a general problem in programming, which has led to
+an important principle.
+
+<p>
+<div class="alert alert-block alert-success alert-text-normal"><b>The DRY principle: Don't repeat yourself!</b>
+When implementing a particular functionality in a computer program, make sure
+this functionality and its variations are implemented in just one piece
+of code. That is, if you need to revise the implementation, there should be
+<em>one and only one</em> place to edit. It follows that you should never
+duplicate code (don't repeat yourself!), and code snippets that are
+similar should be factored into one piece (function) and parameterized (by
+function arguments).
+</div>
+
+
+<h2 id="softeng1:basic:module">Making a module</h2>
+
+<p>
+As soon as you start making Python functions in a program, you should
+make sure the program file fulfills the requirement of a module.
+This means that you can import and reuse your functions in other
+programs too. For example, if our <code>solver</code> function resides in a
+module <code>decay</code> in a module file <code>decay.py</code>, we can in any program
+do
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">decay</span> <span style="color: #008000; font-weight: bold">import</span> solver
+<span style="color: #408080; font-style: italic"># Solve a decay problem</span>
+u, t <span style="color: #666666">=</span> solver(I<span style="color: #666666">=1</span>, a<span style="color: #666666">=2</span>, T<span style="color: #666666">=4</span>, dt<span style="color: #666666">=0.2</span>, theta<span style="color: #666666">=0.5</span>)
+</pre></div>
+<p>
+or prefix function names by the module name:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">decay</span>
+<span style="color: #408080; font-style: italic"># Solve a decay problem</span>
+u, t <span style="color: #666666">=</span> decay<span style="color: #666666">.</span>solver(I<span style="color: #666666">=1</span>, a<span style="color: #666666">=2</span>, T<span style="color: #666666">=4</span>, dt<span style="color: #666666">=0.2</span>, theta<span style="color: #666666">=0.5</span>)
+</pre></div>
+<p>
+The requirements for a program to qualify for a module are simple:
+
+<ol>
+<li> The filename without <code>.py</code> must be a valid Python variable name.</li>
+<li> The main program must be executed (through statements or
+   a function call) in the <em>test block</em>.</li>
+</ol>
+
+The <em>test block</em> is normally placed at the end of a module file:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">if</span> __name__ <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;__main__&#39;</span>:
+    <span style="color: #408080; font-style: italic"># Statements</span>
+</pre></div>
+<p>
+When the module file is executed as a stand-alone program, the if test
+is true and the indented statements are run, but when the module file
+is imported, <code>__name__</code> equals the module name and the test block
+is not executed.
+
+<p>
+To explain the importance of the test block, consider the trivial module
+file <code>hello.py</code> with one function and a call to this function as main program:
+
+<p>
+
+<!-- code=python (!bc pypro) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">hello</span>(arg<span style="color: #666666">=</span><span style="color: #BA2121">&#39;World!&#39;</span>):
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;Hello, &#39;</span> <span style="color: #666666">+</span> arg
+
+<span style="color: #008000; font-weight: bold">if</span> __name__ <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;__main__&#39;</span>:
+    hello()
+</pre></div>
+<p>
+Without the test block,
+
+<p>
+
+<!-- code=python (!bc pypro) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">hello</span>(arg<span style="color: #666666">=</span><span style="color: #BA2121">&#39;World!&#39;</span>):
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;Hello, &#39;</span> <span style="color: #666666">+</span> arg
+
+hello()
+</pre></div>
+<p>
+any attempt to import <code>hello</code> will also execute the call <code>hello()</code> and
+hence write `Hello, World!' to the screen.
+Such output is not desired when importing a module! However,
+with the test block, <code>hello()</code> is not called during import, but
+running the file as <code>python hello.py</code> will make the block active
+and lead to the desired printing.
+
+<p>
+<div class="alert alert-block alert-success alert-text-normal"><b>All coming functions are placed in a module.</b>
+The many functions to be explained in the following text are
+put in one module file <a href="http://tinyurl.com/nm5587k/decay/decay.py" target="_self"><tt>decay.py</tt></a>.
+</div>
+
+
+<p>
+What more than the <code>solver</code> function is needed in our <code>decay</code> module
+to do everything we did in the previous, flat program?
+We need import statements for <code>numpy</code> and <code>matplotlib</code> as well as
+another function for producing the plot. It can also be convenient
+to put the exact solution in a Python function.
+Our module <code>decay.py</code> then looks like this:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">solver</span>(I, a, T, dt, theta):
+    <span style="color: #666666">...</span>
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">exact_solution</span>(t, I, a):
+    <span style="color: #008000; font-weight: bold">return</span> I<span style="color: #666666">*</span>exp(<span style="color: #666666">-</span>a<span style="color: #666666">*</span>t)
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">experiment_compare_numerical_and_exact</span>():
+    I <span style="color: #666666">=</span> <span style="color: #666666">1</span>;  a <span style="color: #666666">=</span> <span style="color: #666666">2</span>;  T <span style="color: #666666">=</span> <span style="color: #666666">4</span>;  dt <span style="color: #666666">=</span> <span style="color: #666666">0.4</span>;  theta <span style="color: #666666">=</span> <span style="color: #666666">1</span>
+    u, t <span style="color: #666666">=</span> solver(I, a, T, dt, theta)
+
+    t_e <span style="color: #666666">=</span> linspace(<span style="color: #666666">0</span>, T, <span style="color: #666666">1001</span>)       <span style="color: #408080; font-style: italic"># very fine mesh for u_e</span>
+    u_e <span style="color: #666666">=</span> exact_solution(t_e, I, a)
+
+    plot(t,   u,   <span style="color: #BA2121">&#39;r--o&#39;</span>)           <span style="color: #408080; font-style: italic"># dashed red line with circles</span>
+    plot(t_e, u_e, <span style="color: #BA2121">&#39;b-&#39;</span>)             <span style="color: #408080; font-style: italic"># blue line for u_e</span>
+    legend([<span style="color: #BA2121">&#39;numerical, theta=</span><span style="color: #BB6688; font-weight: bold">%g</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> theta, <span style="color: #BA2121">&#39;exact&#39;</span>])
+    xlabel(<span style="color: #BA2121">&#39;t&#39;</span>)
+    ylabel(<span style="color: #BA2121">&#39;u&#39;</span>)
+    plotfile <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;tmp&#39;</span>
+    savefig(plotfile <span style="color: #666666">+</span> <span style="color: #BA2121">&#39;.png&#39;</span>);  savefig(plotfile <span style="color: #666666">+</span> <span style="color: #BA2121">&#39;.pdf&#39;</span>)
+
+    error <span style="color: #666666">=</span> exact_solution(t, I, a) <span style="color: #666666">-</span> u
+    E <span style="color: #666666">=</span> sqrt(dt<span style="color: #666666">*</span><span style="color: #008000">sum</span>(error<span style="color: #666666">**2</span>))
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;Error norm:&#39;</span>, E
+
+<span style="color: #008000; font-weight: bold">if</span> __name__ <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;__main__&#39;</span>:
+    experiment_compare_numerical_and_exact()
+</pre></div>
+<p>
+This module file does exactly the same as the previous, flat program,
+but it becomes much easier to extend the code with other plots or
+experiments in new functions.  And even more important, the numerical
+algorithm is coded and tested once and for all in the <code>solver</code>
+function, and any need to solve the mathematical problem is a matter
+of one function call.
+<!-- (not copying initialization statements and a loop -->
+<!-- to a new program for ad hoc editing!). -->
+
+<h2 id="softeng1:basic:modprefix">Prefixing imported functions by the module name</h2>
+
+<p>
+Import statements of the form <code>from module import *</code> import
+functions and variables in <code>module.py</code> into the current file.
+For example, when doing
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
+</pre></div>
+<p>
+we get mathematical functions like <code>sin</code> and <code>exp</code>
+as well as MATLAB-style functions like <code>linspace</code> and <code>plot</code>,
+which can be called by these well-known names.
+Unfortunately, it sometimes becomes confusing to
+know where a particular function comes from. Is it from <code>numpy</code>? Or
+<code>matplotlib.pyplot</code>?
+Or is it our own function?
+
+<p>
+An alternative import is
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span>
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span>
+</pre></div>
+<p>
+and such imports require functions to be prefixed by the module name, e.g.,
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">t <span style="color: #666666">=</span> numpy<span style="color: #666666">.</span>linspace(<span style="color: #666666">0</span>, T, Nt<span style="color: #666666">+1</span>)
+u_e <span style="color: #666666">=</span> I<span style="color: #666666">*</span>numpy<span style="color: #666666">.</span>exp(<span style="color: #666666">-</span>a<span style="color: #666666">*</span>t)
+matplotlib<span style="color: #666666">.</span>pyplot<span style="color: #666666">.</span>plot(t, u_e)
+</pre></div>
+<p>
+This is normally regarded as a better habit because it is explicitly stated
+from which module a function comes from.
+
+<p>
+The modules <code>numpy</code> and <code>matplotlib.pyplot</code> are so frequently used,
+and their full names quite tedious to write, so two standard abbreviations
+have evolved in the Python scientific computing community:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">plt</span>
+
+t <span style="color: #666666">=</span> np<span style="color: #666666">.</span>linspace(<span style="color: #666666">0</span>, T, Nt<span style="color: #666666">+1</span>)
+u_e <span style="color: #666666">=</span> I<span style="color: #666666">*</span>np<span style="color: #666666">.</span>exp(<span style="color: #666666">-</span>a<span style="color: #666666">*</span>t)
+plt<span style="color: #666666">.</span>plot(t, u_e)
+</pre></div>
+<p>
+A version of the <code>decay_mod</code> module where we use the <code>np</code> and <code>plt</code>
+prefixes is found in the file
+<a href="http://tinyurl.com/nm5587k/softeng1/decay_mod_prefix.py" target="_self"><tt>decay_mod_prefix.py</tt></a>.
+
+<p>
+The downside of prefixing functions by the module name is that
+mathematical expressions like \( e^{-at}\sin(2\pi t) \) get
+cluttered with module names,
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">numpy<span style="color: #666666">.</span>exp(<span style="color: #666666">-</span>a<span style="color: #666666">*</span>t)<span style="color: #666666">*</span>numpy<span style="color: #666666">.</span>sin(<span style="color: #666666">2</span>(numpy<span style="color: #666666">.</span>pi<span style="color: #666666">*</span>t)
+<span style="color: #408080; font-style: italic"># or</span>
+np<span style="color: #666666">.</span>exp(<span style="color: #666666">-</span>a<span style="color: #666666">*</span>t)<span style="color: #666666">*</span>np<span style="color: #666666">.</span>sin(<span style="color: #666666">2*</span>np<span style="color: #666666">.</span>pi<span style="color: #666666">*</span>t)
+</pre></div>
+<p>
+Such an expression looks like <code>exp(-a*t)*sin(2*pi*t)</code> in most
+other programming languages. Similarly,
+<code>np.linspace</code> and <code>plt.plot</code> look less familiar to people who are
+used to MATLAB and who have not adopted Python's prefix style.
+Whether to do <code>from module import *</code> or <code>import module</code> depends
+on personal taste and the problem at hand. In these writings we use
+<code>from module import</code> in more basic, shorter programs where similarity with
+MATLAB could be an advantage. Prefix of mathematical
+functions in formulas is something we often avoid to obtain
+a one-to-one correspondence between
+mathematical formulas and the Python code.
+
+<p>
+Our <code>decay</code> module can be edited to use the module prefix for
+<code>matplotlib.pyplot</code> and <code>numpy</code>:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">plt</span>
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">solver</span>(I, a, T, dt, theta):
+    <span style="color: #666666">...</span>
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">exact_solution</span>(t, I, a):
+    <span style="color: #008000; font-weight: bold">return</span> I<span style="color: #666666">*</span>np<span style="color: #666666">.</span>exp(<span style="color: #666666">-</span>a<span style="color: #666666">*</span>t)
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">experiment_compare_numerical_and_exact</span>():
+    I <span style="color: #666666">=</span> <span style="color: #666666">1</span>;  a <span style="color: #666666">=</span> <span style="color: #666666">2</span>;  T <span style="color: #666666">=</span> <span style="color: #666666">4</span>;  dt <span style="color: #666666">=</span> <span style="color: #666666">0.4</span>;  theta <span style="color: #666666">=</span> <span style="color: #666666">1</span>
+    u, t <span style="color: #666666">=</span> solver(I, a, T, dt, theta)
+
+    t_e <span style="color: #666666">=</span> np<span style="color: #666666">.</span>linspace(<span style="color: #666666">0</span>, T, <span style="color: #666666">1001</span>)       <span style="color: #408080; font-style: italic"># very fine mesh for u_e</span>
+    u_e <span style="color: #666666">=</span> exact_solution(t_e, I, a)
+
+    plt<span style="color: #666666">.</span>plot(t,   u,   <span style="color: #BA2121">&#39;r--o&#39;</span>)       <span style="color: #408080; font-style: italic"># dashed red line with circles</span>
+    plt<span style="color: #666666">.</span>plot(t_e, u_e, <span style="color: #BA2121">&#39;b-&#39;</span>)         <span style="color: #408080; font-style: italic"># blue line for u_e</span>
+    plt<span style="color: #666666">.</span>legend([<span style="color: #BA2121">&#39;numerical, theta=</span><span style="color: #BB6688; font-weight: bold">%g</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> theta, <span style="color: #BA2121">&#39;exact&#39;</span>])
+    plt<span style="color: #666666">.</span>xlabel(<span style="color: #BA2121">&#39;t&#39;</span>)
+    plt<span style="color: #666666">.</span>ylabel(<span style="color: #BA2121">&#39;u&#39;</span>)
+    plotfile <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;tmp&#39;</span>
+    plt<span style="color: #666666">.</span>savefig(plotfile <span style="color: #666666">+</span> <span style="color: #BA2121">&#39;.png&#39;</span>);  plt<span style="color: #666666">.</span>savefig(plotfile <span style="color: #666666">+</span> <span style="color: #BA2121">&#39;.pdf&#39;</span>)
+
+    error <span style="color: #666666">=</span> exact_solution(t, I, a) <span style="color: #666666">-</span> u
+    E <span style="color: #666666">=</span> np<span style="color: #666666">.</span>sqrt(dt<span style="color: #666666">*</span>np<span style="color: #666666">.</span>sum(error<span style="color: #666666">**2</span>))
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;Error norm:&#39;</span>, E
+
+<span style="color: #008000; font-weight: bold">if</span> __name__ <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;__main__&#39;</span>:
+    experiment_compare_numerical_and_exact()
+</pre></div>
+<p>
+We remark that some would prefer to get rid of the prefix in
+mathematical formulas:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">import</span> exp, <span style="color: #008000">sum</span>, sqrt
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">exact_solution</span>(t, I, a):
+    <span style="color: #008000; font-weight: bold">return</span> I<span style="color: #666666">*</span>exp(<span style="color: #666666">-</span>a<span style="color: #666666">*</span>t)
+
+error <span style="color: #666666">=</span> exact_solution(t, I, a) <span style="color: #666666">-</span> u
+E <span style="color: #666666">=</span> sqrt(dt<span style="color: #666666">*</span><span style="color: #008000">sum</span>(error<span style="color: #666666">**2</span>))
+</pre></div>
+
+<h2 id="softeng1:basic:experiment2">Comparing numerical schemes in one plot</h2>
+
+<p>
+Let us specifically demonstrate one extension of the
+flat program in Section ref<div id="softeng1:basic:impl1"></div>
+that would require substantial editing of the flat code, while
+in a structured module, we can simply add a new function without
+affecting the existing code and with reusing the implementation
+of the numerics.
+
+<p>
+Our aim is to make a comparison between the numerical solutions
+for various schemes (\( \theta \) values) and the exact solution:
+
+<p>
+<center><p><img src="fig-softeng1/compare.png" align="bottom" width=600></p></center>
+
+<p>
+<div class="alert alert-block alert-info alert-text-normal"><b>Stop a minute!</b>
+Look at the flat program in
+the section <a href="#softeng1:basic:impl1">A first, quick implementation</a>,
+and try to imagine which edits that are required to solve this new problem.
+</div>
+
+
+<p>
+With the <code>solver</code> function at hand, we can simply create a function
+with a loop over <code>theta</code> values and add the necessary plot statements:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">experiment_compare_schemes</span>():
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;Compare theta=0,1,0.5 in the same plot.&quot;&quot;&quot;</span>
+    I <span style="color: #666666">=</span> <span style="color: #666666">1</span>;  a <span style="color: #666666">=</span> <span style="color: #666666">2</span>;  T <span style="color: #666666">=</span> <span style="color: #666666">4</span>;  dt <span style="color: #666666">=</span> <span style="color: #666666">0.4</span>
+    legends <span style="color: #666666">=</span> []
+    <span style="color: #008000; font-weight: bold">for</span> theta <span style="color: #AA22FF; font-weight: bold">in</span> [<span style="color: #666666">0</span>, <span style="color: #666666">1</span>, <span style="color: #666666">0.5</span>]:
+        u, t <span style="color: #666666">=</span> solver(I, a, T, dt, theta)
+        plt<span style="color: #666666">.</span>plot(t, u, <span style="color: #BA2121">&#39;--o&#39;</span>)            <span style="color: #408080; font-style: italic"># dashed lines with circles</span>
+        legends<span style="color: #666666">.</span>append(<span style="color: #BA2121">&#39;theta=</span><span style="color: #BB6688; font-weight: bold">%g</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> theta)
+    t_e <span style="color: #666666">=</span> np<span style="color: #666666">.</span>linspace(<span style="color: #666666">0</span>, T, <span style="color: #666666">1001</span>)       <span style="color: #408080; font-style: italic"># very fine mesh for u_e</span>
+    u_e <span style="color: #666666">=</span> exact_solution(t_e, I, a)
+    plt<span style="color: #666666">.</span>plot(t_e, u_e, <span style="color: #BA2121">&#39;b-&#39;</span>)             <span style="color: #408080; font-style: italic"># blue line for u_e</span>
+    legends<span style="color: #666666">.</span>append(<span style="color: #BA2121">&#39;exact&#39;</span>)
+    plt<span style="color: #666666">.</span>legend(legends, loc<span style="color: #666666">=</span><span style="color: #BA2121">&#39;upper right&#39;</span>)
+    plotfile <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;tmp&#39;</span>
+    plt<span style="color: #666666">.</span>savefig(plotfile <span style="color: #666666">+</span> <span style="color: #BA2121">&#39;.png&#39;</span>);  plt<span style="color: #666666">.</span>savefig(plotfile <span style="color: #666666">+</span> <span style="color: #BA2121">&#39;.pdf&#39;</span>)
+</pre></div>
+<p>
+A call to this <code>experiment_compare_schemes</code> function must be placed
+in the test block, or you can run the program from IPython instead:
+
+<p>
+
+<!-- code=ipy (!bc ipy) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">In[<span style="color: #666666">1</span>]: <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">decay</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
+
+In[<span style="color: #666666">2</span>]: experiment_compare_schemes()
+</pre></div>
+<p>
 <p>
 <!-- navigation buttons at the bottom of the page -->
 <ul class="pager">
   <li class="previous">
     <a href="._main_softeng1000.html">&larr; Prev</a>
+  </li>
+  <li class="next">
+    <a href="._main_softeng1002.html">Next &rarr;</a>
   </li>
 </ul>
 <!-- ------------------- end of main content --------------- -->

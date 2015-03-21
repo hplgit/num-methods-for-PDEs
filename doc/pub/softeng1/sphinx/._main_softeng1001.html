@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Bibliography</title>
+    <title>Basic implementations</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -45,6 +45,7 @@
 
     
     <link rel="top" title="Scientific software engineering with a simple ODE model as example" href="index.html" />
+    <link rel="next" title="User interfaces" href="._main_softeng1002.html" />
     <link rel="prev" title="Scientific software engineering with a simple ODE model as example" href="._main_softeng1000.html" />
  
   
@@ -64,6 +65,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="._main_softeng1002.html" title="User interfaces"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
           <a href="._main_softeng1000.html" title="Scientific software engineering with a simple ODE model as example"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">Scientific software engineering with a simple ODE model as example</a> &raquo;</li> 
@@ -75,16 +79,458 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="bibliography">
-<h1>Bibliography<a class="headerlink" href="#bibliography" title="Permalink to this headline">¶</a></h1>
-<table class="docutils citation" frame="void" id="ref1" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label">[Ref1]</td><td><strong>H. P. Langtangen</strong>. <em>A Primer on Scientific Programming With Python</em>,
-Springer,
-2014.</td></tr>
-</tbody>
-</table>
+  <div class="section" id="basic-implementations">
+<span id="softeng1-basic"></span><h1>Basic implementations<a class="headerlink" href="#basic-implementations" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="mathematical-problem-and-solution-technique">
+<span id="softeng1-basic-math"></span><h2>Mathematical problem and solution technique<a class="headerlink" href="#mathematical-problem-and-solution-technique" title="Permalink to this headline">¶</a></h2>
+<p>We address the perhaps simplest possible differential equation problem</p>
+<div class="math" id="equation-softeng1:ode">
+<span id="eq-softeng1-ode"></span><span class="eqno">(1)</span>\[     u'(t) = -au(t), \quad t \in (0,T],\]</div>
+<div class="math" id="equation-softeng1:u0">
+<span id="eq-softeng1-u0"></span><span class="eqno">(2)</span>\[     u(0)  = I,\]</div>
+<p>where <span class="math">\(a\)</span>, <span class="math">\(I\)</span>, and <span class="math">\(T\)</span> are prescribed parameters, and <span class="math">\(u(t)\)</span> is
+the unknown function to be estimated. This mathematical model
+is relevant for physical phenomena featuring exponential decay
+in time, e.g., vertical pressure variation in the atmosphere,
+cooling of an object, and radioactive decay.</p>
+<p>The time domain is discretized with points <span class="math">\(0 = t_0 &lt; t_1 \cdots &lt; t_{N_t}=T\)</span>,
+here with a constant spacing <span class="math">\(\Delta t\)</span> between the
+mesh points: <span class="math">\(\Delta t = t_{n}-t_{n-1}\)</span>, <span class="math">\(n=1,\ldots,N_t\)</span>. Let
+<span class="math">\(u^n\)</span> be the numerical approximation to the exact solution at <span class="math">\(t_n\)</span>.
+A family of popular numerical methods can be written in the form</p>
+<div class="math" id="equation-softeng1:utheta">
+<span id="eq-softeng1-utheta"></span><span class="eqno">(3)</span>\[     u^{n+1} = \frac{1 - (1-\theta) a\Delta t}{1 + \theta a\Delta t}u^n,\]</div>
+<p>for <span class="math">\(n=0,1,\ldots,N_t-1\)</span>. This numerical scheme corresponds to
+the <a class="reference external" href="http://en.wikipedia.org/wiki/Forward_Euler_method">Forward Euler</a>
+scheme when <span class="math">\(\theta=0\)</span>,
+the <a class="reference external" href="http://en.wikipedia.org/wiki/Backward_Euler_method">Backward Euler</a>
+scheme when <span class="math">\(\theta=1\)</span>,
+and the <a class="reference external" href="http://en.wikipedia.org/wiki/Crank-Nicolson">Crank-Nicolson</a>
+scheme when <span class="math">\(\theta=1/2\)</span>.
+The initial condition <a href="#equation-softeng1:u0">(2)</a> is key to start
+the recursion with a value for <span class="math">\(u^0\)</span>.</p>
+</div>
+<div class="section" id="a-first-quick-implementation">
+<span id="softeng1-basic-impl1"></span><h2>A first, quick implementation<a class="headerlink" href="#a-first-quick-implementation" title="Permalink to this headline">¶</a></h2>
+<p>Solving <a href="#equation-softeng1:utheta">(3)</a> in a program is very straightforward:
+just make a loop over <span class="math">\(n\)</span> and evaluate the formula. The <span class="math">\(u(t_n\)</span>)
+values for discrete <span class="math">\(n\)</span> can be stored in an array. This makes it easy
+to also plot the solution. We may with little work add the exact
+solution <span class="math">\(u(t)=Ie^{-at}\)</span> to the plot. A typical program is listed
+below.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">A</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">a</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">T</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="mf">0.2</span>
+<span class="n">N</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="n">dt</span><span class="p">))</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span>
+<span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">N</span><span class="p">):</span>
+    <span class="n">y</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">theta</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="n">a</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+
+<span class="n">y_e</span> <span class="o">=</span> <span class="n">A</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span> <span class="o">-</span> <span class="n">y</span>
+<span class="n">error</span> <span class="o">=</span> <span class="n">y_e</span> <span class="o">-</span> <span class="n">y</span>
+<span class="n">E</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">dt</span><span class="o">*</span><span class="nb">sum</span><span class="p">(</span><span class="n">error</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+<span class="k">print</span> <span class="s">&#39;Norm of the error: </span><span class="si">%.3E</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">E</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s">&#39;r--o&#39;</span><span class="p">)</span>
+<span class="n">t_e</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1001</span><span class="p">)</span>
+<span class="n">y_e</span> <span class="o">=</span> <span class="n">A</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t_e</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">y_e</span><span class="p">,</span> <span class="s">&#39;b-&#39;</span><span class="p">)</span>
+<span class="n">legend</span><span class="p">([</span><span class="s">&#39;numerical, theta=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">theta</span><span class="p">,</span> <span class="s">&#39;exact&#39;</span><span class="p">])</span>
+<span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;t&#39;</span><span class="p">)</span>
+<span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">)</span>
+<span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This program is very easy to read, and as long it is correct, many will
+claim that it has sufficient quality. Nevertheless, this program suffers
+from serious bad habits that might be crucial for writing correct
+programs for more complicated mathematical problems. First we list
+two really serious issues:</p>
+<ol class="arabic simple">
+<li>The notation in the program does not correspond exactly to
+the notation in the mathematical problem: the solution is called
+<tt class="docutils literal"><span class="pre">y</span></tt> and corresponds to <span class="math">\(u\)</span> in the mathematical description,
+the variable <tt class="docutils literal"><span class="pre">A</span></tt> corresponds to the mathematical parameter <span class="math">\(I\)</span>,
+<tt class="docutils literal"><span class="pre">N</span></tt> in the program is called <span class="math">\(N_t\)</span> in the mathematics.</li>
+<li>There are no comments in the program.</li>
+</ol>
+<p>Fixing notation and comments results in</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">I</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">a</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">T</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="mf">0.2</span>
+<span class="n">Nt</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="n">dt</span><span class="p">))</span>     <span class="c"># no of time intervals</span>
+<span class="n">u</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>           <span class="c"># array of u[n] values</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>  <span class="c"># time mesh</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="mi">1</span>                 <span class="c"># Backward Euler method</span>
+
+<span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">I</span>                  <span class="c"># assign initial condition</span>
+<span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Nt</span><span class="p">):</span>    <span class="c"># n=0,1,...,Nt-1</span>
+    <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">theta</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="n">a</span><span class="p">)</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+
+<span class="c"># Compute norm of the error</span>
+<span class="n">u_e</span> <span class="o">=</span> <span class="n">I</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span> <span class="o">-</span> <span class="n">u</span>     <span class="c"># exact u at the mesh points</span>
+<span class="n">error</span> <span class="o">=</span> <span class="n">u_e</span> <span class="o">-</span> <span class="n">u</span>
+<span class="n">E</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">dt</span><span class="o">*</span><span class="nb">sum</span><span class="p">(</span><span class="n">error</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+<span class="k">print</span> <span class="s">&#39;Norm of the error: </span><span class="si">%.3E</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">E</span>
+
+<span class="c"># Compare numerical (u) and exact solution (u_e) in a plot</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="s">&#39;r--o&#39;</span><span class="p">)</span>               <span class="c"># red dashes w/circles</span>
+<span class="n">t_e</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1001</span><span class="p">)</span>       <span class="c"># very fine mesh for u_e</span>
+<span class="n">u_e</span> <span class="o">=</span> <span class="n">I</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t_e</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">u_e</span><span class="p">,</span> <span class="s">&#39;b-&#39;</span><span class="p">)</span>             <span class="c"># blue line for u_e</span>
+<span class="n">legend</span><span class="p">([</span><span class="s">&#39;numerical, theta=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">theta</span><span class="p">,</span> <span class="s">&#39;exact&#39;</span><span class="p">])</span>
+<span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;t&#39;</span><span class="p">)</span>
+<span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;u&#39;</span><span class="p">)</span>
+<span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>At first sight, this is a good starting point for playing around
+with the example: we can just change parameters and rerun.
+Let us embed the program in an IPython notebook such that we
+can get the plot up in the notebook, see Figure <a class="reference internal" href="#softeng1-ipynb"><em>Flat experimental code in a notebook</em></a>.</p>
+<div class="figure" id="softeng1-ipynb">
+<a class="reference internal image-reference" href="_images/ipynb_flat.png"><img alt="_images/ipynb_flat.png" src="_images/ipynb_flat.png" style="width: 700px;" /></a>
+<p class="caption"><em>Flat experimental code in a notebook</em></p>
+</div>
+<p>Although such an interactive session is good for initial exploration,
+one will soon extend the experiments and start developing the code
+further. Say we want to compare <span class="math">\(\theta =0,1,0.5\)</span> in the same
+plot. This extension requires changes all over the code and quickly
+lead to errors. To do something serious with
+this program we have to break it into smaller pieces and make sure
+each piece is well tested, is general, and can be reused in new
+contexts without changes.
+The next natural step is therefore to isolate the numerical computations and
+the visualization in separate functions.</p>
+</div>
+<div class="section" id="isolating-the-numerical-algorithm-in-a-function">
+<span id="softeng1-basic-func"></span><h2>Isolating the numerical algorithm in a function<a class="headerlink" href="#isolating-the-numerical-algorithm-in-a-function" title="Permalink to this headline">¶</a></h2>
+<p>The solution formula <a href="#equation-softeng1:utheta">(3)</a> is completely general and
+should be available as a Python function with all input data as
+function arguments and all output data returned to the calling code:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Solve u&#39;=-a*u, u(0)=I, for t in (0,T] with steps of dt.&quot;&quot;&quot;</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>               <span class="c"># avoid integer division</span>
+    <span class="n">Nt</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="n">dt</span><span class="p">))</span>        <span class="c"># no of time intervals</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">Nt</span><span class="o">*</span><span class="n">dt</span>                    <span class="c"># adjust T to fit time step dt</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>           <span class="c"># array of u[n] values</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>  <span class="c"># time mesh</span>
+
+    <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">I</span>                  <span class="c"># assign initial condition</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Nt</span><span class="p">):</span>    <span class="c"># n=0,1,...,Nt-1</span>
+        <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">theta</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="n">a</span><span class="p">)</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">u</span><span class="p">,</span> <span class="n">t</span>
+</pre></div>
+</div>
+<div class="admonition-tip-always-use-a-doc-string-to-document-a-function admonition">
+<p class="first admonition-title">Tip: Always use a doc string to document a function</p>
+<p class="last">Python has a convention for documenting the purpose and usage of
+a function in a <em>doc string</em>: simply place the documentation
+in a one- or multi-line triple-quoted string right after the
+function header.</p>
+</div>
+<div class="admonition-be-careful-with-unintended-integer-division admonition">
+<p class="first admonition-title">Be careful with unintended integer division</p>
+<p class="last">Note that we in the <tt class="docutils literal"><span class="pre">solver</span></tt> function explicitly covert <tt class="docutils literal"><span class="pre">dt</span></tt> to a
+<tt class="docutils literal"><span class="pre">float</span></tt> object. If not, the updating formula for <tt class="docutils literal"><span class="pre">u[n+1]</span></tt> may evaluate
+to zero because of integer division when <tt class="docutils literal"><span class="pre">theta</span></tt>, <tt class="docutils literal"><span class="pre">a</span></tt>, and <tt class="docutils literal"><span class="pre">dt</span></tt> are integers!</p>
+</div>
+<p>With the aid of the <tt class="docutils literal"><span class="pre">solver</span></tt> function, we can solve any problem
+of the type <a href="#equation-softeng1:ode">(1)</a>-<a href="#equation-softeng1:u0">(2)</a> by a one-line
+statement:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>One of the most serious flaws in computational work is to have several
+slightly different implementations of the same computational algorithms
+lying around in various program files. This is very likely to happen,
+because busy scientists often want to test a slight variation of a code to see
+what happens. A quick copy and edit do the task, but such quick hacks have
+a tendency to survive. When a real correction is needed in the implementation,
+it is difficult to ensure that the correction is done in all relevant files.
+In fact, this is a general problem in programming, which has led to
+an important principle.</p>
+<div class="admonition-the-dry-principle-don-t-repeat-yourself admonition">
+<p class="first admonition-title">The DRY principle: Don&#8217;t repeat yourself</p>
+<p class="last">When implementing a particular functionality in a computer program, make sure
+this functionality and its variations are implemented in just one piece
+of code. That is, if you need to revise the implementation, there should be
+<em>one and only one</em> place to edit. It follows that you should never
+duplicate code (don&#8217;t repeat yourself!), and code snippets that are
+similar should be factored into one piece (function) and parameterized (by
+function arguments).</p>
+</div>
+</div>
+<div class="section" id="making-a-module">
+<span id="softeng1-basic-module"></span><h2>Making a module<a class="headerlink" href="#making-a-module" title="Permalink to this headline">¶</a></h2>
+<p>As soon as you start making Python functions in a program, you should
+make sure the program file fulfills the requirement of a module.
+This means that you can import and reuse your functions in other
+programs too. For example, if our <tt class="docutils literal"><span class="pre">solver</span></tt> function resides in a
+module <tt class="docutils literal"><span class="pre">decay</span></tt> in a module file <tt class="docutils literal"><span class="pre">decay.py</span></tt>, we can in any program
+do</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">decay</span> <span class="kn">import</span> <span class="n">solver</span>
+<span class="c"># Solve a decay problem</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>or prefix function names by the module name:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">decay</span>
+<span class="c"># Solve a decay problem</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">decay</span><span class="o">.</span><span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The requirements for a program to qualify for a module are simple:</p>
+<ol class="arabic simple">
+<li>The filename without <tt class="docutils literal"><span class="pre">.py</span></tt> must be a valid Python variable name.</li>
+<li>The main program must be executed (through statements or
+a function call) in the <em>test block</em>.</li>
+</ol>
+<p>The <em>test block</em> is normally placed at the end of a module file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="c"># Statements</span>
+</pre></div>
+</div>
+<p>When the module file is executed as a stand-alone program, the if test
+is true and the indented statements are run, but when the module file
+is imported, <tt class="docutils literal"><span class="pre">__name__</span></tt> equals the module name and the test block
+is not executed.</p>
+<p>To explain the importance of the test block, consider the trivial module
+file <tt class="docutils literal"><span class="pre">hello.py</span></tt> with one function and a call to this function as main program:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">arg</span><span class="o">=</span><span class="s">&#39;World!&#39;</span><span class="p">):</span>
+    <span class="k">print</span> <span class="s">&#39;Hello, &#39;</span> <span class="o">+</span> <span class="n">arg</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">hello</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Without the test block,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">arg</span><span class="o">=</span><span class="s">&#39;World!&#39;</span><span class="p">):</span>
+    <span class="k">print</span> <span class="s">&#39;Hello, &#39;</span> <span class="o">+</span> <span class="n">arg</span>
+
+<span class="n">hello</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>any attempt to import <tt class="docutils literal"><span class="pre">hello</span></tt> will also execute the call <tt class="docutils literal"><span class="pre">hello()</span></tt> and
+hence write <cite>Hello, World!&#8217; to the screen.
+Such output is not desired when importing a module! However,
+with the test block, ``hello()`</cite> is not called during import, but
+running the file as <tt class="docutils literal"><span class="pre">python</span> <span class="pre">hello.py</span></tt> will make the block active
+and lead to the desired printing.</p>
+<div class="admonition-all-coming-functions-are-placed-in-a-module admonition">
+<p class="first admonition-title">All coming functions are placed in a module</p>
+<p class="last">The many functions to be explained in the following text are
+put in one module file <a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay.py">decay.py</a>.</p>
+</div>
+<p>What more than the <tt class="docutils literal"><span class="pre">solver</span></tt> function is needed in our <tt class="docutils literal"><span class="pre">decay</span></tt> module
+to do everything we did in the previous, flat program?
+We need import statements for <tt class="docutils literal"><span class="pre">numpy</span></tt> and <tt class="docutils literal"><span class="pre">matplotlib</span></tt> as well as
+another function for producing the plot. It can also be convenient
+to put the exact solution in a Python function.
+Our module <tt class="docutils literal"><span class="pre">decay.py</span></tt> then looks like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+    <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">exact_solution</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">experiment_compare_numerical_and_exact</span><span class="p">():</span>
+    <span class="n">I</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>  <span class="n">a</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>  <span class="n">T</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>  <span class="n">dt</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">;</span>  <span class="n">theta</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+
+    <span class="n">t_e</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1001</span><span class="p">)</span>       <span class="c"># very fine mesh for u_e</span>
+    <span class="n">u_e</span> <span class="o">=</span> <span class="n">exact_solution</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+
+    <span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span>   <span class="n">u</span><span class="p">,</span>   <span class="s">&#39;r--o&#39;</span><span class="p">)</span>           <span class="c"># dashed red line with circles</span>
+    <span class="n">plot</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">u_e</span><span class="p">,</span> <span class="s">&#39;b-&#39;</span><span class="p">)</span>             <span class="c"># blue line for u_e</span>
+    <span class="n">legend</span><span class="p">([</span><span class="s">&#39;numerical, theta=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">theta</span><span class="p">,</span> <span class="s">&#39;exact&#39;</span><span class="p">])</span>
+    <span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;t&#39;</span><span class="p">)</span>
+    <span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;u&#39;</span><span class="p">)</span>
+    <span class="n">plotfile</span> <span class="o">=</span> <span class="s">&#39;tmp&#39;</span>
+    <span class="n">savefig</span><span class="p">(</span><span class="n">plotfile</span> <span class="o">+</span> <span class="s">&#39;.png&#39;</span><span class="p">);</span>  <span class="n">savefig</span><span class="p">(</span><span class="n">plotfile</span> <span class="o">+</span> <span class="s">&#39;.pdf&#39;</span><span class="p">)</span>
+
+    <span class="n">error</span> <span class="o">=</span> <span class="n">exact_solution</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="o">-</span> <span class="n">u</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">dt</span><span class="o">*</span><span class="nb">sum</span><span class="p">(</span><span class="n">error</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">print</span> <span class="s">&#39;Error norm:&#39;</span><span class="p">,</span> <span class="n">E</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">experiment_compare_numerical_and_exact</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This module file does exactly the same as the previous, flat program,
+but it becomes much easier to extend the code with other plots or
+experiments in new functions.  And even more important, the numerical
+algorithm is coded and tested once and for all in the <tt class="docutils literal"><span class="pre">solver</span></tt>
+function, and any need to solve the mathematical problem is a matter
+of one function call.</p>
+</div>
+<div class="section" id="prefixing-imported-functions-by-the-module-name">
+<span id="softeng1-basic-modprefix"></span><h2>Prefixing imported functions by the module name<a class="headerlink" href="#prefixing-imported-functions-by-the-module-name" title="Permalink to this headline">¶</a></h2>
+<p id="index-0">Import statements of the form <tt class="docutils literal"><span class="pre">from</span> <span class="pre">module</span> <span class="pre">import</span> <span class="pre">*</span></tt> import
+functions and variables in <tt class="docutils literal"><span class="pre">module.py</span></tt> into the current file.
+For example, when doing</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+</div>
+<p>we get mathematical functions like <tt class="docutils literal"><span class="pre">sin</span></tt> and <tt class="docutils literal"><span class="pre">exp</span></tt>
+as well as MATLAB-style functions like <tt class="docutils literal"><span class="pre">linspace</span></tt> and <tt class="docutils literal"><span class="pre">plot</span></tt>,
+which can be called by these well-known names.
+Unfortunately, it sometimes becomes confusing to
+know where a particular function comes from. Is it from <tt class="docutils literal"><span class="pre">numpy</span></tt>? Or
+<tt class="docutils literal"><span class="pre">matplotlib.pyplot</span></tt>?
+Or is it our own function?</p>
+<p>An alternative import is</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span>
+</pre></div>
+</div>
+<p>and such imports require functions to be prefixed by the module name, e.g.,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">t</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">u_e</span> <span class="o">=</span> <span class="n">I</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">pyplot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u_e</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is normally regarded as a better habit because it is explicitly stated
+from which module a function comes from.</p>
+<p>The modules <tt class="docutils literal"><span class="pre">numpy</span></tt> and <tt class="docutils literal"><span class="pre">matplotlib.pyplot</span></tt> are so frequently used,
+and their full names quite tedious to write, so two standard abbreviations
+have evolved in the Python scientific computing community:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+<span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">u_e</span> <span class="o">=</span> <span class="n">I</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u_e</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A version of the <tt class="docutils literal"><span class="pre">decay_mod</span></tt> module where we use the <tt class="docutils literal"><span class="pre">np</span></tt> and <tt class="docutils literal"><span class="pre">plt</span></tt>
+prefixes is found in the file
+<a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/decay_mod_prefix.py">decay_mod_prefix.py</a>.</p>
+<p>The downside of prefixing functions by the module name is that
+mathematical expressions like <span class="math">\(e^{-at}\sin(2\pi t)\)</span> get
+cluttered with module names,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+<span class="c"># or</span>
+<span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Such an expression looks like <tt class="docutils literal"><span class="pre">exp(-a*t)*sin(2*pi*t)</span></tt> in most
+other programming languages. Similarly,
+<tt class="docutils literal"><span class="pre">np.linspace</span></tt> and <tt class="docutils literal"><span class="pre">plt.plot</span></tt> look less familiar to people who are
+used to MATLAB and who have not adopted Python&#8217;s prefix style.
+Whether to do <tt class="docutils literal"><span class="pre">from</span> <span class="pre">module</span> <span class="pre">import</span> <span class="pre">*</span></tt> or <tt class="docutils literal"><span class="pre">import</span> <span class="pre">module</span></tt> depends
+on personal taste and the problem at hand. In these writings we use
+<tt class="docutils literal"><span class="pre">from</span> <span class="pre">module</span> <span class="pre">import</span></tt> in more basic, shorter programs where similarity with
+MATLAB could be an advantage. Prefix of mathematical
+functions in formulas is something we often avoid to obtain
+a one-to-one correspondence between
+mathematical formulas and the Python code.</p>
+<p>Our <tt class="docutils literal"><span class="pre">decay</span></tt> module can be edited to use the module prefix for
+<tt class="docutils literal"><span class="pre">matplotlib.pyplot</span></tt> and <tt class="docutils literal"><span class="pre">numpy</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+<span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+    <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">exact_solution</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">experiment_compare_numerical_and_exact</span><span class="p">():</span>
+    <span class="n">I</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>  <span class="n">a</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>  <span class="n">T</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>  <span class="n">dt</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">;</span>  <span class="n">theta</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+
+    <span class="n">t_e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1001</span><span class="p">)</span>       <span class="c"># very fine mesh for u_e</span>
+    <span class="n">u_e</span> <span class="o">=</span> <span class="n">exact_solution</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span>   <span class="n">u</span><span class="p">,</span>   <span class="s">&#39;r--o&#39;</span><span class="p">)</span>       <span class="c"># dashed red line with circles</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">u_e</span><span class="p">,</span> <span class="s">&#39;b-&#39;</span><span class="p">)</span>         <span class="c"># blue line for u_e</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s">&#39;numerical, theta=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">theta</span><span class="p">,</span> <span class="s">&#39;exact&#39;</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;t&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;u&#39;</span><span class="p">)</span>
+    <span class="n">plotfile</span> <span class="o">=</span> <span class="s">&#39;tmp&#39;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plotfile</span> <span class="o">+</span> <span class="s">&#39;.png&#39;</span><span class="p">);</span>  <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plotfile</span> <span class="o">+</span> <span class="s">&#39;.pdf&#39;</span><span class="p">)</span>
+
+    <span class="n">error</span> <span class="o">=</span> <span class="n">exact_solution</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="o">-</span> <span class="n">u</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dt</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">error</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">print</span> <span class="s">&#39;Error norm:&#39;</span><span class="p">,</span> <span class="n">E</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">experiment_compare_numerical_and_exact</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>We remark that some would prefer to get rid of the prefix in
+mathematical formulas:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">exp</span><span class="p">,</span> <span class="nb">sum</span><span class="p">,</span> <span class="n">sqrt</span>
+
+<span class="k">def</span> <span class="nf">exact_solution</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+
+<span class="n">error</span> <span class="o">=</span> <span class="n">exact_solution</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="o">-</span> <span class="n">u</span>
+<span class="n">E</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">dt</span><span class="o">*</span><span class="nb">sum</span><span class="p">(</span><span class="n">error</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="comparing-numerical-schemes-in-one-plot">
+<span id="softeng1-basic-experiment2"></span><h2>Comparing numerical schemes in one plot<a class="headerlink" href="#comparing-numerical-schemes-in-one-plot" title="Permalink to this headline">¶</a></h2>
+<p>Let us specifically demonstrate one extension of the
+flat program in Section ref
+that would require substantial editing of the flat code, while
+in a structured module, we can simply add a new function without
+affecting the existing code and with reusing the implementation
+of the numerics.</p>
+<p>Our aim is to make a comparison between the numerical solutions
+for various schemes (<span class="math">\(\theta\)</span> values) and the exact solution:</p>
+<div class="figure">
+<a class="reference internal image-reference" href="_images/compare.png"><img alt="_images/compare.png" src="_images/compare.png" style="width: 600px;" /></a>
+</div>
+<div class="admonition-stop-a-minute admonition">
+<p class="first admonition-title">Stop a minute</p>
+<p class="last">Look at the flat program in
+the section <a class="reference internal" href="#softeng1-basic-impl1"><em>A first, quick implementation</em></a>,
+and try to imagine which edits that are required to solve this new problem.</p>
+</div>
+<p>With the <tt class="docutils literal"><span class="pre">solver</span></tt> function at hand, we can simply create a function
+with a loop over <tt class="docutils literal"><span class="pre">theta</span></tt> values and add the necessary plot statements:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">experiment_compare_schemes</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Compare theta=0,1,0.5 in the same plot.&quot;&quot;&quot;</span>
+    <span class="n">I</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>  <span class="n">a</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>  <span class="n">T</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>  <span class="n">dt</span> <span class="o">=</span> <span class="mf">0.4</span>
+    <span class="n">legends</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">theta</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]:</span>
+        <span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="s">&#39;--o&#39;</span><span class="p">)</span>            <span class="c"># dashed lines with circles</span>
+        <span class="n">legends</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;theta=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">theta</span><span class="p">)</span>
+    <span class="n">t_e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1001</span><span class="p">)</span>       <span class="c"># very fine mesh for u_e</span>
+    <span class="n">u_e</span> <span class="o">=</span> <span class="n">exact_solution</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">u_e</span><span class="p">,</span> <span class="s">&#39;b-&#39;</span><span class="p">)</span>             <span class="c"># blue line for u_e</span>
+    <span class="n">legends</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;exact&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">legends</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s">&#39;upper right&#39;</span><span class="p">)</span>
+    <span class="n">plotfile</span> <span class="o">=</span> <span class="s">&#39;tmp&#39;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plotfile</span> <span class="o">+</span> <span class="s">&#39;.png&#39;</span><span class="p">);</span>  <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plotfile</span> <span class="o">+</span> <span class="s">&#39;.pdf&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A call to this <tt class="docutils literal"><span class="pre">experiment_compare_schemes</span></tt> function must be placed
+in the test block, or you can run the program from IPython instead:</p>
+<div class="highlight-ipy"><div class="highlight"><pre><span class="n">In</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="kn">from</span> <span class="nn">decay</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">In</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span> <span class="n">experiment_compare_schemes</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
 </div>
 
 
@@ -98,9 +544,25 @@ Springer,
               <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
             </a></p>
             </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Basic implementations</a><ul>
+<li><a class="reference internal" href="#mathematical-problem-and-solution-technique">Mathematical problem and solution technique</a></li>
+<li><a class="reference internal" href="#a-first-quick-implementation">A first, quick implementation</a></li>
+<li><a class="reference internal" href="#isolating-the-numerical-algorithm-in-a-function">Isolating the numerical algorithm in a function</a></li>
+<li><a class="reference internal" href="#making-a-module">Making a module</a></li>
+<li><a class="reference internal" href="#prefixing-imported-functions-by-the-module-name">Prefixing imported functions by the module name</a></li>
+<li><a class="reference internal" href="#comparing-numerical-schemes-in-one-plot">Comparing numerical schemes in one plot</a></li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
   <p class="topless"><a href="._main_softeng1000.html"
                         title="previous chapter">Scientific software engineering with a simple ODE model as example</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_softeng1002.html"
+                        title="next chapter">User interfaces</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/._main_softeng1001.txt"
@@ -129,6 +591,9 @@ Springer,
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="._main_softeng1002.html" title="User interfaces"
+             >next</a> |</li>
         <li class="right" >
           <a href="._main_softeng1000.html" title="Scientific software engineering with a simple ODE model as example"
              >previous</a> |</li>

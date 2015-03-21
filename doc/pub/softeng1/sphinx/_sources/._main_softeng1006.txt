@@ -1,0 +1,267 @@
+.. !split
+
+Exercises
+=========
+
+.. --- begin exercise ---
+
+.. _softeng1:exer:derivative:
+
+Problem 1: Make a tool for differentiating curves
+-------------------------------------------------
+
+Suppose we have a curve specified through a set
+of discrete coordinates :math:`(x_i,y_i)`, :math:`i=0,\ldots,n`, where the :math:`x_i`
+values are uniformly distributed with spacing :math:`\Delta x`: :math:`x_i=\Delta x`.
+The derivative of this curve, defined as a new curve with points
+:math:`(x_i, d_i)`, can be computed via finite differences:
+
+.. math::
+        
+        d_0 = \frac{y_1-y_0}{\Delta x},
+        
+
+.. math::
+          
+        d_i = \frac{y_{i+1}-y_{i-1}}{2\Delta x},\quad i=1,\ldots,n-1,
+        
+
+.. math::
+          
+        d_n = \frac{y_n-y_{n-1}}{\Delta x}{\thinspace .}
+        
+
+**a)**
+Write a function
+``differentiate(x, y)`` for differentiating a curve
+   with coordinates in the arrays ``x`` and ``y``, using the
+   formulas above. The function should return the coordinate arrays
+of the resulting differentiated curve.
+
+**b)**
+Write a test function for the function in a).
+
+**c)**
+Start with a curve corresponding to :math:`y=\sin(\pi x)` and :math:`n+1`
+points in :math:`[0,1]`. Apply ``differentiate`` four times and plot the
+resulting curve and the exact :math:`y=\sin\pi x` for :math:`n=6, 11, 21, 41`.
+
+.. Using a 2nd-order backward formula at x=1 does not improve the
+
+.. results much, one gets large errors at the end points.
+
+Filename: ``curvediff.py``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _softeng1:exer:integral:flat:
+
+Problem 2: Make solid software for the Trapezoidal rule
+-------------------------------------------------------
+
+An integral
+
+.. math::
+         \int_a^b f(x)dx 
+
+can be numerically approximated by the Trapezoidal rule,
+
+.. math::
+         \int_a^b f(x)dx \approx \frac{h}{2}(f(a) + f(b)) + h\sum_{i=1}^{n-1} f(x_i),
+        
+
+where :math:`x_i` is a set of uniformly spaced points in :math:`[a,b]`:
+
+.. math::
+         h = \frac{b-a}{n},\quad x_i=a + ih,\ i=1,\ldots,n-1{\thinspace .} 
+
+Somebody has used this rule to compute the integral :math:`\int_0^\pi sin^2x dx`:
+
+.. code-block:: python
+
+        from math import pi, sin
+        n = 20
+        h = pi/n
+        I = 0
+        for i in range(1, n):
+            I += sin(i*h)**2
+        print I
+
+**a)**
+The "flat" implementation above suffers from three serious flaws:
+
+1. A general numerical algorithm (the Trapezoidal rule) is implemented
+   in a specialized form where the formula for :math:`f` is inserted directly
+   into the code for the general integration formula.
+
+2. A general numerical algorithm is not encapsulated as a general
+   function, with appropriate parameters, which can be reused
+   across a wide range of applications.
+
+3. The lazy programmer dropped the first terms in the general formula
+   since :math:`\sin(0)=\sin(\pi)=0`.
+
+Write a function ``trapezoidal`` that fixes these flaws.
+Place the function in a module ``trapezoidal``.
+
+**b)**
+Write a test function ``test_trapezoidal``. Call the test function
+explicitly to check that it works. Remove the call and run pytest
+on the module:
+
+.. code-block:: text
+
+        Terminal> py.test -s -v trapezoidal
+
+.. --- begin hint in exercise ---
+
+**Hint.**
+Note that even if you know the value of the integral, you do not know
+the error in the approximation produced by the Trapezoidal rule.
+However, the Trapezoidal rule will integrate linear functions,
+and piecewise linear functions, with discontinuities at the :math:`x_i`
+points, exactly (i.e., to machine precision). Base a test function
+on such linear functions :math:`f(x)`.
+
+.. --- end hint in exercise ---
+
+**c)**
+Add functionality for computing :math:`\int_a^b f(x)dx` by providing
+:math:`f`, :math:`a`, :math:`b`, and :math:`n` as positional command-line arguments:
+
+.. code-block:: text
+
+        Terminal> python trapezoidal.py 'sin(x)**2' 0 pi 20
+
+Note that the ``trapezoidal.py`` must still be a valid module file, so the
+interpretation of command-line data and computation of the integral
+must be performed from calls in a test block.
+
+.. --- begin hint in exercise ---
+
+**Hint.**
+To translate a string formula on the command line, like ``sin(x)**2``,
+into a Python function, you can wrap a function declaration around
+the formula and run ``exec`` on the string to turn it into live Python code:
+
+.. code-block:: python
+
+        import math, sys
+        formula = sys.argv[1]
+        f_code = """
+        def f(x):
+            return %s
+        """ % formula
+        exec(code, math.__dict__)
+
+The result is the same as if we had hardcoded
+
+.. code-block:: python
+
+        def f(x):
+            return sin(x)**2
+
+in the program. Note that ``exec`` needs the namespace
+``math.__dict__``, i.e., all names in the ``math`` module, such that
+it understands ``sin`` and other mathematical functions.
+Similarly, to allow :math:`a` and :math:`b` to be ``math`` values like ``pi``,
+do
+
+.. code-block:: text
+
+        a = eval(sys.argv[2], math.__dict__)
+        b = eval(sys.argv[2], math.__dict__)
+
+.. --- end hint in exercise ---
+
+**d)**
+Write a test function for verifying the implementation of the
+reading data from the command line.
+
+Filename: ``trapezoidal.py``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _softeng1:exer:integral:flat2:
+
+Problem 3: Implement classes for the Trapezoidal rule
+-----------------------------------------------------
+
+We consider the same problem setting as in :ref:`softeng1:exer:integral:flat`. Make a module with a class ``Problem``
+representing the mathematical problem to be solved and a class
+``Solver`` representing the solution method.  The rest of the
+functionality of the module, including test functions and reading data
+from the command line, should be as in :ref:`softeng1:exer:integral:flat`.
+Filename: ``trapezoidal_class.py``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _softeng1:exer:doctest1:
+
+Problem 4: Write a doctest
+--------------------------
+
+Type in the following program and equip the ``roots`` function with a doctest:
+
+.. code-block:: python
+
+        import sys
+        # This sqrt(x) returns real if x>0 and complex if x<0
+        from numpy.lib.scimath import sqrt
+        
+        def roots(a, b, c):
+            """
+            Return the roots of the quadratic polynomial
+            p(x) = a*x**2 + b*x + c.
+        
+            The roots are real or complex objects.
+            """
+            q = b**2 - 4*a*c
+            r1 = (-b + sqrt(q))/(2*a)
+            r2 = (-b - sqrt(q))/(2*a)
+            return r1, r2
+        
+        a, b, c = [float(arg) for arg in sys.argv[1:]]
+        print roots(a, b, c)
+
+Make sure to test both real and complex roots.
+Write out numbers with 14 digits or less.
+Filename: ``doctest_roots.py``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _softeng1:exer:nosetest1:
+
+Problem 5: Write a nose test
+----------------------------
+
+Make a test function for the ``roots`` function in
+:ref:`softeng1:exer:doctest1`.
+Filename: ``test_roots.py``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _softeng1:exer:class:dts:
+
+Exercise 6: Make use of a class implementation
+----------------------------------------------
+
+Implement the ``experiment_compare_dt`` function from ``decay.py``
+using class ``Problem`` and class ``Solver`` from
+the section :ref:`softeng1:prog:se:class`.
+The parameters ``I``, ``a``, ``T``, the scheme name, and a series of
+``dt`` values should be read from the command line.
+Filename: ``experiment_compare_dt_class.py``.
+
+.. --- end exercise ---
+

@@ -1,0 +1,535 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>User interfaces</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Scientific software engineering with a simple ODE model as example" href="index.html" />
+    <link rel="next" title="Tests for verifying implementations" href="._main_softeng1003.html" />
+    <link rel="prev" title="Basic implementations" href="._main_softeng1001.html" />
+ 
+  
+   <style type="text/css">
+     div.admonition {
+       background-color: whiteSmoke;
+       border: 1px solid #bababa;
+     }
+   </style>
+  </head>
+
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_softeng1003.html" title="Tests for verifying implementations"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="._main_softeng1001.html" title="Basic implementations"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Scientific software engineering with a simple ODE model as example</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="user-interfaces">
+<h1>User interfaces<a class="headerlink" href="#user-interfaces" title="Permalink to this headline">¶</a></h1>
+<p>It is good programming practice to let programs read input from the
+user rather than require the user to edit the source code when trying
+out new values of input parameters. One reason is that any edit of the
+code has a danger of introducing bugs. Another reason is that it is
+easier and less manual work to supply data to a program instead of
+editing the program code. A third reason is that a program that reads
+input can easily be run by another program, and in this way we can
+automate a large number of runs in scientific investigations.</p>
+<p>Reading input data can be done in many ways. We have to decide on a
+desired <em>user interface</em>, i.e., how we want to operate the program
+when providing input, and then use appropriate tools to implement
+the user interface. There are four basic types of user interface
+of relevance to our programs, listed here with increasing complexity
+of the implementation:</p>
+<ol class="arabic simple">
+<li>Questions and answers in the terminal window</li>
+<li>Command-line arguments</li>
+<li>Reading data from file</li>
+<li>Graphical user interfaces (GUIs)</li>
+</ol>
+<p>Below, we shall address alternative 2 and 4, which are most
+appropriate for the present problem and also in general the most
+popular types of user interfaces.</p>
+<div class="section" id="command-line-arguments">
+<h2>Command-line arguments<a class="headerlink" href="#command-line-arguments" title="Permalink to this headline">¶</a></h2>
+<p>The command-line arguments are all the words that appear on the
+command line after the program name. Running a program <tt class="docutils literal"><span class="pre">prog</span></tt>
+as <tt class="docutils literal"><span class="pre">prog</span> <span class="pre">arg1</span> <span class="pre">arg2</span></tt> means that there are two command-line arguments
+(separated by white space): <tt class="docutils literal"><span class="pre">arg1</span></tt> and <tt class="docutils literal"><span class="pre">arg2</span></tt>.
+Python stores all the command-line arguments in
+the list <tt class="docutils literal"><span class="pre">sys.argv</span></tt>, and there are, in principle, two ways of programming with
+command-line arguments in Python:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Decide upon a sequence of parameters on the command line and read
+their values directly from the <tt class="docutils literal"><span class="pre">sys.argv[1:]</span></tt> list (<tt class="docutils literal"><span class="pre">sys.argv[0]</span></tt> is
+the just program name).</li>
+<li>Use option-value pairs (<tt class="docutils literal"><span class="pre">--option</span> <span class="pre">value</span></tt>) on
+the command line to override default values of input parameters,
+and utilize the <tt class="docutils literal"><span class="pre">argparse.ArgumentParser</span></tt> tool to interact with
+the command line.</li>
+</ul>
+</div></blockquote>
+<p>Suppose we want to run our program <tt class="docutils literal"><span class="pre">decay.py</span></tt> with
+specification of <span class="math">\(a\)</span> and <span class="math">\(\Delta t\)</span> on the command line.
+With positional command-line arguments we write</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python decay.py 2 0.5
+</pre></div>
+</div>
+<p>knowing that the first argument <tt class="docutils literal"><span class="pre">2</span></tt> is <tt class="docutils literal"><span class="pre">a</span></tt> (<span class="math">\(a\)</span>) and the second <cite>0.5`is
+``dt`</cite> (<span class="math">\(\Delta t\)</span>).</p>
+<p>With option-value pairs we can run</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python decay.py --a 2 --dt 0.5
+</pre></div>
+</div>
+<p>Both <tt class="docutils literal"><span class="pre">a</span></tt> and <tt class="docutils literal"><span class="pre">dt</span></tt> are supposed to have default values in the program,
+so we need to specify only the parameter that is to be changed from
+its default value, e.g.,</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python decay.py --a 2      # a=2, default dt
+Terminal&gt; python decay.py --dt 0.7   # dt-0.7, default a
+Terminal&gt; python decay.py            # default a and dt
+</pre></div>
+</div>
+<p>As example, we want to read <span class="math">\(I\)</span>, <span class="math">\(a\)</span>, <span class="math">\(T\)</span>, <span class="math">\(\theta\)</span>,
+and a range of <span class="math">\(\Delta t\)</span> values from the command line.
+A plot is then to be made, comparing
+the different numerical solutions for different <span class="math">\(\Delta t\)</span> values
+against the exact solution.</p>
+</div>
+<div class="section" id="positional-command-line-arguments">
+<h2>Positional command-line arguments<a class="headerlink" href="#positional-command-line-arguments" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-0"></span><p id="index-1">The simplest way of reading the input parameters is to
+decide on their sequence on the command line and just index
+the <tt class="docutils literal"><span class="pre">sys.argv</span></tt> list accordingly.
+Say the sequence is <span class="math">\(I\)</span>, <span class="math">\(a\)</span>, <span class="math">\(T\)</span>, <span class="math">\(\theta\)</span> followed by an
+arbitrary number of <span class="math">\(\Delta t\)</span> values. This code extract
+these <em>positional</em> command-line arguments:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">sys</span>
+<span class="n">I</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">a</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+<span class="n">T</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+<span class="n">dt_values</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">5</span><span class="p">:]]</span>
+</pre></div>
+</div>
+<div class="admonition-command-line-arguments-are-strings admonition">
+<p class="first admonition-title">Command-line arguments are strings</p>
+<p class="last">Note that all elements in <tt class="docutils literal"><span class="pre">sys.argv</span></tt> are string objects.
+If the values will enter mathematical computations, we need
+to explicitly convert the strings to numbers.</p>
+</div>
+<p>Instead of specifying the <span class="math">\(\theta\)</span> value, we could be a bit more
+sophisticated and let the user write the name of the scheme:
+<tt class="docutils literal"><span class="pre">BE</span></tt> for Backward Euler, <tt class="docutils literal"><span class="pre">FE</span></tt> for Forward Euler, and <tt class="docutils literal"><span class="pre">CN</span></tt>
+for Crank-Nicolson. Then we must map this string to the proper
+<span class="math">\(\theta\)</span> value, an operation elegantly done by a dictionary:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">scheme</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+<span class="n">scheme2theta</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;BE&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;CN&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s">&#39;FE&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+<span class="k">if</span> <span class="n">scheme</span> <span class="ow">in</span> <span class="n">scheme2theta</span><span class="p">:</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">scheme2theta</span><span class="p">[</span><span class="n">scheme</span><span class="p">]</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&#39;Invalid scheme name:&#39;</span><span class="p">,</span> <span class="n">scheme</span><span class="p">;</span> <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="option-value-pairs-on-the-command-line">
+<h2>Option-value pairs on the command line<a class="headerlink" href="#option-value-pairs-on-the-command-line" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><span class="target" id="index-5"></span><p id="index-6">Now we want specify option-value pairs on the command line,
+using <tt class="docutils literal"><span class="pre">--I</span></tt> for <tt class="docutils literal"><span class="pre">I</span></tt> (<span class="math">\(I\)</span>), <tt class="docutils literal"><span class="pre">--a</span></tt> for <tt class="docutils literal"><span class="pre">a</span></tt> (<span class="math">\(a\)</span>), <tt class="docutils literal"><span class="pre">--T</span></tt> for <tt class="docutils literal"><span class="pre">T</span></tt> (<span class="math">\(T\)</span>),
+<tt class="docutils literal"><span class="pre">--scheme</span></tt> for the scheme name (<tt class="docutils literal"><span class="pre">BE</span></tt>, <tt class="docutils literal"><span class="pre">FE</span></tt>, <tt class="docutils literal"><span class="pre">CN</span></tt>),
+and <tt class="docutils literal"><span class="pre">--dt</span></tt> for the sequence of <tt class="docutils literal"><span class="pre">dt</span></tt> (<span class="math">\(\Delta t\)</span>) values.
+Each parameter must have a sensible default value so
+that we specify the option on the command line only when the default
+value is not suitable. Here is a typical run:</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python decay.py --I 2.5 --dt 0.1 0.2 0.01 --a 0.4
+</pre></div>
+</div>
+<p>Observe the major advantage over positional command-line arguments:
+the input is much easier to read and much easier to write.
+With positional arguments it is easy to mess up the sequence of
+the input parameters and quite challenging to detect errors too,
+unless there are just a couple of arguments.</p>
+<p>Python&#8217;s <tt class="docutils literal"><span class="pre">ArgumentParser</span></tt> tool in the <tt class="docutils literal"><span class="pre">argparse</span></tt> module makes it easy
+to create a professional command-line interface to any program. The
+documentation of <a class="reference external" href="http://docs.python.org/library/argparse.html">ArgumentParser</a> demonstrates its
+versatile applications, so we shall here just list an example
+containing basic features. It always pays off to use <tt class="docutils literal"><span class="pre">ArgumentParser</span></tt>
+rather than trying to inspect and interpret <tt class="docutils literal"><span class="pre">sys.argv</span></tt> manually!</p>
+<p>The use of <tt class="docutils literal"><span class="pre">ArgumentParser</span></tt> typically involves three steps:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">argparse</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+
+<span class="c"># Step 1: add arguments</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--option_name&#39;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+
+<span class="c"># Step 2: interpret the command line</span>
+<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+<span class="c"># Step 3: extract values</span>
+<span class="n">value</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">option_name</span>
+</pre></div>
+</div>
+<p>A function for setting up all the options is handy:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">define_command_line_options</span><span class="p">():</span>
+    <span class="kn">import</span> <span class="nn">argparse</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s">&#39;--I&#39;</span><span class="p">,</span> <span class="s">&#39;--initial_condition&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;initial condition, u(0)&#39;</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;I&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s">&#39;--a&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s">&#39;coefficient in ODE&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;a&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s">&#39;--T&#39;</span><span class="p">,</span> <span class="s">&#39;--stop_time&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;end time of simulation&#39;</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;T&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s">&#39;--scheme&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;CN&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s">&#39;FE, BE, or CN&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s">&#39;--dt&#39;</span><span class="p">,</span> <span class="s">&#39;--time_step_values&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">],</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;time step values&#39;</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;dt&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;+&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;dt_values&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parser</span>
+</pre></div>
+</div>
+<p>Each command-line option is defined through the <tt class="docutils literal"><span class="pre">parser.add_argument</span></tt>
+method. Alternative options, like the short <tt class="docutils literal"><span class="pre">--I</span></tt> and the more
+explaining version <tt class="docutils literal"><span class="pre">--initial_condition</span></tt> can be defined. Other arguments
+are <tt class="docutils literal"><span class="pre">type</span></tt> for the Python object type, a default value, and a help
+string, which gets printed if the command-line argument <tt class="docutils literal"><span class="pre">-h</span></tt> or <tt class="docutils literal"><span class="pre">--help</span></tt> is
+included. The <tt class="docutils literal"><span class="pre">metavar</span></tt> argument specifies the value associated with
+the option when the help string is printed. For example, the option for
+<span class="math">\(I\)</span> has this help output:</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python decay_argparse.py -h
+  ...
+  --I I, --initial_condition I
+                        initial condition, u(0)
+  ...
+</pre></div>
+</div>
+<p>The structure of this output is</p>
+<div class="highlight-text"><div class="highlight"><pre>--I metavar, --initial_condition metavar
+                      help-string
+</pre></div>
+</div>
+<p>Finally, the <tt class="docutils literal"><span class="pre">--dt</span></tt> option demonstrates how to allow for more than one
+value (separated by blanks) through the <tt class="docutils literal"><span class="pre">nargs='+'</span></tt> keyword argument.
+After the command line is parsed, we get an object where the values of
+the options are stored as attributes. The attribute name is specified
+by the <tt class="docutils literal"><span class="pre">dist</span></tt> keyword argument, which for the <tt class="docutils literal"><span class="pre">--dt</span></tt> option is
+<tt class="docutils literal"><span class="pre">dt_values</span></tt>. Without the <tt class="docutils literal"><span class="pre">dest</span></tt> argument, the value of an option <tt class="docutils literal"><span class="pre">--opt</span></tt>
+is stored as the attribute <tt class="docutils literal"><span class="pre">opt</span></tt>.</p>
+<p>The code below demonstrates how to read the command line and extract
+the values for each option:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">read_command_line_argparse</span><span class="p">():</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">define_command_line_options</span><span class="p">()</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="n">scheme2theta</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;BE&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;CN&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s">&#39;FE&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">scheme2theta</span><span class="p">[</span><span class="n">args</span><span class="o">.</span><span class="n">scheme</span><span class="p">],</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">dt_values</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span>
+</pre></div>
+</div>
+<p>As seen, the values of the command-line options are available as
+attributes in <tt class="docutils literal"><span class="pre">args</span></tt>: <tt class="docutils literal"><span class="pre">args.opt</span></tt> holds the value of option <tt class="docutils literal"><span class="pre">--opt</span></tt>, unless
+we used the <tt class="docutils literal"><span class="pre">dest</span></tt> argument (as for <tt class="docutils literal"><span class="pre">--dt_values</span></tt>) for specifying the
+attribute name. The <tt class="docutils literal"><span class="pre">args.opt</span></tt> attribute has the object type specified
+by <tt class="docutils literal"><span class="pre">type</span></tt> (<tt class="docutils literal"><span class="pre">str</span></tt> by default).</p>
+<p>The making of the plot is not dependent on whether we read data from
+the command line as positional arguments or option-value pairs:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">experiment_compare_dt</span><span class="p">(</span><span class="n">option_value_pairs</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">dt_values</span> <span class="o">=</span> \
+       <span class="n">read_command_line_argparse</span><span class="p">()</span> <span class="k">if</span> <span class="n">option_value_pairs</span> <span class="k">else</span> \
+       <span class="n">read_command_line_positional</span><span class="p">()</span>
+
+    <span class="n">legends</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">dt</span> <span class="ow">in</span> <span class="n">dt_values</span><span class="p">:</span>
+        <span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
+        <span class="n">legends</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;dt=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">dt</span><span class="p">)</span>
+    <span class="n">t_e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1001</span><span class="p">)</span>       <span class="c"># very fine mesh for u_e</span>
+    <span class="n">u_e</span> <span class="o">=</span> <span class="n">exact_solution</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">u_e</span><span class="p">,</span> <span class="s">&#39;--&#39;</span><span class="p">)</span>            <span class="c"># dashed line for u_e</span>
+    <span class="n">legends</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;exact&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">legends</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s">&#39;upper right&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;theta=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">theta</span><span class="p">)</span>
+    <span class="n">plotfile</span> <span class="o">=</span> <span class="s">&#39;tmp&#39;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plotfile</span> <span class="o">+</span> <span class="s">&#39;.png&#39;</span><span class="p">);</span>  <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plotfile</span> <span class="o">+</span> <span class="s">&#39;.pdf&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="creating-a-graphical-web-user-interface">
+<h2>Creating a graphical web user interface<a class="headerlink" href="#creating-a-graphical-web-user-interface" title="Permalink to this headline">¶</a></h2>
+<p>The Python package <a class="reference external" href="https://github.com/hplgit/parampool">Parampool</a>
+can be used to automatically generate a web-based <em>graphical user interface</em>
+(GUI) for our simulation program. Although the programming technique
+dramatically simplifies the efforts to create a GUI, the forthcoming
+material on equipping our <tt class="docutils literal"><span class="pre">decay_mod</span></tt> module with a GUI is quite technical
+and of significantly less importance than knowing how to make
+a command-line interface.</p>
+<div class="section" id="making-a-compute-function">
+<h3>Making a compute function<a class="headerlink" href="#making-a-compute-function" title="Permalink to this headline">¶</a></h3>
+<p>The first step is to identify a function
+that performs the computations and that takes the necessary input
+variables as arguments. This is called the <em>compute function</em> in
+Parampool terminology. The purpose of this function is to take
+values of <span class="math">\(I\)</span>, <span class="math">\(a\)</span>, <span class="math">\(T\)</span> together with a sequence of <span class="math">\(\Delta t\)</span> values
+and a sequence of <span class="math">\(\theta\)</span> and plot the numerical against the
+exact solution for each pair of <span class="math">\((\theta, \Delta t)\)</span>.
+The plots can be arranged as a table with the columns being scheme type
+(<span class="math">\(\theta\)</span> value) and the rows reflecting the discretization parameter
+(<span class="math">\(\Delta t\)</span> value). Figure <a class="reference internal" href="#softeng1-fig-gui"><em>Automatically generated graphical web interface</em></a> displays of the
+graphical web interface may look like after results are computed
+(there are <span class="math">\(3\times 3\)</span> plots in the GUI, but only <span class="math">\(2\times 2\)</span> are
+visible in the figure).</p>
+<div class="figure" id="softeng1-fig-gui">
+<a class="reference internal image-reference" href="_images/web_GUI.png"><img alt="_images/web_GUI.png" src="_images/web_GUI.png" style="width: 800px;" /></a>
+<p class="caption"><em>Automatically generated graphical web interface</em></p>
+</div>
+<p>To tell Parampool what type of input data we have,
+we assign default values of the right type to all arguments in the
+compute function, here called <tt class="docutils literal"><span class="pre">main_GUI</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">main_GUI</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">a</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span>
+             <span class="n">dt_values</span><span class="o">=</span><span class="p">[</span><span class="mf">1.25</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span>
+             <span class="n">theta_values</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">]):</span>
+</pre></div>
+</div>
+<p>The compute function must return the HTML code we want for displaying
+the result in a web page. Here we want to show a
+table of plots.
+Assume for now that the HTML code for one plot and the value of the
+norm of the error can be computed by some other function <tt class="docutils literal"><span class="pre">compute4web</span></tt>.
+The <tt class="docutils literal"><span class="pre">main_GUI</span></tt> function can then loop over <span class="math">\(\Delta t\)</span> and <span class="math">\(\theta\)</span>
+values and put each plot in an HTML table. Appropriate code goes like</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">main_GUI</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">a</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span>
+             <span class="n">dt_values</span><span class="o">=</span><span class="p">[</span><span class="mf">1.25</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span>
+             <span class="n">theta_values</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">]):</span>
+    <span class="c"># Build HTML code for web page. Arrange plots in columns</span>
+    <span class="c"># corresponding to the theta values, with dt down the rows</span>
+    <span class="n">theta2name</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s">&#39;FE&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s">&#39;BE&#39;</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">:</span> <span class="s">&#39;CN&#39;</span><span class="p">}</span>
+    <span class="n">html_text</span> <span class="o">=</span> <span class="s">&#39;&lt;table&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+    <span class="k">for</span> <span class="n">dt</span> <span class="ow">in</span> <span class="n">dt_values</span><span class="p">:</span>
+        <span class="n">html_text</span> <span class="o">+=</span> <span class="s">&#39;&lt;tr&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+        <span class="k">for</span> <span class="n">theta</span> <span class="ow">in</span> <span class="n">theta_values</span><span class="p">:</span>
+            <span class="n">E</span><span class="p">,</span> <span class="n">html</span> <span class="o">=</span> <span class="n">compute4web</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+            <span class="n">html_text</span> <span class="o">+=</span> <span class="s">&quot;&quot;&quot;</span>
+<span class="s">&lt;td&gt;</span>
+<span class="s">&lt;center&gt;&lt;b&gt;</span><span class="si">%s</span><span class="s">, dt=</span><span class="si">%g</span><span class="s">, error: </span><span class="si">%.3E</span><span class="s">&lt;/b&gt;&lt;/center&gt;&lt;br&gt;</span>
+<span class="si">%s</span><span class="s"></span>
+<span class="s">&lt;/td&gt;</span>
+<span class="s">&quot;&quot;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">theta2name</span><span class="p">[</span><span class="n">theta</span><span class="p">],</span> <span class="n">dt</span><span class="p">,</span> <span class="n">E</span><span class="p">,</span> <span class="n">html</span><span class="p">)</span>
+        <span class="n">html_text</span> <span class="o">+=</span> <span class="s">&#39;&lt;/tr&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+    <span class="n">html_text</span> <span class="o">+=</span> <span class="s">&#39;&lt;/table&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+    <span class="k">return</span> <span class="n">html_text</span>
+</pre></div>
+</div>
+<p>Making one plot is done in <tt class="docutils literal"><span class="pre">compute4web</span></tt>. The statements should be
+straightforward from earlier examples, but there is one new feature:
+we use a tool in Parampool to embed the PNG code for a plot file
+directly in an HTML image tag. The details are hidden from the
+programmer, who can just rely on
+relevant HTML code in the string <tt class="docutils literal"><span class="pre">html_text</span></tt>. The function looks like</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">compute4web</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run a case with the solver, compute error measure,</span>
+<span class="sd">    and plot the numerical and exact solutions in a PNG</span>
+<span class="sd">    plot whose data are embedded in an HTML image tag.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+    <span class="n">u_e</span> <span class="o">=</span> <span class="n">exact_solution</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="n">u_e</span> <span class="o">-</span> <span class="n">u</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dt</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">t_e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1001</span><span class="p">)</span>    <span class="c"># fine mesh for u_e</span>
+    <span class="n">u_e</span> <span class="o">=</span> <span class="n">exact_solution</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span>   <span class="n">u</span><span class="p">,</span>   <span class="s">&#39;r--o&#39;</span><span class="p">)</span>       <span class="c"># red dashes w/circles</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">u_e</span><span class="p">,</span> <span class="s">&#39;b-&#39;</span><span class="p">)</span>         <span class="c"># blue line for exact sol.</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s">&#39;numerical&#39;</span><span class="p">,</span> <span class="s">&#39;exact&#39;</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;t&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;u&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;theta=</span><span class="si">%g</span><span class="s">, dt=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">dt</span><span class="p">))</span>
+    <span class="c"># Save plot to HTML img tag with PNG code as embedded data</span>
+    <span class="kn">from</span> <span class="nn">parampool.utils</span> <span class="kn">import</span> <span class="n">save_png_to_str</span>
+    <span class="n">html_text</span> <span class="o">=</span> <span class="n">save_png_to_str</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">plotwidth</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">E</span><span class="p">,</span> <span class="n">html_text</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="generating-the-user-interface">
+<h3>Generating the user interface<a class="headerlink" href="#generating-the-user-interface" title="Permalink to this headline">¶</a></h3>
+<p>The web GUI is automatically generated by
+the following code, placed in a file <a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/decay_GUI_generate.py">decay_GUI_generate.py</a></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">parampool.generator.flask</span> <span class="kn">import</span> <span class="n">generate</span>
+<span class="kn">from</span> <span class="nn">decay</span> <span class="kn">import</span> <span class="n">main_GUI</span>
+<span class="n">generate</span><span class="p">(</span><span class="n">main_GUI</span><span class="p">,</span>
+         <span class="n">filename_controller</span><span class="o">=</span><span class="s">&#39;decay_GUI_controller.py&#39;</span><span class="p">,</span>
+         <span class="n">filename_template</span><span class="o">=</span><span class="s">&#39;decay_GUI_view.py&#39;</span><span class="p">,</span>
+         <span class="n">filename_model</span><span class="o">=</span><span class="s">&#39;decay_GUI_model.py&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Running the <tt class="docutils literal"><span class="pre">decay_GUI_generate.py</span></tt> program results in three new
+files whose names are specified in the call to <tt class="docutils literal"><span class="pre">generate</span></tt>:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><tt class="docutils literal"><span class="pre">decay_GUI_model.py</span></tt> defines HTML widgets to be used to set
+input data in the web interface,</li>
+<li><tt class="docutils literal"><span class="pre">templates/decay_GUI_views.py</span></tt> defines the layout of the web page,</li>
+<li><tt class="docutils literal"><span class="pre">decay_GUI_controller.py</span></tt> runs the web application.</li>
+</ol>
+</div></blockquote>
+<p>We only need to run the last program, and there is no need to look into
+these files.</p>
+</div>
+<div class="section" id="running-the-web-application">
+<h3>Running the web application<a class="headerlink" href="#running-the-web-application" title="Permalink to this headline">¶</a></h3>
+<p>The web GUI is started by</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python decay_GUI_controller.py
+</pre></div>
+</div>
+<p>Open a web browser at the location <tt class="docutils literal"><span class="pre">127.0.0.1:5000</span></tt>. Input fields for
+<tt class="docutils literal"><span class="pre">I</span></tt>, <tt class="docutils literal"><span class="pre">a</span></tt>, <tt class="docutils literal"><span class="pre">T</span></tt>, <tt class="docutils literal"><span class="pre">dt_values</span></tt>, and <tt class="docutils literal"><span class="pre">theta_values</span></tt> are presented.  Figure
+<a class="reference internal" href="#softeng1-fig-gui"><em>Automatically generated graphical web interface</em></a> shows a part of the resulting page if we run
+with the default values for the input parameters.
+With the techniques demonstrated here, one can
+easily create a tailored web GUI for a particular type of application
+and use it to interactively explore physical and numerical effects.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">User interfaces</a><ul>
+<li><a class="reference internal" href="#command-line-arguments">Command-line arguments</a></li>
+<li><a class="reference internal" href="#positional-command-line-arguments">Positional command-line arguments</a></li>
+<li><a class="reference internal" href="#option-value-pairs-on-the-command-line">Option-value pairs on the command line</a></li>
+<li><a class="reference internal" href="#creating-a-graphical-web-user-interface">Creating a graphical web user interface</a><ul>
+<li><a class="reference internal" href="#making-a-compute-function">Making a compute function</a></li>
+<li><a class="reference internal" href="#generating-the-user-interface">Generating the user interface</a></li>
+<li><a class="reference internal" href="#running-the-web-application">Running the web application</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="._main_softeng1001.html"
+                        title="previous chapter">Basic implementations</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_softeng1003.html"
+                        title="next chapter">Tests for verifying implementations</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_softeng1002.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_softeng1003.html" title="Tests for verifying implementations"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="._main_softeng1001.html" title="Basic implementations"
+             >previous</a> |</li>
+        <li><a href="index.html">Scientific software engineering with a simple ODE model as example</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

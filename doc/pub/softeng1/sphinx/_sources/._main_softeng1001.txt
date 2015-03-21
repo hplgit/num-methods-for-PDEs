@@ -67,9 +67,18 @@ A first, quick implementation
 Solving :eq:`softeng1:utheta` in a program is very straightforward:
 just make a loop over :math:`n` and evaluate the formula. The :math:`u(t_n`)
 values for discrete :math:`n` can be stored in an array. This makes it easy
-to also plot the solution. We may with little work add the exact
-solution :math:`u(t)=Ie^{-at}` to the plot. A typical program is listed
-below.
+to also plot the solution. It would be natural to also add
+the exact
+solution curve :math:`u(t)=Ie^{-at}` to the plot.
+
+Traditionally, a language like Fortran or C would be adopted for
+implementation, but the enormous popularity of MATLAB in the
+computational science community over the last two decades, makes
+a high-level MATLAB-style implementation natural. Below is such
+a code, written in Python with a syntax close to MATLAB and with
+a programming style heavenly influenced by "MATLAB scripting".
+A student or engineer would quickly put together statements like
+this:
 
 .. code-block:: python
 
@@ -101,13 +110,13 @@ below.
         ylabel('y')
         show()
 
-This program is very easy to read, and as long it is correct, many will
-claim that it has sufficient quality. Nevertheless, this program suffers
-from serious bad habits that might be crucial for writing correct
+This program is easy to read, and as long it is correct, many will
+claim that it has sufficient quality. Nevertheless, the program suffers
+from serious flaws that quickly become crucial for writing correct
 programs for more complicated mathematical problems. First we list
-two really serious issues:
+two serious bad habits:
 
-1. The notation in the program does not correspond exactly to
+1. The notation in the program does not correspond *exactly* to
    the notation in the mathematical problem: the solution is called
    ``y`` and corresponds to :math:`u` in the mathematical description,
    the variable ``A`` corresponds to the mathematical parameter :math:`I`,
@@ -115,7 +124,13 @@ two really serious issues:
 
 2. There are no comments in the program.
 
-Fixing notation and comments results in
+.. _softeng1:basic:impl2:
+
+A more decent, flat program
+---------------------------
+
+A code with more satisfactory quality arises from
+fixing the notation and adding comments:
 
 .. code-block:: python
 
@@ -152,7 +167,7 @@ Fixing notation and comments results in
         show()
 
 At first sight, this is a good starting point for playing around
-with the example: we can just change parameters and rerun.
+with the mathematical problem: we can just change parameters and rerun.
 Let us embed the program in an IPython notebook such that we
 can get the plot up in the notebook, see Figure :ref:`softeng1:ipynb`.
 
@@ -167,21 +182,29 @@ Although such an interactive session is good for initial exploration,
 one will soon extend the experiments and start developing the code
 further. Say we want to compare :math:`\theta =0,1,0.5` in the same
 plot. This extension requires changes all over the code and quickly
-lead to errors. To do something serious with
-this program we have to break it into smaller pieces and make sure
-each piece is well tested, is general, and can be reused in new
-contexts without changes.
-The next natural step is therefore to isolate the numerical computations and
-the visualization in separate functions.
+lead to errors. To do something serious with this program we have to
+break it into smaller pieces and make sure each piece is well tested,
+is general, and can be reused in new contexts without changes.  The
+next natural step is therefore to isolate the numerical computations
+and the visualization in separate functions.
 
 .. _softeng1:basic:func:
 
-Isolating the numerical algorithm in a function
------------------------------------------------
+Implementing the numerical algorithm in a function
+--------------------------------------------------
 
 The solution formula :eq:`softeng1:utheta` is completely general and
-should be available as a Python function with all input data as
-function arguments and all output data returned to the calling code:
+should be available as a Python function ``solver`` with all input data as
+function arguments and all output data returned to the calling code.
+With this ``solver`` function we can then solve all types of problems
+:eq:`softeng1:ode`-:eq:`softeng1:u0`
+by an easy-to-read one-line statement:
+
+.. code-block:: python
+
+        u, t = solver(I=1, a=2, T=4, dt=0.2, theta=0.5)
+
+The implementation of the ``solver`` function in Python goes like this:
 
 .. code-block:: python
 
@@ -218,14 +241,6 @@ function arguments and all output data returned to the calling code:
 
 
 
-
-With the aid of the ``solver`` function, we can solve any problem
-of the type :eq:`softeng1:ode`-:eq:`softeng1:u0` by a one-line
-statement:
-
-.. code-block:: python
-
-        u, t = solver(I=1, a=2, T=4, dt=0.2, theta=0.5)
 
 One of the most serious flaws in computational work is to have several
 slightly different implementations of the same computational algorithms
@@ -266,7 +281,6 @@ do
 .. code-block:: python
 
         from decay import solver
-        # Solve a decay problem
         u, t = solver(I=1, a=2, T=4, dt=0.2, theta=0.5)
 
 or prefix function names by the module name:
@@ -274,7 +288,6 @@ or prefix function names by the module name:
 .. code-block:: python
 
         import decay
-        # Solve a decay problem
         u, t = decay.solver(I=1, a=2, T=4, dt=0.2, theta=0.5)
 
 The requirements for a program to qualify for a module are simple:
@@ -327,7 +340,7 @@ and lead to the desired printing.
 .. admonition:: All coming functions are placed in a module
 
    The many functions to be explained in the following text are
-   put in one module file `decay.py <http://tinyurl.com/nm5587k/decay/decay.py>`__.
+   put in one module file `decay.py <http://tinyurl.com/nm5587k/softeng1/decay.py>`__.
 
 
 
@@ -438,10 +451,6 @@ have evolved in the Python scientific computing community:
         u_e = I*np.exp(-a*t)
         plt.plot(t, u_e)
 
-A version of the ``decay_mod`` module where we use the ``np`` and ``plt``
-prefixes is found in the file
-`decay_mod_prefix.py <http://tinyurl.com/nm5587k/softeng1/decay_mod_prefix.py>`__.
-
 The downside of prefixing functions by the module name is that
 mathematical expressions like :math:`e^{-at}\sin(2\pi t)` get
 cluttered with module names,
@@ -519,7 +528,7 @@ Comparing numerical schemes in one plot
 ---------------------------------------
 
 Let us specifically demonstrate one extension of the
-flat program in Section ref
+flat program in the section :ref:`softeng1:basic:impl1`
 that would require substantial editing of the flat code, while
 in a structured module, we can simply add a new function without
 affecting the existing code and with reusing the implementation

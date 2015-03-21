@@ -115,9 +115,17 @@ the recursion with a value for <span class="math">\(u^0\)</span>.</p>
 <p>Solving <a href="#equation-softeng1:utheta">(3)</a> in a program is very straightforward:
 just make a loop over <span class="math">\(n\)</span> and evaluate the formula. The <span class="math">\(u(t_n\)</span>)
 values for discrete <span class="math">\(n\)</span> can be stored in an array. This makes it easy
-to also plot the solution. We may with little work add the exact
-solution <span class="math">\(u(t)=Ie^{-at}\)</span> to the plot. A typical program is listed
-below.</p>
+to also plot the solution. It would be natural to also add
+the exact
+solution curve <span class="math">\(u(t)=Ie^{-at}\)</span> to the plot.</p>
+<p>Traditionally, a language like Fortran or C would be adopted for
+implementation, but the enormous popularity of MATLAB in the
+computational science community over the last two decades, makes
+a high-level MATLAB-style implementation natural. Below is such
+a code, written in Python with a syntax close to MATLAB and with
+a programming style heavenly influenced by &#8220;MATLAB scripting&#8221;.
+A student or engineer would quickly put together statements like
+this:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="o">*</span>
 
@@ -147,20 +155,24 @@ below.</p>
 <span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>This program is very easy to read, and as long it is correct, many will
-claim that it has sufficient quality. Nevertheless, this program suffers
-from serious bad habits that might be crucial for writing correct
+<p>This program is easy to read, and as long it is correct, many will
+claim that it has sufficient quality. Nevertheless, the program suffers
+from serious flaws that quickly become crucial for writing correct
 programs for more complicated mathematical problems. First we list
-two really serious issues:</p>
+two serious bad habits:</p>
 <ol class="arabic simple">
-<li>The notation in the program does not correspond exactly to
+<li>The notation in the program does not correspond <em>exactly</em> to
 the notation in the mathematical problem: the solution is called
 <tt class="docutils literal"><span class="pre">y</span></tt> and corresponds to <span class="math">\(u\)</span> in the mathematical description,
 the variable <tt class="docutils literal"><span class="pre">A</span></tt> corresponds to the mathematical parameter <span class="math">\(I\)</span>,
 <tt class="docutils literal"><span class="pre">N</span></tt> in the program is called <span class="math">\(N_t\)</span> in the mathematics.</li>
 <li>There are no comments in the program.</li>
 </ol>
-<p>Fixing notation and comments results in</p>
+</div>
+<div class="section" id="a-more-decent-flat-program">
+<span id="softeng1-basic-impl2"></span><h2>A more decent, flat program<a class="headerlink" href="#a-more-decent-flat-program" title="Permalink to this headline">¶</a></h2>
+<p>A code with more satisfactory quality arises from
+fixing the notation and adding comments:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="o">*</span>
 
@@ -195,7 +207,7 @@ the variable <tt class="docutils literal"><span class="pre">A</span></tt> corres
 </pre></div>
 </div>
 <p>At first sight, this is a good starting point for playing around
-with the example: we can just change parameters and rerun.
+with the mathematical problem: we can just change parameters and rerun.
 Let us embed the program in an IPython notebook such that we
 can get the plot up in the notebook, see Figure <a class="reference internal" href="#softeng1-ipynb"><em>Flat experimental code in a notebook</em></a>.</p>
 <div class="figure" id="softeng1-ipynb">
@@ -206,18 +218,24 @@ can get the plot up in the notebook, see Figure <a class="reference internal" hr
 one will soon extend the experiments and start developing the code
 further. Say we want to compare <span class="math">\(\theta =0,1,0.5\)</span> in the same
 plot. This extension requires changes all over the code and quickly
-lead to errors. To do something serious with
-this program we have to break it into smaller pieces and make sure
-each piece is well tested, is general, and can be reused in new
-contexts without changes.
-The next natural step is therefore to isolate the numerical computations and
-the visualization in separate functions.</p>
+lead to errors. To do something serious with this program we have to
+break it into smaller pieces and make sure each piece is well tested,
+is general, and can be reused in new contexts without changes.  The
+next natural step is therefore to isolate the numerical computations
+and the visualization in separate functions.</p>
 </div>
-<div class="section" id="isolating-the-numerical-algorithm-in-a-function">
-<span id="softeng1-basic-func"></span><h2>Isolating the numerical algorithm in a function<a class="headerlink" href="#isolating-the-numerical-algorithm-in-a-function" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="implementing-the-numerical-algorithm-in-a-function">
+<span id="softeng1-basic-func"></span><h2>Implementing the numerical algorithm in a function<a class="headerlink" href="#implementing-the-numerical-algorithm-in-a-function" title="Permalink to this headline">¶</a></h2>
 <p>The solution formula <a href="#equation-softeng1:utheta">(3)</a> is completely general and
-should be available as a Python function with all input data as
-function arguments and all output data returned to the calling code:</p>
+should be available as a Python function <tt class="docutils literal"><span class="pre">solver</span></tt> with all input data as
+function arguments and all output data returned to the calling code.
+With this <tt class="docutils literal"><span class="pre">solver</span></tt> function we can then solve all types of problems
+<a href="#equation-softeng1:ode">(1)</a>-<a href="#equation-softeng1:u0">(2)</a>
+by an easy-to-read one-line statement:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The implementation of the <tt class="docutils literal"><span class="pre">solver</span></tt> function in Python goes like this:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Solve u&#39;=-a*u, u(0)=I, for t in (0,T] with steps of dt.&quot;&quot;&quot;</span>
     <span class="n">dt</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>               <span class="c"># avoid integer division</span>
@@ -244,12 +262,6 @@ function header.</p>
 <p class="last">Note that we in the <tt class="docutils literal"><span class="pre">solver</span></tt> function explicitly covert <tt class="docutils literal"><span class="pre">dt</span></tt> to a
 <tt class="docutils literal"><span class="pre">float</span></tt> object. If not, the updating formula for <tt class="docutils literal"><span class="pre">u[n+1]</span></tt> may evaluate
 to zero because of integer division when <tt class="docutils literal"><span class="pre">theta</span></tt>, <tt class="docutils literal"><span class="pre">a</span></tt>, and <tt class="docutils literal"><span class="pre">dt</span></tt> are integers!</p>
-</div>
-<p>With the aid of the <tt class="docutils literal"><span class="pre">solver</span></tt> function, we can solve any problem
-of the type <a href="#equation-softeng1:ode">(1)</a>-<a href="#equation-softeng1:u0">(2)</a> by a one-line
-statement:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
-</pre></div>
 </div>
 <p>One of the most serious flaws in computational work is to have several
 slightly different implementations of the same computational algorithms
@@ -280,13 +292,11 @@ programs too. For example, if our <tt class="docutils literal"><span class="pre"
 module <tt class="docutils literal"><span class="pre">decay</span></tt> in a module file <tt class="docutils literal"><span class="pre">decay.py</span></tt>, we can in any program
 do</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">decay</span> <span class="kn">import</span> <span class="n">solver</span>
-<span class="c"># Solve a decay problem</span>
 <span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>or prefix function names by the module name:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">decay</span>
-<span class="c"># Solve a decay problem</span>
 <span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">decay</span><span class="o">.</span><span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -330,7 +340,7 @@ and lead to the desired printing.</p>
 <div class="admonition-all-coming-functions-are-placed-in-a-module admonition">
 <p class="first admonition-title">All coming functions are placed in a module</p>
 <p class="last">The many functions to be explained in the following text are
-put in one module file <a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay.py">decay.py</a>.</p>
+put in one module file <a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/decay.py">decay.py</a>.</p>
 </div>
 <p>What more than the <tt class="docutils literal"><span class="pre">solver</span></tt> function is needed in our <tt class="docutils literal"><span class="pre">decay</span></tt> module
 to do everything we did in the previous, flat program?
@@ -417,9 +427,6 @@ have evolved in the Python scientific computing community:</p>
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u_e</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>A version of the <tt class="docutils literal"><span class="pre">decay_mod</span></tt> module where we use the <tt class="docutils literal"><span class="pre">np</span></tt> and <tt class="docutils literal"><span class="pre">plt</span></tt>
-prefixes is found in the file
-<a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/decay_mod_prefix.py">decay_mod_prefix.py</a>.</p>
 <p>The downside of prefixing functions by the module name is that
 mathematical expressions like <span class="math">\(e^{-at}\sin(2\pi t)\)</span> get
 cluttered with module names,</p>
@@ -488,7 +495,7 @@ mathematical formulas:</p>
 <div class="section" id="comparing-numerical-schemes-in-one-plot">
 <span id="softeng1-basic-experiment2"></span><h2>Comparing numerical schemes in one plot<a class="headerlink" href="#comparing-numerical-schemes-in-one-plot" title="Permalink to this headline">¶</a></h2>
 <p>Let us specifically demonstrate one extension of the
-flat program in Section ref
+flat program in the section <a class="reference internal" href="#softeng1-basic-impl1"><em>A first, quick implementation</em></a>
 that would require substantial editing of the flat code, while
 in a structured module, we can simply add a new function without
 affecting the existing code and with reusing the implementation
@@ -549,7 +556,8 @@ in the test block, or you can run the program from IPython instead:</p>
 <li><a class="reference internal" href="#">Basic implementations</a><ul>
 <li><a class="reference internal" href="#mathematical-problem-and-solution-technique">Mathematical problem and solution technique</a></li>
 <li><a class="reference internal" href="#a-first-quick-implementation">A first, quick implementation</a></li>
-<li><a class="reference internal" href="#isolating-the-numerical-algorithm-in-a-function">Isolating the numerical algorithm in a function</a></li>
+<li><a class="reference internal" href="#a-more-decent-flat-program">A more decent, flat program</a></li>
+<li><a class="reference internal" href="#implementing-the-numerical-algorithm-in-a-function">Implementing the numerical algorithm in a function</a></li>
 <li><a class="reference internal" href="#making-a-module">Making a module</a></li>
 <li><a class="reference internal" href="#prefixing-imported-functions-by-the-module-name">Prefixing imported functions by the module name</a></li>
 <li><a class="reference internal" href="#comparing-numerical-schemes-in-one-plot">Comparing numerical schemes in one plot</a></li>

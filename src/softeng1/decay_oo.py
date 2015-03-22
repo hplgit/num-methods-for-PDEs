@@ -1,30 +1,31 @@
+import numpy as np
 
-class Parameters:
+class Parameters(object):
     def __init__(self):
         """
-        Subclasses must initialize self.prms with
-        parameters and default values, self.types with
+        Subclasses must initialize self.prm with
+        parameters and default values, self.type with
         the corresponding types, and self.help with
         the corresponding descriptions of parameters.
-        self.types and self.help are optional, but
+        self.type and self.help are optional, but
         self.prms must be complete and contain all parameters.
         """
         pass
 
     def ok(self):
-        """Check if attr. prms, types, and help are defined."""
-        if hasattr(self, 'prms') and \
-           isinstance(self.prms, dict) and \
-           hasattr(self, 'types') and \
-           isinstance(self.types, dict) and \
+        """Check if attr. prm, type, and help are defined."""
+        if hasattr(self, 'prm') and \
+           isinstance(self.prm, dict) and \
+           hasattr(self, 'type') and \
+           isinstance(self.type, dict) and \
            hasattr(self, 'help') and \
            isinstance(self.help, dict):
             return True
         else:
             raise ValueError(
                 'The constructor in class %s does not '\
-                'initialize the dictionaries\n'\
-                'self.prms, self.types, self.help.' %
+                'initialize the\ndictionaries '\
+                'self.prm, self.type, self.help!' %
                 self.__class__.__name__)
 
     def _illegal_parameter(self, name):
@@ -32,20 +33,35 @@ class Parameters:
         raise ValueError(
             'parameter "%s" is not registered.\nLegal '\
             'parameters are\n%s' %
-            (name, ' '.join(list(self.prms.keys()))))
+            (name, ' '.join(list(self.prm.keys()))))
 
     def set(self, **parameters):
+        """Set one or more parameters."""
         for name in parameters:
-            if name in self.prms:
-                self.prms[name] = parameters[name]
+            if name in self.prm:
+                self.prm[name] = parameters[name]
             else:
                 self._illegal_parameter(name)
 
     def get(self, name):
-        if name in self.prms:
-            return self.prms[name]
+        """Get one or more parameter values."""
+        if isinstance(name, (list,tuple)):   # get many?
+            for n in name:
+                if n not in self.prm:
+                    self._illegal_parameter(name)
+            return [self.prm[n] for n in name]
         else:
-            self._illegal_parameter(name)
+            if name not in self.prm:
+                self._illegal_parameter(name)
+            return self.prm[name]
+
+    def __getitem__(self, name):
+        """Allow obj[name] indexing to look up a parameter."""
+        return self.get(name)
+
+    def __setitem__(self, name, value):
+        """Allow obj[name] = valye syntax to assign a parameter's value."""
+        return self.set(name=value)
 
     def define_command_line_options(self, parser=None):
         self.ok()
@@ -53,8 +69,8 @@ class Parameters:
             import argparse
             parser = argparse.ArgumentParser()
 
-        for name in self.prms:
-            tp = self.types[name] if name in self.types else str
+        for name in self.prm:
+            tp = self.type[name] if name in self.type else str
             help = self.help[name] if name in self.help else None
             parser.add_argument(
                 '--' + name, default=self.get(name), metavar=name,
@@ -63,8 +79,8 @@ class Parameters:
         return parser
 
     def init_from_command_line(self, args):
-        for name in self.prms:
-            self.prms[name] = getattr(args, name)
+        for name in self.prm:
+            self.prm[name] = getattr(args, name)
 
 
 class Problem(Parameters):
@@ -80,10 +96,14 @@ class Problem(Parameters):
                          T='end time of simulation')
 
     def u_exact(self, t):
-        I, a = self.get('I'), self.get('a')
+        I, a = self['I a'.split()]
         return I*np.exp(-a*t)
 
 class Solver(Parameters):
+    """
+    Numerical parameters and algorithm for solving u'=-au by the
+    theta rule.
+    """
     def __init__(self, problem):
         self.problem = problem
         self.prm  = dict(dt=0.5, theta=0.5)
@@ -92,13 +112,10 @@ class Solver(Parameters):
                          theta='time discretization parameter')
 
     def solve(self):
-        from decay_mod import solver
-        self.u, self.t = solver(
-            self.problem.get('I'),
-            self.problem.get('a'),
-            self.problem.get('T'),
-            self.get('dt'),
-            self.get('theta'))
+        from decay import solver
+        I, a, T = self.problem['I a T'.split()]
+        dt, theta = self['dt theta'.split()]
+        self.u, self.t = solver(I, a, T, dt, theta)
 
     def error(self):
         try:
@@ -122,21 +139,20 @@ def experiment_classes():
 
     # Solve and plot
     solver.solve()
+    u, t = solver.u, solver.t
+    print 'Error norm:', solver.error()
+
     import matplotlib.pyplot as plt
-    t_e = np.linspace(0, T, 1001)    # very fine mesh for u_e
+    t_e = np.linspace(0, problem['T'], 1001)    # very fine mesh for u_e
     u_e = problem.u_exact(t_e)
 
     plt.plot(t,   u,   'r--o')       # dashed red line with circles
     plt.plot(t_e, u_e, 'b-')         # blue line for u_e
-    plt.legend(['numerical, theta=%g' % theta, 'exact'])
+    plt.legend(['numerical, theta=%g' % solver['theta'], 'exact'])
     plt.xlabel('t')
     plt.ylabel('u')
     plotfile = 'tmp'
     plt.savefig(plotfile + '.png');  plt.savefig(plotfile + '.pdf')
-
-    error = problem.u_exact(t) - u
-    E = np.sqrt(dt*np.sum(error**2))
-    print 'Error norm:', E
     plt.show()
 
 if __name__ == '__main__':

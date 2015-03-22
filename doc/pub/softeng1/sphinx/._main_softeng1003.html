@@ -195,8 +195,8 @@ design and write the unit tests first and <em>then</em> implement the functions!
 unit testing. The units is naturally larger than in non-scientific
 software. Very often the solution procedure of a mathematical problem
 identifies a unit, such as our <tt class="docutils literal"><span class="pre">solver</span></tt> function.</p>
-<span class="target" id="index-7"></span><div class="section" id="two-recommended-test-frameworks-nose-and-pytest">
-<span id="index-8"></span><h3>Two recommended test frameworks: nose and pytest<a class="headerlink" href="#two-recommended-test-frameworks-nose-and-pytest" title="Permalink to this headline">¶</a></h3>
+<span class="target" id="index-7"></span><div class="section" id="two-python-test-frameworks-nose-and-pytest">
+<span id="index-8"></span><h3>Two Python test frameworks: nose and pytest<a class="headerlink" href="#two-python-test-frameworks-nose-and-pytest" title="Permalink to this headline">¶</a></h3>
 <p>Python offers two very easy-to-use software frameworks for implementing
 unit tests: nose and pytest. These work (almost) in the same way,
 but my recommendation is to go for pytest.</p>
@@ -213,12 +213,12 @@ that follows three rules:</p>
 </ol>
 </div></blockquote>
 <p>A specific example might be illustrative before proceeding.
-Given a function that doubles the argument,</p>
+We have the following function that we want to test:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">double</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
     <span class="k">return</span> <span class="mi">2</span><span class="o">*</span><span class="n">n</span>
 </pre></div>
 </div>
-<p>a corresponding test function may look like this:</p>
+<p>The corresponding test function may look like this:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_double</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Test that double(n) works for one specific n.&quot;&quot;&quot;</span>
     <span class="n">n</span> <span class="o">=</span> <span class="mi">4</span>
@@ -228,11 +228,11 @@ Given a function that doubles the argument,</p>
         <span class="k">raise</span> <span class="ne">AssertionError</span>
 </pre></div>
 </div>
-<p>The last two lines, however, are never written like this in unit tests.
+<p>The last two lines, however, are never written like this in test functions.
 Instead, use Python&#8217;s <tt class="docutils literal"><span class="pre">assert</span></tt> statement: <tt class="docutils literal"><span class="pre">assert</span> <span class="pre">success,</span> <span class="pre">msg</span></tt>, where
-<tt class="docutils literal"><span class="pre">success</span></tt> is a boolean variable, here <tt class="docutils literal"><span class="pre">False</span></tt> if the test fails, and
+<tt class="docutils literal"><span class="pre">success</span></tt> is a boolean variable, which is <tt class="docutils literal"><span class="pre">False</span></tt> if the test fails, and
 <tt class="docutils literal"><span class="pre">msg</span></tt> is <em>an optional</em> message string that is printed when the test fails.
-In detail, the test function looks like</p>
+A better version of the test function is therefore</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_double</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Test that double(n) works for one specific n.&quot;&quot;&quot;</span>
     <span class="n">n</span> <span class="o">=</span> <span class="mi">4</span>
@@ -247,8 +247,11 @@ In detail, the test function looks like</p>
 <div class="section" id="comparison-of-real-numbers">
 <h3>Comparison of real numbers<a class="headerlink" href="#comparison-of-real-numbers" title="Permalink to this headline">¶</a></h3>
 <p>In scientific computing we very often have to deal with real numbers and
-round-off errors so the <tt class="docutils literal"><span class="pre">==</span></tt> operator must be replaced by a comparison
-within a tolerance. Consider testing this function instead,</p>
+finite precision arithmetics (round-off errors)
+so the <tt class="docutils literal"><span class="pre">==</span></tt> operator is not suitable for checking that
+a test passes. Instead, we must be replace <tt class="docutils literal"><span class="pre">==</span></tt> by a comparison
+based on a tolerance. Here is a slightly different function that
+we want to test:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">third</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">x</span><span class="o">/</span><span class="mf">3.</span>
 </pre></div>
@@ -256,26 +259,31 @@ within a tolerance. Consider testing this function instead,</p>
 <p>We write a test function where the expected result is computed as
 <span class="math">\(\frac{1}{3}x\)</span> rather than <span class="math">\(x/3\)</span>:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_third</span><span class="p">():</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="mf">0.1</span>
-    <span class="n">expected</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="n">x</span>
-    <span class="n">computed</span> <span class="o">=</span> <span class="n">third</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-    <span class="n">success</span> <span class="o">=</span> <span class="n">expected</span> <span class="o">==</span> <span class="n">computed</span>
-    <span class="k">assert</span> <span class="n">success</span>
+    <span class="sd">&quot;&quot;&quot;Check that third(x) works for many x values.&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">21</span><span class="p">):</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="n">x</span>
+        <span class="n">computed</span> <span class="o">=</span> <span class="n">third</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="n">expected</span> <span class="o">==</span> <span class="n">computed</span>
+        <span class="k">assert</span> <span class="n">success</span>
 </pre></div>
 </div>
-<p>This <tt class="docutils literal"><span class="pre">test_third</span></tt> function executes silently, i.e., no failure, for <tt class="docutils literal"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">0.1</span></tt>,
-but not if we set <tt class="docutils literal"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">0.15</span></tt>. The latter <tt class="docutils literal"><span class="pre">x</span></tt> value gives a round-off error.
-The solution to this problem is to compare <tt class="docutils literal"><span class="pre">expected</span></tt> and <tt class="docutils literal"><span class="pre">computed</span></tt>
+<p>This <tt class="docutils literal"><span class="pre">test_third</span></tt> function executes silently, i.e., no failure,
+until <tt class="docutils literal"><span class="pre">x</span></tt> becomes 0.15. Then round-off errors make the <tt class="docutils literal"><span class="pre">==</span></tt> comparison
+<tt class="docutils literal"><span class="pre">False</span></tt>. In fact, seven <tt class="docutils literal"><span class="pre">x</span></tt> values face this problem.
+The solution is to compare <tt class="docutils literal"><span class="pre">expected</span></tt> and <tt class="docutils literal"><span class="pre">computed</span></tt>
 with a small tolerance:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_third</span><span class="p">():</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="mf">0.15</span>
-    <span class="n">expected</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="n">x</span>
-    <span class="n">computed</span> <span class="o">=</span> <span class="n">third</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-    <span class="n">tol</span> <span class="o">=</span> <span class="mf">1E-15</span>
-    <span class="n">success</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">expected</span> <span class="o">-</span> <span class="n">computed</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">tol</span>
-    <span class="k">assert</span> <span class="n">success</span>
+    <span class="sd">&quot;&quot;&quot;Check that third(x) works for many x values.&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">21</span><span class="p">):</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="n">x</span>
+        <span class="n">computed</span> <span class="o">=</span> <span class="n">third</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">tol</span> <span class="o">=</span> <span class="mf">1E-15</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">expected</span> <span class="o">-</span> <span class="n">computed</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">tol</span>
+        <span class="k">assert</span> <span class="n">success</span>
 </pre></div>
 </div>
+<p>Real numbers should never be compared with the <tt class="docutils literal"><span class="pre">==</span></tt> operator, but always
+with the absolute value of the difference and a tolerance.</p>
 </div>
 <div class="section" id="special-assert-functions-from-nose">
 <h3>Special assert functions from nose<a class="headerlink" href="#special-assert-functions-from-nose" title="Permalink to this headline">¶</a></h3>
@@ -295,6 +303,10 @@ case, can be done by <tt class="docutils literal"><span class="pre">assert_almos
         <span class="n">msg</span><span class="o">=</span><span class="s">&#39;diff=</span><span class="si">%.17E</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">expected</span> <span class="o">-</span> <span class="n">computed</span><span class="p">))</span>
 </pre></div>
 </div>
+<p>Whether to use the plain <tt class="docutils literal"><span class="pre">assert</span></tt> statement with a comparison based on
+a tolerance or to use the ready-made function <tt class="docutils literal"><span class="pre">assert_almost_equal</span></tt>
+depends on the programmer&#8217;s preference. The pytest framework (which we
+recommend) sticks to the plain <tt class="docutils literal"><span class="pre">assert</span></tt> statement.</p>
 </div>
 <div class="section" id="locating-test-functions">
 <h3>Locating test functions<a class="headerlink" href="#locating-test-functions" title="Permalink to this headline">¶</a></h3>
@@ -307,7 +319,7 @@ files in the current and all subdirectories!</p>
 <p>The <a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/decay.py">decay.py</a> module file features
 test functions in the module, but we could equally well have made
 a subdirectory <tt class="docutils literal"><span class="pre">tests</span></tt> and put the test functions in
-(say) <tt class="docutils literal"><span class="pre">tests/test_decay.py</span></tt>.</p>
+<a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/tests/test_decay.py">tests/test_decay.py</a>.</p>
 </div>
 <div class="section" id="running-tests">
 <h3>Running tests<a class="headerlink" href="#running-tests" title="Permalink to this headline">¶</a></h3>
@@ -319,11 +331,18 @@ Terminal&gt; py.test -s -v decay.py
 <p>The <tt class="docutils literal"><span class="pre">-s</span></tt> option ensures that output from the test functions is printed
 in the terminal window, and <tt class="docutils literal"><span class="pre">-v</span></tt> prints the outcome of each individual
 test function.</p>
-<p>Alternatively, if the test functions are in some <tt class="docutils literal"><span class="pre">test*.py</span></tt> files,
-we can just write <tt class="docutils literal"><span class="pre">py.test</span> <span class="pre">-s</span> <span class="pre">-v</span></tt>
-to <em>recursively</em> run <em>all</em> test functions in the current
-directory tree. The corresponding <tt class="docutils literal"><span class="pre">nosetests</span> <span class="pre">-s</span> <span class="pre">-v</span></tt> command
-does the same, but requires subdirectory names to start
+<p>Alternatively, if the test functions are in some separate
+<tt class="docutils literal"><span class="pre">test*.py</span></tt> files,
+we can just write</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; py.test -s -v
+</pre></div>
+</div>
+<p>to <em>recursively</em> run <em>all</em> test functions in the current
+directory tree. The corresponding</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; nosetests -s -v
+</pre></div>
+</div>
+<p>command does the same, but requires subdirectory names to start
 with <tt class="docutils literal"><span class="pre">test</span></tt> or end with <tt class="docutils literal"><span class="pre">_test</span></tt> or <tt class="docutils literal"><span class="pre">_tests</span></tt> (which is a good habit anyway).
 An example of a <tt class="docutils literal"><span class="pre">tests</span></tt> directory with a <tt class="docutils literal"><span class="pre">test*.py</span></tt>
 file is found in <a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/tests">src/softeng1/tests</a>.</p>
@@ -349,7 +368,7 @@ the numerical approximation:</p>
 <p>Then we know that the implementation should
 produce numbers that agree with this formula to machine precision.
 The formula for <span class="math">\(u^n\)</span> is known as an <em>exact discrete solution</em> of the
-problem:</p>
+problem and can be coded as</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">exact_discrete_solution</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return exact discrete solution of the numerical schemes.&quot;&quot;&quot;</span>
     <span class="n">dt</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>  <span class="c"># avoid integer division</span>
@@ -365,10 +384,13 @@ do not deviate with more than a small tolerance:</p>
     <span class="n">theta</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">;</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="n">I</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">;</span> <span class="n">dt</span> <span class="o">=</span> <span class="mf">0.8</span>
     <span class="n">Nt</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">8</span><span class="o">/</span><span class="n">dt</span><span class="p">)</span>  <span class="c"># no of steps</span>
     <span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Nt</span><span class="o">*</span><span class="n">dt</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">)</span>
+
     <span class="c"># Evaluate exact discrete solution on the mesh</span>
     <span class="n">u_de</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">exact_discrete_solution</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
                      <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Nt</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
-    <span class="n">diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">u_de</span> <span class="o">-</span> <span class="n">u</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>  <span class="c"># largest deviation</span>
+
+    <span class="c"># Find largest deviation</span>
+    <span class="n">diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">u_de</span> <span class="o">-</span> <span class="n">u</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
     <span class="n">tol</span> <span class="o">=</span> <span class="mf">1E-14</span>
     <span class="n">success</span> <span class="o">=</span> <span class="n">diff</span> <span class="o">&lt;</span> <span class="n">tol</span>
     <span class="k">assert</span> <span class="n">success</span>
@@ -419,7 +441,8 @@ the original <tt class="docutils literal"><span class="pre">sys.argv</span></tt>
 equality operator <tt class="docutils literal"><span class="pre">==</span></tt> in test functions, since round-off errors often
 come into play. Here, however, we set some real values, convert them
 to strings and convert back again to real numbers (of the same precision).
-This string-number conversion does not involve approximation so we
+This string-number conversion does not involve any finite precision
+arithmetics effects so we
 can safely use <tt class="docutils literal"><span class="pre">==</span></tt> in tests. Note also that the last element in
 <tt class="docutils literal"><span class="pre">expected</span></tt> and <tt class="docutils literal"><span class="pre">computed</span></tt> is the list <tt class="docutils literal"><span class="pre">dt_values</span></tt>, and <tt class="docutils literal"><span class="pre">==</span></tt> works
 for comparing two lists too.</p>
@@ -464,7 +487,7 @@ find it psychologically annoying to convince themselves that a
 completely silent function is doing the right things. It can therefore,
 during development of a test function, be convenient to insert
 print statements in the function to monitor that the function body
-is indeed executed... For example, one can print the expected and
+is indeed executed. For example, one can print the expected and
 computed values in the terminal window.</p>
 </div>
 </div>
@@ -473,12 +496,12 @@ computed values in the terminal window.</p>
 <span class="target" id="index-9"></span><span class="target" id="index-10"></span><p id="index-11">The test functions written for the nose and pytest frameworks are
 very straightforward and to the point, with no framework-required boilerplate
 code. We just write the statements we need to make the computations and
-comparisons and then make the require <tt class="docutils literal"><span class="pre">assert</span></tt>.</p>
-<p>The classical way implementing unit tests derives from the JUnit
-tool in Java and leads to much more comprehensive implementations with
+comparisons and then apply the required <tt class="docutils literal"><span class="pre">assert</span></tt>.</p>
+<p>The classical way of implementing unit tests (which derives from the JUnit
+object-oriented tool in Java) leads to much more comprehensive implementations with
 much more boilerplate code.
 Python comes with a built-in module <tt class="docutils literal"><span class="pre">unittest</span></tt> for doing this type of
-unit tests. Although I strongly recommend to use nose or pytest over
+classical unit tests. Although I strongly recommend to use nose or pytest over
 <tt class="docutils literal"><span class="pre">unittest</span></tt>, class-based unit testing in the style of <tt class="docutils literal"><span class="pre">unittest</span></tt>
 has a very strong position in computer science and is so widespread
 that even computational scientists should have an idea how such
@@ -576,7 +599,7 @@ nose/pytest now become methods in this class.</p>
 <li><a class="reference internal" href="#">Tests for verifying implementations</a><ul>
 <li><a class="reference internal" href="#doctests">Doctests</a></li>
 <li><a class="reference internal" href="#unit-tests-and-test-functions">Unit tests and test functions</a><ul>
-<li><a class="reference internal" href="#two-recommended-test-frameworks-nose-and-pytest">Two recommended test frameworks: nose and pytest</a></li>
+<li><a class="reference internal" href="#two-python-test-frameworks-nose-and-pytest">Two Python test frameworks: nose and pytest</a></li>
 <li><a class="reference internal" href="#test-function-requirements">Test function requirements</a></li>
 <li><a class="reference internal" href="#comparison-of-real-numbers">Comparison of real numbers</a></li>
 <li><a class="reference internal" href="#special-assert-functions-from-nose">Special assert functions from nose</a></li>

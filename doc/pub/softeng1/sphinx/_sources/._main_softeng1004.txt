@@ -5,33 +5,38 @@
 Classes for problem and solution method
 =======================================
 
-The :math:`\theta`-rule was compactly and conveniently implemented in
-a function ``solver`` in the section :ref:`softeng1:basic:math`.
+The numerical solution procedure was compactly and conveniently implemented in
+a Python function ``solver`` in the section :ref:`softeng1:basic:math`.
 In more complicated problems it might
-be beneficial to use classes and introduce a class ``Problem`` to
-hold the definition of the physical problem, and a class ``Solver``
-to hold the data and methods needed to numerically solve the problem.
-This idea will now be illustrated, resulting in code that represents
-an alternative to the ``solver`` and ``experiment_*`` functions found
-in the ``decay`` module.
+be beneficial to use classes instead of functions only. Here we shall
+describe a class-based software design well suited for scientific problems
+where there is a mathematical model of some physical phenomenon and
+some numerical methods to solve the equations involved in the model.
+
+We introduce a class ``Problem`` to hold the definition of the physical
+problem, and a class ``Solver`` to hold the data and methods needed to
+numerically solve the problem.  The forthcoming text will explain the
+inner workings of these classes and how they represent an alternative
+to the ``solver`` and ``experiment_*`` functions in the ``decay``
+module.
 
 Explaining the details of class programming in Python is considered
-beyond the scope of this text.  Readers who are unfamiliar with Python
+far beyond the scope of this text.  Readers who are unfamiliar with Python
 class programming should first consult one of the many electronic
 Python tutorials or textbooks to come up to speed with concepts and
 syntax of Python classes before reading on. The author has a gentle
 introduction to class programming for scientific applications
-in [Ref1]_, see Chapter 7 and 9 and Appendix E.
+in [Ref1]_, see `Chapter 7 and 9 and Appendix E <http://hplgit.github.io/primer.html/doc/web/index.html>`__.
 Other useful resources are
 
  * The Python Tutorial: `<http://docs.python.org/2/tutorial/classes.html>`_
 
  * Wiki book on Python Programming: `<http://en.wikibooks.org/wiki/Python_Programming/Classes>`_
 
- * tutorialspoint.com: `<http://www.tutorialspoint.com/python/python_classes_objects.htm>`_
+ * ``tutorialspoint.com``: `<http://www.tutorialspoint.com/python/python_classes_objects.htm>`_
 
-The problem class  (1)
-----------------------
+The problem class
+-----------------
 
 .. index:: problem class
 
@@ -49,7 +54,7 @@ A possible problem class is therefore
 
         from numpy import exp
         
-        class Problem:
+        class Problem(object):
             def __init__(self, I=1, a=1, T=10):
                 self.T, self.I, self.a = I, float(a), T
         
@@ -59,7 +64,7 @@ A possible problem class is therefore
 
 We could in the ``u_exact`` method have written
 ``self.I*exp(-self.a*t)``, but using local variables ``I`` and ``a`` allows
-the formula ``I*exp(-a*t)`` which looks closer to the mathematical
+the nicer formula ``I*exp(-a*t)``, which looks much closer to the mathematical
 expression :math:`Ie^{-at}`.  This is not an important issue with the
 current compact formula, but is beneficial in more complicated
 problems with longer formulas to obtain the closest possible
@@ -88,7 +93,7 @@ as the values provided to the constructor. Class ``Problem`` now becomes
 
 .. code-block:: python
 
-        class Problem:
+        class Problem(object):
             def __init__(self, I=1, a=1, T=10):
                 self.T, self.I, self.a = I, float(a), T
         
@@ -125,24 +130,26 @@ supplied, but if she does not have any, class ``Problem`` makes one.
 Python's ``None`` object is used to indicate that a variable is not
 initialized with a proper value.
 
-The solver class  (1)
----------------------
+The solver class
+----------------
 
 .. index:: solver class
 
 .. index:: wrapper (code)
 
-The solver class stores data related to the numerical solution method
+The solver class stores parameters related to the numerical solution method
 and provides a function ``solve`` for solving the problem.
-A problem object must be given to the constructor so that the solver
-can easily look up physical data. In the present example, the
-data related to the numerical solution method consists of :math:`\Delta t`
-and :math:`\theta`. We add, as in the problem class, functionality for
+For convenience, a problem object is given to the constructor
+such a solver object such that the latter also get access to
+physical data. In the present example,
+the numerical solution method involves the parameters :math:`\Delta t`
+and :math:`\theta`, which then constitute the data part of the solver class.
+We include, as in the problem class, functionality for
 reading :math:`\Delta t` and :math:`\theta` from the command line:
 
 .. code-block:: python
 
-        class Solver:
+        class Solver(object):
             def __init__(self, problem, dt=0.1, theta=0.5):
                 self.problem = problem
                 self.dt, self.theta = float(dt), theta
@@ -171,17 +178,22 @@ reading :math:`\Delta t` and :math:`\theta` from the command line:
                 """Return norm of error at the mesh points."""
                 u_e = self.problem.u_exact(self.t)
                 e = u_e - self.u
-                E = sqrt(self.dt*sum(e**2))
+                E = np.sqrt(self.dt*np.sum(e**2))
                 return E
 
-Note that the ``solve`` method is just a *wrapper*
-of the previously developed stand-alone ``solver`` function.
+Note that we see no need to repeat the body of the previously
+developed and tested ``solver`` function. We just call that function from
+the ``solve`` method.  In this way, class ``Solver`` is merely a class wrapper
+of the stand-alone ``solver`` function. With a single object of class ``Solver``
+we have all the physical and numerical data bundled together with the numerical
+solution method.
 
 Combining the objects
 ~~~~~~~~~~~~~~~~~~~~~
 
 Eventually we need to show how the classes ``Problem`` and ``Solver``
-play together:
+play together. We read parameters from the command line and make a
+plot with the numerical and exact solution:
 
 .. code-block:: python
 
@@ -201,6 +213,7 @@ play together:
             import matplotlib.pyplot as plt
             t_e = np.linspace(0, T, 1001)    # very fine mesh for u_e
             u_e = problem.u_exact(t_e)
+            print 'Error:', solver.error()
         
             plt.plot(t,   u,   'r--o')       # dashed red line with circles
             plt.plot(t_e, u_e, 'b-')         # blue line for u_e
@@ -209,15 +222,6 @@ play together:
             plt.ylabel('u')
             plotfile = 'tmp'
             plt.savefig(plotfile + '.png');  plt.savefig(plotfile + '.pdf')
-        
-            error = problem.u_exact(t) - u
-            E = np.sqrt(dt*np.sum(error**2))
-            print 'Error norm:', E
-            plt.show()
-        
-        
-        if __name__ == '__main__':
-            experiment_compare_dt(True)
             plt.show()
 
 .. _softeng1:prog:se:class2:
@@ -231,30 +235,77 @@ Much of this code can be parameterized and be made more compact.
 For this purpose, we decide to collect all parameters in a dictionary,
 ``self.prm``, with two associated dictionaries ``self.type`` and
 ``self.help`` for holding associated object types and help strings.
-For the specific ODE example we deal with, such dictionaries are
+The reason is that processing dictionaries is easier than processing
+a set of individual attributes.
+For the specific ODE example we deal with, the three dictionaries in
+the problem class are typically
 
 .. code-block:: python
 
-        # Problem data
         self.prm  = dict(I=1, a=1, T=10)
         self.type = dict(I=float, a=float, T=float)
         self.help = dict(I='initial condition, u(0)',
                          a='coefficient in ODE',
                          T='end time of simulation')
-        # Solver data
-        self.prm  = dict(dt=0.5, theta=0.5)
-        self.type = dict(dt=float, theta=float)
-        self.help = dict(dt='time step value',
-                         theta='time discretization parameter')
 
 Provided a problem or solver class defines these three
-dictionaries in the constructor, using default or user-supplied values
-of the parameters, we can create a super class ``Parameters`` with general code
+dictionaries in the constructor,
+we can create a super class ``Parameters`` with general code
 for defining command-line options and reading them as well as
-methods for setting and getting a parameter. A ``Problem`` or ``Solver`` for
+methods for setting and getting each parameter. A ``Problem`` or ``Solver`` for
 a particular mathematical problem can then
 inherit most of the needed functionality and code
-from the ``Parameters`` class.
+from the ``Parameters`` class. For example,
+
+.. code-block:: python
+
+        class Problem(Parameters):
+            def __init__(self):
+                self.prm  = dict(I=1, a=1, T=10)
+                self.type = dict(I=float, a=float, T=float)
+                self.help = dict(I='initial condition, u(0)',
+                                 a='coefficient in ODE',
+                                 T='end time of simulation')
+        
+            def u_exact(self, t):
+                I, a = self['I a'.split()]
+                return I*np.exp(-a*t)
+        
+        class Solver(Parameters):
+            def __init__(self, problem):
+                self.problem = problem   # class Problem object
+                self.prm  = dict(dt=0.5, theta=0.5)
+                self.type = dict(dt=float, theta=float)
+                self.help = dict(dt='time step value',
+                                 theta='time discretization parameter')
+        
+            def solve(self):
+                from decay import solver
+                I, a, T = self.problem['I a T'.split()]
+                dt, theta = self['dt theta'.split()]
+                self.u, self.t = solver(I, a, T, dt, theta)
+
+By inheritance, these classes can automatically do a lot more when it comes to
+reading and assigning parameter values:
+
+.. code-block:: python
+
+        problem = Problem()
+        solver = Solver(problem)
+        
+        # Read input from the command line
+        parser = problem.define_command_line_options()
+        parser = solver. define_command_line_options(parser)
+        args = parser.parse_args()
+        problem.init_from_command_line(args)
+        solver. init_from_command_line(args)
+        
+        # Other syntax for setting/getting parameter values
+        problem['T'] = 6
+        print 'Time step:', solver['dt']
+        
+        solver.solve()
+        u, t = solver.u, solver.t
 
 A generic class for parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -263,17 +314,17 @@ A simplified version of the parameter class looks as follows:
 
 .. code-block:: python
 
-        class Parameters:
-            def set(self, **parameters):
-                for name in parameters:
-                    if name in self.prm:
-                        self.prm[name] = parameters[name]
-                    else:
-                        raise NameError('Illegal parameter name %s' % name)
+        class Parameters(object):
+            def __getitem__(self, name):
+                """obj[name] syntax for getting parameters."""
+                if isinstance(name, (list,tuple)):         # get many?
+                    return [self.prm[n] for n in name]
+                else:
+                    return self.prm[name]
         
-            def get(self, name):
-                """Return value of parameter with given name."""
-                return self.prm[name]
+            def __setitem__(self, name, value):
+                """obj[name] = value syntax for setting a parameter."""
+                self.prm[name] = value
         
             def define_command_line_options(self, parser=None):
                 """Automatic registering of options."""
@@ -296,71 +347,15 @@ A simplified version of the parameter class looks as follows:
 
 The file `decay_oo.py <http://tinyurl.com/nm5587k/softeng1/decay_oo.py>`__ contains
 a slightly more advanced version of class ``Parameters`` where we
-in the ``set`` and ``get`` functions test for valid parameter names and
+in the functions for getting and setting parameters
+test for valid parameter names and
 raise exceptions with informative messages if any name is not registered.
 
-The problem class  (2)
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. index:: problem class
-
-A class ``Problem`` for the problem :math:`u'=-au`, :math:`u(0)=I`, :math:`t\in (0,T]`, with
-parameters input :math:`a`, :math:`I`, and :math:`T` can now be coded as
-
-.. code-block:: python
-
-        class Problem(Parameters):
-            """
-            Physical parameters for the problem u'=-a*u, u(0)=I,
-            with t in [0,T].
-            """
-            def __init__(self):
-                self.prm  = dict(I=1, a=1, T=10)
-                self.type = dict(I=float, a=float, T=float)
-                self.help = dict(I='initial condition, u(0)',
-                                 a='coefficient in ODE',
-                                 T='end time of simulation')
-        
-            def u_exact(self, t):
-                I, a = self.get('I'), self.get('a')
-                return I*np.exp(-a*t)
-
-The solver class  (2)
-~~~~~~~~~~~~~~~~~~~~~
-
-.. index:: solver class
-
-Also the solver class is derived from class ``Parameters`` and works with
-the ``prms``, ``types``, and ``help`` dictionaries in the same way as class
-``Problem``. Otherwise, the code is very similar to the previous class ``Solver``:
-
-.. code-block:: python
-
-        class Solver(Parameters):
-            def __init__(self, problem):
-                self.problem = problem
-                self.prm  = dict(dt=0.5, theta=0.5)
-                self.type = dict(dt=float, theta=float)
-                self.help = dict(dt='time step value',
-                                 theta='time discretization parameter')
-        
-            def solve(self):
-                from decay_mod import solver
-                self.u, self.t = solver(
-                    self.problem.get('I'),
-                    self.problem.get('a'),
-                    self.problem.get('T'),
-                    self.get('dt'),
-                    self.get('theta'))
-        
-            def error(self):
-                try:
-                    u_e = self.problem.u_exact(self.t)
-                    e = u_e - self.u
-                    E = np.sqrt(self.get('dt')*np.sum(e**2))
-                except AttributeError:
-                    E = None
-                return E
+We have already sketched the ``Problem`` and ``Solver`` classes that build
+on inheritance from ``Parameters``. We have also shown how they are
+used. The only remaining code is to make the plot, but this code is
+identical to previous versions when the numerical solution is
+available in an object ``t`` and the exact one in ``u_e``.
 
 The advantage with the ``Parameters`` class is that it scales to problems
 with a large number of physical and numerical parameters:

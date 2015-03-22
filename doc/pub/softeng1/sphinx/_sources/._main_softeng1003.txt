@@ -163,8 +163,8 @@ identifies a unit, such as our ``solver`` function.
 .. index::
    single: software testing; test function
 
-Two recommended test frameworks: nose and pytest
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Two Python test frameworks: nose and pytest
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Python offers two very easy-to-use software frameworks for implementing
 unit tests: nose and pytest. These work (almost) in the same way,
@@ -183,14 +183,14 @@ that follows three rules:
  3. An ``AssertionError`` exception must be raised if the test fails.
 
 A specific example might be illustrative before proceeding.
-Given a function that doubles the argument,
+We have the following function that we want to test:
 
 .. code-block:: python
 
         def double(n):
             return 2*n
 
-a corresponding test function may look like this:
+The corresponding test function may look like this:
 
 .. code-block:: python
 
@@ -202,11 +202,11 @@ a corresponding test function may look like this:
             if expected != computed:
                 raise AssertionError
 
-The last two lines, however, are never written like this in unit tests.
+The last two lines, however, are never written like this in test functions.
 Instead, use Python's ``assert`` statement: ``assert success, msg``, where
-``success`` is a boolean variable, here ``False`` if the test fails, and
+``success`` is a boolean variable, which is ``False`` if the test fails, and
 ``msg`` is *an optional* message string that is printed when the test fails.
-In detail, the test function looks like
+A better version of the test function is therefore
 
 .. code-block:: python
 
@@ -223,8 +223,11 @@ Comparison of real numbers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In scientific computing we very often have to deal with real numbers and
-round-off errors so the ``==`` operator must be replaced by a comparison
-within a tolerance. Consider testing this function instead,
+finite precision arithmetics (round-off errors)
+so the ``==`` operator is not suitable for checking that
+a test passes. Instead, we must be replace ``==`` by a comparison
+based on a tolerance. Here is a slightly different function that
+we want to test:
 
 .. code-block:: python
 
@@ -237,26 +240,32 @@ We write a test function where the expected result is computed as
 .. code-block:: python
 
         def test_third():
-            x = 0.1
-            expected = (1/3.)*x
-            computed = third(x)
-            success = expected == computed
-            assert success
+            """Check that third(x) works for many x values."""
+            for x in np.linspace(0, 1, 21):
+                expected = (1/3.)*x
+                computed = third(x)
+                success = expected == computed
+                assert success
 
-This ``test_third`` function executes silently, i.e., no failure, for ``x = 0.1``,
-but not if we set ``x = 0.15``. The latter ``x`` value gives a round-off error.
-The solution to this problem is to compare ``expected`` and ``computed``
+This ``test_third`` function executes silently, i.e., no failure,
+until ``x`` becomes 0.15. Then round-off errors make the ``==`` comparison
+``False``. In fact, seven ``x`` values face this problem.
+The solution is to compare ``expected`` and ``computed``
 with a small tolerance:
 
 .. code-block:: python
 
         def test_third():
-            x = 0.15
-            expected = (1/3.)*x
-            computed = third(x)
-            tol = 1E-15
-            success = abs(expected - computed) < tol
-            assert success
+            """Check that third(x) works for many x values."""
+            for x in np.linspace(0, 1, 21):
+                expected = (1/3.)*x
+                computed = third(x)
+                tol = 1E-15
+                success = abs(expected - computed) < tol
+                assert success
+
+Real numbers should never be compared with the ``==`` operator, but always
+with the absolute value of the difference and a tolerance.
 
 Special assert functions from nose
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -279,6 +288,11 @@ case, can be done by ``assert_almost_equal``:
                 expected, computed, delta=1E-15,
                 msg='diff=%.17E' % (expected - computed))
 
+Whether to use the plain ``assert`` statement with a comparison based on
+a tolerance or to use the ready-made function ``assert_almost_equal``
+depends on the programmer's preference. The pytest framework (which we
+recommend) sticks to the plain ``assert`` statement.
+
 Locating test functions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -292,7 +306,7 @@ files in the current and all subdirectories!
 The `decay.py <http://tinyurl.com/nm5587k/softeng1/decay.py>`__ module file features
 test functions in the module, but we could equally well have made
 a subdirectory ``tests`` and put the test functions in
-(say) ``tests/test_decay.py``.
+`tests/test_decay.py <http://tinyurl.com/nm5587k/softeng1/tests/test_decay.py>`__.
 
 Running tests
 ~~~~~~~~~~~~~
@@ -308,11 +322,22 @@ The ``-s`` option ensures that output from the test functions is printed
 in the terminal window, and ``-v`` prints the outcome of each individual
 test function.
 
-Alternatively, if the test functions are in some ``test*.py`` files,
-we can just write ``py.test -s -v``
+Alternatively, if the test functions are in some separate
+``test*.py`` files,
+we can just write
+
+.. code-block:: text
+
+        Terminal> py.test -s -v
+
 to *recursively* run *all* test functions in the current
-directory tree. The corresponding ``nosetests -s -v`` command
-does the same, but requires subdirectory names to start
+directory tree. The corresponding
+
+.. code-block:: text
+
+        Terminal> nosetests -s -v
+
+command does the same, but requires subdirectory names to start
 with ``test`` or end with ``_test`` or ``_tests`` (which is a good habit anyway).
 An example of a ``tests`` directory with a ``test*.py``
 file is found in `src/softeng1/tests <http://tinyurl.com/nm5587k/softeng1/tests>`__.
@@ -341,7 +366,7 @@ the numerical approximation:
 Then we know that the implementation should
 produce numbers that agree with this formula to machine precision.
 The formula for :math:`u^n` is known as an *exact discrete solution* of the
-problem:
+problem and can be coded as
 
 .. code-block:: python
 
@@ -362,10 +387,13 @@ do not deviate with more than a small tolerance:
             theta = 0.8; a = 2; I = 0.1; dt = 0.8
             Nt = int(8/dt)  # no of steps
             u, t = solver(I=I, a=a, T=Nt*dt, dt=dt, theta=theta)
+        
             # Evaluate exact discrete solution on the mesh
             u_de = np.array([exact_discrete_solution(n, I, a, theta, dt)
                              for n in range(Nt+1)])
-            diff = np.abs(u_de - u).max()  # largest deviation
+        
+            # Find largest deviation
+            diff = np.abs(u_de - u).max()
             tol = 1E-14
             success = diff < tol
             assert success
@@ -420,7 +448,8 @@ Any numerical code writer should always be skeptical to the use of the exact
 equality operator ``==`` in test functions, since round-off errors often
 come into play. Here, however, we set some real values, convert them
 to strings and convert back again to real numbers (of the same precision).
-This string-number conversion does not involve approximation so we
+This string-number conversion does not involve any finite precision
+arithmetics effects so we
 can safely use ``==`` in tests. Note also that the last element in
 ``expected`` and ``computed`` is the list ``dt_values``, and ``==`` works
 for comparing two lists too.
@@ -471,7 +500,7 @@ split the line into words to get the desired list ``sys.argv``:
    completely silent function is doing the right things. It can therefore,
    during development of a test function, be convenient to insert
    print statements in the function to monitor that the function body
-   is indeed executed... For example, one can print the expected and
+   is indeed executed. For example, one can print the expected and
    computed values in the terminal window.
 
 
@@ -492,13 +521,13 @@ Classical class-based unit testing
 The test functions written for the nose and pytest frameworks are
 very straightforward and to the point, with no framework-required boilerplate
 code. We just write the statements we need to make the computations and
-comparisons and then make the require ``assert``.
+comparisons and then apply the required ``assert``.
 
-The classical way implementing unit tests derives from the JUnit
-tool in Java and leads to much more comprehensive implementations with
+The classical way of implementing unit tests (which derives from the JUnit
+object-oriented tool in Java) leads to much more comprehensive implementations with
 much more boilerplate code.
 Python comes with a built-in module ``unittest`` for doing this type of
-unit tests. Although I strongly recommend to use nose or pytest over
+classical unit tests. Although I strongly recommend to use nose or pytest over
 ``unittest``, class-based unit testing in the style of ``unittest``
 has a very strong position in computer science and is so widespread
 that even computational scientists should have an idea how such

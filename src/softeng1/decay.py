@@ -25,7 +25,7 @@ def experiment_print_error():
     u_e = exact_solution(t_e, I, a)
     eror = exact_solution(t, I, a) - u
     E = np.sqrt(dt*np.sum(eror**2))
-    print 'Error norm:', E
+    print 'Error:', E
 
 def experiment_compare_numerical_and_exact():
     I = 1;  a = 2;  T = 4;  dt = 0.4;  theta = 1
@@ -44,7 +44,7 @@ def experiment_compare_numerical_and_exact():
 
     error = exact_solution(t, I, a) - u
     E = np.sqrt(dt*np.sum(error**2))
-    print 'Error norm:', E
+    print 'Error:', E
 
 def experiment_compare_schemes():
     """Compare theta=0,1,0.5 in the same plot."""
@@ -229,10 +229,13 @@ def test_exact_discrete_solution():
     theta = 0.8; a = 2; I = 0.1; dt = 0.8
     Nt = int(8/dt)  # no of steps
     u, t = solver(I=I, a=a, T=Nt*dt, dt=dt, theta=theta)
+
     # Evaluate exact discrete solution on the mesh
     u_de = np.array([exact_discrete_solution(n, I, a, theta, dt)
                      for n in range(Nt+1)])
-    diff = np.abs(u_de - u).max()  # largest deviation
+
+    # Find largest deviation
+    diff = np.abs(u_de - u).max()
     tol = 1E-14
     success = diff < tol
     assert success
@@ -276,7 +279,7 @@ def test_read_command_line_argparse():
 
 # Classes
 
-class Problem:
+class Problem(object):
     def __init__(self, I=1, a=1, T=10):
         self.T, self.I, self.a = I, float(a), T
 
@@ -309,7 +312,7 @@ class Problem:
         return I*exp(-a*t)
 
 
-class Solver:
+class Solver(object):
     def __init__(self, problem, dt=0.1, theta=0.5):
         self.problem = problem
         self.dt, self.theta = float(dt), theta
@@ -338,7 +341,7 @@ class Solver:
         """Return norm of error at the mesh points."""
         u_e = self.problem.u_exact(self.t)
         e = u_e - self.u
-        E = sqrt(self.dt*sum(e**2))
+        E = np.sqrt(self.dt*np.sum(e**2))
         return E
 
 def experiment_classes():
@@ -357,6 +360,7 @@ def experiment_classes():
     import matplotlib.pyplot as plt
     t_e = np.linspace(0, T, 1001)    # very fine mesh for u_e
     u_e = problem.u_exact(t_e)
+    print 'Error:', solver.error()
 
     plt.plot(t,   u,   'r--o')       # dashed red line with circles
     plt.plot(t_e, u_e, 'b-')         # blue line for u_e
@@ -365,12 +369,7 @@ def experiment_classes():
     plt.ylabel('u')
     plotfile = 'tmp'
     plt.savefig(plotfile + '.png');  plt.savefig(plotfile + '.pdf')
-
-    error = problem.u_exact(t) - u
-    E = np.sqrt(dt*np.sum(error**2))
-    print 'Error norm:', E
     plt.show()
-
 
 if __name__ == '__main__':
     experiment_compare_dt(True)

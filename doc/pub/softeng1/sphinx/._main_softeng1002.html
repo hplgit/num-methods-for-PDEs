@@ -100,7 +100,10 @@ of the implementation:</p>
 <li>Reading data from files</li>
 <li>Graphical user interfaces (GUIs)</li>
 </ol>
-<p>Alternatives 2 and 4 are most popular and will be addressed next.</p>
+<p>Alternatives 2 and 4 are most popular and will be addressed next.
+The goal is to make it easy for the user to
+set physical and numerical parameters in
+our <tt class="docutils literal"><span class="pre">decay.py</span></tt> program.</p>
 <div class="section" id="command-line-arguments">
 <h2>Command-line arguments<a class="headerlink" href="#command-line-arguments" title="Permalink to this headline">¶</a></h2>
 <p>The command-line arguments are all the words that appear on the
@@ -112,40 +115,42 @@ the list <tt class="docutils literal"><span class="pre">sys.argv</span></tt>, an
 command-line arguments in Python:</p>
 <blockquote>
 <div><ul class="simple">
-<li>Decide upon a sequence of parameters on the command line and read
-their values directly from the <tt class="docutils literal"><span class="pre">sys.argv[1:]</span></tt> list (<tt class="docutils literal"><span class="pre">sys.argv[0]</span></tt> is
-the just program name).</li>
-<li>Use option-value pairs (<tt class="docutils literal"><span class="pre">--option</span> <span class="pre">value</span></tt>) on
-the command line to override default values of input parameters,
-and utilize the <tt class="docutils literal"><span class="pre">argparse.ArgumentParser</span></tt> tool to interact with
-the command line.</li>
+<li><strong>Positional arguments:</strong> Decide upon a sequence of parameters
+on the command line and read
+their values directly from the <tt class="docutils literal"><span class="pre">sys.argv[1:]</span></tt> list.</li>
+<li><strong>Option-value pairs:</strong>  Use <tt class="docutils literal"><span class="pre">--option</span> <span class="pre">value</span></tt> on
+the command line to replace the default value of an input parameter
+<tt class="docutils literal"><span class="pre">option</span></tt> by <tt class="docutils literal"><span class="pre">value</span></tt> (and utilize the <tt class="docutils literal"><span class="pre">argparse.ArgumentParser</span></tt> tool
+for implementation).</li>
 </ul>
 </div></blockquote>
-<p>Suppose we want to run our program <tt class="docutils literal"><span class="pre">decay.py</span></tt> with
-specification of <span class="math">\(a\)</span> and <span class="math">\(\Delta t\)</span> on the command line.
+<p>Suppose we want to run some program <tt class="docutils literal"><span class="pre">prog.py</span></tt> with
+specification of two parameters <tt class="docutils literal"><span class="pre">p</span></tt> and <tt class="docutils literal"><span class="pre">delta</span></tt> on the command line.
 With positional command-line arguments we write</p>
 <div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python decay.py 2 0.5
 </pre></div>
 </div>
-<p>knowing that the first argument <tt class="docutils literal"><span class="pre">2</span></tt> is <tt class="docutils literal"><span class="pre">a</span></tt> (<span class="math">\(a\)</span>) and the second <cite>0.5`is
-``dt`</cite> (<span class="math">\(\Delta t\)</span>).</p>
-<p>With option-value pairs we can run</p>
-<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python decay.py --a 2 --dt 0.5
+<p>and must know that the first argument <tt class="docutils literal"><span class="pre">2</span></tt> represents <tt class="docutils literal"><span class="pre">p</span></tt> and the
+next <tt class="docutils literal"><span class="pre">0.5</span></tt> is the value of <tt class="docutils literal"><span class="pre">delta</span></tt>.
+With option-value pairs we can run</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python decay.py --delta 0.5 --p 2
 </pre></div>
 </div>
-<p>Both <tt class="docutils literal"><span class="pre">a</span></tt> and <tt class="docutils literal"><span class="pre">dt</span></tt> are supposed to have default values in the program,
+<p>Now, both <tt class="docutils literal"><span class="pre">p</span></tt> and <tt class="docutils literal"><span class="pre">delta</span></tt> are supposed to have default values in the program,
 so we need to specify only the parameter that is to be changed from
 its default value, e.g.,</p>
-<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python decay.py --a 2      # a=2, default dt
-Terminal&gt; python decay.py --dt 0.7   # dt-0.7, default a
-Terminal&gt; python decay.py            # default a and dt
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python decay.py --p 2         # p=2, default delta
+Terminal&gt; python decay.py --delta 0.7   # delta-0.7, default a
+Terminal&gt; python decay.py               # default a and delta
 </pre></div>
 </div>
-<p>As example, we want to read <span class="math">\(I\)</span>, <span class="math">\(a\)</span>, <span class="math">\(T\)</span>, <span class="math">\(\theta\)</span>,
-and a range of <span class="math">\(\Delta t\)</span> values from the command line.
-A plot is then to be made, comparing
+<p>For our <tt class="docutils literal"><span class="pre">decay.py</span></tt> module file, we want include functionality such
+that we can read <span class="math">\(I\)</span>, <span class="math">\(a\)</span>, <span class="math">\(T\)</span>, <span class="math">\(\theta\)</span>, and a range of <span class="math">\(\Delta t\)</span>
+values from the command line.  A plot is then to be made, comparing
 the different numerical solutions for different <span class="math">\(\Delta t\)</span> values
-against the exact solution.</p>
+against the exact solution. The technical details of getting the
+command-line information into the program is covered in the next
+two sections.</p>
 </div>
 <div class="section" id="positional-command-line-arguments">
 <h2>Positional command-line arguments<a class="headerlink" href="#positional-command-line-arguments" title="Permalink to this headline">¶</a></h2>
@@ -185,7 +190,7 @@ for Crank-Nicolson. Then we must map this string to the proper
 </div>
 <div class="section" id="option-value-pairs-on-the-command-line">
 <h2>Option-value pairs on the command line<a class="headerlink" href="#option-value-pairs-on-the-command-line" title="Permalink to this headline">¶</a></h2>
-<span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><span class="target" id="index-5"></span><p id="index-6">Now we want specify option-value pairs on the command line,
+<span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><span class="target" id="index-5"></span><p id="index-6">Now we want to specify option-value pairs on the command line,
 using <tt class="docutils literal"><span class="pre">--I</span></tt> for <tt class="docutils literal"><span class="pre">I</span></tt> (<span class="math">\(I\)</span>), <tt class="docutils literal"><span class="pre">--a</span></tt> for <tt class="docutils literal"><span class="pre">a</span></tt> (<span class="math">\(a\)</span>), <tt class="docutils literal"><span class="pre">--T</span></tt> for <tt class="docutils literal"><span class="pre">T</span></tt> (<span class="math">\(T\)</span>),
 <tt class="docutils literal"><span class="pre">--scheme</span></tt> for the scheme name (<tt class="docutils literal"><span class="pre">BE</span></tt>, <tt class="docutils literal"><span class="pre">FE</span></tt>, <tt class="docutils literal"><span class="pre">CN</span></tt>),
 and <tt class="docutils literal"><span class="pre">--dt</span></tt> for the sequence of <tt class="docutils literal"><span class="pre">dt</span></tt> (<span class="math">\(\Delta t\)</span>) values.
@@ -204,8 +209,9 @@ unless there are just a couple of arguments.</p>
 to create a professional command-line interface to any program. The
 documentation of <a class="reference external" href="http://docs.python.org/library/argparse.html">ArgumentParser</a> demonstrates its
 versatile applications, so we shall here just list an example
-containing basic features. It always pays off to use <tt class="docutils literal"><span class="pre">ArgumentParser</span></tt>
-rather than trying to inspect and interpret <tt class="docutils literal"><span class="pre">sys.argv</span></tt> manually!</p>
+containing the most basic features. It always pays off to use <tt class="docutils literal"><span class="pre">ArgumentParser</span></tt>
+rather than trying to manually inspect and interpret option-value pairs
+in <tt class="docutils literal"><span class="pre">sys.argv</span></tt>!</p>
 <p>The use of <tt class="docutils literal"><span class="pre">ArgumentParser</span></tt> typically involves three steps:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">argparse</span>
 <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>

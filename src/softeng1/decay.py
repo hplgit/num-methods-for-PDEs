@@ -54,7 +54,7 @@ def experiment_compare_schemes():
         u, t = solver(I, a, T, dt, theta)
         plt.plot(t, u, '--o')            # dashed lines with circles
         legends.append('theta=%g' % theta)
-    t_e = np.linspace(0, T, 1001)       # very fine mesh for u_e
+    t_e = np.linspace(0, T, 1001)        # very fine mesh for u_e
     u_e = exact_solution(t_e, I, a)
     plt.plot(t_e, u_e, 'b-')             # blue line for u_e
     legends.append('exact')

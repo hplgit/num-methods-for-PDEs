@@ -1,1550 +1,896 @@
 .. !split
 
-Model extensions
-================
+.. _decay:analysis:
 
-It is time to consider generalizations of the simple decay model
-:math:`u=-au` and also to look at additional numerical solution methods.
+Analysis of finite difference equations
+=======================================
 
-Generalization: including a variable coefficient
-------------------------------------------------
-
-In the ODE for decay, :math:`u'=-au`, we now consider the case where :math:`a`
-depends on time:
-
-.. _Eq:decay:problem:a:
-
-.. math::
-   :label: decay:problem:a
-        
-        u'(t) = -a(t)u(t),\quad t\in (0,T],\quad u(0)=I {\thinspace .}
-        
-        
-
-A Forward Euler scheme consist of evaluating :eq:`decay:problem:a`
-at :math:`t=t_n` and approximating the derivative with a forward
-difference :math:`[D^+_t u]^n`:
+We address the ODE for exponential decay,
 
 .. math::
         
-        \frac{u^{n+1} - u^n}{\Delta t} = -a(t_n)u^n
-        {\thinspace .}
+        u'(t) = -au(t),\quad u(0)=I,
         
 
-The Backward Euler scheme becomes
+where :math:`a` and :math:`I` are given constants. This problem is solved
+by the :math:`\theta`-rule finite difference scheme, resulting in
+the recursive equations
+
+.. _Eq:decay:analysis:scheme:
 
 .. math::
+   :label: decay:analysis:scheme
         
-        \frac{u^{n} - u^{n-1}}{\Delta t} = -a(t_n)u^n
-        {\thinspace .}
+        u^{n+1} = \frac{1 - (1-\theta) a\Delta t}{1 + \theta a\Delta t}u^n
+        
         
 
-The Crank-Nicolson method builds on sampling the ODE at
-:math:`t_{n+\frac{1}{2}}`. We can evaluate :math:`a` at :math:`t_{n+\frac{1}{2}}`
-and use an average for :math:`u` at
-times :math:`t_n` and :math:`t_{n+1}`:
+for the numerical solution :math:`u^{n+1}`, which approximates the exact
+solution :math:`{u_{\small\mbox{e}}}` at time point :math:`t_{n+1}`. For constant mesh spacing,
+which we assume here, :math:`t_{n+1}=(n+1)\Delta t`.
+
+.. Cannot use === because it fools sphinx
+
+**Discouraging numerical solutions.**
+Choosing :math:`I=1`, :math:`a=2`, and running experiments with :math:`\theta =1,0.5, 0`
+for :math:`\Delta t=1.25, 0.75, 0.5, 0.1`, gives the results in
+Figures :ref:`decay:analysis:BE4c`, :ref:`decay:analysis:CN4c`, and
+:ref:`decay:analysis:FE4c`.
+
+.. _decay:analysis:BE4c:
+
+.. figure:: BE4c.png
+   :width: 600
+
+   *Backward Euler*
+
+.. _decay:analysis:CN4c:
+
+.. figure:: CN4c.png
+   :width: 600
+
+   *Crank-Nicolson*
+
+.. _decay:analysis:FE4c:
+
+.. figure:: FE4c.png
+   :width: 600
+
+   *Forward Euler*
+
+The characteristics of the displayed curves can be summarized as follows:
+
+  * The Backward Euler scheme always gives a monotone solution, lying above
+    the exact curve.
+
+  * The Crank-Nicolson scheme gives the most accurate results, but for
+    :math:`\Delta t=1.25` the solution oscillates.
+
+  * The Forward Euler scheme gives a growing, oscillating solution for
+    :math:`\Delta t=1.25`; a decaying, oscillating solution for :math:`\Delta t=0.75`;
+    a strange solution :math:`u^n=0` for :math:`n\geq 1` when :math:`\Delta t=0.5`; and
+    a solution seemingly as accurate as the one by the Backward Euler
+    scheme for :math:`\Delta t = 0.1`, but the curve lies below the exact
+    solution.
+
+Since the exact solution of our model problem is a monotone function,
+:math:`u(t)=Ie^{-at}`, some of these qualitatively wrong results are indeed alarming!
+
+
+.. admonition:: Goal
+
+   We ask the question
+   
+     * Under what circumstances, i.e., values of
+       the input data :math:`I`, :math:`a`, and :math:`\Delta t` will the Forward Euler and
+       Crank-Nicolson schemes result in undesired oscillatory solutions?
+   
+   The question will be investigated both by numerical experiments and
+   by precise mathematical theory. The latter will help establish
+   general criteria on :math:`\Delta t` for avoiding non-physical oscillatory
+   or growing solutions.
+   
+   Another question to be raised is
+   
+    * How does :math:`\Delta t` impact the error in the numerical solution?
+   
+   For our simple model problem we can answer this question very precisely, but
+   we will also look at simplified formulas for small :math:`\Delta t`
+   and touch upon important concepts such as *convergence rate* and
+   *the order of a scheme*. Other fundamental concepts mentioned are
+   stability, consistency, and convergence.
+
+
+
+
+Experimental investigation of oscillatory solutions
+---------------------------------------------------
+
+To address the first question above,
+we may set up an experiment where we loop over values of :math:`I`, :math:`a`,
+and :math:`\Delta t`. For each experiment, we flag the solution as
+oscillatory if
 
 .. math::
-        
-        \frac{u^{n+1} - u^{n}}{\Delta t} = -a(t_{n+\frac{1}{2}})\frac{1}{2}(u^n + u^{n+1})
-        {\thinspace .}
-        
+         u^{n} > u^{n-1},
 
-Alternatively, we can use an average for the product :math:`au`:
+for some value of :math:`n`,
+since we expect :math:`u^n` to decay with :math:`n`, but oscillations make
+:math:`u` increase over a time step. We will quickly see that
+oscillations are independent of :math:`I`, but do depend on :math:`a` and
+:math:`\Delta t`. Therefore, we introduce a two-dimensional
+function :math:`B(a,\Delta t)` which is 1 if oscillations occur
+and 0 otherwise. We can visualize :math:`B` as a contour plot
+(lines for which :math:`B=\hbox{const}`). The contour :math:`B=0.5`
+corresponds to the borderline between oscillatory regions with :math:`B=1`
+and monotone regions with :math:`B=0` in the :math:`a,\Delta t` plane.
 
-.. math::
-        
-        \frac{u^{n+1} - u^{n}}{\Delta t} = -\frac{1}{2}(a(t_n)u^n + a(t_{n+1})u^{n+1})
-        {\thinspace .}
-        
-
-The :math:`\theta`-rule unifies the three mentioned schemes. One version is to
-have :math:`a` evaluated at :math:`t_{n+\theta}`,
-
-.. math::
-        
-        \frac{u^{n+1} - u^{n}}{\Delta t} = -a((1-\theta)t_n + \theta t_{n+1})((1-\theta) u^n + \theta u^{n+1})
-        {\thinspace .}
-        
-
-Another possibility is to apply a weighted average for the product :math:`au`,
-
-.. math::
-        
-        \frac{u^{n+1} - u^{n}}{\Delta t} = -(1-\theta) a(t_n)u^n - \theta
-        a(t_{n+1})u^{n+1}
-        {\thinspace .}
-        
-
-With the finite difference operator notation the Forward Euler and Backward
-Euler schemes can be summarized as
-
-.. math::
-        
-        \lbrack D^+_t u = -au\rbrack^n,
-        
-
-.. math::
-          
-        \lbrack D^-_t u = -au\rbrack^n
-        {\thinspace .}
-        
-
-The Crank-Nicolson and :math:`\theta` schemes depend on whether we evaluate
-:math:`a` at the sample point for the ODE or if we use an average. The
-various versions are written as
-
-.. math::
-        
-        \lbrack D_t u = -a\overline{u}^t\rbrack^{n+\frac{1}{2}},
-        
-
-.. math::
-          
-        \lbrack D_t u = -\overline{au}^t\rbrack^{n+\frac{1}{2}},
-        
-
-.. math::
-          
-        \lbrack D_t u = -a\overline{u}^{t,\theta}\rbrack^{n+\theta},
-        
-
-.. math::
-          
-        \lbrack D_t u = -\overline{au}^{t,\theta}\rbrack^{n+\theta}
-        {\thinspace .}
-        
-
-.. _decay:source:
-
-Generalization: including a source term
----------------------------------------
-
-A further extension of the model ODE is to include a source term :math:`b(t)`:
-
-.. _Eq:decay:problem:ab:
-
-.. math::
-   :label: decay:problem:ab
-        
-        u'(t) = -a(t)u(t) + b(t),\quad t\in (0,T],\quad u(0)=I
-        {\thinspace .}
-        
-        
-
-Schemes
-~~~~~~~
-
-The time point where we sample the ODE determines where :math:`b(t)` is
-evaluated. For the Crank-Nicolson scheme and the :math:`\theta`-rule we
-have a choice of whether to evaluate :math:`a(t)` and :math:`b(t)` at the
-correct point or use an average. The chosen strategy becomes
-particularly clear if we write up the schemes in the operator notation:
-
-.. math::
-        
-        \lbrack D^+_t u = -au + b\rbrack^n,
-        
-
-.. math::
-          
-        \lbrack D^-_t u = -au + b\rbrack^n,
-        
-
-.. math::
-          
-        \lbrack D_t u   = -a\overline{u}^t + b\rbrack^{n+\frac{1}{2}},
-        
-
-.. math::
-          
-        \lbrack D_t u   = \overline{-au+b}^t\rbrack^{n+\frac{1}{2}},
-        
-
-.. math::
-          
-        \lbrack D_t u   = -a\overline{u}^{t,\theta} + b\rbrack^{n+\theta},
-        
-
-.. _Eq:decay:problem:ab:theta:avg:all:op:
-
-.. math::
-   :label: decay:problem:ab:theta:avg:all:op
-          
-        \lbrack D_t u   = \overline{-au+b}^{t,\theta}\rbrack^{n+\theta}
-        
-        {\thinspace .}
-        
-
-.. _decay:general:
-
-Implementation of the generalized model problem
------------------------------------------------
-
-Deriving the :math:`\theta`-rule formula
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Writing out the :math:`\theta`-rule in :eq:`decay:problem:ab:theta:avg:all:op`,
-using :ref:`(2.28) <Eq:decay:fd1:Du:theta>`
-and :ref:`(2.29) <Eq:decay:fd1:wmean:a>`, we get
-
-.. _Eq:decay:problem:ab:theta:avg:all:
-
-.. math::
-   :label: decay:problem:ab:theta:avg:all
-        
-        \frac{u^{n+1}-u^n}{\Delta t} = \theta(-a^{n+1}u^{n+1} + b^{n+1}))
-        + (1-\theta)(-a^nu^{n} + b^n)),
-        
-        
-
-where :math:`a^n` means evaluating :math:`a` at :math:`t=t_n` and similar for
-:math:`a^{n+1}`, :math:`b^n`, and :math:`b^{n+1}`.
-We solve for :math:`u^{n+1}`:
-
-.. math::
-        
-        u^{n+1} = ((1 - \Delta t(1-\theta)a^n)u^n
-        + \Delta t(\theta b^{n+1} + (1-\theta)b^n))(1 + \Delta t\theta a^{n+1})^{-1}
-        {\thinspace .}
-        
-
-The Python code
-~~~~~~~~~~~~~~~
-
-Here is a suitable implementation of :eq:`decay:problem:ab:theta:avg:all`
-where :math:`a(t)` and :math:`b(t)` are given as
-Python functions:
+The :math:`B` function is defined at discrete :math:`a` and :math:`\Delta t` values.
+Say we have given :math:`P` $a$ values, :math:`a_0,\ldots,a_{P-1}`, and
+:math:`Q` $\Delta t$ values, :math:`\Delta t_0,\ldots,\Delta t_{Q-1}`.
+These :math:`a_i` and :math:`\Delta t_j` values, :math:`i=0,\ldots,P-1`,
+:math:`j=0,\ldots,Q-1`, form a rectangular mesh of :math:`P\times Q` points
+in the plane. At each point :math:`(a_i, \Delta t_j)`, we associate
+the corresponding value of :math:`B(a_i,\Delta t_j)`, denoted :math:`B_{ij}`.
+The :math:`B_{ij}` values are naturally stored in a two-dimensional
+array. We can thereafter create a plot of the
+contour line :math:`B_{ij}=0.5` dividing the oscillatory and monotone
+regions. The file `decay_osc_regions.py <http://tinyurl.com/nm5587k/decay/decay_osc_regions.py>`__  ``osc_regions`` stands for "oscillatory regions") contains all nuts and
+bolts to produce the :math:`B=0.5` line in Figures :ref:`decay:analysis:B:FE`
+and :ref:`decay:analysis:B:CN`. The oscillatory region is above this line.
 
 .. code-block:: python
 
-        def solver(I, a, b, T, dt, theta):
+        from decay_mod import solver
+        import numpy as np
+        import scitools.std as st
+        
+        def non_physical_behavior(I, a, T, dt, theta):
             """
-            Solve u'=-a(t)*u + b(t), u(0)=I,
-            for t in (0,T] with steps of dt.
-            a and b are Python functions of t.
+            Given lists/arrays a and dt, and numbers I, dt, and theta,
+            make a two-dimensional contour line B=0.5, where B=1>0.5
+            means oscillatory (unstable) solution, and B=0<0.5 means
+            monotone solution of u'=-au.
             """
-            dt = float(dt)            # avoid integer division
-            Nt = int(round(T/dt))     # no of time intervals
-            T = Nt*dt                 # adjust T to fit time step dt
-            u = zeros(Nt+1)           # array of u[n] values
-            t = linspace(0, T, Nt+1)  # time mesh
+            a = np.asarray(a); dt = np.asarray(dt)  # must be arrays
+            B = np.zeros((len(a), len(dt)))         # results
+            for i in range(len(a)):
+                for j in range(len(dt)):
+                    u, t = solver(I, a[i], T, dt[j], theta)
+                    # Does u have the right monotone decay properties?
+                    correct_qualitative_behavior = True
+                    for n in range(1, len(u)):
+                        if u[n] > u[n-1]:  # Not decaying?
+                            correct_qualitative_behavior = False
+                            break  # Jump out of loop
+                    B[i,j] = float(correct_qualitative_behavior)
+            a_, dt_ = st.ndgrid(a, dt)  # make mesh of a and dt values
+            st.contour(a_, dt_, B, 1)
+            st.grid('on')
+            st.title('theta=%g' % theta)
+            st.xlabel('a'); st.ylabel('dt')
+            st.savefig('osc_region_theta_%s.png' % theta)
+            st.savefig('osc_region_theta_%s.pdf' % theta)
         
-            u[0] = I                  # assign initial condition
-            for n in range(0, Nt):    # n=0,1,...,Nt-1
-                u[n+1] = ((1 - dt*(1-theta)*a(t[n]))*u[n] + \ 
-                          dt*(theta*b(t[n+1]) + (1-theta)*b(t[n])))/\ 
-                          (1 + dt*theta*a(t[n+1]))
-            return u, t
+        non_physical_behavior(
+            I=1,
+            a=np.linspace(0.01, 4, 22),
+            dt=np.linspace(0.01, 4, 22),
+            T=6,
+            theta=0.5)
 
-This function is found in the file `decay_vc.py <http://tinyurl.com/nm5587k/decay/decay_vc.py>`__ (``vc`` stands for "variable coefficients").
+.. _decay:analysis:B:FE:
 
-Coding of variable coefficients
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. figure:: osc_region_FE.png
+   :width: 500
 
-The ``solver`` function shown above demands the arguments ``a`` and ``b`` to
-be Python functions of time ``t``, say
+   *Forward Euler scheme: oscillatory solutions occur for points above the curve*
 
-.. code-block:: python
+.. _decay:analysis:B:CN:
 
-        def a(t):
-            return a_0 if t < tp else k*a_0
-        
-        def b(t):
-            return 1
+.. figure:: osc_region_CN.png
+   :width: 500
 
-Here, ``a(t)`` has three parameters ``a0``, ``tp``, and ``k``,
-which must be global variables.
-A better implementation is to represent ``a`` by a class where the
-parameters are attributes and a *special method* ``__call__`` evaluates :math:`a(t)`:
+   *Crank-Nicolson scheme: oscillatory solutions occur for points above the curve*
 
-.. code-block:: python
+By looking at the curves in the figures one may guess that :math:`a\Delta t`
+must be less than a critical limit to avoid the undesired
+oscillations.  This limit seems to be about 2 for Crank-Nicolson and 1
+for Forward Euler.  We shall now establish a precise mathematical
+analysis of the discrete model that can explain the observations in
+our numerical experiments.
 
-        class A:
-            def __init__(self, a0=1, k=2):
-                self.a0, self.k = a0, k
-        
-            def __call__(self, t):
-                return self.a0 if t < self.tp else self.k*self.a0
-        
-        a = A(a0=2, k=1)  # a behaves as a function a(t)
+Exact numerical solution
+------------------------
 
-.. index:: lambda functions
+Starting with :math:`u^0=I`, the simple recursion :eq:`decay:analysis:scheme`
+can be applied repeatedly :math:`n` times, with the result that
 
-For quick tests it is cumbersome to write a complete function or a class.
-The *lambda function* construction in Python is then convenient. For example,
-
-.. code-block:: python
-
-        a = lambda t: a_0 if t < tp else k*a_0
-
-is equivalent to the ``def a(t):`` definition above. In general,
-
-.. code-block:: python
-
-        f = lambda arg1, arg2, ...: expressin
-
-is equivalent to
-
-.. code-block:: python
-
-        def f(arg1, arg2, ...):
-            return expression
-
-One can use lambda functions directly in calls. Say we want to
-solve :math:`u'=-u+1`, :math:`u(0)=2`:
-
-.. code-block:: python
-
-        u, t = solver(2, lambda t: 1, lambda t: 1, T, dt, theta)
-
-A lambda function can appear anywhere where a variable can appear.
-
-.. _decay:verify:trivial:
-
-Verifying a constant solution
------------------------------
-
-A very useful partial verification method is to construct a test
-problem with a very simple solution, usually :math:`u=\hbox{const}`.
-Especially the initial debugging of a program code can benefit greatly
-from such tests, because 1) all relevant numerical methods will
-exactly reproduce a constant solution, 2) many of the intermediate
-calculations are easy to control for a constant :math:`u`, and 3) even a
-constant :math:`u` can uncover many bugs in an implementation.
-
-The only constant solution for the problem :math:`u'=-au` is :math:`u=0`, but too
-many bugs can escape from that trivial solution.  It is much better to
-search for a problem where :math:`u=C=\hbox{const}\neq 0`.  Then :math:`u'=-a(t)u
-+ b(t)` is more appropriate: with :math:`u=C` we can choose any :math:`a(t)` and
-set :math:`b=a(t)C` and :math:`I=C`. An appropriate test function is
-
-.. code-block:: python
-
-        def test_constant_solution():
-            """
-            Test problem where u=u_const is the exact solution, to be
-            reproduced (to machine precision) by any relevant method.
-            """
-            def exact_solution(t):
-                return u_const
-        
-            def a(t):
-                return 2.5*(1+t**3)  # can be arbitrary
-        
-            def b(t):
-                return a(t)*u_const
-        
-            u_const = 2.15
-            theta = 0.4; I = u_const; dt = 4
-            Nt = 4  # enough with a few steps
-            u, t = solver(I=I, a=a, b=b, T=Nt*dt, dt=dt, theta=theta)
-            print u
-            u_e = exact_solution(t)
-            difference = abs(u_e - u).max()  # max deviation
-            tol = 1E-14
-            assert difference < tol
-
-An interesting question is what type of bugs that will make the
-computed :math:`u^n` deviate from the exact solution :math:`C`.
-Fortunately, the updating formula and the initial condition must
-be absolutely correct for the test to pass! Any attempt to make
-a wrong indexing in terms like ``a(t[n])`` or any attempt to
-introduce an erroneous factor in the formula creates a solution
-that is different from :math:`C`.
-
-.. _decay:MMS:
-
-Verification via manufactured solutions
----------------------------------------
-
-.. index:: method of manufactured solutions
-
-.. index:: MMS (method of manufactured solutions)
-
-Following the idea of the previous section, we can choose any formula
-as the exact solution, insert the formula in the ODE problem and fit
-the data :math:`a(t)`, :math:`b(t)`, and :math:`I` to make the chosen
-formula fulfill the equation. This
-powerful technique for generating exact solutions is very useful for
-verification purposes and known as the *method of manufactured
-solutions*, often abbreviated MMS.
-
-One common choice of solution is a linear function in the independent
-variable(s). The rationale behind such a simple variation is that
-almost any relevant numerical solution method for differential
-equation problems is able to reproduce the linear function exactly to
-machine precision (if :math:`u` is about unity in size; precision is lost if
-:math:`u` take on large values, see :ref:`decay:fd2:exer:precision`).
-The linear solution also makes some stronger demands to the
-numerical method and the implementation than the constant solution
-used in the section :ref:`decay:verify:trivial`, at least in more
-complicated applications. However, the constant solution is often
-ideal for initial debugging before proceeding with a linear solution.
-
-We choose a linear solution :math:`u(t) = ct + d`. From the initial condition it
-follows that :math:`d=I`.
-Inserting this :math:`u` in the ODE results in
+.. _Eq:decay:analysis:unex:
 
 .. math::
-         c = -a(t)u + b(t) {\thinspace .}  
+   :label: decay:analysis:unex
+        
+        u^{n} = IA^n,\quad A = \frac{1 - (1-\theta) a\Delta t}{1 + \theta a\Delta t}{\thinspace .}
+        
+        
 
-Any function :math:`u=ct+I` is then a correct solution if we choose
+
+.. admonition:: Solving difference equations
+
+   Difference equations where all terms are linear in
+   :math:`u^{n+1}`, :math:`u^n`, and maybe :math:`u^{n-1}`, :math:`u^{n-2}`, etc., are
+   called *homogeneous, linear* difference equations, and their solutions
+   are generally of the form :math:`u^n=A^n`. Inserting this expression
+   and dividing by :math:`A^{n+1}` gives
+   a polynomial equation in :math:`A`. In the present case we get
+   
+   .. math::
+            A = \frac{1 - (1-\theta) a\Delta t}{1 + \theta a\Delta t}{\thinspace .} 
+   
+   This is a solution technique of wider applicability than repeated use of
+   the recursion :eq:`decay:analysis:scheme`.
+
+
+
+
+Regardless of the solution approach, we have obtained a formula for
+:math:`u^n`.  This formula can explain everything what we see in the figures
+above, but it also gives us a more general insight into accuracy and
+stability properties of the three schemes.
+
+Stability
+---------
+
+.. index:: stability
+
+Since :math:`u^n` is a factor :math:`A`
+raised to an integer power :math:`n`, we realize that :math:`A<0`
+will for odd powers imply :math:`u^n<0` and for even power result in :math:`u^n>0`.
+That is, the solution oscillates between the mesh points.
+We have oscillations due to :math:`A<0` when
+
+.. _Eq:decay:th:stability:
 
 .. math::
-         b(t) = c + a(t)(ct + I) {\thinspace .}  
-
-With this :math:`b(t)` there are no restrictions on :math:`a(t)` and :math:`c`.
-
-Let prove that such a linear solution obeys the numerical
-schemes. To this end, we must check that :math:`u^n = ca(t_n)(ct_n+I)`
-fulfills the discrete equations. For these calculations, and
-later calculations involving linear solutions inserted in
-finite difference schemes, it is convenient to
-compute the action of a difference operator on a linear function :math:`t`:
-
-.. _Eq:decay:fd2:Dop:tn:fw:
-
-.. math::
-   :label: decay:fd2:Dop:tn:fw
+   :label: decay:th:stability
         
-        \lbrack D_t^+ t\rbrack^n = \frac{t_{n+1}-t_n}{\Delta t}=1,
+        (1-\theta)a\Delta t > 1 {\thinspace .}
         
         
 
-.. _Eq:decay:fd2:Dop:tn:bw:
-
-.. math::
-   :label: decay:fd2:Dop:tn:bw
-          
-        \lbrack D_t^- t\rbrack^n = \frac{t_{n}-t_{n-1}}{\Delta t}=1,
-        
-        
-
-.. _Eq:decay:fd2:Dop:tn:cn:
-
-.. math::
-   :label: decay:fd2:Dop:tn:cn
-          
-        \lbrack D_t t\rbrack^n = \frac{t_{n+\frac{1}{2}}-t_{n-\frac{1}{2}}}{\Delta t}=\frac{(n+\frac{1}{2})\Delta t - (n-\frac{1}{2})\Delta t}{\Delta t}=1
-        
-        {\thinspace .}
-        
-
-Clearly, all three finite difference approximations to the derivative are
-exact for :math:`u(t)=t` or its mesh function counterpart :math:`u^n = t_n`.
-
-The difference equation for the Forward Euler scheme
-
-.. math::
-         [D^+_t u = -au + b]^n, 
-
-with :math:`a^n=a(t_n)`, :math:`b^n=c + a(t_n)(ct_n + I)`, and :math:`u^n=ct_n + I`
-then results in
-
-.. math::
-         c = -a(t_n)(ct_n+I) + c + a(t_n)(ct_n + I) = c 
-
-which is always fulfilled. Similar calculations can be done for the
-Backward Euler and Crank-Nicolson schemes, or the :math:`\theta`-rule for
-that matter. In all cases, :math:`u^n=ct_n +I` is an exact solution of
-the discrete equations. That is why we should expect that
-:math:`u^n - {u_{\small\mbox{e}}}(t_n) =0` mathematically and :math:`|u^n - {u_{\small\mbox{e}}}(t_n)|` less
-than a small number about the machine precision for :math:`n=0,\ldots,N_t`.
-
-The following function offers an implementation of this verification
-test based on a linear exact solution:
-
-.. code-block:: python
-
-        def test_linear_solution():
-            """
-            Test problem where u=c*t+I is the exact solution, to be
-            reproduced (to machine precision) by any relevant method.
-            """
-            def exact_solution(t):
-                return c*t + I
-        
-            def a(t):
-                return t**0.5  # can be arbitrary
-        
-            def b(t):
-                return c + a(t)*exact_solution(t)
-        
-            theta = 0.4; I = 0.1; dt = 0.1; c = -0.5
-            T = 4
-            Nt = int(T/dt)  # no of steps
-            u, t = solver(I=I, a=a, b=b, T=Nt*dt, dt=dt, theta=theta)
-            u_e = exact_solution(t)
-            difference = abs(u_e - u).max()  # max deviation
-            print difference
-            tol = 1E-14  # depends on c!
-            assert difference < tol
-
-Any error in the updating formula makes this test fail!
-
-Choosing more complicated formulas as the exact solution, say
-:math:`\cos(t)`, will not make the numerical and exact solution
-coincide to machine precision, because finite differencing of
-:math:`\cos(t)` does not exactly yield the exact derivative :math:`-\sin(t)`.
-In such cases, the verification procedure
-must be based on measuring the convergence rates as exemplified in
-the section :ref:`decay:convergence:rate`. Convergence rates can be
-computed as long as one has
-an exact solution of a problem that the solver can be tested on, but
-this can always be obtained by the method of manufactured solutions.
-
-Extension to systems of ODEs
-----------------------------
-
-Many ODE models involves more than one unknown function and more
-than one equation. Here is an example of two unknown functions :math:`u(t)`
-and :math:`v(t)`:
+Since :math:`A>0` is a requirement for having a numerical solution with the
+same basic property (monotonicity) as the exact solution, we may say
+that :math:`A>0` is a *stability criterion*. Expressed in terms of :math:`\Delta t`
+the stability criterion reads
 
 .. math::
         
-        u' = a u + bv,
+        \Delta t < \frac{1}{(1-\theta)a}{\thinspace .}
         
 
-.. math::
-          
-        v' = cu +  dv,
-        
+The Backward
+Euler scheme is always stable since :math:`A<0` is impossible for :math:`\theta=1`, while
+non-oscillating solutions for Forward Euler and Crank-Nicolson
+demand :math:`\Delta t\leq 1/a` and :math:`\Delta t\leq 2/a`, respectively.
+The relation between :math:`\Delta t` and :math:`a` look reasonable: a larger
+:math:`a` means faster decay and hence a need for smaller time steps.
 
-for constants :math:`a,b,c,d`.
-Applying the Forward Euler method to each equation results in simple
-updating formula
+Looking at Figure :ref:`decay:analysis:FE4c`, we see that with :math:`a\Delta
+t= 2\cdot 1.25=2.5`, :math:`A=-1.5`, and the solution :math:`u^n=(-1.5)^n`
+oscillates *and* grows. With :math:`a\Delta t = 2\cdot 0.75=1.5`, :math:`A=-0.5`,
+:math:`u^n=(-0.5)^n` decays but oscillates. The peculiar case :math:`\Delta t =
+0.5`, where the Forward Euler scheme produces a solution that is stuck
+on the :math:`t` axis, corresponds to :math:`A=0` and therefore :math:`u^0=I=1` and
+:math:`u^n=0` for :math:`n\geq 1`.  The decaying oscillations in the Crank-Nicolson scheme
+for :math:`\Delta t=1.25` are easily explained by the fact that :math:`A\approx -0.11<0`.
 
-.. math::
-        
-        u^{n+1} = u^n + \Delta t (a u^n + b v^n),
-        
+.. index:: amplification factor
 
-.. math::
-          
-        v^{n+1} = u^n + \Delta t (cu^n + dv^n)
-        {\thinspace .}
-        
-
-On the other hand, the Crank-Nicolson or Backward Euler schemes result in a
-:math:`2\times 2` linear system for the new unknowns. The latter schemes gives
-
-.. math::
-        
-        u^{n+1} = u^n + \Delta t (a u^{n+1} + b v^{n+1}),
-        
-
-.. math::
-          
-        v^{n+1} = v^n + \Delta t (c u^{n+1} + d v^{n+1}){\thinspace .}
-        
-
-Collecting :math:`u^{n+1}` as well as :math:`v^{n+1}` on the left-hand side results
-in
+The factor :math:`A` is called the *amplification factor* since the solution
+at a new time level is :math:`A` times the solution at the previous time
+level. For a decay process, we must obviously have :math:`|A|\leq 1`, which
+is fulfilled for all :math:`\Delta t` if :math:`\theta \geq 1/2`. Arbitrarily
+large values of :math:`u` can be generated when :math:`|A|>1` and :math:`n` is large
+enough. The numerical solution is in such cases totally irrelevant to
+an ODE modeling decay processes! To avoid this situation, we must
+for :math:`\theta < 1/2` have
 
 .. math::
         
-        (1 - \Delta t a)u^{n+1} + bv^{n+1} = u^n ,
+        \Delta t \leq \frac{2}{(1-2\theta)a},
         
 
-.. math::
-          
-        c u^{n+1} + (1 - \Delta t d) v^{n+1} = v^n ,
-        
+which means :math:`\Delta t < 2/a` for the Forward Euler scheme.
 
-which is a system of two coupled, linear, algebraic equations in two
-unknowns.
+.. index:: A-stable methods
 
-General first-order ODEs
-========================
+.. index:: L-stable methods
 
-We now turn the attention to general, nonlinear ODEs and systems of
-such ODEs.  Our focus is on numerical methods that can be readily
-reused for time-discretization PDEs, and diffusion PDEs in particular.
-The methods are just briefly listed, and we refer to the rich literature
-for more detailed descriptions and analysis - the books
-[Ref2]_ [Ref3]_ [Ref4]_ [Ref5]_ are all excellent resources on numerical methods for ODEs.
-We also demonstrate the Odespy Python interface to a range
-of different software for general first-order ODE systems.
 
-Generic form of first-order ODEs
---------------------------------
+.. admonition:: Stability properties
 
-ODEs are commonly written in the generic form
+   We may summarize the stability investigations as follows:
+   
+   1. The Forward Euler method is a *conditionally stable* scheme because
+      it requires :math:`\Delta t < 2/a` for avoiding growing solutions
+      and :math:`\Delta t < 1/a` for avoiding oscillatory solutions.
+   
+   2. The Crank-Nicolson is *unconditionally stable* with respect to
+      growing solutions, while it is conditionally stable with
+      the criterion :math:`\Delta t < 2/a` for avoiding oscillatory solutions.
+   
+   3. The Backward Euler method is unconditionally stable with respect
+      to growing and oscillatory solutions - any :math:`\Delta t` will work.
+   
+   Much literature on ODEs speaks about L-stable and A-stable methods.
+   In our case A-stable methods ensures non-growing solutions, while
+   L-stable methods also avoids oscillatory solutions.
 
-.. _Eq:decay:ode:general:
 
-.. math::
-   :label: decay:ode:general
-        
-        u' = f(u,t),\quad u(0)=I,
-        
-        
 
-where :math:`f(u,t)`  is some prescribed function.
-As an example, our most
-general exponential decay model :eq:`decay:problem:ab` has
-:math:`f(u,t)=-a(t)u(t) + b(t)`.
 
-The unknown :math:`u` in :eq:`decay:ode:general` may either be
-a scalar function of time :math:`t`, or a vector valued function of :math:`t` in
-case of a *system of ODEs* with :math:`m` unknown components:
+Comparing amplification factors
+-------------------------------
 
-.. math::
-         u(t) = (u^{(0)}(t),u^{(1)}(t),\ldots,u^{(m-1)}(t)) {\thinspace .}  
-
-In that case, the right-hand side is vector-valued function with :math:`m`
-components,
+After establishing how :math:`A` impacts the qualitative features of the
+solution, we shall now look more into how well the numerical amplification
+factor approximates the exact one. The exact solution reads
+:math:`u(t)=Ie^{-at}`, which can be rewritten as
 
 .. math::
         
-        f(u, t) = ( & f^{(0)}(u^{(0)}(t),\ldots,u^{(m-1)}(t)),\\ 
-                    & f^{(1)}(u^{(0)}(t),\ldots,u^{(m-1)}(t)),\\ 
-                    & \vdots,\\ 
-                    & f^{(m-1)}(u^{(0)}(t),\ldots,u^{(m-1)}(t)))
-        {\thinspace .}
+        {{u_{\small\mbox{e}}}}(t_n) = Ie^{-a n\Delta t} = I(e^{-a\Delta t})^n {\thinspace .}
         
 
-Actually, any system of ODEs can
-be written in the form :eq:`decay:ode:general`, but higher-order
-ODEs then need auxiliary unknown functions to enable conversion to
-a first-order system.
-
-Next we list some well-known methods for :math:`u'=f(u,t)`, valid both for
-a single ODE (scalar :math:`u`) and systems of ODEs (vector :math:`u`).
-The choice of methods is inspired by the kind of schemes that are
-popular also for time discretization of partial differential equations.
-
-The :math:`\theta`-rule
------------------------
-
-The :math:`\theta`-rule scheme applied to :math:`u'=f(u,t)` becomes
-
-.. _Eq:decay:fd2:theta:
-
-.. math::
-   :label: decay:fd2:theta
-        
-        \frac{u^{n+1}-u^n}{\Delta t} = \theta f(u^{n+1},t_{n+1}) +
-        (1-\theta)f(u^n, t_n){\thinspace .}
-        
-        
-
-Bringing the unknown :math:`u^{n+1}` to the left-hand side and the known terms
-on the right-hand side gives
-
-.. index:: implicit schemes
-
-.. index:: explicit schemes
-
-.. index:: theta-rule
-
-.. index:: theta-rule
+From this formula we see that the exact amplification factor is
 
 .. math::
         
-        u^{n+1} - \Delta t \theta f(u^{n+1},t_{n+1}) =
-        u^n + \Delta t(1-\theta)f(u^n, t_n){\thinspace .}
+        {A_{\small\mbox{e}}} = e^{-a\Delta t} {\thinspace .}
         
 
-For a general :math:`f` (not linear in :math:`u`), this equation is *nonlinear* in
-the unknown :math:`u^{n+1}` unless :math:`\theta = 0`. For a scalar ODE (:math:`m=1`),
-we have to solve a single nonlinear algebraic equation for :math:`u^{n+1}`,
-while for a system of ODEs, we get a system of coupled, nonlinear
-algebraic equations. Newton's method is a popular solution approach
-in both cases. Note that with the Forward Euler scheme (:math:`\theta =0`)
-we do not have to deal with nonlinear equations, because in that
-case we have an explicit updating formula for :math:`u^{n+1}`. This is known
-as an *explicit* scheme. With :math:`\theta\neq 1` we have to solve
-(systems of) algebraic equations, and the scheme is said to be *implicit*.
+We realize that the exact and numerical amplification factors depend
+on :math:`a` and :math:`\Delta t` through the product :math:`a\Delta t`. Therefore, it
+is convenient to introduce a symbol for this product, :math:`p=a\Delta t`,
+and view :math:`A` and :math:`{A_{\small\mbox{e}}}` as functions of :math:`p`. Figure
+:ref:`decay:analysis:fig:A` shows these functions. Crank-Nicolson is
+clearly closest to the exact amplification factor, but that method has
+the unfortunate oscillatory behavior when :math:`p>2`.
 
-An implicit 2-step backward scheme
-----------------------------------
+.. _decay:analysis:fig:A:
+
+.. figure:: A_factors.png
+   :width: 500
+
+   *Comparison of amplification factors*
+
+Series expansion of amplification factors
+-----------------------------------------
+
+As an alternative to the visual understanding inherent in Figure
+:ref:`decay:analysis:fig:A`, there is a strong tradition in numerical
+analysis to establish formulas for the approximation errors when the
+discretization parameter, here :math:`\Delta t`, becomes small. In the
+present case we let :math:`p` be our small discretization parameter, and it
+makes sense to simplify the expressions for :math:`A` and :math:`{A_{\small\mbox{e}}}` by using
+Taylor polynomials around :math:`p=0`.  The Taylor polynomials are accurate
+for small :math:`p` and greatly simplifies the comparison of the analytical
+expressions since we then can compare polynomials, term by term.
+
+Calculating the Taylor series for :math:`{A_{\small\mbox{e}}}` is easily done by hand, but
+the three versions of :math:`A` for :math:`\theta=0,1,{\frac{1}{2}}` lead to more
+cumbersome calculations.
+Nowadays, analytical computations can benefit greatly by
+symbolic computer algebra software. The Python package ``sympy``
+represents a powerful computer algebra system, not yet as sophisticated as
+the famous Maple and Mathematica systems, but free and
+very easy to integrate with our numerical computations in Python.
+
+When using ``sympy``, it is convenient to enter the interactive Python
+mode where we can write expressions and statements and immediately see
+the results.  Here is a simple example. We strongly recommend to use
+``isympy`` (or ``ipython``) for such interactive sessions.
+
+Let us illustrate ``sympy`` with a standard Python shell syntax
+(``>>>`` prompt) to compute a Taylor polynomial approximation to :math:`e^{-p}`:
+
+.. code-block:: ipy
+
+        >>> from sympy import *
+        >>> # Create p as a mathematical symbol with name 'p'
+        >>> p = Symbol('p')
+        >>> # Create a mathematical expression with p
+        >>> A_e = exp(-p)
+        >>>
+        >>> # Find the first 6 terms of the Taylor series of A_e
+        >>> A_e.series(p, 0, 6)
+        1 + (1/2)*p**2 - p - 1/6*p**3 - 1/120*p**5 + (1/24)*p**4 + O(p**6)
+
+Lines with ``>>>`` represent input lines and lines without
+this prompt represents the result of computations (note that
+``isympy`` and ``ipython`` apply other prompts, but in this text
+we always apply ``>>>`` for interactive Python computing).
+Apart from the order of the powers, the computed formula is easily
+recognized as the beginning of the Taylor series for :math:`e^{-p}`.
+
+Let us define the numerical amplification factor where :math:`p` and :math:`\theta`
+enter the formula as symbols:
+
+.. code-block:: ipy
+
+        >>> theta = Symbol('theta')
+        >>> A = (1-(1-theta)*p)/(1+theta*p)
+
+To work with the factor for the Backward Euler scheme we
+can substitute the value 1 for ``theta``:
+
+.. code-block:: ipy
+
+        >>> A.subs(theta, 1)
+        1/(1 + p)
+
+Similarly, we can replace ``theta`` by 1/2 for Crank-Nicolson,
+preferably using an exact rational representation of 1/2 in ``sympy``:
+
+.. code-block:: ipy
+
+        >>> half = Rational(1,2)
+        >>> A.subs(theta, half)
+        1/(1 + (1/2)*p)*(1 - 1/2*p)
+
+The Taylor series of the amplification factor for the Crank-Nicolson
+scheme can be computed as
+
+.. code-block:: ipy
+
+        >>> A.subs(theta, half).series(p, 0, 4)
+        1 + (1/2)*p**2 - p - 1/4*p**3 + O(p**4)
+
+We are now in a position to compare Taylor series:
+
+.. code-block:: ipy
+
+        >>> FE = A_e.series(p, 0, 4) - A.subs(theta, 0).series(p, 0, 4)
+        >>> BE = A_e.series(p, 0, 4) - A.subs(theta, 1).series(p, 0, 4)
+        >>> CN = A_e.series(p, 0, 4) - A.subs(theta, half).series(p, 0, 4 )
+        >>> FE
+        (1/2)*p**2 - 1/6*p**3 + O(p**4)
+        >>> BE
+        -1/2*p**2 + (5/6)*p**3 + O(p**4)
+        >>> CN
+        (1/12)*p**3 + O(p**4)
+
+From these expressions we see that the error :math:`A-{A_{\small\mbox{e}}}\sim {\mathcal{O}(p^2)}`
+for the Forward and Backward Euler schemes, while
+:math:`A-{A_{\small\mbox{e}}}\sim {\mathcal{O}(p^3)}` for the Crank-Nicolson scheme.
+It is the *leading order term*,
+i.e., the term of the lowest order (polynomial degree),
+that is of interest, because as :math:`p\rightarrow 0`, this term is
+(much) bigger than the higher-order terms (think of :math:`p=0.01`:
+:math:`p` is a hundred times larger than :math:`p^2`).
+
+Now, :math:`a` is a given parameter in the problem, while :math:`\Delta t` is
+what we can vary. One therefore usually writes the error expressions in
+terms :math:`\Delta t`. When then have
+
+.. math::
+        
+        A-{A_{\small\mbox{e}}} = \left\lbrace\begin{array}{ll}
+        {\mathcal{O}(\Delta t^2)}, & \hbox{Forward and Backward Euler},\\ 
+        {\mathcal{O}(\Delta t^3)}, & \hbox{Crank-Nicolson}
+        \end{array}\right.
+        
+
+We say that the Crank-Nicolson scheme has an error in the amplification
+factor of order :math:`\Delta t^3`, while the two other schemes are
+of order :math:`\Delta t^2` in the same quantity.
+What is the significance of the order expression? If we halve :math:`\Delta t`,
+the error in amplification factor at a time level will be reduced
+by a factor of 4 in the Forward and Backward Euler schemes, and by
+a factor of 8 in the Crank-Nicolson scheme. That is, as we
+reduce :math:`\Delta t` to obtain more accurate results, the Crank-Nicolson
+scheme reduces the error more efficiently than the other schemes.
+
+The fraction of numerical and exact amplification factors
+---------------------------------------------------------
 
 .. index::
-   single: backward scheme, 2-step
+   single: error; amplification factor
 
-.. index:: BDF2 scheme
+An alternative comparison of the schemes is to look at the
+ratio :math:`A/{A_{\small\mbox{e}}}`, or the error :math:`1-A/{A_{\small\mbox{e}}}` in this ratio:
 
-The implicit backward method with 2 steps applies a
-three-level backward difference as approximation to :math:`u'(t)`,
+.. code-block:: ipy
 
-.. math::
-         u'(t_{n+1}) \approx \frac{3u^{n+1} - 4u^{n} + u^{n-1}}{2\Delta t},
+        >>> FE = 1 - (A.subs(theta, 0)/A_e).series(p, 0, 4)
+        >>> BE = 1 - (A.subs(theta, 1)/A_e).series(p, 0, 4)
+        >>> CN = 1 - (A.subs(theta, half)/A_e).series(p, 0, 4)
+        >>> FE
+        (1/2)*p**2 + (1/3)*p**3 + O(p**4)
+        >>> BE
+        -1/2*p**2 + (1/3)*p**3 + O(p**4)
+        >>> CN
+        (1/12)*p**3 + O(p**4)
 
-which is an approximation of order :math:`\Delta t^2` to the first derivative.
-The resulting scheme for :math:`u'=f(u,t)` reads
+The leading-order terms have the same powers as
+in the analysis of :math:`A-{A_{\small\mbox{e}}}`.
 
-.. _Eq:decay:fd2:bw:2step:
+.. _decay:analysis:gobal:error:
 
-.. math::
-   :label: decay:fd2:bw:2step
-        
-        u^{n+1} = \frac{4}{3}u^n - \frac{1}{3}u^{n-1} +
-        \frac{2}{3}\Delta t f(u^{n+1}, t_{n+1})
-        {\thinspace .}
-        
-        
-
-Higher-order versions of the scheme :eq:`decay:fd2:bw:2step` can
-be constructed by including more time levels. These schemes are known
-as the Backward Differentiation Formulas (BDF), and the particular
-version :eq:`decay:fd2:bw:2step` is often referred to as BDF2.
-
-Note that the scheme :eq:`decay:fd2:bw:2step` is implicit and requires
-solution of nonlinear equations when :math:`f` is nonlinear in :math:`u`.  The
-standard 1st-order Backward Euler method or the Crank-Nicolson scheme
-can be used for the first step.
-
-Leapfrog schemes
-----------------
-
-.. index:: Leapfrog scheme
-
-The ordinary Leapfrog scheme
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The derivative of :math:`u` at some point :math:`t_n` can be approximated by
-a central difference over two time steps,
-
-.. math::
-        
-        u'(t_n)\approx \frac{u^{n+1}-u^{n-1}}{2\Delta t} = [D_{2t}u]^n
-        
-
-which is an approximation of second order in :math:`\Delta t`. The scheme
-can then be written as
-
-.. math::
-         [D_{2t}u=f(u,t)]^n, 
-
-in operator notation. Solving for :math:`u^{n+1}` gives
-
-.. _Eq:decay:fd2:leapfrog:
-
-.. math::
-   :label: decay:fd2:leapfrog
-        
-        u^{n+1} = u^{n-1} + \Delta t f(u^n, t_n)
-        {\thinspace .}
-        
-        
-
-Observe that :eq:`decay:fd2:leapfrog` is an explicit scheme, and that
-a nonlinear :math:`f` (in :math:`u`) is trivial to handle since it only involves
-the known :math:`u^n` value.
-Some other scheme must be used as starter to compute :math:`u^1`, preferably
-the Forward Euler scheme since it is also explicit.
+The global error at a point
+---------------------------
 
 .. index::
-   single: Leapfrog scheme, filtered
-
-The filtered Leapfrog scheme
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Unfortunately, the Leapfrog scheme :eq:`decay:fd2:leapfrog`
-will develop growing oscillations with time (see :ref:`decay:fd2:exer:leapfrog1`)[[[. A remedy for such undesired oscillations
-is to introduce a *filtering technique*. First, a standard Leapfrog
-step is taken, according to :eq:`decay:fd2:leapfrog`, and then
-the previous :math:`u^n` value is adjusted according to
-
-.. _Eq:decay:fd2:leapfrog:filtered:
-
-.. math::
-   :label: decay:fd2:leapfrog:filtered
-        
-        u^n\ \leftarrow\ u^n + \gamma (u^{n-1} - 2u^n + u^{n+1})
-        
-        {\thinspace .}
-        
-
-The :math:`\gamma`-terms will effectively damp oscillations in the solution,
-especially those with short wavelength (like point-to-point oscillations).
-A common choice of :math:`\gamma` is 0.6 (a value used in the
-famous NCAR Climate Model).
-
-.. Need to elaborate more on this:
-
-.. The difference in th :math:`\gamma` term in :eq:`decay:fd2:leapfrog:filtered`
-
-.. can be recognized as a finite difference approximation to
-
-.. :math:`\Delta t^2 u''(t_n)`.
-
-The 2nd-order Runge-Kutta method
---------------------------------
-
-.. index:: Heun's method
-
-.. index::
-   single: Runge-Kutta, 2nd-order method
-
-The two-step scheme
-
-.. _Eq:decay:fd2:RK2:s1:
-
-.. math::
-   :label: decay:fd2:RK2:s1
-        
-        u^* = u^n + \Delta t f(u^n, t_n),
-        
-        
-
-.. _Eq:decay:fd2:RK2:s2:
-
-.. math::
-   :label: decay:fd2:RK2:s2
-          
-        u^{n+1} = u^n + \Delta t \frac{1}{2} \left( f(u^n, t_n) + f(u^*, t_{n+1})
-        \right),
-        
-        
-
-essentially applies a Crank-Nicolson method :eq:`decay:fd2:RK2:s2`
-to the ODE, but replaces
-the term :math:`f(u^{n+1}, t_{n+1})` by a prediction
-:math:`f(u^{*}, t_{n+1})` based on a Forward Euler step :eq:`decay:fd2:RK2:s1`.
-The scheme :eq:`decay:fd2:RK2:s1`-:eq:`decay:fd2:RK2:s2` is
-known as Huen's method, but is also a 2nd-order Runge-Kutta method.
-The scheme is explicit, and the error is expected to behave as :math:`\Delta t^2`.
-
-A 2nd-order Taylor-series method
---------------------------------
-
-.. index:: Taylor-series methods (for ODEs)
-
-One way to compute :math:`u^{n+1}` given :math:`u^n` is to use a Taylor polynomial.
-We may write up a polynomial of 2nd degree:
-
-.. math::
-        
-        u^{n+1} = u^n + u'(t_n)\Delta t + {\frac{1}{2}}u''(t_n)\Delta t^2
-        {\thinspace .}
-        
-
-From the equation :math:`u'=f(u,t)` it follows that the derivatives of :math:`u`
-can be expressed in terms of :math:`f` and its derivatives:
-
-.. math::
-        
-        u'(t_n) &=f(u^n,t_n),\\ 
-        u''(t_n) &=
-        \frac{\partial f}{\partial u}(u^n,t_n) u'(t_n) + \frac{\partial f}{\partial t}\\ 
-        &=  f(u^n,t_n)\frac{\partial f}{\partial u}(u^n,t_n)  +
-        \frac{\partial f}{\partial t},
-        
-
-resulting in the scheme
-
-.. _Eq:decay:fd2:Taylor2:
-
-.. math::
-   :label: decay:fd2:Taylor2
-        
-        u^{n+1} = u^n + f(u^n,t_n)\Delta t + \frac{1}{2}\left(
-        f(u^n,t_n)\frac{\partial f}{\partial u}(u^n,t_n)  +
-        \frac{\partial f}{\partial t}\right)\Delta t^2
-        {\thinspace .}
-        
-        
-
-More terms in the series could be included in the Taylor polynomial to
-obtain methods of higher order than 2.
-
-The 2nd- and 3rd-order Adams-Bashforth schemes
-----------------------------------------------
-
-.. index::
-   single: Adams-Bashforth scheme, 2nd-order
-
-The following method is known as the 2nd-order Adams-Bashforth scheme:
-
-.. _Eq:decay:fd2:AB2:
-
-.. math::
-   :label: decay:fd2:AB2
-        
-        u^{n+1} = u^n + \frac{1}{2}\Delta t\left( 3f(u^n, t_n) - f(u^{n-1}, t_{n-1})
-        \right)
-        {\thinspace .}
-        
-        
-
-The scheme is explicit and requires another one-step scheme to compute
-:math:`u^1` (the Forward Euler scheme or Heun's method, for instance).
-As the name implies, the scheme is of order :math:`\Delta t^2`.
-
-.. index::
-   single: Adams-Bashforth scheme, 3rd order
-
-Another explicit scheme, involving four time levels, is the
-3rd-order Adams-Bashforth scheme
-
-.. _Eq:decay:fd2:AB3:
-
-.. math::
-   :label: decay:fd2:AB3
-        
-        u^{n+1} = u^n + \frac{1}{12}\left( 23f(u^n, t_n) - 16 f(u^{n-1},t_{n-1})
-        + 5f(u^{n-2}, t_{n-2})\right)
-        {\thinspace .}
-        
-        
-
-The numerical error is of order :math:`\Delta t^3`, and the scheme needs
-some method for computing :math:`u^1` and :math:`u^2`.
-
-More general, higher-order Adams-Bashforth schemes (also called
-*explicit Adams methods*) compute :math:`u^{n+1}` as a linear combination
-of :math:`f` at :math:`k` previous time steps:
-
-.. math::
-         u^{n+1} = u^n + \sum_{j=0}^k \beta_jf(u^{n-j},t_{n-j}),
-
-where :math:`\beta_j` are known coefficients.
-
-.. _decay:fd2:RK4:
-
-The 4th-order Runge-Kutta method
---------------------------------
-
-.. index::
-   single: Runge-Kutta, 4th-order method
-
-.. index:: RK4
-
-The perhaps most widely used method to solve ODEs is the 4th-order
-Runge-Kutta method, often called RK4.
-Its derivation is a nice illustration of common
-numerical approximation strategies, so let us go through the
-steps in detail.
-
-The starting point is to integrate the ODE
-:math:`u'=f(u,t)` from :math:`t_n` to :math:`t_{n+1}`:
-
-.. math::
-         u(t_{n+1}) - u(t_n) = \int\limits_{t_{n}}^{t_{n+1}} f(u(t),t)dt{\thinspace .} 
-
-We want to compute :math:`u(t_{n+1})` and regard :math:`u(t_n)` as known.
-The task is to find good approximations for the integral, since the
-integrand involves the unknown :math:`u` between :math:`t_n` and :math:`t_{n+1}`.
-
-The integral can be approximated by the famous
-`Simpson's rule <http://en.wikipedia.org/wiki/Simpson's_rule>`__:
-
-.. math::
-         \int\limits_{t_{n}}^{t_{n+1}} f(u(t),t)dt
-        \approx \frac{\Delta t}{6}\left( f^n + 4f^{n+\frac{1}{2}} + f^{n+1}\right){\thinspace .}
-
-The problem now is that we do not know :math:`f^{n+\frac{1}{2}}=f(u^{n+\frac{1}{2}},t_{n+\frac{1}{2}})`
-and :math:`f^{n+1}=(u^{n+1},t_{n+1})` as we know only :math:`u^n` and hence :math:`f^n`.
-The idea is to use various approximations for :math:`f^{n+\frac{1}{2}}` and
-:math:`f^{n+1}` based on using well-known schemes for the ODE in the
-intervals :math:`[t_n,t_{n+\frac{1}{2}}]` and :math:`[t_n, t_{n+1}]`.
-We split the integral approximation into four terms:
-
-.. math::
-         \int\limits_{t_{n}}^{t_{n+1}} f(u(t),t)dt
-        \approx \frac{\Delta t}{6}\left( f^n + 2\hat{f}^{n+\frac{1}{2}}
-        + 2\tilde{f}^{n+\frac{1}{2}} + \bar{f}^{n+1}\right),
-
-where :math:`\hat{f}^{n+\frac{1}{2}}`, :math:`\tilde{f}^{n+\frac{1}{2}}`, and :math:`\bar{f}^{n+1}`
-are approximations to :math:`f^{n+\frac{1}{2}}` and
-:math:`f^{n+1}` that can be based on already computed quantities.
-For :math:`\hat{f}^{n+\frac{1}{2}}` we can apply
-an approximation to :math:`u^{n+\frac{1}{2}}` using the Forward Euler
-method with step :math:`\frac{1}{2}\Delta t`:
-
-.. _Eq:decay:fd2:RK4:hatf:
-
-.. math::
-   :label: decay:fd2:RK4:hatf
-        
-        \hat{f}^{n+\frac{1}{2}} = f(u^n + \frac{1}{2}{\Delta t} f^n, t_{n+\frac{1}{2}})
-        
-        
-
-Since this gives us a prediction of :math:`f^{n+\frac{1}{2}}`, we can for
-:math:`\tilde{f}^{n+\frac{1}{2}}` try a Backward Euler method to approximate :math:`u^{n+\frac{1}{2}}`:
-
-.. _Eq:decay:fd2:RK4:tildef:
-
-.. math::
-   :label: decay:fd2:RK4:tildef
-        
-        \tilde{f}^{n+\frac{1}{2}} = f(u^n + \frac{1}{2}\Delta t\hat{f}^{n+\frac{1}{2}}, t_{n+\frac{1}{2}}){\thinspace .}
-        
-        
-
-With :math:`\tilde{f}^{n+\frac{1}{2}}` as a hopefully good approximation to
-:math:`f^{n+\frac{1}{2}}`, we can for the final term :math:`\bar{f}^{n+1}` use
-a Crank-Nicolson method to approximate :math:`u^{n+1}`:
-
-.. _Eq:decay:fd2:RK4:barf:
-
-.. math::
-   :label: decay:fd2:RK4:barf
-        
-        \bar{f}^{n+1} = f(u^n + \Delta t \hat{f}^{n+\frac{1}{2}}, t_{n+1}){\thinspace .}
-        
-        
-
-We have now used the Forward and Backward Euler methods as well as the
-Crank-Nicolson method in the context of Simpson's rule. The hope is
-that the combination of these methods yields an overall time-stepping
-scheme from :math:`t_n` to :math:`t_n{+1}` that is much more accurate than the
-:math:`{\mathcal{O}(\Delta t)}` and :math:`{\mathcal{O}(\Delta t^2)}` of the individual steps.
-This is indeed true: the overall accuracy is :math:`{\mathcal{O}(\Delta t^4)}`!
-
-To summarize, the 4th-order Runge-Kutta method becomes
-
-.. math::
-        
-        u^{n+1} = u^n +
-        \frac{\Delta t}{6}\left( f^n + 2\hat{f}^{n+\frac{1}{2}}
-        + 2\tilde{f}^{n+\frac{1}{2}} + \bar{f}^{n+1}\right),
-        
-
-where the quantities on the right-hand side are computed from
-:eq:`decay:fd2:RK4:hatf`-:eq:`decay:fd2:RK4:barf`. Note that
-the scheme is fully explicit so there is never any need to solve linear or
-nonlinear algebraic
-equations. However, the stability is conditional and depends on :math:`f`.
-There is a whole range of *implicit* Runge-Kutta methods that
-are unconditionally stable, but require solution of algebraic
-equations involving :math:`f` at each time step.
-
-The simplest way to explore more sophisticated methods for ODEs is to
-apply one of the many high-quality software packages that exist, as the
-next section explains.
-
-The Odespy software
--------------------
-
-A wide range of the methods and software exist for solving :eq:`decay:ode:general`.
-Many of methods are accessible through a unified Python interface offered
-by the `Odespy <https://github.com/hplgit/odespy>`__ [Ref6]_ package.
-Odespy features simple Python implementations of the most fundamental
-schemes as well as Python interfaces to several famous packages for
-solving ODEs: `ODEPACK <https://computation.llnl.gov/casc/odepack/odepack_home.html>`__, `Vode <https://computation.llnl.gov/casc/odepack/odepack_home.html>`__,
-`rkc.f <http://www.netlib.org/ode/rkc.f>`__, `rkf45.f <http://www.netlib.org/ode/rkf45.f>`__, `Radau5 <http://www.unige.ch/~hairer/software.html>`__, as well
-as the ODE solvers in `SciPy <http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.ode.html>`__, `SymPy <http://docs.sympy.org/dev/modules/mpmath/calculus/odes.html>`__, and `odelab <http://olivierverdier.github.com/odelab/>`__.
-
-The usage of Odespy follows this setup for the ODE :math:`u'=-au`,
-:math:`u(0)=I`, :math:`t\in (0,T]`, here solved
-by the famous 4th-order Runge-Kutta method, using :math:`\Delta t=1`
-and :math:`N_t=6` steps:
+   single: error; global
+
+The error in the amplification factor reflects the error when
+progressing from time level :math:`t_n` to :math:`t_{n-1}`.
+To investigate the real error at a point, known as the *global error*,
+we look at :math:`e^n = u^n-{u_{\small\mbox{e}}}(t_n)` for some :math:`n` and Taylor expand the
+mathematical expressions as functions of :math:`p=a\Delta t`:
+
+.. code-block:: ipy
+
+        >>> n = Symbol('n')
+        >>> u_e = exp(-p*n)
+        >>> u_n = A**n
+        >>> FE = u_e.series(p, 0, 4) - u_n.subs(theta, 0).series(p, 0, 4)
+        >>> BE = u_e.series(p, 0, 4) - u_n.subs(theta, 1).series(p, 0, 4)
+        >>> CN = u_e.series(p, 0, 4) - u_n.subs(theta, half).series(p, 0, 4)
+        >>> FE
+        (1/2)*n*p**2 - 1/2*n**2*p**3 + (1/3)*n*p**3 + O(p**4)
+        >>> BE
+        (1/2)*n**2*p**3 - 1/2*n*p**2 + (1/3)*n*p**3 + O(p**4)
+        >>> CN
+        (1/12)*n*p**3 + O(p**4)
+
+For a fixed time :math:`t`, the parameter :math:`n` in these expressions increases
+as :math:`p\rightarrow 0` since :math:`t=n\Delta t =\mbox{const}` and hence
+:math:`n` must increase like :math:`\Delta t^{-1}`. With :math:`n` substituted by
+:math:`t/\Delta t` in
+the leading-order error terms, these become :math:`\frac{1}{2} na^2\Delta
+t^2 = {\frac{1}{2}}ta^2\Delta t` for the Forward and Backward Euler
+scheme, and :math:`\frac{1}{12}na^3\Delta t^3 = \frac{1}{12}ta^3\Delta t^2`
+for the Crank-Nicolson scheme.  The global error is therefore of
+second order (in :math:`\Delta t`) for the latter scheme and of first order for
+the former schemes.
+
+When the global error :math:`e^n\rightarrow 0` as :math:`\Delta t\rightarrow 0`,
+we say that the scheme is *convergent*. It means that the numerical
+solution approaches the exact solution as the mesh is refined, and
+this is a much desired property of a numerical method.
+
+Integrated errors
+-----------------
+
+It is common to study the norm of the numerical error, as
+explained in detail in the section :ref:`decay:computing:error:norm`.
+The :math:`L^2` norm can be computed by treating :math:`e^n` as a function
+of :math:`t` in ``sympy`` and performing symbolic integration. For
+the Forward Euler scheme we have
+
+.. code-block:: python
+
+        p, n, a, dt, t, T, theta = symbols('p n a dt t T 'theta')
+        A = (1-(1-theta)*p)/(1+theta*p)
+        u_e = exp(-p*n)
+        u_n = A**n
+        error = u_e.series(p, 0, 4) - u_n.subs(theta, 0).series(p, 0, 4)
+        # Introduce t and dt instead of n and p
+        error = error.subs('n', 't/dt').subs(p, 'a*dt')
+        error = error.as_leading_term(dt) # study only the first term
+        print error
+        error_L2 = sqrt(integrate(error**2, (t, 0, T)))
+        print error_L2
+
+The output reads
 
 .. code-block:: text
 
-        def f(u, t):
-            return -a*u
-        
-        import odespy
-        import numpy as np
-        
-        I = 1; a = 0.5; Nt = 6; dt = 1
-        solver = odespy.RK4(f)
-        solver.set_initial_condition(I)
-        t_mesh = np.linspace(0, Nt*dt, Nt+1)
-        u, t = solver.solve(t_mesh)
+        sqrt(30)*sqrt(T**3*a**4*dt**2*(6*T**2*a**2 - 15*T*a + 10))/60
 
-The previously listed methods for ODEs are all accessible in
-Odespy:
+which means that the :math:`L^2` error behaves like :math:`a^2\Delta t`.
 
- * the :math:`\theta`-rule: ``ThetaRule``
-
- * special cases of the :math:`\theta`-rule: ``ForwardEuler``, ``BackwardEuler``,
-   ``CrankNicolson``
-
- * the 2nd- and 4th-order Runge-Kutta methods: ``RK2`` and ``RK4``
-
- * The BDF methods and the Adam-Bashforth methods:
-   ``Vode``, ``Lsode``, ``Lsoda``, ``lsoda_scipy``
-
- * The Leapfrog scheme: ``Leapfrog`` and ``LeapfrogFiltered``
-
-Example: Runge-Kutta methods
-----------------------------
-
-Since all solvers have the same interface in Odespy, modulo different set of
-parameters to the solvers' constructors, one can easily make a list of
-solver objects and run a loop for comparing (a lot of) solvers. The
-code below, found in complete form in `decay_odespy.py <http://tinyurl.com/nm5587k/decay/decay_odespy.py>`__,
-compares the famous Runge-Kutta methods of orders 2, 3, and 4
-with the exact solution of the decay equation
-:math:`u'=-au`.
-Since we have quite long time steps, we have included the only
-relevant :math:`\theta`-rule for large time steps, the Backward Euler scheme
-(:math:`\theta=1`), as well.
-Figure :ref:`decay:odespy:fig1` shows the results.
-
-.. code-block:: python
-
-        import numpy as np
-        import scitools.std as plt
-        import sys
-        
-        def f(u, t):
-            return -a*u
-        
-        I = 1; a = 2; T = 6
-        dt = float(sys.argv[1]) if len(sys.argv) >= 2 else 0.75
-        Nt = int(round(T/dt))
-        t = np.linspace(0, Nt*dt, Nt+1)
-        
-        solvers = [odespy.RK2(f),
-                   odespy.RK3(f),
-                   odespy.RK4(f),
-                   odespy.BackwardEuler(f, nonlinear_solver='Newton')]
-        
-        legends = []
-        for solver in solvers:
-            solver.set_initial_condition(I)
-            u, t = solver.solve(t)
-        
-            plt.plot(t, u)
-            plt.hold('on')
-            legends.append(solver.__class__.__name__)
-        
-        # Compare with exact solution plotted on a very fine mesh
-        t_fine = np.linspace(0, T, 10001)
-        u_e = I*np.exp(-a*t_fine)
-        plt.plot(t_fine, u_e, '-') # avoid markers by specifying line type
-        legends.append('exact')
-        
-        plt.legend(legends)
-        plt.title('Time step: %g' % dt)
-        plt.show()
-
-Even though our ODE is linear, ``odespy.BackwardEuler`` will launch
-a nonlinear solver, which is Picard iteration by default, but that
-method leads to divergence. Specifying Newton's method leads to
-convergence in one iteration as expected in linear problems.
-
-
-.. admonition:: Visualization tip
-
-   We use SciTools for
-   plotting here, but importing ``matplotlib.pyplot`` as ``plt`` instead
-   also works. However, plain use of Matplotlib as done here results in
-   curves with different colors, which may be hard to distinguish on
-   black-and-white paper. Using SciTools, curves are
-   automatically given colors *and* markers, thus making curves easy
-   to distinguish on screen with colors and on black-and-white paper.
-   The automatic adding of markers is normally a bad idea for a
-   very fine mesh since all the markers get cluttered, but SciTools limits
-   the number of markers in such cases.
-   For the exact solution we use a very fine mesh, but in the code
-   above we specify the line type as a solid line (``-``), which means
-   no markers and just a color to be automatically determined by
-   the backend used for plotting (Matplotlib by default, but
-   SciTools gives the opportunity to use other backends
-   to produce the plot, e.g., Gnuplot or Grace).
-   
-   Also note the that the legends
-   are based on the class names of the solvers, and in Python the name of
-   a the class type (as a string) of an object ``obj`` is obtained by
-   ``obj.__class__.__name__``.
-
-
-
-
-.. _decay:odespy:fig1:
-
-.. figure:: decay_odespy1_png.png
-   :width: 600
-
-   *Behavior of different schemes for the decay equation*
-
-The runs in Figure :ref:`decay:odespy:fig1`
-and other experiments reveal that the 2nd-order Runge-Kutta
-method (``RK2``) is unstable for :math:`\Delta t>1` and decays slower than the
-Backward Euler scheme for large and moderate :math:`\Delta t` (see :ref:`decay:exer:RK2:Taylor:analysis` for an analysis).  However, for
-fine :math:`\Delta t = 0.25` the 2nd-order Runge-Kutta method approaches
-the exact solution faster than the Backward Euler scheme.  That is,
-the latter scheme does a better job for larger :math:`\Delta t`, while the
-higher order scheme is superior for smaller :math:`\Delta t`. This is a
-typical trend also for most schemes for ordinary and partial
-differential equations.
-
-The 3rd-order Runge-Kutta method (``RK3``) has also artifacts in form
-of oscillatory behavior for the larger :math:`\Delta t` values, much
-like that of the Crank-Nicolson scheme. For finer :math:`\Delta t`,
-the 3rd-order Runge-Kutta method converges quickly to the exact
-solution.
-
-The 4th-order Runge-Kutta method (``RK4``) is slightly inferior
-to the Backward Euler scheme on the coarsest mesh, but is then
-clearly superior to all the other schemes. It is definitely the
-method of choice for all the tested schemes.
-
-Remark about using the :math:`\theta`-rule in Odespy
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The Odespy package assumes that the ODE is written as :math:`u'=f(u,t)` with
-an :math:`f` that is possibly nonlinear in :math:`u`. The :math:`\theta`-rule for
-:math:`u'=f(u,t)` leads to
+Strictly speaking, the numerical error is only defined at the
+mesh points so it makes most sense to compute the
+:math:`\ell^2` error
 
 .. math::
-         u^{n+1} = u^{n} + \Delta t\left(\theta f(u^{n+1}, t_{n+1})
-        + (1-\theta) f(u^{n}, t_{n})\right),
+         ||e^n||_{\ell^2} = \sqrt{\Delta t\sum_{n=0}^{N_t} ({{u_{\small\mbox{e}}}}(t_n) - u^n)^2}
+        {\thinspace .} 
 
-which is a *nonlinear equation* in :math:`u^{n+1}`. Odespy's implementation
-of the :math:`\theta`-rule (``ThetaRule``) and the specialized Backward Euler
-(``BackwardEuler``) and Crank-Nicolson (``CrankNicolson``) schemes
-must invoke iterative methods for
-solving the nonlinear equation in :math:`u^{n+1}`. This is done even when
-:math:`f` is linear in :math:`u`, as in the model problem :math:`u'=-au`, where we can
-easily solve for :math:`u^{n+1}` by hand.  Therefore, we need to specify
-use of Newton's method to the equations.
-(Odespy allows other methods than Newton's to be used, for instance
-Picard iteration, but that method is not suitable. The reason is that it
-applies the Forward Euler scheme to generate a start value for
-the iterations. Forward Euler may give very wrong solutions
-for large :math:`\Delta t` values. Newton's method, on the other hand,
-is insensitive to the start value in *linear problems*.)
+We have obtained an exact analytical expressions for the error at :math:`t=t_n`,
+but here we use the leading-order error term only since we are mostly
+interested in how the error behaves as a polynomial in :math:`\Delta t`, and then
+the leading order term will dominate.
+For the Forward Euler scheme,
+:math:`{u_{\small\mbox{e}}}(t_n) - u^n \approx {\frac{1}{2}}np^2`, and we have
 
-.. _decay:fd2:adaptiveRK:
+.. math::
+         ||e^n||_{\ell^2}^2 = \Delta t\sum_{n=0}^{N_t} \frac{1}{4}n^2p^4
+        =\Delta t\frac{1}{4}p^4 \sum_{n=0}^{N_t} n^2{\thinspace .}
 
-Example: Adaptive Runge-Kutta methods
--------------------------------------
+Now, :math:`\sum_{n=0}^{N_t} n^2\approx \frac{1}{3}N_t^3`. Using this approximation,
+setting :math:`N_t =T/\Delta t`, and taking the square root gives the expression
 
-.. index:: adaptive time stepping
+.. math::
+         ||e^n||_{\ell^2} = \frac{1}{2}\sqrt{\frac{T^3}{3}} a^2\Delta t{\thinspace .}
 
-Odespy offers solution methods that can adapt the size of :math:`\Delta t`
-with time to match a desired accuracy in the solution. Intuitively,
-small time steps will be chosen in areas where the solution is changing
-rapidly, while larger time steps can be used where the solution
-is slowly varying. Some kind of *error estimator* is used to
-adjust the next time step at each time level.
+Calculations for the Backward Euler scheme are very similar and provide
+the same result, while the Crank-Nicolson scheme leads to
 
-.. index:: ode45
+.. math::
+         ||e^n||_{\ell^2} = \frac{1}{12}\sqrt{\frac{T^3}{3}}a^3\Delta t^2{\thinspace .}
 
-.. index:: Dormand-Prince Runge-Kutta 4-5 method
 
-A very popular adaptive method for solving ODEs is the Dormand-Prince
-Runge-Kutta method of order 4 and 5. The 5th-order method is used as a
-reference solution and the difference between the 4th- and 5th-order
-methods is used as an indicator of the error in the numerical
-solution.  The Dormand-Prince method is the default choice in MATLAB's
-widely used ``ode45`` routine.
+.. admonition:: Summary of errors
 
-We can easily set up Odespy to use the Dormand-Prince method and
-see how it selects the optimal time steps. To this end, we request
-only one time step from :math:`t=0` to :math:`t=T` and ask the method to
-compute the necessary non-uniform time mesh to meet a certain
-error tolerance. The code goes like
+   Both the point-wise and the time-integrated true errors are of
+   second order in :math:`\Delta t` for the Crank-Nicolson scheme and of
+   first order in :math:`\Delta t` for the Forward Euler and Backward Euler schemes.
 
-.. code-block:: python
 
-        import odespy
-        import numpy as np
-        import decay_mod
-        import sys
-        #import matplotlib.pyplot as plt
-        import scitools.std as plt
+
+
+Truncation error
+----------------
+
+The truncation error is a very frequently used error measure for
+finite difference methods. It is defined as *the error
+in the difference equation that arises when inserting the exact
+solution*. Contrary to many other error measures, e.g., the
+true error :math:`e^n={u_{\small\mbox{e}}}(t_n)-u^n`, the truncation error is a quantity that
+is easily computable.
+
+Let us illustrate the calculation of the truncation error
+for the Forward Euler scheme.
+We start with the difference equation on operator form,
+
+.. math::
+         \lbrack D_t u = -au\rbrack^n,
+
+i.e.,
+
+.. math::
+         \frac{u^{n+1}-u^n}{\Delta t} = -au^n{\thinspace .}
+
+The idea is to see how well the exact solution :math:`{u_{\small\mbox{e}}}(t)` fulfills
+this equation. Since :math:`{u_{\small\mbox{e}}}(t)` in general will not obey the
+discrete equation, error in the discrete equation, called
+a *residual*, denoted here by :math:`R^n`:
+
+.. _Eq:decay:analysis:trunc:Req:
+
+.. math::
+   :label: decay:analysis:trunc:Req
         
-        def f(u, t):
-            return -a*u
+        R^n = \frac{{u_{\small\mbox{e}}}(t_{n+1})-{u_{\small\mbox{e}}}(t_n)}{\Delta t} + a{u_{\small\mbox{e}}}(t_n)
+        {\thinspace .}
         
-        def exact_solution(t):
-            return I*np.exp(-a*t)
         
-        I = 1; a = 2; T = 5
-        tol = float(sys.argv[1])
-        solver = odespy.DormandPrince(f, atol=tol, rtol=0.1*tol)
-        
-        Nt = 1  # just one step - let the scheme find its intermediate points
-        t_mesh = np.linspace(0, T, Nt+1)
-        t_fine = np.linspace(0, T, 10001)
-        
-        solver.set_initial_condition(I)
-        u, t = solver.solve(t_mesh)
-        
-        # u and t will only consist of [I, u^Nt] and [0,T]
-        # solver.u_all and solver.t_all contains all computed points
-        plt.plot(solver.t_all, solver.u_all, 'ko')
-        plt.hold('on')
-        plt.plot(t_fine, exact_solution(t_fine), 'b-')
-        plt.legend(['tol=%.0E' % tol, 'exact'])
-        plt.savefig('tmp_odespy_adaptive.png')
-        plt.show()
 
-Running four cases with tolerances :math:`10^{-1}`, :math:`10^{-3}`, :math:`10^{-5}`,
-and :math:`10^{-7}`, gives the results in Figure :ref:`decay:odespy:fig2`.
-Intuitively, one would expect denser points in the beginning of
-the decay and larger time steps when the solution flattens out.
+The residual is defined at each mesh point and is therefore a mesh
+function with a superscript :math:`n`.
 
-.. _decay:odespy:fig2:
+The interesting feature of :math:`R^n` is to see how it
+depends on the discretization parameter :math:`\Delta t`.
+The tool for reaching
+this goal is to Taylor expand :math:`{u_{\small\mbox{e}}}` around the point where the
+difference equation is supposed to hold, here :math:`t=t_n`.
+We have that
 
-.. figure:: decay_DormandPrince_adaptivity.png
-   :width: 800
+.. math::
+         {u_{\small\mbox{e}}}(t_{n+1}) = {u_{\small\mbox{e}}}(t_n) + {u_{\small\mbox{e}}}'(t_n)\Delta t + \frac{1}{2}{u_{\small\mbox{e}}}''(t_n)
+        \Delta t^2 + \cdots 
 
-   *Choice of adaptive time mesh by the Dormand-Prince method for different tolerances*
+Inserting this Taylor series in :eq:`decay:analysis:trunc:Req` gives
+
+.. math::
+         R^n = {u_{\small\mbox{e}}}'(t_n) + \frac{1}{2}{u_{\small\mbox{e}}}''(t_n)\Delta t + \ldots + a{u_{\small\mbox{e}}}(t_n){\thinspace .}
+
+Now, :math:`{u_{\small\mbox{e}}}` fulfills the ODE :math:`{u_{\small\mbox{e}}}'=-a{u_{\small\mbox{e}}}` such that the first and last
+term cancels and we have
+
+.. math::
+         R^n \approx \frac{1}{2}{u_{\small\mbox{e}}}''(t_n)\Delta t {\thinspace .} 
+
+This :math:`R^n` is the *truncation error*, which for the Forward Euler is seen
+to be of first order in :math:`\Delta t`.
+
+The above procedure can be repeated for the Backward Euler and the
+Crank-Nicolson schemes. We start with the scheme in operator notation,
+write it out in detail, Taylor expand :math:`{u_{\small\mbox{e}}}` around the point :math:`\tilde t`
+at which the difference equation is defined, collect terms that
+correspond to the ODE (here :math:`{u_{\small\mbox{e}}}' + a{u_{\small\mbox{e}}}`), and identify the remaining
+terms as the residual :math:`R`, which is the truncation error.
+The Backward Euler scheme leads to
+
+.. math::
+         R^n \approx -\frac{1}{2}{u_{\small\mbox{e}}}''(t_n)\Delta t, 
+
+while the Crank-Nicolson scheme gives
+
+.. math::
+         R^{n+\frac{1}{2}} \approx \frac{1}{24}{u_{\small\mbox{e}}}'''(t_{n+\frac{1}{2}})\Delta t^2{\thinspace .}
+
+The *order* :math:`r` of a finite difference scheme is often defined through
+the leading term :math:`\Delta t^r` in the truncation error. The above
+expressions point out that the Forward and Backward Euler schemes are
+of first order, while Crank-Nicolson is of second order.  We have
+looked at other error measures in other sections, like the error in
+amplification factor and the error :math:`e^n={u_{\small\mbox{e}}}(t_n)-u^n`, and expressed
+these error measures in terms of :math:`\Delta t` to see the order of the
+method. Normally, calculating the truncation error is more
+straightforward than deriving the expressions for other error measures
+and therefore the easiest way to establish the order of a scheme.
+
+Consistency, stability, and convergence
+---------------------------------------
+
+.. index:: consistency
+
+.. index:: stability
+
+.. index:: convergence
+
+Three fundamental concepts when solving differential equations by
+numerical methods are consistency, stability, and convergence.  We
+shall briefly touch these concepts below in the context of the present
+model problem.
+
+Consistency means that the error in the difference equation, measured
+through the truncation error, goes to zero as :math:`\Delta t\rightarrow
+0`. Since the truncation error tells how well the exact solution
+fulfills the difference equation, and the exact solution fulfills the
+differential equation, consistency ensures that the difference
+equation approaches the differential equation in the limit. The
+expressions for the truncation errors in the previous section are all
+proportional to :math:`\Delta t` or :math:`\Delta t^2`, hence they vanish as
+:math:`\Delta t\rightarrow 0`, and all the schemes are consistent.  Lack of
+consistency implies that we actually solve a different differential
+equation in the limit :math:`\Delta t\rightarrow 0` than we aim at.
+
+Stability means that the numerical solution exhibits the same
+qualitative properties as the exact solution. This is obviously a
+feature we want the numerical solution to have. In the present
+exponential decay model, the exact solution is monotone and
+decaying. An increasing numerical solution is not in accordance with
+the decaying nature of the exact solution and hence unstable. We can
+also say that an oscillating numerical solution lacks the property of
+monotonicity of the exact solution and is also unstable. We have seen
+that the Backward Euler scheme always leads to monotone and decaying
+solutions, regardless of :math:`\Delta t`, and is hence stable. The Forward
+Euler scheme can lead to increasing solutions and oscillating
+solutions if :math:`\Delta t` is too large and is therefore unstable unless
+:math:`\Delta t` is sufficiently small.  The Crank-Nicolson can never lead
+to increasing solutions and has no problem to fulfill that stability
+property, but it can produce oscillating solutions and is unstable in
+that sense, unless :math:`\Delta t` is sufficiently small.
+
+Convergence implies that the global (true) error mesh function :math:`e^n =
+{u_{\small\mbox{e}}}(t_n)-u^n\rightarrow 0` as :math:`\Delta t\rightarrow 0`. This is really
+what we want: the numerical solution gets as close to the exact
+solution as we request by having a sufficiently fine mesh.
+
+Convergence is hard to establish theoretically, except in quite simple
+problems like the present one. Stability and consistency are much
+easier to calculate. A major breakthrough in the understanding of
+numerical methods for differential equations came in 1956 when Lax and
+Richtmeyer established equivalence between convergence on one hand and
+consistency and stability on the other (the `Lax equivalence theorem <http://en.wikipedia.org/wiki/Lax_equivalence_theorem>`__).  In practice
+it meant that one can first establish that a method is stable and
+consistent, and then it is automatically convergent (which is much
+harder to establish).  The result holds for linear problems only, and
+in the world of nonlinear differential equations the relations between
+consistency, stability, and convergence are much more complicated.
+
+We have seen in the previous analysis that the Forward Euler,
+Backward Euler, and Crank-Nicolson schemes are convergent (:math:`e^n\rightarrow 0`),
+that they are consistent (:math:`R^n\rightarrow 0`, and that they are
+stable under certain conditions on the size of :math:`\Delta t`.
+We have also derived explicit mathematical expressions for :math:`e^n`,
+the truncation error, and the stability criteria.
+
+.. Look in Asher and Petzold, p 40
 
 Exercises  (2)
 ==============
 
 .. --- begin exercise ---
 
-.. _decay:fd2:exer:precision:
+.. _decay:analysis:exer:fd:exp:plot:
 
-Exercise 3: Experiment with precision in tests and the size of :math:`u`
-------------------------------------------------------------------------
-
-It is claimed in the section :ref:`decay:MMS` that most numerical methods will
-reproduce a linear exact solution to machine precision. Test this
-assertion using the test function ``test_linear_solution`` in the
-`decay_vc.py <http://tinyurl.com/nm5587k/decay/decay_vc.py>`__ program.
-Vary the parameter ``c`` from very small, via ``c=1`` to many larger values,
-and print out the maximum difference between the numerical solution
-and the exact solution. What is the relevant value of the tolerance
-in the float comparison in each case?
-Filename: ``test_precision.py``.
-
-.. --- end exercise ---
-
-.. --- begin exercise ---
-
-.. _decay:fd2:exer:bw2:
-
-Exercise 4: Implement the 2-step backward scheme
-------------------------------------------------
-
-Implement the 2-step backward method :eq:`decay:fd2:bw:2step` for the
-model :math:`u'(t) = -a(t)u(t) + b(t)`, :math:`u(0)=I`.  Allow the first step to
-be computed by either the Backward Euler scheme or the Crank-Nicolson
-scheme. Verify the implementation by choosing :math:`a(t)` and :math:`b(t)` such
-that the exact solution is linear in :math:`t` (see the section :ref:`decay:MMS`). Show mathematically that a linear solution is indeed a
-solution of the discrete equations.
-
-Compute convergence rates (see the section :ref:`decay:convergence:rate`) in
-a test case :math:`a=\hbox{const}` and :math:`b=0`, where we easily have an exact
-solution, and determine if the choice of a first-order scheme
-(Backward Euler) for the first step has any impact on the overall
-accuracy of this scheme. The expected error goes like :math:`{\mathcal{O}(\Delta t^2)}`.
-Filename: ``decay_backward2step.py``.
-
-.. --- end exercise ---
-
-.. --- begin exercise ---
-
-.. _decay:fd2:exer:AB2:
-
-Exercise 5: Implement the 2nd-order Adams-Bashforth scheme
-----------------------------------------------------------
-
-Implement the 2nd-order Adams-Bashforth method :eq:`decay:fd2:AB2`
-for the decay problem :math:`u'=-a(t)u + b(t)`, :math:`u(0)=I`, :math:`t\in (0, T]`.
-Use the Forward Euler method for the first step such that the overall
-scheme is explicit. Verify the implementation using an exact
-solution that is linear in time.
-Analyze the scheme by searching for solutions :math:`u^n=A^n` when :math:`a=\hbox{const}`
-and :math:`b=0`. Compare this second-order secheme to the Crank-Nicolson scheme.
-Filename: ``decay_AdamsBashforth2.py``.
-
-.. --- end exercise ---
-
-.. --- begin exercise ---
-
-.. _decay:fd2:exer:AB3:
-
-Exercise 6: Implement the 3rd-order Adams-Bashforth scheme
-----------------------------------------------------------
-
-Implement the 3rd-order Adams-Bashforth method :eq:`decay:fd2:AB3`
-for the decay problem :math:`u'=-a(t)u + b(t)`, :math:`u(0)=I`, :math:`t\in (0, T]`.
-Since the scheme is explicit, allow it to be started by two steps with
-the Forward Euler method.  Investigate experimentally the case where
-:math:`b=0` and :math:`a` is a constant: Can we have oscillatory solutions for
-large :math:`\Delta t`?
-Filename: ``decay_AdamsBashforth3.py``.
-
-.. --- end exercise ---
-
-.. --- begin exercise ---
-
-.. _decay:exer:RK2:Taylor:analysis:
-
-Exercise 7: Analyze explicit 2nd-order methods
-----------------------------------------------
-
-Show that the schemes :eq:`decay:fd2:RK2:s2` and
-:eq:`decay:fd2:Taylor2` are identical in the case :math:`f(u,t)=-a`, where
-:math:`a>0` is a constant. Assume that the numerical solution reads
-:math:`u^n=A^n` for some unknown amplification factor :math:`A` to be determined.
-Find :math:`A` and derive stability criteria. Can the scheme produce
-oscillatory solutions of :math:`u'=-au`? Plot the numerical and exact
-amplification factor.
-Filename: ``decay_RK2_Taylor2.py``.
-
-.. --- end exercise ---
-
-.. --- begin exercise ---
-
-.. _decay:fd2:exer:leapfrog1:
-
-Problem 8: Implement and investigate the Leapfrog scheme
+Exercise 6: Visualize the accuracy of finite differences
 --------------------------------------------------------
 
-A Leapfrog scheme
-for the ODE :math:`u'(t) = -a(t)u(t) + b(t)` is defined by
+The purpose of this exercise is to visualize the accuracy of finite difference
+approximations of the derivative of a given function.
+For any finite difference approximation, take the Forward Euler difference
+as an example, and any specific function, take  :math:`u=e^{-at}`,
+we may introduce an error fraction
 
 .. math::
-         \lbrack D_{2t}u = -au+b\rbrack^n{\thinspace .}
+         E = \frac{[D_t^+ u]^n}{u'(t_n)} = \frac{\exp{(-a(t_n+\Delta t))} - \exp{(-at_n)}}{-a\exp{(-at_n)\Delta t}} = \frac{1}{a\Delta t}\left(1 -\exp{(-a\Delta t)}\right),
+        
 
-A separate method is needed to compute :math:`u^1`. The Forward Euler
-scheme is a possible candidate.
+and view :math:`E` as a function of :math:`\Delta t`. We expect that
+:math:`\lim_{\Delta t\rightarrow 0}E=1`, while :math:`E` may deviate significantly from
+unity for large :math:`\Delta t`. How the error depends on :math:`\Delta t` is best
+visualized in a graph where we use a logarithmic scale for :math:`\Delta t`,
+so we can cover many orders of magnitude of that quantity. Here is
+a code segment creating an array of 100 intervals, on the logarithmic
+scale, ranging from :math:`10^{-6}` to :math:`10^{-0.5}` and then plotting :math:`E` versus
+:math:`p=a\Delta t` with logarithmic scale on the :math:`p` axis:
 
-.. A possible test case is
+.. code-block:: python
 
-.. :math:`u'=-au + b`, :math:`u(0)=0`, where :math:`{u_{\small\mbox{e}}}(t)=b/a + (I - b/a)e^{-at}` if
+        from numpy import logspace, exp
+        from matplotlib.pyplot import plot, semilogx
+        p = logspace(-6, -0.5, 101)
+        y = (1-exp(-p))/p
+        semilogx(p, y)
 
-.. :math:`a` and :math:`b` are constants.
+Illustrate such errors for the finite difference operators :math:`[D_t^+u]^n`
+(forward), :math:`[D_t^-u]^n` (backward), and :math:`[D_t u]^n` (centered) in
+the same plot.
 
-**a)**
-Implement the Leapfrog scheme for the model equation.
-Plot the solution in the case :math:`a=1`, :math:`b=0`, :math:`I=1`,
-:math:`\Delta t = 0.01`, :math:`t\in [0,4]`. Compare with the exact
-solution :math:`{u_{\small\mbox{e}}}(t)=e^{-t}`.
-
-**b)**
-Show mathematically that a linear solution in :math:`t` fulfills the
-Forward Euler scheme for the first step and the Leapfrog scheme
-for the subsequent steps. Use this linear solution to verify
-the implementation, and automate the verification through a test
-function.
+Perform a Taylor series expansions of the error fractions and find
+the leading order :math:`r` in the expressions of type
+:math:`1 + Cp^r + {\mathcal{O}(p^{r+1)}}`, where :math:`C` is some constant.
 
 .. --- begin hint in exercise ---
 
 **Hint.**
-It can be wise to automate the calculations such that it is easy to
-redo the calculations for other types of solutions. Here is
-a possible ``sympy`` function that takes a symbolic expression ``u``
-(implemented as a Python function of ``t``), fits the ``b`` term, and
-checks if ``u`` fulfills the discrete equations:
-
-.. code-block:: python
-
-        import sympy as sp
-        
-        def analyze(u):
-            t, dt, a = sp.symbols('t dt a')
-        
-            print 'Analyzing u_e(t)=%s' % u(t)
-            print 'u(0)=%s' % u(t).subs(t, 0)
-        
-            # Fit source term to the given u(t)
-            b = sp.diff(u(t), t) + a*u(t)
-            b = sp.simplify(b)
-            print 'Source term b:', b
-        
-            # Residual in discrete equations; Forward Euler step
-            R_step1 = (u(t+dt) - u(t))/dt + a*u(t) - b
-            R_step1 = sp.simplify(R_step1)
-            print 'Residual Forward Euler step:', R_step1
-        
-            # Residual in discrete equations; Leapfrog steps
-            R = (u(t+dt) - u(t-dt))/(2*dt) + a*u(t) - b
-            R = sp.simplify(R)
-            print 'Residual Leapfrog steps:', R
-        
-        def u_e(t):
-            return c*t + I
-        
-        analyze(u_e)
-        # or short form: analyze(lambda t: c*t + I)
+To save manual calculations and learn more about symbolic computing,
+make functions for the three difference operators and use ``sympy``
+to perform the symbolic differences, differentiation, and Taylor series
+expansion. To plot a symbolic expression ``E`` against ``p``, convert the
+expression to a Python function first: ``E = sympy.lamdify([p], E)``.
 
 .. --- end hint in exercise ---
 
-**c)**
-Show that a second-order polynomial in :math:`t` cannot be a solution of the discrete
-equations. However, if a Crank-Nicolson scheme is used for the first
-step, a second-order polynomial solves the equations exactly.
-
-**d)**
-Create a manufactured solution :math:`u(t)=\sin(t)` for the ODE
-:math:`u'=-au+b`.
-Compute the convergence rate of the Leapfrog scheme using this
-manufactured solution. The expected convergence rate of the
-Leapfrog scheme is :math:`{\mathcal{O}(\Delta t^2)}`. Does the use of a
-1st-order method for the first step impact the convergence rate?
-
-**e)**
-Set up a set of experiments to demonstrate that the Leapfrog scheme
-:eq:`decay:fd2:leapfrog` is associated with numerical artifacts
-(instabilities). Document the main results from this investigation.
-
-**f)**
-Analyze and explain the
-instabilities of the Leapfrog scheme :eq:`decay:fd2:leapfrog`:
-
-1. Choose :math:`a=\mbox{const}` and :math:`b=0`. Assume that an exact solution
-   of the discrete equations has
-   the form :math:`u^n=A^n`, where :math:`A` is an amplification factor to
-   be determined. Derive an equation for :math:`A` by inserting :math:`u^n=A^n`
-   in the Leapfrog scheme.
-
-2. Compute :math:`A` either by hand and/or with the aid of ``sympy``.
-   The polynomial for :math:`A` has two roots, :math:`A_1` and :math:`A_2`. Let
-   :math:`u^n` be a linear combination :math:`u^n=C_1A_1^n + C_2A_2^n`.
-
-3. Show that one of the roots is the explanation of the instability.
-
-4. Compare :math:`A` with the exact expression, using a Taylor series approximation.
-
-5. How can :math:`C_1` and :math:`C_2` be determined?
-
-**g)**
-Since the original Leapfrog scheme is unconditionally unstable as time
-grows, it demands some stabilization.  This can be done by filtering,
-where we first find :math:`u^{n+1}` from the original Leapfrog scheme and
-then replace :math:`u^{n}` by :math:`u^n + \gamma (u^{n-1} - 2u^n +
-u^{n+1})`, where :math:`\gamma` can be taken as 0.6.  Implement the filtered
-Leapfrog scheme and check that it can handle tests where the original
-Leapfrog scheme is unstable.
-
-Filenames: ``decay_leapfrog.py``, ``decay_leapfrog.pdf``.
+Filename: ``decay_plot_fd_error.py``.
 
 .. --- end exercise ---
 
 .. --- begin exercise ---
 
-.. _decay:fd2:exer:uni:
+.. _decay:analysis:exer:growth:
 
-Problem 9: Make a unified implementation of many schemes
---------------------------------------------------------
+Exercise 7: Explore the :math:`\theta`-rule for exponential growth
+------------------------------------------------------------------
 
-Consider the linear ODE problem :math:`u'(t)=-a(t)u(t) + b(t)`, :math:`u(0)=I`.
-Explicit schemes for this problem can be written in the general form
+This exercise asks you to solve the ODE :math:`u'=-au` with :math:`a<0` such that
+the ODE models exponential growth instead of exponential decay.  A
+central theme is to investigate numerical artifacts and non-physical
+solution behavior.
 
-.. _Eq:decay:analysis:exer:sumcj:
+**a)**
+Set :math:`a=-1` and run experiments with :math:`\theta=0, 0.5, 1` for
+various values of :math:`\Delta t` to uncover numerical artifacts.
+Recall that the exact solution is a
+monotone, growing function when :math:`a<0`. Oscillations or significantly
+wrong growth are signs of wrong qualitative behavior.
 
-.. math::
-   :label: decay:analysis:exer:sumcj
-        
-        u^{n+1} = \sum_{j=0}^m c_ju^{n-j},
-        
-        
+From the experiments, select four values of :math:`\Delta t` that
+demonstrate the kind of numerical solutions that are characteristic
+for this model.
+Filename: ``growth_demo.py``.
 
-for some choice of :math:`c_0,\ldots,c_m`.
-Find expressions for the :math:`c_j` coefficients in case of the
-:math:`\theta`-rule, the three-level backward scheme,
-the Leapfrog scheme, the 2nd-order Runge-Kutta method,
-and the 3rd-order Adams-Bashforth scheme.
+**b)**
+Write up the amplification factor and plot it for :math:`\theta=0,0.5,1`
+together with the exact one for :math:`a\Delta t <0`. Use the plot to
+explain the observations made in the experiments.
 
-Make a class ``ExpDecay`` that implements the
-general updating formula :eq:`decay:analysis:exer:sumcj`.
-The formula cannot be applied for :math:`n<m`, and for those :math:`n` values, other
-schemes must be used. Assume for simplicity that we just
-repeat Crank-Nicolson steps until :eq:`decay:analysis:exer:sumcj` can be used.
-Use a subclass
-to specify the list :math:`c_0,\ldots,c_m` for a particular method, and
-implement subclasses for all the mentioned schemes.
-Verify the implementation by testing with a linear solution, which should
-be exactly reproduced by all methods.
-Filename: ``decay_schemes_oo.py``.
+.. --- begin hint in exercise ---
+
+**Hint.**
+Modify the `decay_ampf_plot.py <http://tinyurl.com/nm5587k/decay/decay_ampf_plot.py>`__ code.
+
+.. --- end hint in exercise ---
+
+Filename: ``growth_ampf_plot.py``.
 
 .. --- end exercise ---
 

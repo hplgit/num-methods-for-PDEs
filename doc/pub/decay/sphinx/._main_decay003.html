@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Analysis of finite difference equations</title>
+    <title>Exercises (1)</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -45,8 +45,8 @@
 
     
     <link rel="top" title="Introduction to computing with finite difference methods" href="index.html" />
-    <link rel="next" title="Model extensions" href="._main_decay004.html" />
-    <link rel="prev" title="Implementation" href="._main_decay002.html" />
+    <link rel="next" title="Analysis of finite difference equations" href="._main_decay004.html" />
+    <link rel="prev" title="Implementation (1)" href="._main_decay002.html" />
  
   
    <style type="text/css">
@@ -65,10 +65,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="._main_decay004.html" title="Model extensions"
+          <a href="._main_decay004.html" title="Analysis of finite difference equations"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="._main_decay002.html" title="Implementation"
+          <a href="._main_decay002.html" title="Implementation (1)"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">Introduction to computing with finite difference methods</a> &raquo;</li> 
       </ul>
@@ -79,668 +79,110 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="analysis-of-finite-difference-equations">
-<span id="decay-analysis"></span><h1>Analysis of finite difference equations<a class="headerlink" href="#analysis-of-finite-difference-equations" title="Permalink to this headline">¶</a></h1>
-<p>We address the ODE for exponential decay,</p>
-<div class="math">
-\[u'(t) = -au(t),\quad u(0)=I,\]</div>
-<p>where <span class="math">\(a\)</span> and <span class="math">\(I\)</span> are given constants. This problem is solved
-by the <span class="math">\(\theta\)</span>-rule finite difference scheme, resulting in
-the recursive equations</p>
-<div class="math" id="equation-decay:analysis:scheme">
-<span id="eq-decay-analysis-scheme"></span><span class="eqno">(1)</span>\[     u^{n+1} = \frac{1 - (1-\theta) a\Delta t}{1 + \theta a\Delta t}u^n\]</div>
-<p>for the numerical solution <span class="math">\(u^{n+1}\)</span>, which approximates the exact
-solution <span class="math">\({u_{\small\mbox{e}}}\)</span> at time point <span class="math">\(t_{n+1}\)</span>. For constant mesh spacing,
-which we assume here, <span class="math">\(t_{n+1}=(n+1)\Delta t\)</span>.</p>
-<p><strong>Discouraging numerical solutions.</strong>
-Choosing <span class="math">\(I=1\)</span>, <span class="math">\(a=2\)</span>, and running experiments with <span class="math">\(\theta =1,0.5, 0\)</span>
-for <span class="math">\(\Delta t=1.25, 0.75, 0.5, 0.1\)</span>, gives the results in
-Figures <a class="reference internal" href="#decay-analysis-be4c"><em>Backward Euler</em></a>, <a class="reference internal" href="#decay-analysis-cn4c"><em>Crank-Nicolson</em></a>, and
-<a class="reference internal" href="#decay-analysis-fe4c"><em>Forward Euler</em></a>.</p>
-<div class="figure" id="decay-analysis-be4c">
-<a class="reference internal image-reference" href="_images/BE4c.png"><img alt="_images/BE4c.png" src="_images/BE4c.png" style="width: 600px;" /></a>
-<p class="caption"><em>Backward Euler</em></p>
-</div>
-<div class="figure" id="decay-analysis-cn4c">
-<a class="reference internal image-reference" href="_images/CN4c.png"><img alt="_images/CN4c.png" src="_images/CN4c.png" style="width: 600px;" /></a>
-<p class="caption"><em>Crank-Nicolson</em></p>
-</div>
-<div class="figure" id="decay-analysis-fe4c">
-<a class="reference internal image-reference" href="_images/FE4c.png"><img alt="_images/FE4c.png" src="_images/FE4c.png" style="width: 600px;" /></a>
-<p class="caption"><em>Forward Euler</em></p>
-</div>
-<p>The characteristics of the displayed curves can be summarized as follows:</p>
-<blockquote>
-<div><ul class="simple">
-<li>The Backward Euler scheme always gives a monotone solution, lying above
-the exact curve.</li>
-<li>The Crank-Nicolson scheme gives the most accurate results, but for
-<span class="math">\(\Delta t=1.25\)</span> the solution oscillates.</li>
-<li>The Forward Euler scheme gives a growing, oscillating solution for
-<span class="math">\(\Delta t=1.25\)</span>; a decaying, oscillating solution for <span class="math">\(\Delta t=0.75\)</span>;
-a strange solution <span class="math">\(u^n=0\)</span> for <span class="math">\(n\geq 1\)</span> when <span class="math">\(\Delta t=0.5\)</span>; and
-a solution seemingly as accurate as the one by the Backward Euler
-scheme for <span class="math">\(\Delta t = 0.1\)</span>, but the curve lies below the exact
-solution.</li>
-</ul>
-</div></blockquote>
-<p>Since the exact solution of our model problem is a monotone function,
-<span class="math">\(u(t)=Ie^{-at}\)</span>, some of these qualitatively wrong results are indeed alarming!</p>
-<div class="admonition-goal admonition">
-<p class="first admonition-title">Goal</p>
-<p>We ask the question</p>
-<blockquote>
-<div><ul class="simple">
-<li>Under what circumstances, i.e., values of
-the input data <span class="math">\(I\)</span>, <span class="math">\(a\)</span>, and <span class="math">\(\Delta t\)</span> will the Forward Euler and
-Crank-Nicolson schemes result in undesired oscillatory solutions?</li>
-</ul>
-</div></blockquote>
-<p>The question will be investigated both by numerical experiments and
-by precise mathematical theory. The latter will help establish
-general criteria on <span class="math">\(\Delta t\)</span> for avoiding non-physical oscillatory
-or growing solutions.</p>
-<p>Another question to be raised is</p>
-<blockquote>
-<div><ul class="simple">
-<li>How does <span class="math">\(\Delta t\)</span> impact the error in the numerical solution?</li>
-</ul>
-</div></blockquote>
-<p class="last">For our simple model problem we can answer this question very precisely, but
-we will also look at simplified formulas for small <span class="math">\(\Delta t\)</span>
-and touch upon important concepts such as <em>convergence rate</em> and
-<em>the order of a scheme</em>. Other fundamental concepts mentioned are
-stability, consistency, and convergence.</p>
-</div>
-<div class="section" id="experimental-investigation-of-oscillatory-solutions">
-<h2>Experimental investigation of oscillatory solutions<a class="headerlink" href="#experimental-investigation-of-oscillatory-solutions" title="Permalink to this headline">¶</a></h2>
-<p>To address the first question above,
-we may set up an experiment where we loop over values of <span class="math">\(I\)</span>, <span class="math">\(a\)</span>,
-and <span class="math">\(\Delta t\)</span>. For each experiment, we flag the solution as
-oscillatory if</p>
-<div class="math">
-\[\begin{split}u^{n} &gt; u^{n-1},\end{split}\]</div>
-<p>for some value of <span class="math">\(n\)</span>,
-since we expect <span class="math">\(u^n\)</span> to decay with <span class="math">\(n\)</span>, but oscillations make
-<span class="math">\(u\)</span> increase over a time step. We will quickly see that
-oscillations are independent of <span class="math">\(I\)</span>, but do depend on <span class="math">\(a\)</span> and
-<span class="math">\(\Delta t\)</span>. Therefore, we introduce a two-dimensional
-function <span class="math">\(B(a,\Delta t)\)</span> which is 1 if oscillations occur
-and 0 otherwise. We can visualize <span class="math">\(B\)</span> as a contour plot
-(lines for which <span class="math">\(B=\hbox{const}\)</span>). The contour <span class="math">\(B=0.5\)</span>
-corresponds to the borderline between oscillatory regions with <span class="math">\(B=1\)</span>
-and monotone regions with <span class="math">\(B=0\)</span> in the <span class="math">\(a,\Delta t\)</span> plane.</p>
-<p>The <span class="math">\(B\)</span> function is defined at discrete <span class="math">\(a\)</span> and <span class="math">\(\Delta t\)</span> values.
-Say we have given <span class="math">\(P\)</span> $a$ values, <span class="math">\(a_0,\ldots,a_{P-1}\)</span>, and
-<span class="math">\(Q\)</span> $Delta t$ values, <span class="math">\(\Delta t_0,\ldots,\Delta t_{Q-1}\)</span>.
-These <span class="math">\(a_i\)</span> and <span class="math">\(\Delta t_j\)</span> values, <span class="math">\(i=0,\ldots,P-1\)</span>,
-<span class="math">\(j=0,\ldots,Q-1\)</span>, form a rectangular mesh of <span class="math">\(P\times Q\)</span> points
-in the plane. At each point <span class="math">\((a_i, \Delta t_j)\)</span>, we associate
-the corresponding value of <span class="math">\(B(a_i,\Delta t_j)\)</span>, denoted <span class="math">\(B_{ij}\)</span>.
-The <span class="math">\(B_{ij}\)</span> values are naturally stored in a two-dimensional
-array. We can thereafter create a plot of the
-contour line <span class="math">\(B_{ij}=0.5\)</span> dividing the oscillatory and monotone
-regions. The file <a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay_osc_regions.py">decay_osc_regions.py</a>  <tt class="docutils literal"><span class="pre">osc_regions</span></tt> stands for &#8220;oscillatory regions&#8221;) contains all nuts and
-bolts to produce the <span class="math">\(B=0.5\)</span> line in Figures <a class="reference internal" href="#decay-analysis-b-fe"><em>Forward Euler scheme: oscillatory solutions occur for points above the curve</em></a>
-and <a class="reference internal" href="#decay-analysis-b-cn"><em>Crank-Nicolson scheme: oscillatory solutions occur for points above the curve</em></a>. The oscillatory region is above this line.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">decay_mod</span> <span class="kn">import</span> <span class="n">solver</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">scitools.std</span> <span class="kn">as</span> <span class="nn">st</span>
-
-<span class="k">def</span> <span class="nf">non_physical_behavior</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Given lists/arrays a and dt, and numbers I, dt, and theta,</span>
-<span class="sd">    make a two-dimensional contour line B=0.5, where B=1&gt;0.5</span>
-<span class="sd">    means oscillatory (unstable) solution, and B=0&lt;0.5 means</span>
-<span class="sd">    monotone solution of u&#39;=-au.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">a</span><span class="p">);</span> <span class="n">dt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>  <span class="c"># must be arrays</span>
-    <span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">dt</span><span class="p">)))</span>         <span class="c"># results</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">)):</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dt</span><span class="p">)):</span>
-            <span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">theta</span><span class="p">)</span>
-            <span class="c"># Does u have the right monotone decay properties?</span>
-            <span class="n">correct_qualitative_behavior</span> <span class="o">=</span> <span class="bp">True</span>
-            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">u</span><span class="p">)):</span>
-                <span class="k">if</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">u</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>  <span class="c"># Not decaying?</span>
-                    <span class="n">correct_qualitative_behavior</span> <span class="o">=</span> <span class="bp">False</span>
-                    <span class="k">break</span>  <span class="c"># Jump out of loop</span>
-            <span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">correct_qualitative_behavior</span><span class="p">)</span>
-    <span class="n">a_</span><span class="p">,</span> <span class="n">dt_</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">ndgrid</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>  <span class="c"># make mesh of a and dt values</span>
-    <span class="n">st</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">a_</span><span class="p">,</span> <span class="n">dt_</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">st</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="s">&#39;on&#39;</span><span class="p">)</span>
-    <span class="n">st</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;theta=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">theta</span><span class="p">)</span>
-    <span class="n">st</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">);</span> <span class="n">st</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;dt&#39;</span><span class="p">)</span>
-    <span class="n">st</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s">&#39;osc_region_theta_</span><span class="si">%s</span><span class="s">.png&#39;</span> <span class="o">%</span> <span class="n">theta</span><span class="p">)</span>
-    <span class="n">st</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s">&#39;osc_region_theta_</span><span class="si">%s</span><span class="s">.pdf&#39;</span> <span class="o">%</span> <span class="n">theta</span><span class="p">)</span>
-
-<span class="n">non_physical_behavior</span><span class="p">(</span>
-    <span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">a</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">22</span><span class="p">),</span>
-    <span class="n">dt</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">22</span><span class="p">),</span>
-    <span class="n">T</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
-    <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="figure" id="decay-analysis-b-fe">
-<a class="reference internal image-reference" href="_images/osc_region_FE.png"><img alt="_images/osc_region_FE.png" src="_images/osc_region_FE.png" style="width: 500px;" /></a>
-<p class="caption"><em>Forward Euler scheme: oscillatory solutions occur for points above the curve</em></p>
-</div>
-<div class="figure" id="decay-analysis-b-cn">
-<a class="reference internal image-reference" href="_images/osc_region_CN.png"><img alt="_images/osc_region_CN.png" src="_images/osc_region_CN.png" style="width: 500px;" /></a>
-<p class="caption"><em>Crank-Nicolson scheme: oscillatory solutions occur for points above the curve</em></p>
-</div>
-<p>By looking at the curves in the figures one may guess that <span class="math">\(a\Delta t\)</span>
-must be less than a critical limit to avoid the undesired
-oscillations.  This limit seems to be about 2 for Crank-Nicolson and 1
-for Forward Euler.  We shall now establish a precise mathematical
-analysis of the discrete model that can explain the observations in
-our numerical experiments.</p>
-</div>
-<div class="section" id="exact-numerical-solution">
-<h2>Exact numerical solution<a class="headerlink" href="#exact-numerical-solution" title="Permalink to this headline">¶</a></h2>
-<p>Starting with <span class="math">\(u^0=I\)</span>, the simple recursion <a href="#equation-decay:analysis:scheme">(1)</a>
-can be applied repeatedly <span class="math">\(n\)</span> times, with the result that</p>
-<div class="math" id="equation-decay:analysis:unex">
-<span id="eq-decay-analysis-unex"></span><span class="eqno">(2)</span>\[     u^{n} = IA^n,\quad A = \frac{1 - (1-\theta) a\Delta t}{1 + \theta a\Delta t}{\thinspace .}\]</div>
-<div class="admonition-solving-difference-equations admonition">
-<p class="first admonition-title">Solving difference equations</p>
-<p>Difference equations where all terms are linear in
-<span class="math">\(u^{n+1}\)</span>, <span class="math">\(u^n\)</span>, and maybe <span class="math">\(u^{n-1}\)</span>, <span class="math">\(u^{n-2}\)</span>, etc., are
-called <em>homogeneous, linear</em> difference equations, and their solutions
-are generally of the form <span class="math">\(u^n=A^n\)</span>. Inserting this expression
-and dividing by <span class="math">\(A^{n+1}\)</span> gives
-a polynomial equation in <span class="math">\(A\)</span>. In the present case we get</p>
-<div class="math">
-\[A = \frac{1 - (1-\theta) a\Delta t}{1 + \theta a\Delta t}{\thinspace .}\]</div>
-<p class="last">This is a solution technique of wider applicability than repeated use of
-the recursion <a href="#equation-decay:analysis:scheme">(1)</a>.</p>
-</div>
-<p>Regardless of the solution approach, we have obtained a formula for
-<span class="math">\(u^n\)</span>.  This formula can explain everything what we see in the figures
-above, but it also gives us a more general insight into accuracy and
-stability properties of the three schemes.</p>
-</div>
-<div class="section" id="stability">
-<h2>Stability<a class="headerlink" href="#stability" title="Permalink to this headline">¶</a></h2>
-<p id="index-0">Since <span class="math">\(u^n\)</span> is a factor <span class="math">\(A\)</span>
-raised to an integer power <span class="math">\(n\)</span>, we realize that <span class="math">\(A&lt;0\)</span>
-will for odd powers imply <span class="math">\(u^n&lt;0\)</span> and for even power result in <span class="math">\(u^n&gt;0\)</span>.
-That is, the solution oscillates between the mesh points.
-We have oscillations due to <span class="math">\(A&lt;0\)</span> when</p>
-<div class="math" id="equation-decay:th:stability">
-<span id="eq-decay-th-stability"></span><span class="eqno">(3)</span>\[\begin{split}     (1-\theta)a\Delta t &gt; 1 {\thinspace .}\end{split}\]</div>
-<p>Since <span class="math">\(A&gt;0\)</span> is a requirement for having a numerical solution with the
-same basic property (monotonicity) as the exact solution, we may say
-that <span class="math">\(A&gt;0\)</span> is a <em>stability criterion</em>. Expressed in terms of <span class="math">\(\Delta t\)</span>
-the stability criterion reads</p>
-<div class="math">
-\[\begin{split}\Delta t &lt; \frac{1}{(1-\theta)a}{\thinspace .}\end{split}\]</div>
-<p>The Backward
-Euler scheme is always stable since <span class="math">\(A&lt;0\)</span> is impossible for <span class="math">\(\theta=1\)</span>, while
-non-oscillating solutions for Forward Euler and Crank-Nicolson
-demand <span class="math">\(\Delta t\leq 1/a\)</span> and <span class="math">\(\Delta t\leq 2/a\)</span>, respectively.
-The relation between <span class="math">\(\Delta t\)</span> and <span class="math">\(a\)</span> look reasonable: a larger
-<span class="math">\(a\)</span> means faster decay and hence a need for smaller time steps.</p>
-<p>Looking at Figure <a class="reference internal" href="#decay-analysis-fe4c"><em>Forward Euler</em></a>, we see that with <span class="math">\(a\Delta
-t= 2\cdot 1.25=2.5\)</span>, <span class="math">\(A=-1.5\)</span>, and the solution <span class="math">\(u^n=(-1.5)^n\)</span>
-oscillates <em>and</em> grows. With <span class="math">\(a\Delta t = 2\cdot 0.75=1.5\)</span>, <span class="math">\(A=-0.5\)</span>,
-<span class="math">\(u^n=(-0.5)^n\)</span> decays but oscillates. The peculiar case <span class="math">\(\Delta t =
-0.5\)</span>, where the Forward Euler scheme produces a solution that is stuck
-on the <span class="math">\(t\)</span> axis, corresponds to <span class="math">\(A=0\)</span> and therefore <span class="math">\(u^0=I=1\)</span> and
-<span class="math">\(u^n=0\)</span> for <span class="math">\(n\geq 1\)</span>.  The decaying oscillations in the Crank-Nicolson scheme
-for <span class="math">\(\Delta t=1.25\)</span> are easily explained by the fact that <span class="math">\(A\approx -0.11&lt;0\)</span>.</p>
-<p id="index-1">The factor <span class="math">\(A\)</span> is called the <em>amplification factor</em> since the solution
-at a new time level is <span class="math">\(A\)</span> times the solution at the previous time
-level. For a decay process, we must obviously have <span class="math">\(|A|\leq 1\)</span>, which
-is fulfilled for all <span class="math">\(\Delta t\)</span> if <span class="math">\(\theta \geq 1/2\)</span>. Arbitrarily
-large values of <span class="math">\(u\)</span> can be generated when <span class="math">\(|A|&gt;1\)</span> and <span class="math">\(n\)</span> is large
-enough. The numerical solution is in such cases totally irrelevant to
-an ODE modeling decay processes! To avoid this situation, we must
-for <span class="math">\(\theta &lt; 1/2\)</span> have</p>
-<div class="math">
-\[\Delta t \leq \frac{2}{(1-2\theta)a},\]</div>
-<p>which means <span class="math">\(\Delta t &lt; 2/a\)</span> for the Forward Euler scheme.</p>
-<span class="target" id="index-2"></span><div class="admonition-stability-properties admonition" id="index-3">
-<p class="first admonition-title">Stability properties</p>
-<p>We may summarize the stability investigations as follows:</p>
-<ol class="arabic simple">
-<li>The Forward Euler method is a <em>conditionally stable</em> scheme because
-it requires <span class="math">\(\Delta t &lt; 2/a\)</span> for avoiding growing solutions
-and <span class="math">\(\Delta t &lt; 1/a\)</span> for avoiding oscillatory solutions.</li>
-<li>The Crank-Nicolson is <em>unconditionally stable</em> with respect to
-growing solutions, while it is conditionally stable with
-the criterion <span class="math">\(\Delta t &lt; 2/a\)</span> for avoiding oscillatory solutions.</li>
-<li>The Backward Euler method is unconditionally stable with respect
-to growing and oscillatory solutions - any <span class="math">\(\Delta t\)</span> will work.</li>
-</ol>
-<p class="last">Much literature on ODEs speaks about L-stable and A-stable methods.
-In our case A-stable methods ensures non-growing solutions, while
-L-stable methods also avoids oscillatory solutions.</p>
-</div>
-</div>
-<div class="section" id="comparing-amplification-factors">
-<h2>Comparing amplification factors<a class="headerlink" href="#comparing-amplification-factors" title="Permalink to this headline">¶</a></h2>
-<p>After establishing how <span class="math">\(A\)</span> impacts the qualitative features of the
-solution, we shall now look more into how well the numerical amplification
-factor approximates the exact one. The exact solution reads
-<span class="math">\(u(t)=Ie^{-at}\)</span>, which can be rewritten as</p>
-<div class="math">
-\[{{u_{\small\mbox{e}}}}(t_n) = Ie^{-a n\Delta t} = I(e^{-a\Delta t})^n {\thinspace .}\]</div>
-<p>From this formula we see that the exact amplification factor is</p>
-<div class="math">
-\[{A_{\small\mbox{e}}} = e^{-a\Delta t} {\thinspace .}\]</div>
-<p>We realize that the exact and numerical amplification factors depend
-on <span class="math">\(a\)</span> and <span class="math">\(\Delta t\)</span> through the product <span class="math">\(a\Delta t\)</span>. Therefore, it
-is convenient to introduce a symbol for this product, <span class="math">\(p=a\Delta t\)</span>,
-and view <span class="math">\(A\)</span> and <span class="math">\({A_{\small\mbox{e}}}\)</span> as functions of <span class="math">\(p\)</span>. Figure
-<a class="reference internal" href="#decay-analysis-fig-a"><em>Comparison of amplification factors</em></a> shows these functions. Crank-Nicolson is
-clearly closest to the exact amplification factor, but that method has
-the unfortunate oscillatory behavior when <span class="math">\(p&gt;2\)</span>.</p>
-<div class="figure" id="decay-analysis-fig-a">
-<a class="reference internal image-reference" href="_images/A_factors.png"><img alt="_images/A_factors.png" src="_images/A_factors.png" style="width: 500px;" /></a>
-<p class="caption"><em>Comparison of amplification factors</em></p>
-</div>
-</div>
-<div class="section" id="series-expansion-of-amplification-factors">
-<h2>Series expansion of amplification factors<a class="headerlink" href="#series-expansion-of-amplification-factors" title="Permalink to this headline">¶</a></h2>
-<p>As an alternative to the visual understanding inherent in Figure
-<a class="reference internal" href="#decay-analysis-fig-a"><em>Comparison of amplification factors</em></a>, there is a strong tradition in numerical
-analysis to establish formulas for the approximation errors when the
-discretization parameter, here <span class="math">\(\Delta t\)</span>, becomes small. In the
-present case we let <span class="math">\(p\)</span> be our small discretization parameter, and it
-makes sense to simplify the expressions for <span class="math">\(A\)</span> and <span class="math">\({A_{\small\mbox{e}}}\)</span> by using
-Taylor polynomials around <span class="math">\(p=0\)</span>.  The Taylor polynomials are accurate
-for small <span class="math">\(p\)</span> and greatly simplifies the comparison of the analytical
-expressions since we then can compare polynomials, term by term.</p>
-<p>Calculating the Taylor series for <span class="math">\({A_{\small\mbox{e}}}\)</span> is easily done by hand, but
-the three versions of <span class="math">\(A\)</span> for <span class="math">\(\theta=0,1,{\frac{1}{2}}\)</span> lead to more
-cumbersome calculations.
-Nowadays, analytical computations can benefit greatly by
-symbolic computer algebra software. The Python package <tt class="docutils literal"><span class="pre">sympy</span></tt>
-represents a powerful computer algebra system, not yet as sophisticated as
-the famous Maple and Mathematica systems, but free and
-very easy to integrate with our numerical computations in Python.</p>
-<p>When using <tt class="docutils literal"><span class="pre">sympy</span></tt>, it is convenient to enter the interactive Python
-mode where we can write expressions and statements and immediately see
-the results.  Here is a simple example. We strongly recommend to use
-<tt class="docutils literal"><span class="pre">isympy</span></tt> (or <tt class="docutils literal"><span class="pre">ipython</span></tt>) for such interactive sessions.</p>
-<p>Let us illustrate <tt class="docutils literal"><span class="pre">sympy</span></tt> with a standard Python shell syntax
-(<tt class="docutils literal"><span class="pre">&gt;&gt;&gt;</span></tt> prompt) to compute a Taylor polynomial approximation to <span class="math">\(e^{-p}\)</span>:</p>
-<div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="c"># Create p as a mathematical symbol with name &#39;p&#39;</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">p</span> <span class="o">=</span> <span class="n">Symbol</span><span class="p">(</span><span class="s">&#39;p&#39;</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="c"># Create a mathematical expression with p</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">A_e</span> <span class="o">=</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">p</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="c"># Find the first 6 terms of the Taylor series of A_e</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">A_e</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
-<span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">p</span> <span class="o">-</span> <span class="mi">1</span><span class="o">/</span><span class="mi">6</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="mi">1</span><span class="o">/</span><span class="mi">120</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">5</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">24</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">4</span> <span class="o">+</span> <span class="n">O</span><span class="p">(</span><span class="n">p</span><span class="o">**</span><span class="mi">6</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Lines with <tt class="docutils literal"><span class="pre">&gt;&gt;&gt;</span></tt> represent input lines and lines without
-this prompt represents the result of computations (note that
-<tt class="docutils literal"><span class="pre">isympy</span></tt> and <tt class="docutils literal"><span class="pre">ipython</span></tt> apply other prompts, but in this text
-we always apply <tt class="docutils literal"><span class="pre">&gt;&gt;&gt;</span></tt> for interactive Python computing).
-Apart from the order of the powers, the computed formula is easily
-recognized as the beginning of the Taylor series for <span class="math">\(e^{-p}\)</span>.</p>
-<p>Let us define the numerical amplification factor where <span class="math">\(p\)</span> and <span class="math">\(\theta\)</span>
-enter the formula as symbols:</p>
-<div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="n">theta</span> <span class="o">=</span> <span class="n">Symbol</span><span class="p">(</span><span class="s">&#39;theta&#39;</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">theta</span><span class="o">*</span><span class="n">p</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>To work with the factor for the Backward Euler scheme we
-can substitute the value 1 for <tt class="docutils literal"><span class="pre">theta</span></tt>:</p>
-<div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="n">A</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">p</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Similarly, we can replace <tt class="docutils literal"><span class="pre">theta</span></tt> by 1/2 for Crank-Nicolson,
-preferably using an exact rational representation of 1/2 in <tt class="docutils literal"><span class="pre">sympy</span></tt>:</p>
-<div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="n">half</span> <span class="o">=</span> <span class="n">Rational</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">A</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">half</span><span class="p">)</span>
-<span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="o">*</span><span class="n">p</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>The Taylor series of the amplification factor for the Crank-Nicolson
-scheme can be computed as</p>
-<div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="n">A</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">half</span><span class="p">)</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">p</span> <span class="o">-</span> <span class="mi">1</span><span class="o">/</span><span class="mi">4</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">O</span><span class="p">(</span><span class="n">p</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>We are now in a position to compare Taylor series:</p>
-<div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="n">FE</span> <span class="o">=</span> <span class="n">A_e</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-</span> <span class="n">A</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">BE</span> <span class="o">=</span> <span class="n">A_e</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-</span> <span class="n">A</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">CN</span> <span class="o">=</span> <span class="n">A_e</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-</span> <span class="n">A</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">half</span><span class="p">)</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span> <span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">FE</span>
-<span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="o">/</span><span class="mi">6</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">O</span><span class="p">(</span><span class="n">p</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">BE</span>
-<span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="mi">5</span><span class="o">/</span><span class="mi">6</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">O</span><span class="p">(</span><span class="n">p</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">CN</span>
-<span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">12</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">O</span><span class="p">(</span><span class="n">p</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>From these expressions we see that the error <span class="math">\(A-{A_{\small\mbox{e}}}\sim {\mathcal{O}(p^2)}\)</span>
-for the Forward and Backward Euler schemes, while
-<span class="math">\(A-{A_{\small\mbox{e}}}\sim {\mathcal{O}(p^3)}\)</span> for the Crank-Nicolson scheme.
-It is the <em>leading order term</em>,
-i.e., the term of the lowest order (polynomial degree),
-that is of interest, because as <span class="math">\(p\rightarrow 0\)</span>, this term is
-(much) bigger than the higher-order terms (think of <span class="math">\(p=0.01\)</span>:
-<span class="math">\(p\)</span> is a hundred times larger than <span class="math">\(p^2\)</span>).</p>
-<p>Now, <span class="math">\(a\)</span> is a given parameter in the problem, while <span class="math">\(\Delta t\)</span> is
-what we can vary. One therefore usually writes the error expressions in
-terms <span class="math">\(\Delta t\)</span>. When then have</p>
-<div class="math">
-\[\begin{split}A-{A_{\small\mbox{e}}} = \left\lbrace\begin{array}{ll}
-{\mathcal{O}(\Delta t^2)}, &amp; \hbox{Forward and Backward Euler},\\
-{\mathcal{O}(\Delta t^3)}, &amp; \hbox{Crank-Nicolson}
-\end{array}\right.\end{split}\]</div>
-<p>We say that the Crank-Nicolson scheme has an error in the amplification
-factor of order <span class="math">\(\Delta t^3\)</span>, while the two other schemes are
-of order <span class="math">\(\Delta t^2\)</span> in the same quantity.
-What is the significance of the order expression? If we halve <span class="math">\(\Delta t\)</span>,
-the error in amplification factor at a time level will be reduced
-by a factor of 4 in the Forward and Backward Euler schemes, and by
-a factor of 8 in the Crank-Nicolson scheme. That is, as we
-reduce <span class="math">\(\Delta t\)</span> to obtain more accurate results, the Crank-Nicolson
-scheme reduces the error more efficiently than the other schemes.</p>
-</div>
-<div class="section" id="the-fraction-of-numerical-and-exact-amplification-factors">
-<h2>The fraction of numerical and exact amplification factors<a class="headerlink" href="#the-fraction-of-numerical-and-exact-amplification-factors" title="Permalink to this headline">¶</a></h2>
-<p id="index-4">An alternative comparison of the schemes is to look at the
-ratio <span class="math">\(A/{A_{\small\mbox{e}}}\)</span>, or the error <span class="math">\(1-A/{A_{\small\mbox{e}}}\)</span> in this ratio:</p>
-<div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="n">FE</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">/</span><span class="n">A_e</span><span class="p">)</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">BE</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="n">A_e</span><span class="p">)</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">CN</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">half</span><span class="p">)</span><span class="o">/</span><span class="n">A_e</span><span class="p">)</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">FE</span>
-<span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">O</span><span class="p">(</span><span class="n">p</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">BE</span>
-<span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">O</span><span class="p">(</span><span class="n">p</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">CN</span>
-<span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">12</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">O</span><span class="p">(</span><span class="n">p</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>The leading-order terms have the same powers as
-in the analysis of <span class="math">\(A-{A_{\small\mbox{e}}}\)</span>.</p>
-</div>
-<div class="section" id="the-global-error-at-a-point">
-<span id="decay-analysis-gobal-error"></span><h2>The global error at a point<a class="headerlink" href="#the-global-error-at-a-point" title="Permalink to this headline">¶</a></h2>
-<p id="index-5">The error in the amplification factor reflects the error when
-progressing from time level <span class="math">\(t_n\)</span> to <span class="math">\(t_{n-1}\)</span>.
-To investigate the real error at a point, known as the <em>global error</em>,
-we look at <span class="math">\(e^n = u^n-{u_{\small\mbox{e}}}(t_n)\)</span> for some <span class="math">\(n\)</span> and Taylor expand the
-mathematical expressions as functions of <span class="math">\(p=a\Delta t\)</span>:</p>
-<div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="n">n</span> <span class="o">=</span> <span class="n">Symbol</span><span class="p">(</span><span class="s">&#39;n&#39;</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">u_e</span> <span class="o">=</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">p</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">u_n</span> <span class="o">=</span> <span class="n">A</span><span class="o">**</span><span class="n">n</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">FE</span> <span class="o">=</span> <span class="n">u_e</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-</span> <span class="n">u_n</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">BE</span> <span class="o">=</span> <span class="n">u_e</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-</span> <span class="n">u_n</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">CN</span> <span class="o">=</span> <span class="n">u_e</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-</span> <span class="n">u_n</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">half</span><span class="p">)</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">FE</span>
-<span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">n</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">n</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">O</span><span class="p">(</span><span class="n">p</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">BE</span>
-<span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">n</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">n</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">O</span><span class="p">(</span><span class="n">p</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">CN</span>
-<span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">12</span><span class="p">)</span><span class="o">*</span><span class="n">n</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">O</span><span class="p">(</span><span class="n">p</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>For a fixed time <span class="math">\(t\)</span>, the parameter <span class="math">\(n\)</span> in these expressions increases
-as <span class="math">\(p\rightarrow 0\)</span> since <span class="math">\(t=n\Delta t =\mbox{const}\)</span> and hence
-<span class="math">\(n\)</span> must increase like <span class="math">\(\Delta t^{-1}\)</span>. With <span class="math">\(n\)</span> substituted by
-<span class="math">\(t/\Delta t\)</span> in
-the leading-order error terms, these become <span class="math">\(\frac{1}{2} na^2\Delta
-t^2 = {\frac{1}{2}}ta^2\Delta t\)</span> for the Forward and Backward Euler
-scheme, and <span class="math">\(\frac{1}{12}na^3\Delta t^3 = \frac{1}{12}ta^3\Delta t^2\)</span>
-for the Crank-Nicolson scheme.  The global error is therefore of
-second order (in <span class="math">\(\Delta t\)</span>) for the latter scheme and of first order for
-the former schemes.</p>
-<p>When the global error <span class="math">\(e^n\rightarrow 0\)</span> as <span class="math">\(\Delta t\rightarrow 0\)</span>,
-we say that the scheme is <em>convergent</em>. It means that the numerical
-solution approaches the exact solution as the mesh is refined, and
-this is a much desired property of a numerical method.</p>
-</div>
-<div class="section" id="integrated-errors">
-<h2>Integrated errors<a class="headerlink" href="#integrated-errors" title="Permalink to this headline">¶</a></h2>
-<p>It is common to study the norm of the numerical error, as
-explained in detail in the section <a class="reference internal" href="._main_decay002.html#decay-computing-error-norm"><em>Computing the norm of the numerical error</em></a>.
-The <span class="math">\(L^2\)</span> norm can be computed by treating <span class="math">\(e^n\)</span> as a function
-of <span class="math">\(t\)</span> in <tt class="docutils literal"><span class="pre">sympy</span></tt> and performing symbolic integration. For
-the Forward Euler scheme we have</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">p</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;p n a dt t T &#39;</span><span class="n">theta</span><span class="s">&#39;)</span>
-<span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">theta</span><span class="o">*</span><span class="n">p</span><span class="p">)</span>
-<span class="n">u_e</span> <span class="o">=</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">p</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
-<span class="n">u_n</span> <span class="o">=</span> <span class="n">A</span><span class="o">**</span><span class="n">n</span>
-<span class="n">error</span> <span class="o">=</span> <span class="n">u_e</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-</span> <span class="n">u_n</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<span class="c"># Introduce t and dt instead of n and p</span>
-<span class="n">error</span> <span class="o">=</span> <span class="n">error</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="s">&#39;n&#39;</span><span class="p">,</span> <span class="s">&#39;t/dt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="s">&#39;a*dt&#39;</span><span class="p">)</span>
-<span class="n">error</span> <span class="o">=</span> <span class="n">error</span><span class="o">.</span><span class="n">as_leading_term</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span> <span class="c"># study only the first term</span>
-<span class="k">print</span> <span class="n">error</span>
-<span class="n">error_L2</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">integrate</span><span class="p">(</span><span class="n">error</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">)))</span>
-<span class="k">print</span> <span class="n">error_L2</span>
-</pre></div>
-</div>
-<p>The output reads</p>
-<div class="highlight-text"><div class="highlight"><pre>sqrt(30)*sqrt(T**3*a**4*dt**2*(6*T**2*a**2 - 15*T*a + 10))/60
-</pre></div>
-</div>
-<p>which means that the <span class="math">\(L^2\)</span> error behaves like <span class="math">\(a^2\Delta t\)</span>.</p>
-<p>Strictly speaking, the numerical error is only defined at the
-mesh points so it makes most sense to compute the
-<span class="math">\(\ell^2\)</span> error</p>
-<div class="math">
-\[||e^n||_{\ell^2} = \sqrt{\Delta t\sum_{n=0}^{N_t} ({{u_{\small\mbox{e}}}}(t_n) - u^n)^2}
-{\thinspace .}\]</div>
-<p>We have obtained an exact analytical expressions for the error at <span class="math">\(t=t_n\)</span>,
-but here we use the leading-order error term only since we are mostly
-interested in how the error behaves as a polynomial in <span class="math">\(\Delta t\)</span>, and then
-the leading order term will dominate.
-For the Forward Euler scheme,
-<span class="math">\({u_{\small\mbox{e}}}(t_n) - u^n \approx {\frac{1}{2}}np^2\)</span>, and we have</p>
-<div class="math">
-\[||e^n||_{\ell^2}^2 = \Delta t\sum_{n=0}^{N_t} \frac{1}{4}n^2p^4
-=\Delta t\frac{1}{4}p^4 \sum_{n=0}^{N_t} n^2{\thinspace .}\]</div>
-<p>Now, <span class="math">\(\sum_{n=0}^{N_t} n^2\approx \frac{1}{3}N_t^3\)</span>. Using this approximation,
-setting <span class="math">\(N_t =T/\Delta t\)</span>, and taking the square root gives the expression</p>
-<div class="math">
-\[||e^n||_{\ell^2} = \frac{1}{2}\sqrt{\frac{T^3}{3}} a^2\Delta t{\thinspace .}\]</div>
-<p>Calculations for the Backward Euler scheme are very similar and provide
-the same result, while the Crank-Nicolson scheme leads to</p>
-<div class="math">
-\[||e^n||_{\ell^2} = \frac{1}{12}\sqrt{\frac{T^3}{3}}a^3\Delta t^2{\thinspace .}\]</div>
-<div class="admonition-summary-of-errors admonition">
-<p class="first admonition-title">Summary of errors</p>
-<p class="last">Both the point-wise and the time-integrated true errors are of
-second order in <span class="math">\(\Delta t\)</span> for the Crank-Nicolson scheme and of
-first order in <span class="math">\(\Delta t\)</span> for the Forward Euler and Backward Euler schemes.</p>
-</div>
-</div>
-<div class="section" id="truncation-error">
-<h2>Truncation error<a class="headerlink" href="#truncation-error" title="Permalink to this headline">¶</a></h2>
-<p>The truncation error is a very frequently used error measure for
-finite difference methods. It is defined as <em>the error
-in the difference equation that arises when inserting the exact
-solution</em>. Contrary to many other error measures, e.g., the
-true error <span class="math">\(e^n={u_{\small\mbox{e}}}(t_n)-u^n\)</span>, the truncation error is a quantity that
-is easily computable.</p>
-<p>Let us illustrate the calculation of the truncation error
-for the Forward Euler scheme.
-We start with the difference equation on operator form,</p>
-<div class="math">
-\[\lbrack D_t u = -au\rbrack^n,\]</div>
-<p>i.e.,</p>
-<div class="math">
-\[\frac{u^{n+1}-u^n}{\Delta t} = -au^n{\thinspace .}\]</div>
-<p>The idea is to see how well the exact solution <span class="math">\({u_{\small\mbox{e}}}(t)\)</span> fulfills
-this equation. Since <span class="math">\({u_{\small\mbox{e}}}(t)\)</span> in general will not obey the
-discrete equation, error in the discrete equation, called
-a <em>residual</em>, denoted here by <span class="math">\(R^n\)</span>:</p>
-<div class="math" id="equation-decay:analysis:trunc:Req">
-<span id="eq-decay-analysis-trunc-req"></span><span class="eqno">(4)</span>\[     R^n = \frac{{u_{\small\mbox{e}}}(t_{n+1})-{u_{\small\mbox{e}}}(t_n)}{\Delta t} + a{u_{\small\mbox{e}}}(t_n)
-     {\thinspace .}\]</div>
-<p>The residual is defined at each mesh point and is therefore a mesh
-function with a superscript <span class="math">\(n\)</span>.</p>
-<p>The interesting feature of <span class="math">\(R^n\)</span> is to see how it
-depends on the discretization parameter <span class="math">\(\Delta t\)</span>.
-The tool for reaching
-this goal is to Taylor expand <span class="math">\({u_{\small\mbox{e}}}\)</span> around the point where the
-difference equation is supposed to hold, here <span class="math">\(t=t_n\)</span>.
-We have that</p>
-<div class="math">
-\[{u_{\small\mbox{e}}}(t_{n+1}) = {u_{\small\mbox{e}}}(t_n) + {u_{\small\mbox{e}}}'(t_n)\Delta t + \frac{1}{2}{u_{\small\mbox{e}}}''(t_n)
-\Delta t^2 + \cdots\]</div>
-<p>Inserting this Taylor series in <a href="#equation-decay:analysis:trunc:Req">(4)</a> gives</p>
-<div class="math">
-\[R^n = {u_{\small\mbox{e}}}'(t_n) + \frac{1}{2}{u_{\small\mbox{e}}}''(t_n)\Delta t + \ldots + a{u_{\small\mbox{e}}}(t_n){\thinspace .}\]</div>
-<p>Now, <span class="math">\({u_{\small\mbox{e}}}\)</span> fulfills the ODE <span class="math">\({u_{\small\mbox{e}}}'=-a{u_{\small\mbox{e}}}\)</span> such that the first and last
-term cancels and we have</p>
-<div class="math">
-\[R^n \approx \frac{1}{2}{u_{\small\mbox{e}}}''(t_n)\Delta t {\thinspace .}\]</div>
-<p>This <span class="math">\(R^n\)</span> is the <em>truncation error</em>, which for the Forward Euler is seen
-to be of first order in <span class="math">\(\Delta t\)</span>.</p>
-<p>The above procedure can be repeated for the Backward Euler and the
-Crank-Nicolson schemes. We start with the scheme in operator notation,
-write it out in detail, Taylor expand <span class="math">\({u_{\small\mbox{e}}}\)</span> around the point <span class="math">\(\tilde t\)</span>
-at which the difference equation is defined, collect terms that
-correspond to the ODE (here <span class="math">\({u_{\small\mbox{e}}}' + a{u_{\small\mbox{e}}}\)</span>), and identify the remaining
-terms as the residual <span class="math">\(R\)</span>, which is the truncation error.
-The Backward Euler scheme leads to</p>
-<div class="math">
-\[R^n \approx -\frac{1}{2}{u_{\small\mbox{e}}}''(t_n)\Delta t,\]</div>
-<p>while the Crank-Nicolson scheme gives</p>
-<div class="math">
-\[R^{n+\frac{1}{2}} \approx \frac{1}{24}{u_{\small\mbox{e}}}'''(t_{n+\frac{1}{2}})\Delta t^2{\thinspace .}\]</div>
-<p>The <em>order</em> <span class="math">\(r\)</span> of a finite difference scheme is often defined through
-the leading term <span class="math">\(\Delta t^r\)</span> in the truncation error. The above
-expressions point out that the Forward and Backward Euler schemes are
-of first order, while Crank-Nicolson is of second order.  We have
-looked at other error measures in other sections, like the error in
-amplification factor and the error <span class="math">\(e^n={u_{\small\mbox{e}}}(t_n)-u^n\)</span>, and expressed
-these error measures in terms of <span class="math">\(\Delta t\)</span> to see the order of the
-method. Normally, calculating the truncation error is more
-straightforward than deriving the expressions for other error measures
-and therefore the easiest way to establish the order of a scheme.</p>
-</div>
-<div class="section" id="consistency-stability-and-convergence">
-<h2>Consistency, stability, and convergence<a class="headerlink" href="#consistency-stability-and-convergence" title="Permalink to this headline">¶</a></h2>
-<span class="target" id="index-6"></span><span class="target" id="index-7"></span><p id="index-8">Three fundamental concepts when solving differential equations by
-numerical methods are consistency, stability, and convergence.  We
-shall briefly touch these concepts below in the context of the present
-model problem.</p>
-<p>Consistency means that the error in the difference equation, measured
-through the truncation error, goes to zero as <span class="math">\(\Delta t\rightarrow
-0\)</span>. Since the truncation error tells how well the exact solution
-fulfills the difference equation, and the exact solution fulfills the
-differential equation, consistency ensures that the difference
-equation approaches the differential equation in the limit. The
-expressions for the truncation errors in the previous section are all
-proportional to <span class="math">\(\Delta t\)</span> or <span class="math">\(\Delta t^2\)</span>, hence they vanish as
-<span class="math">\(\Delta t\rightarrow 0\)</span>, and all the schemes are consistent.  Lack of
-consistency implies that we actually solve a different differential
-equation in the limit <span class="math">\(\Delta t\rightarrow 0\)</span> than we aim at.</p>
-<p>Stability means that the numerical solution exhibits the same
-qualitative properties as the exact solution. This is obviously a
-feature we want the numerical solution to have. In the present
-exponential decay model, the exact solution is monotone and
-decaying. An increasing numerical solution is not in accordance with
-the decaying nature of the exact solution and hence unstable. We can
-also say that an oscillating numerical solution lacks the property of
-monotonicity of the exact solution and is also unstable. We have seen
-that the Backward Euler scheme always leads to monotone and decaying
-solutions, regardless of <span class="math">\(\Delta t\)</span>, and is hence stable. The Forward
-Euler scheme can lead to increasing solutions and oscillating
-solutions if <span class="math">\(\Delta t\)</span> is too large and is therefore unstable unless
-<span class="math">\(\Delta t\)</span> is sufficiently small.  The Crank-Nicolson can never lead
-to increasing solutions and has no problem to fulfill that stability
-property, but it can produce oscillating solutions and is unstable in
-that sense, unless <span class="math">\(\Delta t\)</span> is sufficiently small.</p>
-<p>Convergence implies that the global (true) error mesh function <span class="math">\(e^n =
-{u_{\small\mbox{e}}}(t_n)-u^n\rightarrow 0\)</span> as <span class="math">\(\Delta t\rightarrow 0\)</span>. This is really
-what we want: the numerical solution gets as close to the exact
-solution as we request by having a sufficiently fine mesh.</p>
-<p>Convergence is hard to establish theoretically, except in quite simple
-problems like the present one. Stability and consistency are much
-easier to calculate. A major breakthrough in the understanding of
-numerical methods for differential equations came in 1956 when Lax and
-Richtmeyer established equivalence between convergence on one hand and
-consistency and stability on the other (the <a class="reference external" href="http://en.wikipedia.org/wiki/Lax_equivalence_theorem">Lax equivalence theorem</a>).  In practice
-it meant that one can first establish that a method is stable and
-consistent, and then it is automatically convergent (which is much
-harder to establish).  The result holds for linear problems only, and
-in the world of nonlinear differential equations the relations between
-consistency, stability, and convergence are much more complicated.</p>
-<p>We have seen in the previous analysis that the Forward Euler,
-Backward Euler, and Crank-Nicolson schemes are convergent (<span class="math">\(e^n\rightarrow 0\)</span>),
-that they are consistent (<span class="math">\(R^n\rightarrow 0\)</span>, and that they are
-stable under certain conditions on the size of <span class="math">\(\Delta t\)</span>.
-We have also derived explicit mathematical expressions for <span class="math">\(e^n\)</span>,
-the truncation error, and the stability criteria.</p>
-</div>
-</div>
-<div class="section" id="exercises-1">
+  <div class="section" id="exercises-1">
 <h1>Exercises  (1)<a class="headerlink" href="#exercises-1" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="exercise-1-visualize-the-accuracy-of-finite-differences">
-<span id="decay-analysis-exer-fd-exp-plot"></span><h2>Exercise 1: Visualize the accuracy of finite differences<a class="headerlink" href="#exercise-1-visualize-the-accuracy-of-finite-differences" title="Permalink to this headline">¶</a></h2>
-<p>The purpose of this exercise is to visualize the accuracy of finite difference
-approximations of the derivative of a given function.
-For any finite difference approximation, take the Forward Euler difference
-as an example, and any specific function, take  <span class="math">\(u=e^{-at}\)</span>,
-we may introduce an error fraction</p>
+<div class="section" id="exercise-1-differentiate-a-function">
+<span id="decay-exer-dudt"></span><h2>Exercise 1: Differentiate a function<a class="headerlink" href="#exercise-1-differentiate-a-function" title="Permalink to this headline">¶</a></h2>
+<p>Given a discrete mesh function <span class="math">\(u^n\)</span> as an arrays <tt class="docutils literal"><span class="pre">u</span></tt> with
+<span class="math">\(u^n\)</span> values at mesh points <span class="math">\(t_n=n\Delta t\)</span>, write a function
+<tt class="docutils literal"><span class="pre">differentiate(u,</span> <span class="pre">dt)</span></tt> that returns the discrete derivative <span class="math">\(d^n\)</span> of the
+mesh function <span class="math">\(u^n\)</span>. The parameter <tt class="docutils literal"><span class="pre">dt</span></tt> reflects the
+mesh spacing <span class="math">\(\Delta t\)</span>.
+The discrete derivative can be based on
+centered differences:</p>
 <div class="math">
-\[E = \frac{[D_t^+ u]^n}{u'(t_n)} = \frac{\exp{(-a(t_n+\Delta t))} - \exp{(-at_n)}}{-a\exp{(-at_n)\Delta t}} = \frac{1}{a\Delta t}\left(1 -\exp{(-a\Delta t)}\right),\]</div>
-<p>and view <span class="math">\(E\)</span> as a function of <span class="math">\(\Delta t\)</span>. We expect that
-<span class="math">\(\lim_{\Delta t\rightarrow 0}E=1\)</span>, while <span class="math">\(E\)</span> may deviate significantly from
-unity for large <span class="math">\(\Delta t\)</span>. How the error depends on <span class="math">\(\Delta t\)</span> is best
-visualized in a graph where we use a logarithmic scale for <span class="math">\(\Delta t\)</span>,
-so we can cover many orders of magnitude of that quantity. Here is
-a code segment creating an array of 100 intervals, on the logarithmic
-scale, ranging from <span class="math">\(10^{-6}\)</span> to <span class="math">\(10^{-0.5}\)</span> and then plotting <span class="math">\(E\)</span> versus
-<span class="math">\(p=a\Delta t\)</span> with logarithmic scale on the <span class="math">\(p\)</span> axis:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">logspace</span><span class="p">,</span> <span class="n">exp</span>
-<span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="n">plot</span><span class="p">,</span> <span class="n">semilogx</span>
-<span class="n">p</span> <span class="o">=</span> <span class="n">logspace</span><span class="p">(</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">101</span><span class="p">)</span>
-<span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">p</span><span class="p">))</span><span class="o">/</span><span class="n">p</span>
-<span class="n">semilogx</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+\[d^n = \frac{u^{n+1}-u^{n-1}}{2\Delta t},\quad n=1,\ldots,N_t-1{\thinspace .}\]</div>
+<p>At the end points we use forward and backward differences:</p>
+<div class="math">
+\[d^0 = \frac{u^{1}-u^{0}}{\Delta t},\]</div>
+<p>and</p>
+<div class="math">
+\[d^{N_t} = \frac{u^{N_t}-u^{N_t-1}}{\Delta t}{\thinspace .}\]</div>
+<p><strong>Hint.</strong>
+The three differentiation formulas are
+exact for quadratic polynomials. Use this property to verify the program.</p>
+<p>Filename: <tt class="docutils literal"><span class="pre">differentiate.py</span></tt>.</p>
+</div>
+<div class="section" id="exercise-2-experiment-with-integer-division">
+<span id="decay-exer-intdiv"></span><h2>Exercise 2: Experiment with integer division<a class="headerlink" href="#exercise-2-experiment-with-integer-division" title="Permalink to this headline">¶</a></h2>
+<p>Explain what happens in the following computations, where
+some are mathematically unexpected:</p>
+<div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="n">dt</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">T</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">Nt</span> <span class="o">=</span> <span class="n">T</span><span class="o">/</span><span class="n">dt</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">Nt</span>
+<span class="mi">2</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">theta</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">theta</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="n">a</span><span class="p">)</span>
+<span class="mi">0</span>
 </pre></div>
 </div>
-<p>Illustrate such errors for the finite difference operators <span class="math">\([D_t^+u]^n\)</span>
-(forward), <span class="math">\([D_t^-u]^n\)</span> (backward), and <span class="math">\([D_t u]^n\)</span> (centered) in
-the same plot.</p>
-<p>Perform a Taylor series expansions of the error fractions and find
-the leading order <span class="math">\(r\)</span> in the expressions of type
-<span class="math">\(1 + Cp^r + {\mathcal{O}(p^{r+1)}}\)</span>, where <span class="math">\(C\)</span> is some constant.</p>
-<p><strong>Hint.</strong>
-To save manual calculations and learn more about symbolic computing,
-make functions for the three difference operators and use <tt class="docutils literal"><span class="pre">sympy</span></tt>
-to perform the symbolic differences, differentiation, and Taylor series
-expansion. To plot a symbolic expression <tt class="docutils literal"><span class="pre">E</span></tt> against <tt class="docutils literal"><span class="pre">p</span></tt>, convert the
-expression to a Python function first: <tt class="docutils literal"><span class="pre">E</span> <span class="pre">=</span> <span class="pre">sympy.lamdify([p],</span> <span class="pre">E)</span></tt>.</p>
-<p>Filename: <tt class="docutils literal"><span class="pre">decay_plot_fd_error.py</span></tt>.</p>
+<p>Filename: <tt class="docutils literal"><span class="pre">pyproblems.txt</span></tt>.</p>
 </div>
-<div class="section" id="exercise-2-explore-the-rule-for-exponential-growth">
-<span id="decay-analysis-exer-growth"></span><h2>Exercise 2: Explore the <span class="math">\(\theta\)</span>-rule for exponential growth<a class="headerlink" href="#exercise-2-explore-the-rule-for-exponential-growth" title="Permalink to this headline">¶</a></h2>
-<p>This exercise asks you to solve the ODE <span class="math">\(u'=-au\)</span> with <span class="math">\(a&lt;0\)</span> such that
-the ODE models exponential growth instead of exponential decay.  A
-central theme is to investigate numerical artifacts and non-physical
-solution behavior.</p>
-<p><strong>a)</strong>
-Set <span class="math">\(a=-1\)</span> and run experiments with <span class="math">\(\theta=0, 0.5, 1\)</span> for
-various values of <span class="math">\(\Delta t\)</span> to uncover numerical artifacts.
-Recall that the exact solution is a
-monotone, growing function when <span class="math">\(a&lt;0\)</span>. Oscillations or significantly
-wrong growth are signs of wrong qualitative behavior.</p>
-<p>From the experiments, select four values of <span class="math">\(\Delta t\)</span> that
-demonstrate the kind of numerical solutions that are characteristic
-for this model.
-Filename: <tt class="docutils literal"><span class="pre">growth_demo.py</span></tt>.</p>
-<p><strong>b)</strong>
-Write up the amplification factor and plot it for <span class="math">\(\theta=0,0.5,1\)</span>
-together with the exact one for <span class="math">\(a\Delta t &lt;0\)</span>. Use the plot to
-explain the observations made in the experiments.</p>
-<p><strong>Hint.</strong>
-Modify the <a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay_ampf_plot.py">decay_ampf_plot.py</a> code.</p>
-<p>Filename: <tt class="docutils literal"><span class="pre">growth_ampf_plot.py</span></tt>.</p>
+<div class="section" id="exercise-3-experiment-with-wrong-computations">
+<span id="decay-exer-decay1err"></span><h2>Exercise 3: Experiment with wrong computations<a class="headerlink" href="#exercise-3-experiment-with-wrong-computations" title="Permalink to this headline">¶</a></h2>
+<p>Consider the <tt class="docutils literal"><span class="pre">solver</span></tt> function in the <a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay_v1.py">decay_v1.py</a> file
+and the following call:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The output becomes</p>
+<div class="highlight-text"><div class="highlight"><pre>t= 0.000 u=1
+t= 2.000 u=0
+t= 4.000 u=0
+t= 6.000 u=0
+</pre></div>
+</div>
+<p>Print out the result of all intermediate computations and use
+<tt class="docutils literal"><span class="pre">type(v)</span></tt> to see the object type of the result stored in <tt class="docutils literal"><span class="pre">v</span></tt>.
+Examine the intermediate calculations and explain
+why <tt class="docutils literal"><span class="pre">u</span></tt> is wrong and why we compute up to <span class="math">\(t=6\)</span> only even though we
+specified <span class="math">\(T=7\)</span>.
+Filename: <tt class="docutils literal"><span class="pre">decay_v1_err.py</span></tt>.</p>
+</div>
+<div class="section" id="exercise-4-plot-the-error-function">
+<span id="decay-exer-plot-error"></span><h2>Exercise 4: Plot the error function<a class="headerlink" href="#exercise-4-plot-the-error-function" title="Permalink to this headline">¶</a></h2>
+<p>Solve the problem <span class="math">\(u'=-au\)</span>, <span class="math">\(u(0)=I\)</span>, using the Forward Euler, Backward
+Euler, and Crank-Nicolson schemes. For each scheme, plot the error function
+<span class="math">\(e^n = {u_{\small\mbox{e}}}(t_n)-u^n\)</span> for <span class="math">\(\Delta t\)</span>, <span class="math">\(\frac{1}{4}\Delta t\)</span>, and
+<span class="math">\(\frac{1}{8}\Delta t\)</span>, where <span class="math">\({u_{\small\mbox{e}}}\)</span> is the exact solution of the ODE and
+<span class="math">\(u^n\)</span> is the numerical solution at mesh point <span class="math">\(t_n\)</span>.
+Filename: <tt class="docutils literal"><span class="pre">decay_plot_error.py</span></tt>.</p>
+</div>
+<div class="section" id="exercise-5-change-formatting-of-numbers-and-debug">
+<span id="decay-exer-inexact-output"></span><h2>Exercise 5: Change formatting of numbers and debug<a class="headerlink" href="#exercise-5-change-formatting-of-numbers-and-debug" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay_memsave.py">decay_memsave.py</a> program
+writes the time values and solution values to a file which looks
+like</p>
+<div class="highlight-text"><div class="highlight"><pre>0.0000000000000000E+00  1.0000000000000000E+00
+2.0000000000000001E-01  8.3333333333333337E-01
+4.0000000000000002E-01  6.9444444444444453E-01
+6.0000000000000009E-01  5.7870370370370383E-01
+8.0000000000000004E-01  4.8225308641975323E-01
+1.0000000000000000E+00  4.0187757201646102E-01
+1.2000000000000000E+00  3.3489797668038418E-01
+1.3999999999999999E+00  2.7908164723365347E-01
+</pre></div>
+</div>
+<p>Modify the file output such that it looks like</p>
+<div class="highlight-text"><div class="highlight"><pre>0.000  1.00000
+0.200  0.83333
+0.400  0.69444
+0.600  0.57870
+0.800  0.48225
+1.000  0.40188
+1.200  0.33490
+1.400  0.27908
+</pre></div>
+</div>
+<p>Run the modified program</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python decay_memsave_v2.py --T 10 --theta 1 \
+          --dt 0.2 --makeplot
+</pre></div>
+</div>
+<p>The program just prints <tt class="docutils literal"><span class="pre">Bug</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">implementation!</span></tt> and does not
+show the plot. What went wrong?
+Filename: <tt class="docutils literal"><span class="pre">decay_memsave_v2.py</span></tt>.</p>
 </div>
 </div>
 
@@ -757,32 +199,22 @@ Modify the <a class="reference external" href="http://tinyurl.com/nm5587k/decay/
             </center>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Analysis of finite difference equations</a><ul>
-<li><a class="reference internal" href="#experimental-investigation-of-oscillatory-solutions">Experimental investigation of oscillatory solutions</a></li>
-<li><a class="reference internal" href="#exact-numerical-solution">Exact numerical solution</a></li>
-<li><a class="reference internal" href="#stability">Stability</a></li>
-<li><a class="reference internal" href="#comparing-amplification-factors">Comparing amplification factors</a></li>
-<li><a class="reference internal" href="#series-expansion-of-amplification-factors">Series expansion of amplification factors</a></li>
-<li><a class="reference internal" href="#the-fraction-of-numerical-and-exact-amplification-factors">The fraction of numerical and exact amplification factors</a></li>
-<li><a class="reference internal" href="#the-global-error-at-a-point">The global error at a point</a></li>
-<li><a class="reference internal" href="#integrated-errors">Integrated errors</a></li>
-<li><a class="reference internal" href="#truncation-error">Truncation error</a></li>
-<li><a class="reference internal" href="#consistency-stability-and-convergence">Consistency, stability, and convergence</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#exercises-1">Exercises  (1)</a><ul>
-<li><a class="reference internal" href="#exercise-1-visualize-the-accuracy-of-finite-differences">Exercise 1: Visualize the accuracy of finite differences</a></li>
-<li><a class="reference internal" href="#exercise-2-explore-the-rule-for-exponential-growth">Exercise 2: Explore the <span class="math">\(\theta\)</span>-rule for exponential growth</a></li>
+<li><a class="reference internal" href="#">Exercises  (1)</a><ul>
+<li><a class="reference internal" href="#exercise-1-differentiate-a-function">Exercise 1: Differentiate a function</a></li>
+<li><a class="reference internal" href="#exercise-2-experiment-with-integer-division">Exercise 2: Experiment with integer division</a></li>
+<li><a class="reference internal" href="#exercise-3-experiment-with-wrong-computations">Exercise 3: Experiment with wrong computations</a></li>
+<li><a class="reference internal" href="#exercise-4-plot-the-error-function">Exercise 4: Plot the error function</a></li>
+<li><a class="reference internal" href="#exercise-5-change-formatting-of-numbers-and-debug">Exercise 5: Change formatting of numbers and debug</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="._main_decay002.html"
-                        title="previous chapter">Implementation</a></p>
+                        title="previous chapter">Implementation  (1)</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="._main_decay004.html"
-                        title="next chapter">Model extensions</a></p>
+                        title="next chapter">Analysis of finite difference equations</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/._main_decay003.txt"
@@ -812,10 +244,10 @@ Modify the <a class="reference external" href="http://tinyurl.com/nm5587k/decay/
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="._main_decay004.html" title="Model extensions"
+          <a href="._main_decay004.html" title="Analysis of finite difference equations"
              >next</a> |</li>
         <li class="right" >
-          <a href="._main_decay002.html" title="Implementation"
+          <a href="._main_decay002.html" title="Implementation (1)"
              >previous</a> |</li>
         <li><a href="index.html">Introduction to computing with finite difference methods</a> &raquo;</li> 
       </ul>

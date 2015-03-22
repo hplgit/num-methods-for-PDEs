@@ -71,5 +71,3 @@ def test_linear_solution():
 if __name__ == '__main__':
     #test_constant_solution()
     test_linear_solution()
-
-

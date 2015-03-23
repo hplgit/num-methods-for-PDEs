@@ -46,7 +46,7 @@ programs and archiving the results.
    and :math:`\theta=\frac{1}{2}` gives the Crank-Nicolson
    (CN) or midpoint/centered scheme.
    
-   For fixed :math:`I`, :math:`a`, and :math:`T`, we run the three schemes for various
+   For chosen constants :math:`I`, :math:`a`, and :math:`T`, we run the three schemes for various
    values of :math:`\Delta t`, and present in a report the following results:
    
    1. visual comparison of the numerical and exact solution in a plot for
@@ -77,10 +77,10 @@ and run three values of :math:`\Delta t`: 1.25, 0.75, ad 0.5.
 The results of running this ``model.py`` command are text in the
 terminal window and a set of plot files.
 The plot files have names ``M_D.E``, where ``M`` denotes the method
-(``FE``, ``BE``, ``CN`` for :math:`\theta=0,1,\frac{1}{2}`), ``D``
+(``FE``, ``BE``, ``CN`` for :math:`\theta=0,1,\frac{1}{2}`, respectively), ``D``
 the time step length (here ``1.25``, ``0.75``, or ``0.5``), and ``E``
 is the plot file extension ``png`` or ``pdf``.
-The text output looks like
+The text output in the terminal window looks like
 
 .. code-block:: text
 
@@ -111,22 +111,21 @@ what is directly produced by ``model.py``:
    numerical method (FE, BE, CN) in a single plot.
    For example, if 4 :math:`\Delta t` values are run, the summarizing plot
    for the BE method has :math:`2\times 2` subplots, with the subplot corresponding
-   to the largest :math:`\Delta t` is in the upper left corner and the smallest
-   is in the bottom right corner.
+   to the largest :math:`\Delta t` in the upper left corner and the smallest
+   in the bottom right corner.
 
-2. We need to have a table containing
+2. We need to create a table containing
    :math:`\Delta t` values in the first column and the numerical error
-   :math:`E` for :math:`\theta0,0.5,1`
+   :math:`E` for :math:`\theta=0,0.5,1`
    in the next three columns. This table should be available as a
    standard CSV file.
 
 3. We need to plot the numerical error :math:`E` versus :math:`\Delta t`
    in a log-log plot.
 
-Consequently, we need to write a program (script)
-that can run ``model.py`` as described and
+Consequently, we must write a script that can run ``model.py`` as described and
 produce the results 1-3 above. This requires combining multiple plot files into
-a file and interpreting the output from ``model.py`` as data for plotting and
+one file and interpreting the output from ``model.py`` as data for plotting and
 file storage.
 
 If the script's name is ``exper1.py``, we run it with the desired :math:`\Delta t`
@@ -148,12 +147,12 @@ file ``error.csv``.
 
    A script that automates running our computer experiments
    will ensure
-   that the experiments can easily be rerun by ourselves or others in
-   the future, either to check the results or redo the experiments with
+   that the experiments can easily be rerun by anyone in
+   the future, either to confirm the results or redo the experiments with
    other input data. Also, whatever we did to produce the results is
    documented in every detail in the script.
    Automating scripts are therefore essential to making our
-   research *reproducible*, which is a fundamental principle in science.
+   research *reproducible*, which is a fundamental requirement in science.
 
 
 
@@ -161,13 +160,17 @@ file ``error.csv``.
 Combining plot files
 --------------------
 
-Image files can be combined to new files using the
+The script for running experiments needs to combine multiple image
+files into one. The
 `montage <http://www.imagemagick.org/script/montage.php>`__
 and
 `convert <http://www.imagemagick.org/script/convert.php>`__ programs in
-the ImageMagick software suite. However, these programs are best suited for
+the ImageMagick software suite
+can be used to combine image files.
+However, these programs are best suited for
 PNG files. For vector plots in PDF format one needs other tools
 to preserve the quality: ``pdftk``, ``pdfnup``, and ``pdfcrop``.
+
 Suppose you have four files ``f1.png``, ``f2.png``, ``f3.png``, and ``f4.png``
 and want to combine them into a :math:`2\times 2` table of subplots in a new
 file ``f.png``, see
@@ -206,9 +209,12 @@ High-quality montage of PDF files ``f1.pdf``,
 Running a program from Python
 -----------------------------
 
-Suppose you want to run some operating system command stored in a string
-``cmd``. For example, ``cmd`` could be ``python model.py --I 1 --dt 0.5 0.2``.
-The following Python code
+The script for automating experiments needs to run the ``model.py`` program
+with appropriate command-line options. Python has several tools for
+executing an arbitrary command in the operating systems.
+Let ``cmd`` be a string containing the desired command.
+In the present case study, ``cmd`` could be ``'python model.py --I 1 --dt 0.5 0.2'``.
+The following code
 executes ``cmd`` and loads the text output into a string ``output``:
 
 .. code-block:: python
@@ -217,18 +223,26 @@ executes ``cmd`` and loads the text output into a string ``output``:
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT)
         output, dummy = p.communicate()
         
-        # Check if run was successful
+        # Check if the execution was successful
         failure = p.returncode
         if failure:
             print 'Command failed:', cmd; sys.exit(1)
 
-In our case, we need to interpret the contents of ``output`` and store
-the data in an appropriate data structure.
+Unsuccessful execution usually makes it meaningless to continue
+the program, and therefore we abort the program with ``sys.exit(1)``.
+Any argument different from 0 signifies to the computer's operating system
+that our program stopped with a failure.
+
+We need to interpret the contents of the string
+``output`` and store
+the data in an appropriate data structure for further processing.
 Since the content is basically a table and will be transformed to
-a spread sheet format, we let the columns in the table be lists,
-and we collect the columns in a dictionary whose keys are natural
+a spread sheet format, we let the columns in the table be represented
+by lists in the program,
+and we collect these columns in a dictionary whose keys are natural
 column names: ``dt`` and the three values of :math:`\theta`.
-The following code translates ``output`` to such a dictionary of lists:
+The following code translates the output of ``cmd`` (``output``)
+to such a dictionary of lists (``errors``):
 
 .. code-block:: python
 
@@ -244,8 +258,12 @@ The following code translates ``output`` to such a dictionary of lists:
 The automating script
 ---------------------
 
-Running ``model.py`` for a set of :math:`\Delta t` values and producing files as
-described above, can be done by the following code:
+We have now all the core elements in place to write the complete
+script where we run
+``model.py`` for a set of :math:`\Delta t` values (given as positional
+command-line arguments), make the error plot,
+write the CSV file, and combine plot files as described above.
+The complete code is listed below, followed by some explaining comments.
 
 .. code-block:: python
 
@@ -288,7 +306,6 @@ described above, can be done by the following code:
                 E_max = max(E_max, max(errors[theta]))
         
             plt.loglog(errors['dt'], errors[0], 'ro-')
-            #plt.hold('on')  # Matlab style...
             plt.loglog(errors['dt'], errors[0.5], 'b+-')
             plt.loglog(errors['dt'], errors[1], 'gx-')
             plt.legend(['FE', 'CN', 'BE'], loc='upper left')
@@ -296,8 +313,8 @@ described above, can be done by the following code:
             plt.ylabel('log(error)')
             plt.axis([min(dt_values), max(dt_values), E_min, E_max])
             plt.title('Error vs time step')
-            plt.savefig('error.png')
-            plt.savefig('error.pdf')
+            plt.savefig('error.png');  plt.savefig('error.pdf')
+        
             # Write out a table in CSV format
             f = open('error.csv', 'w')
             f.write(r'$\Delta t$,$\theta=0$,$\theta=0.5$,$\theta=1$' + '\n')
@@ -343,7 +360,7 @@ described above, can be done by the following code:
         
         if __name__ == '__main__':
             run_experiments(I=1, a=2, T=5)
-            plt.show()  # at the end of the program
+            plt.show()
 
 .. index:: Unix wildcard notation
 
@@ -355,14 +372,6 @@ We may comment upon many useful constructs in this script:
 
  * ``[float(arg) for arg in sys.argv[1:]]`` builds a list of real numbers
    from all the command-line arguments.
-
- * ``failure = os.system(cmd)`` runs an operating system command, e.g.,
-   another program. The execution is successful only if ``failure`` is zero.
-
- * Unsuccessful execution usually makes it meaningless to continue
-   the program, and therefore we abort the program with ``sys.exit(1)``.
-   Any argument different from 0 signifies to the computer's operating system
-   that our program stopped with a failure.
 
  * ``['%s_%s.png' % (method, dt) for dt in dt_values]`` builds a list of
    filenames from a list of numbers (``dt_values``).
@@ -378,6 +387,10 @@ We may comment upon many useful constructs in this script:
 
  * ``os.remove(filename)`` removes the file with name ``filename``.
 
+ * ``failure = os.system(cmd)`` runs an operating system command with
+   simpler syntax than what is required by ``subprocess`` (but the output
+   of ``cmd`` cannot be captured).
+
 .. _softeng1:exper:report:
 
 Making a report
@@ -390,7 +403,7 @@ report containing the plots should be automatically generated by the
 script that performs the set of experiments, because in that script we
 know exactly which input data that were used to generate a specific
 plot, thereby ensuring that each figure is connected to the
-right data. Take a look at `a sample report <http://hplgit.github.io/teamods/writing_reports/sphinx-cloud/>`__  to see what we have in
+right data. Take a look at `a sample report <http://hplgit.github.io/teamods/writing_reports/_static/sphinx-cloud/>`__  to see what we have in
 mind.
 
 .. index:: Word (Microsoft)
@@ -399,20 +412,24 @@ mind.
 
 .. index:: OpenOffice
 
-Word/OpenOffice
-~~~~~~~~~~~~~~~
+Word, OpenOffice, GoogleDocs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Microsoft Word and its open source counterparts OpenOffice and LibreOffice
-are the dominating tools for writing reports today. Nevertheless, scientific
-reports often need mathematical equations and nicely typeset
-computer code in monospace font. The support for mathematics and
-computer code in the mentioned tools in Word, OpenOffice, and LibreOffice
-is not on par with the technologies based on *markup languages* mentioned
-below. Also, with markup languages one has a readable, pure text file as
-source for the report, and changes in this text can easily be tracked by
-version control systems like Git. The result is a very strong tool for
-monitoring "who did what when" and increasing the reliability of
-report writing.
+Microsoft Word, its open source counterparts OpenOffice and
+LibreOffice, along with GoogleDocs and similar online services are the
+dominating tools for writing reports today. Nevertheless, scientific
+reports often need mathematical equations and nicely typeset computer
+code in monospace font. The support for mathematics and computer code
+in the mentioned tools is in this author's view not on par with the
+technologies based on *markup languages* and which are addressed
+below. Also, with markup languages one has a readable, pure text file
+as source for the report, and changes in this text can easily be
+tracked by version control systems like Git. The result is a very
+strong tool for monitoring "who did what when" with the files,
+resulting in increased reliability of the writing process. For
+collaborative writing, the merge functionality in Git leads to safer
+simultaneously editing that what is offered even by collaborative
+tools like GoogleDocs.
 
 .. index:: HTML
 
@@ -421,24 +438,24 @@ report writing.
 HTML with MathJax
 ~~~~~~~~~~~~~~~~~
 
-HTML is the markup language used for web pages.  Nice typeset computer
+HTML is the markup language used for web pages.  Nicely typeset computer
 code is straightforward in HTML, and high-quality mathematical
 typesetting is available using an extension to HTML called `MathJax <http://www.mathjax.org/>`__, which allows formulas and equations to be
 typeset with LaTeX syntax and nicely rendered in web browsers, see
 Figure :ref:`softeng1:exper:report:fig:mathjax`.  A relatively small
 subset of LaTeX environments for mathematics is supported, but the
-syntax for formulas is quite rich. Inline formulas are look like ``\(
+syntax for formulas is quite rich. Inline formulas look like ``\(
 u'=-au \)`` while equations are surrounded by ``$$`` signs.  Inside such
 signs, one can use ``\[ u'=-au \]`` for unnumbered equations, or
-``\begin{equation}`` and ``\end{equation}`` surrounding ``u'=-au`` for
+``\begin{equation}`` and ``\end{equation}`` for
 numbered equations, or ``\begin{equation}`` and ``\end{equation}`` for multiple
 aligned equations.  You need to be familiar with `mathematical
 typesetting in LaTeX <http://en.wikibooks.org/wiki/LaTeX/Mathematics>`__ to write MathJax
 code.
 
-The file `exper1_mathjax.py <http://hplgit.github.io/teamods/writing_reports/report_generation/exper1_html.py>`__
+The file `exper1_mathjax.py <https://github.com/hplgit/hplgit.github.com/blob/master/teamods/writing_reports/report_generation/report_generation/exper1_html.py>`__
 calls a script
-`exper1_html.py <http://hplgit.github.io/teamods/writing_reports/report_generation/exper1_html.py>`__
+`exper1.py <https://github.com/hplgit/hplgit.github.com/blob/master/teamods/writing_reports/report_generation/report_generation/exper1.py>`__
 to perform the numerical experiments and then runs Python
 statements for creating an `HTML file <http://hplgit.github.io/teamods/writing_reports/_static/report_mathjax.html.html>`__ with the source code for `the scientific report <http://hplgit.github.io/teamods/writing_reports/_static/report_mathjax.html>`__.
 The report contains a summary, a
@@ -476,7 +493,7 @@ LaTeX syntax is not particularly readable.  For output on the web,
 using HTML (and not the PDF directly in the browser window), LaTeX
 struggles with delivering high quality typesetting. Other tools,
 especially Sphinx, give better results and can also produce
-nice-looking PDFs.  The file `exper1_latex.py <http://hplgit.github.io/teamods/writing_reports/report_generation/exper1_latex.py>`__ shows how to
+nice-looking PDFs.  The file `exper1_latex.py <https://github.com/hplgit/hplgit.github.com/blob/master/teamods/writing_reports/report_generation/report_generation/exper1_latex.py>`__ shows how to
 generate the LaTeX source from a program.
 
 .. _softeng1:exper:report:fig:latex:
@@ -551,7 +568,7 @@ involved into the `Jupyter project <https://jupyter.org/>`__ which
 support a lot of programming languages for interactive notebook computing.
 Jupyter notebooks are primarily live electronic documents, but they can be
 printed out as PDF reports too.
-A notebook version of our scientific report can be `downloaded <http://hplgit.github.io/teamods/writing_reports/_static/report.ipynb>`__ and experimented with
+A notebook version of our scientific report can be `downloaded <https://github.com/hplgit/hplgit.github.com/blob/master/teamods/writing_reports/report_generation/_static/report.ipynb>`__ and experimented with
 or `just statically viewed <http://nbviewer.ipython.org/url/hplgit.github.com/teamods/writing_reports/_static/report.ipynb>`__ in a browser.
 
 Wiki formats
@@ -576,7 +593,7 @@ that easily translates to LaTeX, HTML, Sphinx, Markdown,
 IPython/Jupyter notebooks, and various wikis. `DocOnce <https://github.com/hplgit/doconce>`__ is such a tool. It is similar to
 Pandoc, but offers some special convenient features for writing about
 mathematics and programming.  The `tagging is modest <http://hplgit.github.io/teamods/writing_reports/_static/report.do.txt.html>`__, somewhere between
-LaTeX and Markdown.  The program `exper1_do.py <http://hplgit.github.io/teamods/writing_reports/report_generation/exper1_do.py>`__ demonstrates how
+LaTeX and Markdown.  The program `exper1_do.py <https://github.com/hplgit/hplgit.github.com/blob/master/teamods/writing_reports/report_generation/report_generation/exper1_do.py>`__ demonstrates how
 to generate DocOnce code for a scientific report.
 There is also a corresponding rich demo of the `resulting reports <http://hplgit.github.io/teamods/writing_reports/index.html>`__ that can be made from
 this DocOnce code.

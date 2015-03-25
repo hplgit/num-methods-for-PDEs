@@ -7,7 +7,7 @@ Automatically generated HTML file from DocOnce source
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
 <meta name="description" content="Scientific software engineering with a simple ODE model as example">
-<meta name="keywords" content="importing modules,list comprehension,option-value pairs (command line),command-line options and values,reading the command line,doctests,software testing doctests,unit testing,software testing nose,software testing pytest,test function,software testing test function,unit testing,software testing unit testing (class-based),problem class,solver class,wrapper (code),Unix wildcard notation,wildcard notation (Unix),Word (Microsoft),LibreOffice,OpenOffice,HTML,MathJax,LaTeX,Sphinx (typesetting tool),Markdown,IPython notebooks,Jupyter notebooks,DocOnce">
+<meta name="keywords" content="importing modules,list comprehension,option-value pairs (command line),command-line options and values,reading the command line,doctests,software testing doctests,unit testing,software testing nose,software testing pytest,test function,software testing test function,unit testing,software testing unit testing (class-based),problem class,solver class,wrapper (code),reproducibility,replicability,Unix wildcard notation,wildcard notation (Unix),Word (Microsoft),LibreOffice,OpenOffice,HTML,MathJax,LaTeX,Sphinx (typesetting tool),Markdown,IPython notebooks,Jupyter notebooks,DocOnce,replicability">
 
 <title>Scientific software engineering with a simple ODE model as example</title>
 
@@ -183,19 +183,15 @@ div { text-align: justify; text-justify: inter-word; }
                2,
                'softeng1:exer:integral:flat2',
                'softeng1:exer:integral:flat2'),
-              (' Problem 4: Write a doctest ',
+              (' Problem 4: Write a doctest and a test function ',
                2,
                'softeng1:exer:doctest1',
                'softeng1:exer:doctest1'),
-              (' Problem 5: Write a nose test ',
-               2,
-               'softeng1:exer:nosetest1',
-               'softeng1:exer:nosetest1'),
-              (' Exercise 6: Make use of a class implementation ',
+              (' Exercise 5: Make use of a class implementation ',
                2,
                'softeng1:exer:class:dts',
                'softeng1:exer:class:dts'),
-              (' Bibliography ', 1, None, '___sec59')]}
+              (' Bibliography ', 1, None, '___sec58')]}
 end of tocinfo -->
 
 <body>
@@ -264,15 +260,29 @@ $$
 <b>a)</b>
 Write a function
 <code>differentiate(x, y)</code> for differentiating a curve
-   with coordinates in the arrays <code>x</code> and <code>y</code>, using the
-   formulas above. The function should return the coordinate arrays
+with coordinates in the arrays <code>x</code> and <code>y</code>, using the
+formulas above. The function should return the coordinate arrays
 of the resulting differentiated curve.
 
 <p>
 <b>b)</b>
-Write a test function for the function in a).
+Since the formulas for differentiation used here are only approximate,
+with unknown approximation errors, it is challenging to construct
+test cases. Here are three approaches, which should be implemented
+in three separate test functions.
 
-<p>
+<ol>
+<li> Consider a curve with three points and compute \( d_i \), \( i=0,1,2 \),
+   by hand. Make a test that compares the hand-calculated results with those
+   from the function in a).</li>
+<li> The formulas for \( d_i \) are exact for points on
+   a straight line, as all the \( d_i \) values are then the same, equal to
+   the slope of the line. A test can check this property.</li>
+<li> For point lying on a parabola, the values for \( d_i \), \( i=1,\ldots,n-1 \),
+   should equal the derivative of the parabola. Make a test based on
+   this property too.</li>
+</ol>
+
 <b>c)</b>
 Start with a curve corresponding to \( y=\sin(\pi x) \) and \( n+1 \)
 points in \( [0,1] \). Apply <code>differentiate</code> four times and plot the
@@ -309,17 +319,17 @@ $$ h = \frac{b-a}{n},\quad x_i=a + ih,\ i=1,\ldots,n-1\tp $$
 
 
 <p>
-Somebody has used this rule to compute the integral \( \int_0^\pi sin^2x dx \):
+Somebody has used this rule to compute the integral \( \int_0^\pi \sin^2x dx \):
 
 <p>
 
 <!-- code=python (!bc pypro) typeset with pygments style "perldoc" -->
 <div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">math</span> <span style="color: #8B008B; font-weight: bold">import</span> pi, sin
-n = <span style="color: #B452CD">20</span>
-h = pi/n
+np = <span style="color: #B452CD">20</span>
+h = pi/np
 I = <span style="color: #B452CD">0</span>
-<span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #B452CD">1</span>, n):
-    I += sin(i*h)**<span style="color: #B452CD">2</span>
+<span style="color: #8B008B; font-weight: bold">for</span> k <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #B452CD">1</span>, np):
+    I += sin(k*h)**<span style="color: #B452CD">2</span>
 <span style="color: #8B008B; font-weight: bold">print</span> I
 </pre></div>
 <p>
@@ -335,6 +345,11 @@ The &quot;flat&quot; implementation above suffers from three serious flaws:
    across a wide range of applications.</li>
 <li> The lazy programmer dropped the first terms in the general formula
    since \( \sin(0)=\sin(\pi)=0 \).</li>
+<li> The sloppy programmer used <code>np</code> (number of points?) as variable for
+   <code>n</code> in the formula and a counter <code>k</code> instead of <code>i</code>. Such small
+   deviations from the mathematical notation are completely unnecessary.
+   The closer the code and the mathematics can get, the easier it is
+   to spot errors in formulas.</li>
 </ol>
 
 Write a function <code>trapezoidal</code> that fixes these flaws.
@@ -358,18 +373,18 @@ on the module:
 <b>Hint.</b>
 Note that even if you know the value of the integral, you do not know
 the error in the approximation produced by the Trapezoidal rule.
-However, the Trapezoidal rule will integrate linear functions,
-and piecewise linear functions, with discontinuities at the \( x_i \)
-points, exactly (i.e., to machine precision). Base a test function
-on such linear functions \( f(x) \).
+However, the Trapezoidal rule will integrate linear functions
+exactly (i.e., to machine precision). Base a test function
+on a linear \( f(x) \).
 
 <p>
 <!-- --- end hint in exercise --- -->
 
 <p>
 <b>c)</b>
-Add functionality for computing \( \int_a^b f(x)dx \) by providing
-\( f \), \( a \), \( b \), and \( n \) as positional command-line arguments:
+Add functionality such that we can compute \( \int_a^b f(x)dx \) by providing
+\( f \), \( a \), \( b \), and \( n \) as positional command-line arguments to the
+module file:
 
 <p>
 
@@ -377,7 +392,10 @@ Add functionality for computing \( \int_a^b f(x)dx \) by providing
 <div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; python trapezoidal.py &#39;sin(x)**2&#39; 0 pi 20
 </pre></div>
 <p>
-Note that the <code>trapezoidal.py</code> must still be a valid module file, so the
+Here, \( a=0 \), \( b=\pi \), and \( n=20 \).
+
+<p>
+Note that the <code>trapezoidal.py</code> file must still be a valid module file, so the
 interpretation of command-line data and computation of the integral
 must be performed from calls in a test block.
 
@@ -407,15 +425,17 @@ The result is the same as if we had hardcoded
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
-<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">f</span>(x):
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">math</span> <span style="color: #8B008B; font-weight: bold">import</span> *
+
+<span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">f</span>(x):
     <span style="color: #8B008B; font-weight: bold">return</span> sin(x)**<span style="color: #B452CD">2</span>
 </pre></div>
 <p>
 in the program. Note that <code>exec</code> needs the namespace
 <code>math.__dict__</code>, i.e., all names in the <code>math</code> module, such that
 it understands <code>sin</code> and other mathematical functions.
-Similarly, to allow \( a \) and \( b \) to be <code>math</code> values like <code>pi</code>,
-do
+Similarly, to allow \( a \) and \( b \) to be <code>math</code> expressions like <code>pi/4</code>
+and <code>exp(4)</code>, do
 
 <p>
 
@@ -428,8 +448,8 @@ b = eval(sys.argv[2], math.__dict__)
 
 <p>
 <b>d)</b>
-Write a test function for verifying the implementation of the
-reading data from the command line.
+Write a test function for verifying the implementation of
+data reading from the command line.
 
 <p>
 Filename: <code>trapezoidal.py</code>.
@@ -456,10 +476,10 @@ Filename: <code>trapezoidal_class.py</code>.
 <p>
 <!-- --- begin exercise --- -->
 
-<h2 id="softeng1:exer:doctest1">Problem 4: Write a doctest</h2>
+<h2 id="softeng1:exer:doctest1">Problem 4: Write a doctest and a test function</h2>
 
 <p>
-Type in the following program and equip the <code>roots</code> function with a doctest:
+Type in the following program:
 
 <p>
 
@@ -484,21 +504,18 @@ a, b, c = [<span style="color: #658b00">float</span>(arg) <span style="color: #8
 <span style="color: #8B008B; font-weight: bold">print</span> roots(a, b, c)
 </pre></div>
 <p>
+<b>a)</b>
+Equip the <code>roots</code> function with a doctest.
 Make sure to test both real and complex roots.
-Write out numbers with 14 digits or less.
-Filename: <code>doctest_roots.py</code>.
+Write out numbers in the doctest with 14 digits or less.
 
 <p>
-<!-- --- end exercise --- -->
+<b>b)</b>
+Make a test function for the <code>roots</code> function. Perform the
+same mathematical tests as in a), but with different
+programming technology.
 
 <p>
-<!-- --- begin exercise --- -->
-
-<h2 id="softeng1:exer:nosetest1">Problem 5: Write a nose test</h2>
-
-<p>
-Make a test function for the <code>roots</code> function in
-<a href="#softeng1:exer:doctest1">Problem 4: Write a doctest</a>.
 Filename: <code>test_roots.py</code>.
 
 <p>
@@ -507,7 +524,7 @@ Filename: <code>test_roots.py</code>.
 <p>
 <!-- --- begin exercise --- -->
 
-<h2 id="softeng1:exer:class:dts">Exercise 6: Make use of a class implementation</h2>
+<h2 id="softeng1:exer:class:dts">Exercise 5: Make use of a class implementation</h2>
 
 <p>
 Implement the <code>experiment_compare_dt</code> function from <code>decay.py</code>

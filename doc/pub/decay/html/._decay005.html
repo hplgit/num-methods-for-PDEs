@@ -465,7 +465,6 @@ u^{\prime}(t) = -a(t)u(t),\quad t\in (0,T],\quad u(0)=I \tp
 \end{equation}
 $$
 
-
 <p>
 A Forward Euler scheme consist of evaluating <a href="#mjx-eqn-44">(44)</a>
 at \( t=t_n \) and approximating the derivative with a forward
@@ -524,7 +523,6 @@ a(t_{n+1})u^{n+1}
 \tp
 \end{equation}
 $$
-
 
 <p>
 With the finite difference operator notation the Forward Euler and Backward
@@ -1100,7 +1098,6 @@ f(u, t) = ( & f^{(0)}(u^{(0)}(t),\ldots,u^{(m-1)}(t)),\\
 \end{align*}
 $$
 
-
 <p>
 Actually, any system of ODEs can
 be written in the form <a href="#mjx-eqn-53">(53)</a>, but higher-order
@@ -1523,9 +1520,15 @@ t <span style="color: #666666">=</span> np<span style="color: #666666">.</span>l
 
 solvers <span style="color: #666666">=</span> [odespy<span style="color: #666666">.</span>RK2(f),
            odespy<span style="color: #666666">.</span>RK3(f),
-           odespy<span style="color: #666666">.</span>RK4(f),
-           odespy<span style="color: #666666">.</span>BackwardEuler(f, nonlinear_solver<span style="color: #666666">=</span><span style="color: #BA2121">&#39;Newton&#39;</span>)]
+           odespy<span style="color: #666666">.</span>RK4(f),]
 
+<span style="color: #408080; font-style: italic"># BackwardEuler must use Newton solver to converge</span>
+<span style="color: #408080; font-style: italic"># (Picard is default and leads to divergence)</span>
+solvers<span style="color: #666666">.</span>append(
+    odespy<span style="color: #666666">.</span>BackwardEuler(f, nonlinear_solver<span style="color: #666666">=</span><span style="color: #BA2121">&#39;Newton&#39;</span>))
+<span style="color: #408080; font-style: italic"># Or tell BackwardEuler that it is a linear problem</span>
+solvers[<span style="color: #666666">-1</span>] <span style="color: #666666">=</span> odespy<span style="color: #666666">.</span>BackwardEuler(f, f_is_linear<span style="color: #666666">=</span><span style="color: #008000">True</span>,
+                                   jac<span style="color: #666666">=</span><span style="color: #008000; font-weight: bold">lambda</span> u, t: <span style="color: #666666">-</span>a)]
 legends <span style="color: #666666">=</span> []
 <span style="color: #008000; font-weight: bold">for</span> solver <span style="color: #AA22FF; font-weight: bold">in</span> solvers:
     solver<span style="color: #666666">.</span>set_initial_condition(I)
@@ -1546,28 +1549,32 @@ plt<span style="color: #666666">.</span>title(<span style="color: #BA2121">&#39;
 plt<span style="color: #666666">.</span>show()
 </pre></div>
 <p>
-Even though our ODE is linear, <code>odespy.BackwardEuler</code> will launch
-a nonlinear solver, which is Picard iteration by default, but that
-method leads to divergence. Specifying Newton's method leads to
-convergence in one iteration (as expected in linear problems).
+With the <code>odespy.BackwardEuler</code> method we either have to tell that
+the problem is linear and provide the Jacobian of \( f(u,t) \), i.e.,
+\( \partial f/\partial u \), as the <code>jac</code> argument, or we have to assume
+that \( f \) is nonlinear, but then specify Newton's method as solver
+for the nonlinear equations (since the equations are linear, Newton's
+method will converge in one iteration). By default,
+<code>odespy.BackwardEuler</code> assumes a nonlinear problem to be solved by
+Picard iteration, but that leads to divergence in the present problem.
 
 <p>
 <div class="alert alert-block alert-success alert-text-normal"><b>Visualization tip.</b>
-We use SciTools for
-plotting here, but importing <code>matplotlib.pyplot</code> as <code>plt</code> instead
-also works. However, plain use of Matplotlib as done here results in
+We use Matplotlib for
+plotting here, but importing <code>scitools.std</code> as <code>plt</code> instead
+also works. Plain use of Matplotlib as done here results in
 curves with different colors, which may be hard to distinguish on
-black-and-white paper. Using SciTools, curves are
+black-and-white paper. Using <code>scitools.std</code>, curves are
 automatically given colors <em>and</em> markers, thus making curves easy
 to distinguish on screen with colors and on black-and-white paper.
 The automatic adding of markers is normally a bad idea for a
-very fine mesh since all the markers get cluttered, but SciTools limits
+very fine mesh since all the markers get cluttered, but <code>scitools.std</code> limits
 the number of markers in such cases.
 For the exact solution we use a very fine mesh, but in the code
 above we specify the line type as a solid line (<code>-</code>), which means
 no markers and just a color to be automatically determined by
 the backend used for plotting (Matplotlib by default, but
-SciTools gives the opportunity to use other backends
+<code>scitools.std</code> gives the opportunity to use other backends
 to produce the plot, e.g., Gnuplot or Grace).
 
 <p>
@@ -1839,7 +1846,13 @@ function.
 <!-- --- begin hint in exercise --- -->
 
 <p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_13_1" style="font-size: 80%;"></a>
 <b>Hint.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_13_1">
+
+<p>
 It can be wise to automate the calculations such that it is easy to
 redo the calculations for other types of solutions. Here is
 a possible <code>sympy</code> function that takes a symbolic expression <code>u</code>
@@ -1878,6 +1891,11 @@ checks if <code>u</code> fulfills the discrete equations:
 analyze(u_e)
 <span style="color: #408080; font-style: italic"># or short form: analyze(lambda t: c*t + I)</span>
 </pre></div>
+<p>
+</div></p>
+</div>
+</p>
+
 <p>
 <!-- --- end hint in exercise --- -->
 

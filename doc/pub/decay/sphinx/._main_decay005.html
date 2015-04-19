@@ -49,14 +49,14 @@
     <link rel="prev" title="Analysis of finite difference equations" href="._main_decay004.html" />
  
   
-   <style type="text/css">
-     div.admonition {
-       background-color: whiteSmoke;
-       border: 1px solid #bababa;
-     }
-   </style>
-  </head>
-
+       <style type="text/css">
+         div.admonition {
+           background-color: whiteSmoke;
+           border: 1px solid #bababa;
+         }
+       </style>
+      </head>
+    
   <body>
     <div class="related">
       <h3>Navigation</h3>
@@ -846,9 +846,15 @@ Figure <a class="reference internal" href="#decay-odespy-fig1"><em>Behavior of d
 
 <span class="n">solvers</span> <span class="o">=</span> <span class="p">[</span><span class="n">odespy</span><span class="o">.</span><span class="n">RK2</span><span class="p">(</span><span class="n">f</span><span class="p">),</span>
            <span class="n">odespy</span><span class="o">.</span><span class="n">RK3</span><span class="p">(</span><span class="n">f</span><span class="p">),</span>
-           <span class="n">odespy</span><span class="o">.</span><span class="n">RK4</span><span class="p">(</span><span class="n">f</span><span class="p">),</span>
-           <span class="n">odespy</span><span class="o">.</span><span class="n">BackwardEuler</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">nonlinear_solver</span><span class="o">=</span><span class="s">&#39;Newton&#39;</span><span class="p">)]</span>
+           <span class="n">odespy</span><span class="o">.</span><span class="n">RK4</span><span class="p">(</span><span class="n">f</span><span class="p">),]</span>
 
+<span class="c"># BackwardEuler must use Newton solver to converge</span>
+<span class="c"># (Picard is default and leads to divergence)</span>
+<span class="n">solvers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+    <span class="n">odespy</span><span class="o">.</span><span class="n">BackwardEuler</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">nonlinear_solver</span><span class="o">=</span><span class="s">&#39;Newton&#39;</span><span class="p">))</span>
+<span class="c"># Or tell BackwardEuler that it is a linear problem</span>
+<span class="n">solvers</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">odespy</span><span class="o">.</span><span class="n">BackwardEuler</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">f_is_linear</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                   <span class="n">jac</span><span class="o">=</span><span class="k">lambda</span> <span class="n">u</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="o">-</span><span class="n">a</span><span class="p">)]</span>
 <span class="n">legends</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">solver</span> <span class="ow">in</span> <span class="n">solvers</span><span class="p">:</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">set_initial_condition</span><span class="p">(</span><span class="n">I</span><span class="p">)</span>
@@ -869,27 +875,31 @@ Figure <a class="reference internal" href="#decay-odespy-fig1"><em>Behavior of d
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Even though our ODE is linear, <tt class="docutils literal"><span class="pre">odespy.BackwardEuler</span></tt> will launch
-a nonlinear solver, which is Picard iteration by default, but that
-method leads to divergence. Specifying Newton&#8217;s method leads to
-convergence in one iteration (as expected in linear problems).</p>
+<p>With the <tt class="docutils literal"><span class="pre">odespy.BackwardEuler</span></tt> method we either have to tell that
+the problem is linear and provide the Jacobian of <span class="math">\(f(u,t)\)</span>, i.e.,
+<span class="math">\(\partial f/\partial u\)</span>, as the <tt class="docutils literal"><span class="pre">jac</span></tt> argument, or we have to assume
+that <span class="math">\(f\)</span> is nonlinear, but then specify Newton&#8217;s method as solver
+for the nonlinear equations (since the equations are linear, Newton&#8217;s
+method will converge in one iteration). By default,
+<tt class="docutils literal"><span class="pre">odespy.BackwardEuler</span></tt> assumes a nonlinear problem to be solved by
+Picard iteration, but that leads to divergence in the present problem.</p>
 <div class="admonition-visualization-tip admonition">
 <p class="first admonition-title">Visualization tip</p>
-<p>We use SciTools for
-plotting here, but importing <tt class="docutils literal"><span class="pre">matplotlib.pyplot</span></tt> as <tt class="docutils literal"><span class="pre">plt</span></tt> instead
-also works. However, plain use of Matplotlib as done here results in
+<p>We use Matplotlib for
+plotting here, but importing <tt class="docutils literal"><span class="pre">scitools.std</span></tt> as <tt class="docutils literal"><span class="pre">plt</span></tt> instead
+also works. Plain use of Matplotlib as done here results in
 curves with different colors, which may be hard to distinguish on
-black-and-white paper. Using SciTools, curves are
+black-and-white paper. Using <tt class="docutils literal"><span class="pre">scitools.std</span></tt>, curves are
 automatically given colors <em>and</em> markers, thus making curves easy
 to distinguish on screen with colors and on black-and-white paper.
 The automatic adding of markers is normally a bad idea for a
-very fine mesh since all the markers get cluttered, but SciTools limits
+very fine mesh since all the markers get cluttered, but <tt class="docutils literal"><span class="pre">scitools.std</span></tt> limits
 the number of markers in such cases.
 For the exact solution we use a very fine mesh, but in the code
 above we specify the line type as a solid line (<tt class="docutils literal"><span class="pre">-</span></tt>), which means
 no markers and just a color to be automatically determined by
 the backend used for plotting (Matplotlib by default, but
-SciTools gives the opportunity to use other backends
+<tt class="docutils literal"><span class="pre">scitools.std</span></tt> gives the opportunity to use other backends
 to produce the plot, e.g., Gnuplot or Grace).</p>
 <p class="last">Also note the that the legends
 are based on the class names of the solvers, and in Python the name of

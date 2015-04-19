@@ -1217,9 +1217,15 @@ Figure :ref:`decay:odespy:fig1` shows the results.
         
         solvers = [odespy.RK2(f),
                    odespy.RK3(f),
-                   odespy.RK4(f),
-                   odespy.BackwardEuler(f, nonlinear_solver='Newton')]
+                   odespy.RK4(f),]
         
+        # BackwardEuler must use Newton solver to converge
+        # (Picard is default and leads to divergence)
+        solvers.append(
+            odespy.BackwardEuler(f, nonlinear_solver='Newton'))
+        # Or tell BackwardEuler that it is a linear problem
+        solvers[-1] = odespy.BackwardEuler(f, f_is_linear=True,
+                                           jac=lambda u, t: -a)]
         legends = []
         for solver in solvers:
             solver.set_initial_condition(I)
@@ -1239,29 +1245,33 @@ Figure :ref:`decay:odespy:fig1` shows the results.
         plt.title('Time step: %g' % dt)
         plt.show()
 
-Even though our ODE is linear, ``odespy.BackwardEuler`` will launch
-a nonlinear solver, which is Picard iteration by default, but that
-method leads to divergence. Specifying Newton's method leads to
-convergence in one iteration (as expected in linear problems).
+With the ``odespy.BackwardEuler`` method we either have to tell that
+the problem is linear and provide the Jacobian of :math:`f(u,t)`, i.e.,
+:math:`\partial f/\partial u`, as the ``jac`` argument, or we have to assume
+that :math:`f` is nonlinear, but then specify Newton's method as solver
+for the nonlinear equations (since the equations are linear, Newton's
+method will converge in one iteration). By default,
+``odespy.BackwardEuler`` assumes a nonlinear problem to be solved by
+Picard iteration, but that leads to divergence in the present problem.
 
 
 .. admonition:: Visualization tip
 
-   We use SciTools for
-   plotting here, but importing ``matplotlib.pyplot`` as ``plt`` instead
-   also works. However, plain use of Matplotlib as done here results in
+   We use Matplotlib for
+   plotting here, but importing ``scitools.std`` as ``plt`` instead
+   also works. Plain use of Matplotlib as done here results in
    curves with different colors, which may be hard to distinguish on
-   black-and-white paper. Using SciTools, curves are
+   black-and-white paper. Using ``scitools.std``, curves are
    automatically given colors *and* markers, thus making curves easy
    to distinguish on screen with colors and on black-and-white paper.
    The automatic adding of markers is normally a bad idea for a
-   very fine mesh since all the markers get cluttered, but SciTools limits
+   very fine mesh since all the markers get cluttered, but ``scitools.std`` limits
    the number of markers in such cases.
    For the exact solution we use a very fine mesh, but in the code
    above we specify the line type as a solid line (``-``), which means
    no markers and just a color to be automatically determined by
    the backend used for plotting (Matplotlib by default, but
-   SciTools gives the opportunity to use other backends
+   ``scitools.std`` gives the opportunity to use other backends
    to produce the plot, e.g., Gnuplot or Grace).
    
    Also note the that the legends

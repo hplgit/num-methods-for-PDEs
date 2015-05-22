@@ -1,0 +1,303 @@
+.. !split
+
+.. _fem:approx:fe:fd:
+
+Comparison of finite element and finite difference approximation
+================================================================
+
+The previous sections on approximating :math:`f` by a finite element function :math:`u`
+utilize the projection/Galerkin or
+least squares approaches to minimize the approximation
+error. We may, alternatively, use the collocation/interpolation method
+as described in the section :ref:`fem:approx:fe:impl:ex1:collocation`.
+Here we shall compare these three approaches with what one does in
+the finite difference method when representing a given function on a mesh.
+
+.. _fem:approx:fe:fd:fdproj:
+
+Finite difference approximation of given functions
+--------------------------------------------------
+
+Approximating a given function :math:`f(x)` on a mesh in a finite difference
+context will typically just sample :math:`f` at the mesh points. If :math:`u_i`
+is the value of the approximate :math:`u` at the mesh point :math:`x_{i}`, we have
+:math:`u_i = f(x_{i})`.
+The collocation/interpolation method using finite element basis
+functions gives exactly the same representation,
+as shown the section :ref:`fem:approx:fe:impl:ex1:collocation`,
+
+.. math::
+         u(x_{i}) = c_i = f(x_{i}){\thinspace .}
+
+How does a finite element Galerkin or least squares approximation differ
+from this straightforward interpolation of :math:`f`? This is the question
+to be addressed next.
+We now limit the scope to P1 elements since this is the element type
+that gives formulas closest to those arising in the finite difference
+method.
+
+.. _fem:approx:fe:fd:feproj:
+
+Finite difference interpretation of a finite element approximation
+------------------------------------------------------------------
+
+The linear system arising from a Galerkin or least squares approximation
+reads in general
+
+.. math::
+        
+        \sum_{j\in{\mathcal{I}_s}} c_j ({\psi}_i,{\psi}_j) = (f,{\psi}_i),\quad i\in{\mathcal{I}_s}{\thinspace .}
+        
+
+In the finite element approximation we choose :math:`{\psi}_i ={\varphi}_i`.
+With :math:`{\varphi}_i` corresponding to P1 elements and a uniform mesh of
+element length :math:`h` we have in the section :ref:`fem:approx:global:linearsystem` calculated the matrix with entries
+:math:`({\varphi}_i,{\varphi}_j)`.  Equation number :math:`i` reads
+
+.. _Eq:fem:deq:1D:approx:deq:massmat:diffeq2:
+
+.. math::
+   :label: fem:deq:1D:approx:deq:massmat:diffeq2
+        
+        \frac{h}{6}(u_{i-1} + 4u_i + u_{i+1}) = (f,{\varphi}_i)
+        {\thinspace .}
+        
+        
+
+The first and last equation, corresponding to :math:`i=0` and :math:`i=N` are slightly
+different, see the section :ref:`fem:approx:fe:A:structure`.
+
+The finite difference counterpart to
+:eq:`fem:deq:1D:approx:deq:massmat:diffeq2` is just :math:`u_i=f_i`
+as explained in the section :ref:`fem:approx:fe:fd:fdproj`.
+To easier compare this result to
+the finite element approach to approximating functions, we can rewrite
+the left-hand side of :eq:`fem:deq:1D:approx:deq:massmat:diffeq2`
+as
+
+.. math::
+        
+        h(u_i + \frac{1}{6}(u_{i-1} - 2u_i + u_{i+1}))
+        {\thinspace .}
+        
+
+Thinking in terms of finite differences, we can write this expression
+using finite difference operator notation:
+
+.. math::
+         [h(u + \frac{h^2}{6}D_x D_x u)]_i,
+
+which is nothing but the standard discretization of
+
+.. math::
+         h(u + \frac{h^2}{6}u''){\thinspace .}
+
+Before interpreting the approximation procedure as solving a
+differential equation, we need to work out what the right-hand side is
+in the context of P1 elements.
+Since :math:`{\varphi}_i` is the linear function that is 1 at
+:math:`x_{i}` and zero at all other nodes, only the interval :math:`[x_{i-1},x_{i+1}]`
+contribute to the integral on the right-hand side. This integral is
+naturally split into two parts according to
+:ref:`(5.3) <Eq:fem:approx:fe:phi:1:formula2>`:
+
+.. math::
+         (f,{\varphi}_i) = \int_{x_{i-1}}^{x_{i}} f(x)\frac{1}{h} (x - x_{i-1}) dx
+        + \int_{x_{i}}^{x_{i+1}} f(x)(1 - \frac{1}{h}(x - x_{i})) dx
+        {\thinspace .}
+        
+
+However, if :math:`f` is not known we cannot do much else with this expression.
+It is clear that many values of
+:math:`f` around :math:`x_{i}` contributes to the right-hand side, not just
+the single point value :math:`f(x_{i})`
+as in the finite difference method.
+
+To proceed with the right-hand side, we can
+turn to numerical integration schemes.
+The Trapezoidal method for :math:`(f,{\varphi}_i)`, based on
+sampling the integrand :math:`f{\varphi}_i` at the node points :math:`x_{i}=i h`
+gives
+
+.. math::
+         (f,{\varphi}_i) = \int_\Omega f{\varphi}_i dx\approx h\frac{1}{2}(
+        f(x_{0}){\varphi}_i(x_{0}) + f(x_{N}){\varphi}_i(x_{N}))
+        + h\sum_{j=1}^{N-1} f(x_{j}){\varphi}_i(x_{j})
+        {\thinspace .}
+        
+
+Since :math:`{\varphi}_i` is zero at all these points, except at :math:`x_{i}`, the
+Trapezoidal rule collapses to one term:
+
+.. math::
+        
+        (f,{\varphi}_i) \approx hf(x_{i}),
+        
+
+for :math:`i=1,\ldots,N-1`,
+which is the same result as with collocation/interpolation, and of course
+the same result as in the finite difference method.
+For the end points
+:math:`i=0` and :math:`i=N` we get contribution from only one element so
+
+.. math::
+        
+        (f,{\varphi}_i) \approx {\frac{1}{2}}hf(x_{i}),\quad i=0,\ i=N
+        {\thinspace .}
+        
+
+Simpson's rule with sample points also in the middle of
+the elements, at :math:`x_{i+\frac{1}{2}}=(x_{i} + x_{i+1})/2`,
+can be written as
+
+.. math::
+         \int_\Omega g(x)dx \approx \frac{\tilde h}{3}\left( g(x_{0}) +
+        2\sum_{j=1}^{N-1} g(x_{j})
+        + 4\sum_{j=0}^{N-1} g(x_{j+\frac{1}{2}}) + f(x_{2N})\right),
+        
+
+where :math:`\tilde h= h/2` is the spacing between the sample points.
+Our integrand is :math:`g=f{\varphi}_i`. For all the node points,
+:math:`{\varphi}_i(x_{j})=\delta_{ij}`, and therefore
+:math:`\sum_{j=1}^{N-1} f(x_{j}){\varphi}_i(x_{j})=f(x_{i})`.
+At the midpoints, :math:`{\varphi}_i(x_{i\pm\frac{1}{2}})=1/2` and
+:math:`{\varphi}_i(x_{j+\frac{1}{2}})=0` for :math:`j>1` and :math:`j<i-1`.
+Consequently,
+
+.. math::
+         \sum_{j=0}^{N-1} f(x_{j+\frac{1}{2}}){\varphi}_i(x_{j+\frac{1}{2}})
+        = \frac{1}{2}(fx_{j-\frac{1}{2}} + x_{j+\frac{1}{2}}){\thinspace .}
+
+When :math:`1\leq i\leq N-1` we then get
+
+.. math::
+        
+        (f,{\varphi}_i) \approx
+        \frac{h}{3}(f_{i-\frac{1}{2}} + f_i + f_{i+\frac{1}{2}})
+        {\thinspace .}
+        
+
+This result shows that, with Simpson's rule, the finite element method
+operates with the average of :math:`f` over three points, while the finite difference
+method just applies :math:`f` at one point. We may interpret this as
+a "smearing" or smoothing of :math:`f` by the finite element method.
+
+We can now summarize our findings. With the approximation of
+:math:`(f,{\varphi}_i)` by the Trapezoidal rule, P1 elements give rise
+to equations that can be expressed as a finite difference
+discretization of
+
+.. math::
+        
+        u + \frac{h^2}{6} u'' = f,\quad u'(0)=u'(L)=0,
+        
+
+expressed with operator notation as
+
+.. math::
+        
+        [u + \frac{h^2}{6} D_x D_x u = f]_i{\thinspace .}  
+
+As :math:`h\rightarrow 0`, the extra term proportional to :math:`u''` goes to zero,
+and the two methods are then equal.
+
+With the Simpson's rule, we may say that we solve
+
+.. math::
+        
+        [u + \frac{h^2}{6} D_x D_x u = \bar f]_i,
+        
+
+where :math:`\bar f_i` means the average :math:`\frac{1}{3}(f_{i-1/2} + f_i + f_{i+1/2})`.
+
+The extra term :math:`\frac{h^2}{6} u''` represents a smoothing effect: with
+just this term, we would find :math:`u` by integrating :math:`f` twice and thereby
+smooth :math:`f` considerably. In addition, the finite element
+representation of :math:`f` involves an average, or a smoothing, of :math:`f` on
+the right-hand side of the equation system. If :math:`f` is a noisy
+function, direct interpolation :math:`u_i=f_i` may result in a noisy :math:`u`
+too, but with a Galerkin or least squares formulation and P1 elements,
+we should expect that :math:`u` is smoother than :math:`f` unless :math:`h` is very
+small.
+
+The interpretation that finite elements tend to smooth the solution
+is valid in applications far beyond approximation of 1D functions.
+
+Making finite elements behave as finite differences
+---------------------------------------------------
+
+With a simple trick, using numerical integration, we can easily produce
+the result :math:`u_i=f_i` with the Galerkin or least square formulation
+with P1 elements. This is useful in many occasions when we deal
+with more difficult differential equations and want the finite element
+method to have properties like the finite difference method (solving
+standard linear wave equations is one primary example).
+
+Computations in physical space
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We have already seen that applying the Trapezoidal rule to the
+right-hand side :math:`(f,{\varphi}_i)` simply gives :math:`f` sampled at :math:`x_{i}`.
+Using the Trapezoidal rule on the  matrix entries
+:math:`A_{i,j}=({\varphi}_i,{\varphi}_j)` involves a sum
+
+.. math::
+         \sum_k {\varphi}_i(x_{k}){\varphi}_j(x_{k}),
+
+but :math:`{\varphi}_i(x_{k})=\delta_{ik}` and
+:math:`{\varphi}_j(x_{k})=\delta_{jk}`.
+The product :math:`{\varphi}_i{\varphi}_j` is then different from zero only
+when sampled at :math:`x_{i}` and :math:`i=j`. The Trapezoidal
+approximation to the integral
+is then
+
+.. math::
+         ({\varphi}_i,{\varphi}_j) \approx h,\quad i=j,
+
+and zero if :math:`i\neq j`. This means that we have obtained a diagonal matrix!
+The first and last diagonal elements, :math:`({\varphi}_0,{\varphi}_0)` and
+:math:`({\varphi}_N,{\varphi}_N)` get contribution only from the first and last
+element, respectively, resulting in the approximate integral value :math:`h/2`.
+The corresponding right-hand side also has a factor :math:`1/2` for :math:`i=0` and :math:`i=N`.
+Therefore, the least squares or Galerkin approach with P1 elements and
+Trapezoidal integration results in
+
+.. math::
+         c_i = f_i,\quad i\in{\mathcal{I}_s}{\thinspace .}  
+
+Simpsons's rule can be used to achieve a similar result for P2 elements, i.e,
+a diagonal coefficient matrix, but with the previously derived
+average of :math:`f` on the right-hand side.
+
+Elementwise computations
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Identical results to those above will arise if we perform elementwise
+computations. The idea is to use the Trapezoidal rule on the reference
+element for computing the element matrix and vector. When assembled,
+the same equations :math:`c_i=f(x_{i})` arise. :ref:`fem:approx:fe:exer:1D:trapez` encourages you to carry out the
+details.
+
+.. see ex_fe_approx1D_session.py for an example of symbolic comp.
+
+.. index:: mass matrix
+
+.. index:: mass lumping
+
+.. index:: lumped mass matrix
+
+Terminology
+~~~~~~~~~~~
+
+The matrix with entries :math:`({\varphi}_i,{\varphi}_j)` typically arises from
+terms proportional to :math:`u` in a differential equation where :math:`u` is the
+unknown function. This matrix is often called the *mass matrix*,
+because in the early days of the finite element method, the matrix
+arose from the mass times acceleration term in Newton's second law of
+motion. Making the mass matrix diagonal by, e.g., numerical
+integration, as demonstrated above, is a widely used technique and is
+called *mass lumping*. In time-dependent problems it can sometimes
+enhance the numerical accuracy and computational efficiency of the
+finite element method.  However, there are also examples where mass
+lumping destroys accuracy.
+

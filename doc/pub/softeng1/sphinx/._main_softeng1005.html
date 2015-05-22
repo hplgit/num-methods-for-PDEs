@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Classes for problem and solution method</title>
+    <title>Packaging the software for other users</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -25,7 +25,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/javascript" src="_static/sidebar.js"></script>
 
         <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
@@ -44,9 +44,9 @@
         </style>
 
     
-    <link rel="top" title="Scientific software engineering with a simple ODE model as example" href="index.html" />
-    <link rel="next" title="Automating scientific experiments" href="._main_softeng1006.html" />
-    <link rel="prev" title="Packaging the software for other users" href="._main_softeng1004.html" />
+    <link rel="top" title="Scientific software engineering; ODE model" href="index.html" />
+    <link rel="next" title="Classes for problem and solution method" href="._main_softeng1006.html" />
+    <link rel="prev" title="Tests for verifying implementations" href="._main_softeng1004.html" />
  
   
        <style type="text/css">
@@ -65,12 +65,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="._main_softeng1006.html" title="Automating scientific experiments"
+          <a href="._main_softeng1006.html" title="Classes for problem and solution method"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="._main_softeng1004.html" title="Packaging the software for other users"
+          <a href="._main_softeng1004.html" title="Tests for verifying implementations"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">Scientific software engineering with a simple ODE model as example</a> &raquo;</li> 
+        <li><a href="index.html">Scientific software engineering; ODE model</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -79,330 +79,198 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="classes-for-problem-and-solution-method">
-<span id="softeng1-prog-se-class"></span><h1>Classes for problem and solution method<a class="headerlink" href="#classes-for-problem-and-solution-method" title="Permalink to this headline">¶</a></h1>
-<p>The numerical solution procedure was compactly and conveniently implemented in
-a Python function <tt class="docutils literal"><span class="pre">solver</span></tt> in the section <a class="reference internal" href="._main_softeng1001.html#softeng1-basic-math"><em>Mathematical problem and solution technique</em></a>.
-In more complicated problems it might
-be beneficial to use classes instead of functions only. Here we shall
-describe a class-based software design well suited for scientific problems
-where there is a mathematical model of some physical phenomenon and
-some numerical methods to solve the equations involved in the model.</p>
-<p>We introduce a class <tt class="docutils literal"><span class="pre">Problem</span></tt> to hold the definition of the physical
-problem, and a class <tt class="docutils literal"><span class="pre">Solver</span></tt> to hold the data and methods needed to
-numerically solve the problem.  The forthcoming text will explain the
-inner workings of these classes and how they represent an alternative
-to the <tt class="docutils literal"><span class="pre">solver</span></tt> and <tt class="docutils literal"><span class="pre">experiment_*</span></tt> functions in the <tt class="docutils literal"><span class="pre">decay</span></tt>
-module.</p>
-<p>Explaining the details of class programming in Python is considered
-far beyond the scope of this text.  Readers who are unfamiliar with Python
-class programming should first consult one of the many electronic
-Python tutorials or textbooks to come up to speed with concepts and
-syntax of Python classes before reading on. The author has a gentle
-introduction to class programming for scientific applications
-in <a class="reference internal" href="._main_softeng1008.html#ref2" id="id1">[Ref2]</a>, see <a class="reference external" href="http://hplgit.github.io/primer.html/doc/web/index.html">Chapter 7 and 9 and Appendix E</a>.
-Other useful resources are</p>
-<blockquote>
-<div><ul class="simple">
-<li>The Python Tutorial: <a class="reference external" href="http://docs.python.org/2/tutorial/classes.html">http://docs.python.org/2/tutorial/classes.html</a></li>
-<li>Wiki book on Python Programming: <a class="reference external" href="http://en.wikibooks.org/wiki/Python_Programming/Classes">http://en.wikibooks.org/wiki/Python_Programming/Classes</a></li>
-<li><tt class="docutils literal"><span class="pre">tutorialspoint.com</span></tt>: <a class="reference external" href="http://www.tutorialspoint.com/python/python_classes_objects.htm">http://www.tutorialspoint.com/python/python_classes_objects.htm</a></li>
-</ul>
-</div></blockquote>
-<div class="section" id="the-problem-class">
-<h2>The problem class<a class="headerlink" href="#the-problem-class" title="Permalink to this headline">¶</a></h2>
-<p id="index-0">The purpose of the problem class is to store all information about
-the mathematical model. This usually means the physical parameters
-and formulas
-in the problem. Looking at our model problem
-<a class="reference internal" href="._main_softeng1001.html#eq-softeng1-ode"><em>(2.1)</em></a>-<a class="reference internal" href="._main_softeng1001.html#eq-softeng1-u0"><em>(2.2)</em></a>, the physical data cover
-<span class="math">\(I\)</span>, <span class="math">\(a\)</span>, and <span class="math">\(T\)</span>. Since we have an analytical solution of
-the ODE problem, we may add this solution in terms of a Python
-function (or method) to the problem class as well.
-A possible problem class is therefore</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">exp</span>
-
-<span class="k">class</span> <span class="nc">Problem</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">I</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">T</span>
-
-    <span class="k">def</span> <span class="nf">u_exact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-        <span class="n">I</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span>
-        <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+  <div class="section" id="packaging-the-software-for-other-users">
+<span id="softeng1-prog-se-git"></span><h1>Packaging the software for other users<a class="headerlink" href="#packaging-the-software-for-other-users" title="Permalink to this headline">¶</a></h1>
+<p>As soon as you have some working software with a potential to be shared
+with others, you should package your software in a standard way such
+that users can easily download your software, install it, improve it,
+and ask you to approve the improvements in new versions of the software.
+During recent years, the software development community has established
+quite firm tools and rules for how this is done.</p>
+<div class="section" id="software-directory-tree">
+<h2>Software directory tree<a class="headerlink" href="#software-directory-tree" title="Permalink to this headline">¶</a></h2>
+<p>We start with organizing our software as a directory tree. Our
+software consists of one module file, <code class="docutils literal"><span class="pre">decay.py</span></code>, and potentially
+unit tests in a separate file in a directory <code class="docutils literal"><span class="pre">tests</span></code>.</p>
+<div class="section" id="distributing-just-a-module-file">
+<h3>Distributing just a module file<a class="headerlink" href="#distributing-just-a-module-file" title="Permalink to this headline">¶</a></h3>
+<p>Let us start out with the minimum solution: just the <code class="docutils literal"><span class="pre">decay.py</span></code>
+file containing all test functions for all unit tests. The the software
+is just one file and all we need is a directory with this file.
+In addition, users will expect an installation script <code class="docutils literal"><span class="pre">setup.py</span></code>
+and a <code class="docutils literal"><span class="pre">README</span></code> file telling what the software is about, email to the
+author, URL where the software can be downloaded, or other similar
+information.</p>
+<p>The <code class="docutils literal"><span class="pre">setup.py</span></code> file can be as short as</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">distutils.core</span> <span class="kn">import</span> <span class="n">setup</span>
+<span class="n">setup</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;decay&#39;</span><span class="p">,</span>
+      <span class="n">version</span><span class="o">=</span><span class="s">&#39;0.1&#39;</span><span class="p">,</span>
+      <span class="n">py_modules</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;decay&#39;</span><span class="p">],</span>
+      <span class="n">scripts</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;decay.py&#39;</span><span class="p">],</span>
+      <span class="p">)</span>
 </pre></div>
 </div>
-<p>We could in the <tt class="docutils literal"><span class="pre">u_exact</span></tt> method have written
-<tt class="docutils literal"><span class="pre">self.I*exp(-self.a*t)</span></tt>, but using local variables <tt class="docutils literal"><span class="pre">I</span></tt> and <tt class="docutils literal"><span class="pre">a</span></tt> allows
-the nicer formula <tt class="docutils literal"><span class="pre">I*exp(-a*t)</span></tt>, which looks much closer to the mathematical
-expression <span class="math">\(Ie^{-at}\)</span>.  This is not an important issue with the
-current compact formula, but is beneficial in more complicated
-problems with longer formulas to obtain the closest possible
-relationship between code and mathematics. My coding style is to strip
-off the <tt class="docutils literal"><span class="pre">self</span></tt> prefix when the code expresses mathematical formulas.</p>
-<p>The class data can be set either as arguments in the constructor or
-at any time later, e.g.,</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">problem</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-<span class="n">problem</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="mi">8</span>
-<span class="n">problem</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="mf">1.5</span>
+<p>The <code class="docutils literal"><span class="pre">py_modules</span></code> argument specifies a list of modules to be installed, while
+<code class="docutils literal"><span class="pre">scripts</span></code> specifies programs to be run. The modules are typically
+installed in some <code class="docutils literal"><span class="pre">lib</span></code> directory on the computer system, e.g.,
+<code class="docutils literal"><span class="pre">/usr/local/lib/python2.7/dist-packages</span></code>, while executable programs go to
+<code class="docutils literal"><span class="pre">/usr/local/bin</span></code>. To install the <code class="docutils literal"><span class="pre">decay.py</span></code> in these two places, a user
+just runs</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; sudo python setup.py install
 </pre></div>
 </div>
-<p>(Some programmers prefer <tt class="docutils literal"><span class="pre">set</span></tt> and <tt class="docutils literal"><span class="pre">get</span></tt> functions for setting and getting
-data in classes, often implemented via <em>properties</em> in Python, but
-I consider that overkill when we just have a few data items in a class.)</p>
-<p>It would be convenient if class <tt class="docutils literal"><span class="pre">Problem</span></tt> could also initialize
-the data from the command line. To this end, we add a method for
-defining a set of command-line options and a method that sets the
-local attributes equal to what was found on the command line.
-The default values associated with the command-line options are taken
-as the values provided to the constructor. Class <tt class="docutils literal"><span class="pre">Problem</span></tt> now becomes</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Problem</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">I</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">T</span>
-
-    <span class="k">def</span> <span class="nf">define_command_line_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return updated (parser) or new ArgumentParser object.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="kn">import</span> <span class="nn">argparse</span>
-            <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
-
-        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-            <span class="s">&#39;--I&#39;</span><span class="p">,</span> <span class="s">&#39;--initial_condition&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
-            <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;initial condition, u(0)&#39;</span><span class="p">,</span>
-            <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;I&#39;</span><span class="p">)</span>
-        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-            <span class="s">&#39;--a&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
-            <span class="n">help</span><span class="o">=</span><span class="s">&#39;coefficient in ODE&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;a&#39;</span><span class="p">)</span>
-        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-            <span class="s">&#39;--T&#39;</span><span class="p">,</span> <span class="s">&#39;--stop_time&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
-            <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;end time of simulation&#39;</span><span class="p">,</span>
-            <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;T&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">parser</span>
-
-    <span class="k">def</span> <span class="nf">init_from_command_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Load attributes from ArgumentParser into instance.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">T</span>
-
-    <span class="k">def</span> <span class="nf">u_exact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return the exact solution u(t)=I*exp(-a*t).&quot;&quot;&quot;</span>
-        <span class="n">I</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span>
-        <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+<p>A user can easily install the software on her personal account if
+a system-wide installation is not desirable. We refer to the
+<a class="reference external" href="https://docs.python.org/2/install/index.html#alternate-installation">installation documentation</a> for the many arguments that can be given to <code class="docutils literal"><span class="pre">setup.py</span></code>.</p>
+<p>The software package is in the case above a directory <code class="docutils literal"><span class="pre">decay</span></code> with three files</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; ls decay
+README   decay.py   setup.py
 </pre></div>
 </div>
-<p>Observe that if the user already has an <tt class="docutils literal"><span class="pre">ArgumentParser</span></tt> object it can be
-supplied, but if she does not have any, class <tt class="docutils literal"><span class="pre">Problem</span></tt> makes one.
-Python&#8217;s <tt class="docutils literal"><span class="pre">None</span></tt> object is used to indicate that a variable is not
-initialized with a proper value.</p>
 </div>
-<div class="section" id="the-solver-class">
-<h2>The solver class<a class="headerlink" href="#the-solver-class" title="Permalink to this headline">¶</a></h2>
-<span class="target" id="index-1"></span><p id="index-2">The solver class stores parameters related to the numerical solution method
-and provides a function <tt class="docutils literal"><span class="pre">solve</span></tt> for solving the problem.
-For convenience, a problem object is given to the constructor
-such a solver object such that the latter also get access to
-physical data. In the present example,
-the numerical solution method involves the parameters <span class="math">\(\Delta t\)</span>
-and <span class="math">\(\theta\)</span>, which then constitute the data part of the solver class.
-We include, as in the problem class, functionality for
-reading <span class="math">\(\Delta t\)</span> and <span class="math">\(\theta\)</span> from the command line:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Solver</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span> <span class="o">=</span> <span class="n">problem</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">),</span> <span class="n">theta</span>
-
-    <span class="k">def</span> <span class="nf">define_command_line_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return updated (parser) or new ArgumentParser object.&quot;&quot;&quot;</span>
-        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-            <span class="s">&#39;--scheme&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;CN&#39;</span><span class="p">,</span>
-            <span class="n">help</span><span class="o">=</span><span class="s">&#39;FE, BE, or CN&#39;</span><span class="p">)</span>
-        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-            <span class="s">&#39;--dt&#39;</span><span class="p">,</span> <span class="s">&#39;--time_step_values&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
-            <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">],</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;time step values&#39;</span><span class="p">,</span>
-            <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;dt&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;+&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;dt_values&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">parser</span>
-
-    <span class="k">def</span> <span class="nf">init_from_command_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Load attributes from ArgumentParser into instance.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">theta</span>
-
-    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return norm of error at the mesh points.&quot;&quot;&quot;</span>
-        <span class="n">u_e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">u_exact</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">)</span>
-        <span class="n">e</span> <span class="o">=</span> <span class="n">u_e</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">u</span>
-        <span class="n">E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">E</span>
+<div class="section" id="distributing-a-package">
+<h3>Distributing a package<a class="headerlink" href="#distributing-a-package" title="Permalink to this headline">¶</a></h3>
+<p>If the software consists of more files than one or two modules, one
+should make a Python <em>package</em> out of it. In our case we make a
+package <code class="docutils literal"><span class="pre">decay</span></code> containing one module, also called <code class="docutils literal"><span class="pre">decay</span></code>.
+A typical import for a user is then</p>
+<div class="highlight-text"><div class="highlight"><pre>import decay
+u, t = decay.decay.solver(...)
 </pre></div>
 </div>
-<p>Note that we see no need to repeat the body of the previously
-developed and tested <tt class="docutils literal"><span class="pre">solver</span></tt> function. We just call that function from
-the <tt class="docutils literal"><span class="pre">solve</span></tt> method.  In this way, class <tt class="docutils literal"><span class="pre">Solver</span></tt> is merely a class wrapper
-of the stand-alone <tt class="docutils literal"><span class="pre">solver</span></tt> function. With a single object of class <tt class="docutils literal"><span class="pre">Solver</span></tt>
-we have all the physical and numerical data bundled together with the numerical
-solution method.</p>
-<div class="section" id="combining-the-objects">
-<h3>Combining the objects<a class="headerlink" href="#combining-the-objects" title="Permalink to this headline">¶</a></h3>
-<p>Eventually we need to show how the classes <tt class="docutils literal"><span class="pre">Problem</span></tt> and <tt class="docutils literal"><span class="pre">Solver</span></tt>
-play together. We read parameters from the command line and make a
-plot with the numerical and exact solution:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">experiment_classes</span><span class="p">():</span>
-    <span class="n">problem</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">()</span>
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">Solver</span><span class="p">(</span><span class="n">problem</span><span class="p">)</span>
+<p>To make a package <code class="docutils literal"><span class="pre">decay</span></code>, create a directory <code class="docutils literal"><span class="pre">decay</span></code> and an empty
+file in it with name <code class="docutils literal"><span class="pre">__init__.py</span></code>.</p>
+<div class="admonition-package-import-in-init-py admonition">
+<p class="first admonition-title">Package import in <code class="docutils literal"><span class="pre">__init__.py</span></code></p>
+<p>One can ease the use of the package by providing a somewhat simpler
+import like</p>
+<div class="highlight-text"><div class="highlight"><pre>import decay
+u, t = decay.solver(...)
 
-    <span class="c"># Read input from the command line</span>
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">problem</span><span class="o">.</span><span class="n">define_command_line_options</span><span class="p">()</span>
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span> <span class="n">define_command_line_options</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
-    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-    <span class="n">problem</span><span class="o">.</span><span class="n">init_from_command_line</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-    <span class="n">solver</span><span class="o">.</span> <span class="n">init_from_command_line</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+# or
+from decay import solver
+u, t = solver(...)
+</pre></div>
+</div>
+<p>This is accomplished by putting an import statement in the <code class="docutils literal"><span class="pre">__init__.py</span></code>
+file, which is always run when doing the package import <code class="docutils literal"><span class="pre">import</span> <span class="pre">decay</span></code>
+or <code class="docutils literal"><span class="pre">from</span> <span class="pre">decay</span> <span class="pre">import</span></code>. The <code class="docutils literal"><span class="pre">__init__.py</span></code> file reads</p>
+<div class="last highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">decay</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+</div>
+</div>
+<p>A <code class="docutils literal"><span class="pre">setup.py</span></code> script must now specify the directory name of the package
+and also an executable program (<code class="docutils literal"><span class="pre">scripts=</span></code>)
+in case we want to run <code class="docutils literal"><span class="pre">decay.py</span></code> as a stand-alone application:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">distutils.core</span> <span class="kn">import</span> <span class="n">setup</span>
+<span class="kn">import</span> <span class="nn">os</span>
 
-    <span class="c"># Solve and plot</span>
-    <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
-    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
-    <span class="n">t_e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1001</span><span class="p">)</span>    <span class="c"># very fine mesh for u_e</span>
-    <span class="n">u_e</span> <span class="o">=</span> <span class="n">problem</span><span class="o">.</span><span class="n">u_exact</span><span class="p">(</span><span class="n">t_e</span><span class="p">)</span>
-    <span class="k">print</span> <span class="s">&#39;Error:&#39;</span><span class="p">,</span> <span class="n">solver</span><span class="o">.</span><span class="n">error</span><span class="p">()</span>
+<span class="n">setup</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;decay&#39;</span><span class="p">,</span>
+      <span class="n">version</span><span class="o">=</span><span class="s">&#39;0.1&#39;</span><span class="p">,</span>
+      <span class="n">author</span><span class="o">=</span><span class="s">&#39;Hans Petter Langtangen&#39;</span><span class="p">,</span>
+      <span class="n">author_email</span><span class="o">=</span><span class="s">&#39;hpl@simula.no&#39;</span><span class="p">,</span>
+      <span class="n">url</span><span class="o">=</span><span class="s">&#39;https://github.com/hplgit/decay-package/&#39;</span><span class="p">,</span>
+      <span class="n">packages</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;decay&#39;</span><span class="p">],</span>
+      <span class="n">scripts</span><span class="o">=</span><span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;decay&#39;</span><span class="p">,</span> <span class="s">&#39;decay.py&#39;</span><span class="p">)]</span>
+     <span class="p">)</span>
+</pre></div>
+</div>
+<p>We have also added some author and download information.
+The reader is referred to the <a class="reference external" href="https://docs.python.org/2/distutils/setupscript.html">Distutils documentation</a> for more information on how to
+write <code class="docutils literal"><span class="pre">setup.py</span></code> scripts.</p>
+<div class="admonition-remark-about-the-executable-file admonition">
+<p class="first admonition-title">Remark about the executable file</p>
+<p>The executable program, <code class="docutils literal"><span class="pre">decay.py</span></code>, is above taken to be the complete module
+file <code class="docutils literal"><span class="pre">decay.py</span></code>. It would normally be preferred to instead write a very
+short script essentially importing <code class="docutils literal"><span class="pre">decay</span></code> and
+running the test block in <code class="docutils literal"><span class="pre">decay.py</span></code>.
+In this way, we distribute a module and a very short file, say <code class="docutils literal"><span class="pre">decay-main.py</span></code>,
+as executable program:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">decay</span>
+<span class="n">decay</span><span class="o">.</span><span class="n">experiment_compare_dt</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">decay</span><span class="o">.</span><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p class="last">(This import assumes an <code class="docutils literal"><span class="pre">__init__.py</span></code> file with <code class="docutils literal"><span class="pre">from</span> <span class="pre">decay</span> <span class="pre">import</span> <span class="pre">*</span></code>.)</p>
+</div>
+<p>In this package example, we move the unit tests out of the <code class="docutils literal"><span class="pre">decay.py</span></code>
+module to a separate file, <code class="docutils literal"><span class="pre">test_decay.py</span></code>, and place this file in a
+directory <code class="docutils literal"><span class="pre">tests</span></code>. Then the <code class="docutils literal"><span class="pre">nosetests</span></code> and <code class="docutils literal"><span class="pre">py.test</span></code> programs will
+automatically find and execute the tests.</p>
+<p>The complete directory structure reads</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; /bin/ls -R
+.:
+decay  README  setup.py
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span>   <span class="n">u</span><span class="p">,</span>   <span class="s">&#39;r--o&#39;</span><span class="p">)</span>       <span class="c"># dashed red line with circles</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_e</span><span class="p">,</span> <span class="n">u_e</span><span class="p">,</span> <span class="s">&#39;b-&#39;</span><span class="p">)</span>         <span class="c"># blue line for u_e</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s">&#39;numerical, theta=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">theta</span><span class="p">,</span> <span class="s">&#39;exact&#39;</span><span class="p">])</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;t&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;u&#39;</span><span class="p">)</span>
-    <span class="n">plotfile</span> <span class="o">=</span> <span class="s">&#39;tmp&#39;</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plotfile</span> <span class="o">+</span> <span class="s">&#39;.png&#39;</span><span class="p">);</span>  <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plotfile</span> <span class="o">+</span> <span class="s">&#39;.pdf&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+./decay:
+decay.py  __init__.py  tests
+
+./decay/tests:
+test_decay.py
 </pre></div>
 </div>
 </div>
 </div>
-<div class="section" id="improving-the-problem-and-solver-classes">
-<span id="softeng1-prog-se-class2"></span><h2>Improving the problem and solver classes<a class="headerlink" href="#improving-the-problem-and-solver-classes" title="Permalink to this headline">¶</a></h2>
-<p>The previous <tt class="docutils literal"><span class="pre">Problem</span></tt> and <tt class="docutils literal"><span class="pre">Solver</span></tt> classes containing parameters
-soon get much repetitive code when the number of parameters increases.
-Much of this code can be parameterized and be made more compact.
-For this purpose, we decide to collect all parameters in a dictionary,
-<tt class="docutils literal"><span class="pre">self.prm</span></tt>, with two associated dictionaries <tt class="docutils literal"><span class="pre">self.type</span></tt> and
-<tt class="docutils literal"><span class="pre">self.help</span></tt> for holding associated object types and help strings.
-The reason is that processing dictionaries is easier than processing
-a set of individual attributes.
-For the specific ODE example we deal with, the three dictionaries in
-the problem class are typically</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="bp">self</span><span class="o">.</span><span class="n">prm</span>  <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-<span class="bp">self</span><span class="o">.</span><span class="n">help</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="s">&#39;initial condition, u(0)&#39;</span><span class="p">,</span>
-                 <span class="n">a</span><span class="o">=</span><span class="s">&#39;coefficient in ODE&#39;</span><span class="p">,</span>
-                 <span class="n">T</span><span class="o">=</span><span class="s">&#39;end time of simulation&#39;</span><span class="p">)</span>
+<div class="section" id="publishing-the-software-at-github">
+<h2>Publishing the software at GitHub<a class="headerlink" href="#publishing-the-software-at-github" title="Permalink to this headline">¶</a></h2>
+<p>The leading site today for publishing open source software projects is
+GitHub at <a class="reference external" href="http://github.com">http://github.com</a>, provided you want your software to
+be open to the world. With a paid GitHub account, you can have private
+projects too.</p>
+<p>Sign up for a GitHub account if you do not already have one.
+Go to your account settings and provide an SSH key (typically
+the file <code class="docutils literal"><span class="pre">~/.ssh/id_rsa.pub</span></code>) such that
+you can communicate with GitHub without being prompted for your password.
+All communication between your computer and GitHub goes via the version
+control system Git. This may at first sight look tedious, but
+this is the way professionals work with software today. With Git you
+have full control of the history of your files, &#8220;who did what when&#8221;,
+and this technology is superior to simpler ones like Dropbox and Google Drive,
+especially when you collaborate with others.
+There is a reason why Git has been the standard of working with files,
+and there is no reason why you should not adopt this tool.</p>
+<p>To create a new project, click on <em>New repository</em> on the main page and
+fill out a project name. Click on the check button <em>Initialize this
+repository with a README</em>, and click on <em>Create repository</em>. The next
+step is to clone (copy) the GitHub repo (short for repository) to
+your own computer(s) and fill it with files. The typical clone command is</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; git clone git://github.com:username/projname.git
 </pre></div>
 </div>
-<p>Provided a problem or solver class defines these three
-dictionaries in the constructor,
-we can create a super class <tt class="docutils literal"><span class="pre">Parameters</span></tt> with general code
-for defining command-line options and reading them as well as
-methods for setting and getting each parameter. A <tt class="docutils literal"><span class="pre">Problem</span></tt> or <tt class="docutils literal"><span class="pre">Solver</span></tt> for
-a particular mathematical problem can then
-inherit most of the needed functionality and code
-from the <tt class="docutils literal"><span class="pre">Parameters</span></tt> class. For example,</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Problem</span><span class="p">(</span><span class="n">Parameters</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">prm</span>  <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">help</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="s">&#39;initial condition, u(0)&#39;</span><span class="p">,</span>
-                         <span class="n">a</span><span class="o">=</span><span class="s">&#39;coefficient in ODE&#39;</span><span class="p">,</span>
-                         <span class="n">T</span><span class="o">=</span><span class="s">&#39;end time of simulation&#39;</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">u_exact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-        <span class="n">I</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;I a&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
-        <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
-
-<span class="k">class</span> <span class="nc">Solver</span><span class="p">(</span><span class="n">Parameters</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span> <span class="o">=</span> <span class="n">problem</span>   <span class="c"># class Problem object</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">prm</span>  <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">help</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="s">&#39;time step value&#39;</span><span class="p">,</span>
-                         <span class="n">theta</span><span class="o">=</span><span class="s">&#39;time discretization parameter&#39;</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="kn">from</span> <span class="nn">decay</span> <span class="kn">import</span> <span class="n">solver</span>
-        <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="p">[</span><span class="s">&#39;I a T&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
-        <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;dt theta&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+<p>where <code class="docutils literal"><span class="pre">username</span></code> is your GitHub username and <code class="docutils literal"><span class="pre">projname</span></code> is the
+name of the repo (project). The result of <code class="docutils literal"><span class="pre">git</span> <span class="pre">clone</span></code> is a
+directory <code class="docutils literal"><span class="pre">projname</span></code>. Go to this directory and add files.
+As soon as the repo directory is populated with files, run</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; git add .
+Terminal&gt; git commit -am &#39;First registration of project files&#39;
+Terminal&gt; git push origin master
 </pre></div>
 </div>
-<p>By inheritance, these classes can automatically do a lot more when it comes to
-reading and assigning parameter values:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">problem</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">()</span>
-<span class="n">solver</span> <span class="o">=</span> <span class="n">Solver</span><span class="p">(</span><span class="n">problem</span><span class="p">)</span>
-
-<span class="c"># Read input from the command line</span>
-<span class="n">parser</span> <span class="o">=</span> <span class="n">problem</span><span class="o">.</span><span class="n">define_command_line_options</span><span class="p">()</span>
-<span class="n">parser</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span> <span class="n">define_command_line_options</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
-<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-<span class="n">problem</span><span class="o">.</span><span class="n">init_from_command_line</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-<span class="n">solver</span><span class="o">.</span> <span class="n">init_from_command_line</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-
-<span class="c"># Other syntax for setting/getting parameter values</span>
-<span class="n">problem</span><span class="p">[</span><span class="s">&#39;T&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">6</span>
-<span class="k">print</span> <span class="s">&#39;Time step:&#39;</span><span class="p">,</span> <span class="n">solver</span><span class="p">[</span><span class="s">&#39;dt&#39;</span><span class="p">]</span>
-
-<span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
-<span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">u</span><span class="p">,</span> <span class="n">solver</span><span class="o">.</span><span class="n">t</span>
+<p>The above <code class="docutils literal"><span class="pre">git</span></code> commands look cryptic, but these commands plus
+2-3 more are the essence of what you need in your daily work with
+files in small or big
+software projects. I strongly encourage you to
+learn more about <a class="reference external" href="http://hplgit.github.io/teamods/bitgit/html/">version control systems and project hosting
+sites</a>
+<a class="reference internal" href="._main_softeng1009.html#ref1" id="id1">[Ref1]</a>.</p>
+<p>Your project files are now stored in the cloud at
+<a class="reference external" href="https://github.com/username/projname">https://github.com/username/projname</a>. Anyone can
+get the software by the listed <code class="docutils literal"><span class="pre">git</span> <span class="pre">clone</span></code> command you used above,
+or by clicking on the links for zip and tar files.</p>
+<p>Every time you update the project files, you need to register
+the update at GitHub by</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; git commit -am &#39;Description of the changes you made...&#39;
+Terminal&gt; git push origin master
 </pre></div>
 </div>
-<div class="section" id="a-generic-class-for-parameters">
-<h3>A generic class for parameters<a class="headerlink" href="#a-generic-class-for-parameters" title="Permalink to this headline">¶</a></h3>
-<p>A simplified version of the parameter class looks as follows:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Parameters</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;obj[name] syntax for getting parameters.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">)):</span>         <span class="c"># get many?</span>
-            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">prm</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">name</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prm</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
-
-    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;obj[name] = value syntax for setting a parameter.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">prm</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
-
-    <span class="k">def</span> <span class="nf">define_command_line_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Automatic registering of options.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="kn">import</span> <span class="nn">argparse</span>
-            <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
-
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prm</span><span class="p">:</span>
-            <span class="n">tp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="k">else</span> <span class="nb">str</span>
-            <span class="n">help</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">help</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">help</span> <span class="k">else</span> <span class="bp">None</span>
-            <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-                <span class="s">&#39;--&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">metavar</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-                <span class="nb">type</span><span class="o">=</span><span class="n">tp</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="n">help</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">parser</span>
-
-    <span class="k">def</span> <span class="nf">init_from_command_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prm</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">prm</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>The file <a class="reference external" href="http://tinyurl.com/nm5587k/softeng1/decay_oo.py">decay_oo.py</a> contains
-a slightly more advanced version of class <tt class="docutils literal"><span class="pre">Parameters</span></tt> where we
-in the functions for getting and setting parameters
-test for valid parameter names and
-raise exceptions with informative messages if any name is not registered.</p>
-<p>We have already sketched the <tt class="docutils literal"><span class="pre">Problem</span></tt> and <tt class="docutils literal"><span class="pre">Solver</span></tt> classes that build
-on inheritance from <tt class="docutils literal"><span class="pre">Parameters</span></tt>. We have also shown how they are
-used. The only remaining code is to make the plot, but this code is
-identical to previous versions when the numerical solution is
-available in an object <tt class="docutils literal"><span class="pre">t</span></tt> and the exact one in <tt class="docutils literal"><span class="pre">u_e</span></tt>.</p>
-<p>The advantage with the <tt class="docutils literal"><span class="pre">Parameters</span></tt> class is that it scales to problems
-with a large number of physical and numerical parameters:
-as long as the parameters are defined once via a dictionary,
-the compact code in class <tt class="docutils literal"><span class="pre">Parameters</span></tt> can handle any collection of
-parameters of any size.</p>
-</div>
+<p>The files at GitHub are now synchronized with your local ones.
+Similarly, every time you start working on files in this project,
+make sure you have the latest version:
+<code class="docutils literal"><span class="pre">git</span> <span class="pre">pull</span> <span class="pre">origin</span> <span class="pre">master</span></code>.</p>
+<p>You are recommended to read <a class="reference external" href="http://hplgit.github.io/teamods/bitgit/html/">a quick intro</a> that makes you
+up and going with this style of
+professional work. And you should put all your writings and programming
+projects in repositories in the cloud!</p>
 </div>
 </div>
 
@@ -419,26 +287,23 @@ parameters of any size.</p>
             </center>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Classes for problem and solution method</a><ul>
-<li><a class="reference internal" href="#the-problem-class">The problem class</a></li>
-<li><a class="reference internal" href="#the-solver-class">The solver class</a><ul>
-<li><a class="reference internal" href="#combining-the-objects">Combining the objects</a></li>
+<li><a class="reference internal" href="#">Packaging the software for other users</a><ul>
+<li><a class="reference internal" href="#software-directory-tree">Software directory tree</a><ul>
+<li><a class="reference internal" href="#distributing-just-a-module-file">Distributing just a module file</a></li>
+<li><a class="reference internal" href="#distributing-a-package">Distributing a package</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#improving-the-problem-and-solver-classes">Improving the problem and solver classes</a><ul>
-<li><a class="reference internal" href="#a-generic-class-for-parameters">A generic class for parameters</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#publishing-the-software-at-github">Publishing the software at GitHub</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="._main_softeng1004.html"
-                        title="previous chapter">Packaging the software for other users</a></p>
+                        title="previous chapter">Tests for verifying implementations</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="._main_softeng1006.html"
-                        title="next chapter">Automating scientific experiments</a></p>
+                        title="next chapter">Classes for problem and solution method</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/._main_softeng1005.txt"
@@ -468,12 +333,12 @@ parameters of any size.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="._main_softeng1006.html" title="Automating scientific experiments"
+          <a href="._main_softeng1006.html" title="Classes for problem and solution method"
              >next</a> |</li>
         <li class="right" >
-          <a href="._main_softeng1004.html" title="Packaging the software for other users"
+          <a href="._main_softeng1004.html" title="Tests for verifying implementations"
              >previous</a> |</li>
-        <li><a href="index.html">Scientific software engineering with a simple ODE model as example</a> &raquo;</li> 
+        <li><a href="index.html">Scientific software engineering; ODE model</a> &raquo;</li> 
       </ul>
     </div>
 <div class="wrapper">

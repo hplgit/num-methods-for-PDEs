@@ -1,448 +1,669 @@
 .. !split
 
-User interfaces
-===============
+.. _softeng1:basic:
 
-It is good programming practice to let programs read input from
-some *user interface*, rather than requiring users to *edit*
-parameter values in the source code. With effective user interfaces
-it becomes easier and safer to apply the code for scientific investigations and
-in particular to automate large-scale investigations by other programs
-(see the section :ref:`softeng1:experiments`).
+Basic implementations
+=====================
 
-Reading input data can be done in many ways. We have to decide on a
-the functionality of the user interface,
-i.e., how we want to operate the program
-when providing input, and then use appropriate tools to implement
-the user interface. There are four basic types of user interface,
-listed here with increasing complexity
-of the implementation:
+.. _softeng1:basic:math:
 
-1. Questions and answers in the terminal window
+Mathematical problem and solution technique
+-------------------------------------------
 
-2. Command-line arguments
+We address the perhaps simplest possible differential equation problem
 
-3. Reading data from files
+.. _Eq:softeng1:ode:
 
-4. Graphical user interfaces (GUIs)
-
-Alternatives 2 and 4 are most popular and will be addressed next.
-The goal is to make it easy for the user to
-set physical and numerical parameters in
-our ``decay.py`` program.
-
-Command-line arguments
-----------------------
-
-The command-line arguments are all the words that appear on the
-command line after the program name. Running a program ``prog``
-as ``prog arg1 arg2`` means that there are two command-line arguments
-(separated by white space): ``arg1`` and ``arg2``.
-Python stores all the command-line arguments in
-the list ``sys.argv``, and there are, in principle, two ways of programming with
-command-line arguments in Python:
-
- * **Positional arguments:** Decide upon a sequence of parameters
-   on the command line and read
-   their values directly from the ``sys.argv[1:]`` list.
-
- * **Option-value pairs:**  Use ``--option value`` on
-   the command line to replace the default value of an input parameter
-   ``option`` by ``value`` (and utilize the ``argparse.ArgumentParser`` tool
-   for implementation).
-
-Suppose we want to run some program ``prog.py`` with
-specification of two parameters ``p`` and ``delta`` on the command line.
-With positional command-line arguments we write
-
-.. code-block:: text
-
-        Terminal> python decay.py 2 0.5
-
-and must know that the first argument ``2`` represents ``p`` and the
-next ``0.5`` is the value of ``delta``.
-With option-value pairs we can run
-
-.. code-block:: text
-
-        Terminal> python decay.py --delta 0.5 --p 2
-
-Now, both ``p`` and ``delta`` are supposed to have default values in the program,
-so we need to specify only the parameter that is to be changed from
-its default value, e.g.,
-
-.. code-block:: text
-
-        Terminal> python decay.py --p 2         # p=2, default delta
-        Terminal> python decay.py --delta 0.7   # delta-0.7, default a
-        Terminal> python decay.py               # default a and delta
-
-For our ``decay.py`` module file, we want include functionality such
-that we can read :math:`I`, :math:`a`, :math:`T`, :math:`\theta`, and a range of :math:`\Delta t`
-values from the command line.  A plot is then to be made, comparing
-the different numerical solutions for different :math:`\Delta t` values
-against the exact solution. The technical details of getting the
-command-line information into the program is covered in the next
-two sections.
-
-Positional command-line arguments
----------------------------------
-
-.. index:: list comprehension
-
-.. index:: sys.argv
-
-The simplest way of reading the input parameters is to
-decide on their sequence on the command line and just index
-the ``sys.argv`` list accordingly.
-Say the sequence is :math:`I`, :math:`a`, :math:`T`, :math:`\theta` followed by an
-arbitrary number of :math:`\Delta t` values. This code extract
-these *positional* command-line arguments:
-
-.. code-block:: python
-
-        import sys
-        I = float(sys.argv[1])
-        a = float(sys.argv[2])
-        T = float(sys.argv[3])
-        theta = float(sys.argv[4])
-        dt_values = [float(arg) for arg in sys.argv[5:]]
-
-
-.. admonition:: Command-line arguments are strings
-
-   Note that all elements in ``sys.argv`` are string objects.
-   If the values will enter mathematical computations, we need
-   to explicitly convert the strings to numbers.
-
-
-
-
-Instead of specifying the :math:`\theta` value, we could be a bit more
-sophisticated and let the user write the name of the scheme:
-``BE`` for Backward Euler, ``FE`` for Forward Euler, and ``CN``
-for Crank-Nicolson. Then we must map this string to the proper
-:math:`\theta` value, an operation elegantly done by a dictionary:
-
-.. code-block:: python
-
-        scheme = sys.argv[4]
-        scheme2theta = {'BE': 1, 'CN': 0.5, 'FE': 0}
-        if scheme in scheme2theta:
-            theta = scheme2theta[scheme]
-        else:
-            print 'Invalid scheme name:', scheme; sys.exit(1)
-
-Option-value pairs on the command line
---------------------------------------
-
-.. index:: argparse (Python module)
-
-.. index:: ArgumentParser (Python class)
-
-.. index:: option-value pairs (command line)
-
-.. index:: command-line options and values
-
-.. index:: reading the command line
-
-Now we want to specify option-value pairs on the command line,
-using ``--I`` for ``I`` (:math:`I`), ``--a`` for ``a`` (:math:`a`), ``--T`` for ``T`` (:math:`T`),
-``--scheme`` for the scheme name (``BE``, ``FE``, ``CN``),
-and ``--dt`` for the sequence of ``dt`` (:math:`\Delta t`) values.
-Each parameter must have a sensible default value so
-that we specify the option on the command line only when the default
-value is not suitable. Here is a typical run:
-
-.. code-block:: text
-
-        Terminal> python decay.py --I 2.5 --dt 0.1 0.2 0.01 --a 0.4
-
-Observe the major advantage over positional command-line arguments:
-the input is much easier to read and much easier to write.
-With positional arguments it is easy to mess up the sequence of
-the input parameters and quite challenging to detect errors too,
-unless there are just a couple of arguments.
-
-Python's ``ArgumentParser`` tool in the ``argparse`` module makes it easy
-to create a professional command-line interface to any program. The
-documentation of `ArgumentParser <http://docs.python.org/library/argparse.html>`__ demonstrates its
-versatile applications, so we shall here just list an example
-containing the most basic features. It always pays off to use ``ArgumentParser``
-rather than trying to manually inspect and interpret option-value pairs
-in ``sys.argv``!
-
-The use of ``ArgumentParser`` typically involves three steps:
-
-.. code-block:: python
-
-        import argparse
-        parser = argparse.ArgumentParser()
+.. math::
+   :label: softeng1:ode
         
-        # Step 1: add arguments
-        parser.add_argument('--option_name', ...)
+        u'(t) = -au(t), \quad t \in (0,T], 
         
-        # Step 2: interpret the command line
-        args = parser.parse_args()
-        
-        # Step 3: extract values
-        value = args.option_name
 
-A function for setting up all the options is handy:
+.. _Eq:softeng1:u0:
+
+.. math::
+   :label: softeng1:u0
+          
+        u(0)  = I,                         
+        
+
+where :math:`a`, :math:`I`, and :math:`T` are prescribed parameters, and :math:`u(t)` is
+the unknown function to be estimated. This mathematical model
+is relevant for physical phenomena featuring exponential decay
+in time, e.g., vertical pressure variation in the atmosphere,
+cooling of an object, and radioactive decay.
+
+The time domain is discretized with points :math:`0 = t_0 < t_1 \cdots < t_{N_t}=T`,
+here with a constant spacing :math:`\Delta t` between the
+mesh points: :math:`\Delta t = t_{n}-t_{n-1}`, :math:`n=1,\ldots,N_t`. Let
+:math:`u^n` be the numerical approximation to the exact solution at :math:`t_n`.
+A family of popular numerical methods can be written in the form
+
+.. _Eq:softeng1:utheta:
+
+.. math::
+   :label: softeng1:utheta
+        
+        u^{n+1} = \frac{1 - (1-\theta) a\Delta t}{1 + \theta a\Delta t}u^n,
+        
+        
+
+for :math:`n=0,1,\ldots,N_t-1`. This numerical scheme corresponds to
+the `Forward Euler <http://en.wikipedia.org/wiki/Forward_Euler_method>`__
+scheme when :math:`\theta=0`,
+the `Backward Euler <http://en.wikipedia.org/wiki/Backward_Euler_method>`__
+scheme when :math:`\theta=1`,
+and the `Crank-Nicolson <http://en.wikipedia.org/wiki/Crank-Nicolson>`__
+scheme when :math:`\theta=1/2`.
+The initial condition :eq:`softeng1:u0` is key to start
+the recursion with a value for :math:`u^0`.
+
+.. _softeng1:basic:impl1:
+
+A first, quick implementation
+-----------------------------
+
+Solving :eq:`softeng1:utheta` in a program is very straightforward:
+just make a loop over :math:`n` and evaluate the formula. The :math:`u(t_n`)
+values for discrete :math:`n` can be stored in an array. This makes it easy
+to also plot the solution. It would be natural to also add
+the exact
+solution curve :math:`u(t)=Ie^{-at}` to the plot.
+
+Traditionally, a language like Fortran or C would be adopted for
+implementation, but the enormous popularity of MATLAB in the
+computational science community over the last two decades, makes
+a high-level MATLAB-style implementation natural. Below is such
+a code, written in Python with a syntax close to MATLAB and with
+a programming style heavenly influenced by "MATLAB scripting".
+A student or engineer would quickly put together statements like
+this:
 
 .. code-block:: python
 
-        def define_command_line_options():
-            import argparse
-            parser = argparse.ArgumentParser()
-            parser.add_argument(
-                '--I', '--initial_condition', type=float,
-                default=1.0, help='initial condition, u(0)',
-                metavar='I')
-            parser.add_argument(
-                '--a', type=float, default=1.0,
-                help='coefficient in ODE', metavar='a')
-            parser.add_argument(
-                '--T', '--stop_time', type=float,
-                default=1.0, help='end time of simulation',
-                metavar='T')
-            parser.add_argument(
-                '--scheme', type=str, default='CN',
-                help='FE, BE, or CN')
-            parser.add_argument(
-                '--dt', '--time_step_values', type=float,
-                default=[1.0], help='time step values',
-                metavar='dt', nargs='+', dest='dt_values')
-            return parser
-
-Each command-line option is defined through the ``parser.add_argument``
-method. Alternative options, like the short ``--I`` and the more
-explaining version ``--initial_condition`` can be defined. Other arguments
-are ``type`` for the Python object type, a default value, and a help
-string, which gets printed if the command-line argument ``-h`` or ``--help`` is
-included. The ``metavar`` argument specifies the value associated with
-the option when the help string is printed. For example, the option for
-:math:`I` has this help output:
-
-.. code-block:: text
-
-        Terminal> python decay.py -h
-          ...
-          --I I, --initial_condition I
-                                initial condition, u(0)
-          ...
-
-The structure of this output is
-
-.. code-block:: text
-
-          --I metavar, --initial_condition metavar
-                                help-string
-
-Finally, the ``--dt`` option demonstrates how to allow for more than one
-value (separated by blanks) through the ``nargs='+'`` keyword argument.
-After the command line is parsed, we get an object where the values of
-the options are stored as attributes. The attribute name is specified
-by the ``dist`` keyword argument, which for the ``--dt`` option is
-``dt_values``. Without the ``dest`` argument, the value of an option ``--opt``
-is stored as the attribute ``opt``.
-
-The code below demonstrates how to read the command line and extract
-the values for each option:
-
-.. code-block:: python
-
-        def read_command_line_argparse():
-            parser = define_command_line_options()
-            args = parser.parse_args()
-            scheme2theta = {'BE': 1, 'CN': 0.5, 'FE': 0}
-            data = (args.I, args.a, args.T, scheme2theta[args.scheme],
-                    args.dt_values)
-            return data
-
-As seen, the values of the command-line options are available as
-attributes in ``args``: ``args.opt`` holds the value of option ``--opt``, unless
-we used the ``dest`` argument (as for ``--dt_values``) for specifying the
-attribute name. The ``args.opt`` attribute has the object type specified
-by ``type`` (``str`` by default).
-
-The making of the plot is not dependent on whether we read data from
-the command line as positional arguments or option-value pairs:
-
-.. code-block:: python
-
-        def experiment_compare_dt(option_value_pairs=False):
-            I, a, T, theta, dt_values = \ 
-               read_command_line_argparse() if option_value_pairs else \ 
-               read_command_line_positional()
+        from numpy import *
+        from matplotlib.pyplot import *
         
-            legends = []
-            for dt in dt_values:
-                u, t = solver(I, a, T, dt, theta)
-                plt.plot(t, u)
-                legends.append('dt=%g' % dt)
+        A = 1
+        a = 2
+        T = 4
+        dt = 0.2
+        N = int(round(T/dt))
+        y = zeros(N+1)
+        t = linspace(0, T, N+1)
+        theta = 1
+        y[0] = A
+        for n in range(0, N):
+            y[n+1] = (1 - (1-theta)*a*dt)/(1 + theta*dt*a)*y[n]
+        
+        y_e = A*exp(-a*t) - y
+        error = y_e - y
+        E = sqrt(dt*sum(error**2))
+        print 'Norm of the error: %.3E' % E
+        plot(t, y, 'r--o')
+        t_e = linspace(0, T, 1001)
+        y_e = A*exp(-a*t_e)
+        plot(t_e, y_e, 'b-')
+        legend(['numerical, theta=%g' % theta, 'exact'])
+        xlabel('t')
+        ylabel('y')
+        show()
+
+This program is easy to read, and as long it is correct, many will
+claim that it has sufficient quality. Nevertheless, the program suffers
+from serious flaws that quickly become crucial for writing correct
+programs for more complicated mathematical problems. First we list
+two serious bad habits:
+
+1. The notation in the program does not correspond *exactly* to
+   the notation in the mathematical problem: the solution is called
+   ``y`` and corresponds to :math:`u` in the mathematical description,
+   the variable ``A`` corresponds to the mathematical parameter :math:`I`,
+   ``N`` in the program is called :math:`N_t` in the mathematics.
+
+2. There are no comments in the program.
+
+.. _softeng1:basic:impl2:
+
+A more decent, flat program
+---------------------------
+
+A code with more satisfactory quality arises from
+fixing the notation and adding comments:
+
+.. code-block:: python
+
+        from numpy import *
+        from matplotlib.pyplot import *
+        
+        I = 1
+        a = 2
+        T = 4
+        dt = 0.2
+        Nt = int(round(T/dt))     # no of time intervals
+        u = zeros(Nt+1)           # array of u[n] values
+        t = linspace(0, T, Nt+1)  # time mesh
+        theta = 1                 # Backward Euler method
+        
+        u[0] = I                  # assign initial condition
+        for n in range(0, Nt):    # n=0,1,...,Nt-1
+            u[n+1] = (1 - (1-theta)*a*dt)/(1 + theta*dt*a)*u[n]
+        
+        # Compute norm of the error
+        u_e = I*exp(-a*t) - u     # exact u at the mesh points
+        error = u_e - u
+        E = sqrt(dt*sum(error**2))
+        print 'Norm of the error: %.3E' % E
+        
+        # Compare numerical (u) and exact solution (u_e) in a plot
+        plot(t, u, 'r--o')               # red dashes w/circles
+        t_e = linspace(0, T, 1001)       # very fine mesh for u_e
+        u_e = I*exp(-a*t_e)
+        plot(t_e, u_e, 'b-')             # blue line for u_e
+        legend(['numerical, theta=%g' % theta, 'exact'])
+        xlabel('t')
+        ylabel('u')
+        show()
+
+At first sight, this is a good starting point for playing around
+with the mathematical problem: we can just change parameters and rerun.
+Let us embed the program in an IPython notebook such that we
+can get the plot up in the notebook, see Figure :ref:`softeng1:ipynb`.
+
+.. _softeng1:ipynb:
+
+.. figure:: ipynb_flat.png
+   :width: 700
+
+   *Flat experimental code in a notebook*
+
+Although such an interactive session is good for initial exploration,
+one will soon extend the experiments and start developing the code
+further. Say we want to compare :math:`\theta =0,1,0.5` in the same
+plot. This extension requires changes all over the code and quickly
+lead to errors. To do something serious with this program we have to
+break it into smaller pieces and make sure each piece is well tested,
+is general, and can be reused in new contexts without changes.  The
+next natural step is therefore to isolate the numerical computations
+and the visualization in separate functions.
+
+.. _softeng1:basic:func:
+
+Implementing the numerical algorithm in a function
+--------------------------------------------------
+
+The solution formula :eq:`softeng1:utheta` is completely general and
+should be available as a Python function ``solver`` with all input data as
+function arguments and all output data returned to the calling code.
+With this ``solver`` function we can then solve all types of problems
+:eq:`softeng1:ode`-:eq:`softeng1:u0`
+by an easy-to-read one-line statement:
+
+.. code-block:: python
+
+        u, t = solver(I=1, a=2, T=4, dt=0.2, theta=0.5)
+
+The implementation of the ``solver`` function in Python goes like this:
+
+.. code-block:: python
+
+        def solver(I, a, T, dt, theta):
+            """Solve u'=-a*u, u(0)=I, for t in (0,T] with steps of dt."""
+            dt = float(dt)               # avoid integer division
+            Nt = int(round(T/dt))        # no of time intervals
+            T = Nt*dt                    # adjust T to fit time step dt
+            u = np.zeros(Nt+1)           # array of u[n] values
+            t = np.linspace(0, T, Nt+1)  # time mesh
+        
+            u[0] = I                  # assign initial condition
+            for n in range(0, Nt):    # n=0,1,...,Nt-1
+                u[n+1] = (1 - (1-theta)*a*dt)/(1 + theta*dt*a)*u[n]
+            return u, t
+
+
+.. admonition:: Tip: Always use a doc string to document a function
+
+   Python has a convention for documenting the purpose and usage of
+   a function in a *doc string*: simply place the documentation
+   in a one- or multi-line triple-quoted string right after the
+   function header.
+
+
+
+
+
+.. admonition:: Be careful with unintended integer division
+
+   Note that we in the ``solver`` function explicitly covert ``dt`` to a
+   ``float`` object. If not, the updating formula for ``u[n+1]`` may evaluate
+   to zero because of integer division when ``theta``, ``a``, and ``dt`` are integers!
+
+
+
+
+One of the most serious flaws in computational work is to have several
+slightly different implementations of the same computational algorithms
+lying around in various program files. This is very likely to happen,
+because busy scientists often want to test a slight variation of a code to see
+what happens. A quick copy and edit do the task, but such quick hacks have
+a tendency to survive. When a real correction is needed in the implementation,
+it is difficult to ensure that the correction is done in all relevant files.
+In fact, this is a general problem in programming, which has led to
+an important principle.
+
+
+.. admonition:: The DRY principle: Don't repeat yourself
+
+   When implementing a particular functionality in a computer program, make sure
+   this functionality and its variations are implemented in just one piece
+   of code. That is, if you need to revise the implementation, there should be
+   *one and only one* place to edit. It follows that you should never
+   duplicate code (don't repeat yourself!), and code snippets that are
+   similar should be factored into one piece (function) and parameterized (by
+   function arguments).
+
+
+
+
+.. _softeng1:basic:module:
+
+Making a module
+---------------
+
+As soon as you start making Python functions in a program, you should
+make sure the program file fulfills the requirement of a module.
+This means that you can import and reuse your functions in other
+programs too. For example, if our ``solver`` function resides in a
+module ``decay`` in a module file ``decay.py``, we can in any program
+do
+
+.. code-block:: python
+
+        from decay import solver
+        u, t = solver(I=1, a=2, T=4, dt=0.2, theta=0.5)
+
+or prefix function names by the module name:
+
+.. code-block:: python
+
+        import decay
+        u, t = decay.solver(I=1, a=2, T=4, dt=0.2, theta=0.5)
+
+The requirements for a program to qualify for a module are simple:
+
+1. The filename without ``.py`` must be a valid Python variable name.
+
+2. The main program must be executed (through statements or
+   a function call) in the *test block*.
+
+The *test block* is normally placed at the end of a module file:
+
+.. code-block:: python
+
+        if __name__ == '__main__':
+            # Statements
+
+When the module file is executed as a stand-alone program, the if test
+is true and the indented statements are run, but when the module file
+is imported, ``__name__`` equals the module name and the test block
+is not executed.
+
+To explain the importance of the test block, consider the trivial module
+file ``hello.py`` with one function and a call to this function as main program:
+
+.. code-block:: python
+
+        def hello(arg='World!'):
+            print 'Hello, ' + arg
+        
+        if __name__ == '__main__':
+            hello()
+
+Without the test block,
+
+.. code-block:: python
+
+        def hello(arg='World!'):
+            print 'Hello, ' + arg
+        
+        hello()
+
+any attempt to import ``hello`` will also execute the call ``hello()`` and
+hence write `Hello, World!' to the screen.
+Such output is not desired when importing a module! However,
+with the test block, ``hello()`` is not called during import, but
+running the file as ``python hello.py`` will make the block active
+and lead to the desired printing.
+
+
+.. admonition:: All coming functions are placed in a module
+
+   The many functions to be explained in the following text are
+   put in one module file `decay.py <http://tinyurl.com/nm5587k/softeng1/decay.py>`__.
+
+
+
+
+What more than the ``solver`` function is needed in our ``decay`` module
+to do everything we did in the previous, flat program?
+We need import statements for ``numpy`` and ``matplotlib`` as well as
+another function for producing the plot. It can also be convenient
+to put the exact solution in a Python function.
+Our module ``decay.py`` then looks like this:
+
+.. code-block:: python
+
+        from numpy import *
+        from matplotlib.pyplot import *
+        
+        def solver(I, a, T, dt, theta):
+            ...
+        
+        def exact_solution(t, I, a):
+            return I*exp(-a*t)
+        
+        def experiment_compare_numerical_and_exact():
+            I = 1;  a = 2;  T = 4;  dt = 0.4;  theta = 1
+            u, t = solver(I, a, T, dt, theta)
+        
+            t_e = linspace(0, T, 1001)       # very fine mesh for u_e
+            u_e = exact_solution(t_e, I, a)
+        
+            plot(t,   u,   'r--o')           # dashed red line with circles
+            plot(t_e, u_e, 'b-')             # blue line for u_e
+            legend(['numerical, theta=%g' % theta, 'exact'])
+            xlabel('t')
+            ylabel('u')
+            plotfile = 'tmp'
+            savefig(plotfile + '.png');  savefig(plotfile + '.pdf')
+        
+            error = exact_solution(t, I, a) - u
+            E = sqrt(dt*sum(error**2))
+            print 'Error norm:', E
+        
+        if __name__ == '__main__':
+            experiment_compare_numerical_and_exact()
+
+This module file does exactly the same as the previous, flat program,
+but it becomes much easier to extend the code with other plots or
+experiments in new functions.  And even more important, the numerical
+algorithm is coded and tested once and for all in the ``solver``
+function, and any need to solve the mathematical problem is a matter
+of one function call.
+
+.. (not copying initialization statements and a loop
+
+.. to a new program for ad hoc editing!).
+
+.. _softeng1:basic:modprefix:
+
+Prefixing imported functions by the module name
+-----------------------------------------------
+
+.. index:: importing modules
+
+Import statements of the form ``from module import *`` import
+functions and variables in ``module.py`` into the current file.
+For example, when doing
+
+.. code-block:: python
+
+        from numpy import *
+        from matplotlib.pyplot import *
+
+we get mathematical functions like ``sin`` and ``exp``
+as well as MATLAB-style functions like ``linspace`` and ``plot``,
+which can be called by these well-known names.
+Unfortunately, it sometimes becomes confusing to
+know where a particular function comes from. Is it from ``numpy``? Or
+``matplotlib.pyplot``?
+Or is it our own function?
+
+An alternative import is
+
+.. code-block:: python
+
+        import numpy
+        import matplotlib.pyplot
+
+and such imports require functions to be prefixed by the module name, e.g.,
+
+.. code-block:: python
+
+        t = numpy.linspace(0, T, Nt+1)
+        u_e = I*numpy.exp(-a*t)
+        matplotlib.pyplot.plot(t, u_e)
+
+This is normally regarded as a better habit because it is explicitly stated
+from which module a function comes from.
+
+The modules ``numpy`` and ``matplotlib.pyplot`` are so frequently used,
+and their full names quite tedious to write, so two standard abbreviations
+have evolved in the Python scientific computing community:
+
+.. code-block:: python
+
+        import numpy as np
+        import matplotlib.pyplot as plt
+        
+        t = np.linspace(0, T, Nt+1)
+        u_e = I*np.exp(-a*t)
+        plt.plot(t, u_e)
+
+The downside of prefixing functions by the module name is that
+mathematical expressions like :math:`e^{-at}\sin(2\pi t)` get
+cluttered with module names,
+
+.. code-block:: python
+
+        numpy.exp(-a*t)*numpy.sin(2(numpy.pi*t)
+        # or
+        np.exp(-a*t)*np.sin(2*np.pi*t)
+
+Such an expression looks like ``exp(-a*t)*sin(2*pi*t)`` in most
+other programming languages. Similarly,
+``np.linspace`` and ``plt.plot`` look less familiar to people who are
+used to MATLAB and who have not adopted Python's prefix style.
+Whether to do ``from module import *`` or ``import module`` depends
+on personal taste and the problem at hand. In these writings we use
+``from module import`` in more basic, shorter programs where similarity with
+MATLAB could be an advantage. Prefix of mathematical
+functions in formulas is something we often avoid to obtain
+a one-to-one correspondence between
+mathematical formulas and the Python code.
+
+Our ``decay`` module can be edited to use the module prefix for
+``matplotlib.pyplot`` and ``numpy``:
+
+.. code-block:: python
+
+        import numpy as np
+        import matplotlib.pyplot as plt
+        
+        def solver(I, a, T, dt, theta):
+            ...
+        
+        def exact_solution(t, I, a):
+            return I*np.exp(-a*t)
+        
+        def experiment_compare_numerical_and_exact():
+            I = 1;  a = 2;  T = 4;  dt = 0.4;  theta = 1
+            u, t = solver(I, a, T, dt, theta)
+        
             t_e = np.linspace(0, T, 1001)       # very fine mesh for u_e
             u_e = exact_solution(t_e, I, a)
-            plt.plot(t_e, u_e, '--')            # dashed line for u_e
+        
+            plt.plot(t,   u,   'r--o')       # dashed red line with circles
+            plt.plot(t_e, u_e, 'b-')         # blue line for u_e
+            plt.legend(['numerical, theta=%g' % theta, 'exact'])
+            plt.xlabel('t')
+            plt.ylabel('u')
+            plotfile = 'tmp'
+            plt.savefig(plotfile + '.png');  plt.savefig(plotfile + '.pdf')
+        
+            error = exact_solution(t, I, a) - u
+            E = np.sqrt(dt*np.sum(error**2))
+            print 'Error norm:', E
+        
+        if __name__ == '__main__':
+            experiment_compare_numerical_and_exact()
+
+We remark that some would prefer to get rid of the prefix in
+mathematical formulas:
+
+.. code-block:: python
+
+        from numpy import exp, sum, sqrt
+        
+        def exact_solution(t, I, a):
+            return I*exp(-a*t)
+        
+        error = exact_solution(t, I, a) - u
+        E = sqrt(dt*sum(error**2))
+
+.. _softeng1:basic:experiment2:
+
+Comparing numerical schemes in one plot
+---------------------------------------
+
+Let us specifically demonstrate one extension of the
+flat program in the section :ref:`softeng1:basic:impl1`
+that would require substantial editing of the flat code
+(the section :ref:`softeng1:basic:impl2`), while
+in a structured module
+(the section :ref:`softeng1:basic:module`), we can simply add a new function without
+affecting the existing code and with reusing the implementation
+of the numerics.
+
+Our aim is to make a comparison between the numerical solutions
+for various schemes (:math:`\theta` values) and the exact solution:
+
+.. figure:: compare.png
+   :width: 600
+
+
+.. admonition:: Stop a minute
+
+   Look at the flat program in
+   the section :ref:`softeng1:basic:impl1`,
+   and try to imagine which edits that are required to solve this new problem.
+
+
+
+
+With the ``solver`` function at hand, we can simply create a function
+with a loop over ``theta`` values and add the necessary plot statements:
+
+.. code-block:: python
+
+        def experiment_compare_schemes():
+            """Compare theta=0,1,0.5 in the same plot."""
+            I = 1;  a = 2;  T = 4;  dt = 0.4
+            legends = []
+            for theta in [0, 1, 0.5]:
+                u, t = solver(I, a, T, dt, theta)
+                plt.plot(t, u, '--o')            # dashed lines with circles
+                legends.append('theta=%g' % theta)
+            t_e = np.linspace(0, T, 1001)        # very fine mesh for u_e
+            u_e = exact_solution(t_e, I, a)
+            plt.plot(t_e, u_e, 'b-')             # blue line for u_e
             legends.append('exact')
             plt.legend(legends, loc='upper right')
-            plt.title('theta=%g' % theta)
             plotfile = 'tmp'
             plt.savefig(plotfile + '.png');  plt.savefig(plotfile + '.pdf')
 
-Creating a graphical web user interface
----------------------------------------
+A call to this ``experiment_compare_schemes`` function must be placed
+in the test block, or you can run the program from IPython instead:
 
-The Python package `Parampool <https://github.com/hplgit/parampool>`__
-can be used to automatically generate a web-based *graphical user interface*
-(GUI) for our simulation program. Although the programming technique
-dramatically simplifies the efforts to create a GUI, the forthcoming
-material on equipping our ``decay`` module with a GUI is quite technical
-and of significantly less importance than knowing how to make
-a command-line interface.
+.. code-block:: ipy
 
-Making a compute function
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The first step is to identify a function
-that performs the computations and that takes the necessary input
-variables as arguments. This is called the *compute function* in
-Parampool terminology. The purpose of this function is to take
-values of :math:`I`, :math:`a`, :math:`T` together with a sequence of :math:`\Delta t` values
-and a sequence of :math:`\theta` and plot the numerical against the
-exact solution for each pair of :math:`(\theta, \Delta t)`.
-The plots can be arranged as a table with the columns being scheme type
-(:math:`\theta` value) and the rows reflecting the discretization parameter
-(:math:`\Delta t` value). Figure :ref:`softeng1:fig:GUI` displays of the
-graphical web interface may look like after results are computed
-(there are :math:`3\times 3` plots in the GUI, but only :math:`2\times 2` are
-visible in the figure).
-
-.. _softeng1:fig:GUI:
-
-.. figure:: web_GUI.png
-   :width: 800
-
-   *Automatically generated graphical web interface*
-
-To tell Parampool what type of input data we have,
-we assign default values of the right type to all arguments in the
-compute function, here called ``main_GUI``:
-
-.. code-block:: python
-
-        def main_GUI(I=1.0, a=.2, T=4.0,
-                     dt_values=[1.25, 0.75, 0.5, 0.1],
-                     theta_values=[0, 0.5, 1]):
-
-The compute function must return the HTML code we want for displaying
-the result in a web page. Here we want to show a
-table of plots.
-Assume for now that the HTML code for one plot and the value of the
-norm of the error can be computed by some other function ``compute4web``.
-The ``main_GUI`` function can then loop over :math:`\Delta t` and :math:`\theta`
-values and put each plot in an HTML table. Appropriate code goes like
-
-.. code-block:: python
-
-        def main_GUI(I=1.0, a=.2, T=4.0,
-                     dt_values=[1.25, 0.75, 0.5, 0.1],
-                     theta_values=[0, 0.5, 1]):
-            # Build HTML code for web page. Arrange plots in columns
-            # corresponding to the theta values, with dt down the rows
-            theta2name = {0: 'FE', 1: 'BE', 0.5: 'CN'}
-            html_text = '<table>\n'
-            for dt in dt_values:
-                html_text += '<tr>\n'
-                for theta in theta_values:
-                    E, html = compute4web(I, a, T, dt, theta)
-                    html_text += """
-        <td>
-        <center><b>%s, dt=%g, error: %.3E</b></center><br>
-        %s
-        </td>
-        """ % (theta2name[theta], dt, E, html)
-                html_text += '</tr>\n'
-            html_text += '</table>\n'
-            return html_text
-
-Making one plot is done in ``compute4web``. The statements should be
-straightforward from earlier examples, but there is one new feature:
-we use a tool in Parampool to embed the PNG code for a plot file
-directly in an HTML image tag. The details are hidden from the
-programmer, who can just rely on
-relevant HTML code in the string ``html_text``. The function looks like
-
-.. code-block:: python
-
-        def compute4web(I, a, T, dt, theta=0.5):
-            """
-            Run a case with the solver, compute error measure,
-            and plot the numerical and exact solutions in a PNG
-            plot whose data are embedded in an HTML image tag.
-            """
-            u, t = solver(I, a, T, dt, theta)
-            u_e = exact_solution(t, I, a)
-            e = u_e - u
-            E = np.sqrt(dt*np.sum(e**2))
+        In[1]: from decay import *
         
-            plt.figure()
-            t_e = np.linspace(0, T, 1001)    # fine mesh for u_e
-            u_e = exact_solution(t_e, I, a)
-            plt.plot(t,   u,   'r--o')       # red dashes w/circles
-            plt.plot(t_e, u_e, 'b-')         # blue line for exact sol.
-            plt.legend(['numerical', 'exact'])
-            plt.xlabel('t')
-            plt.ylabel('u')
-            plt.title('theta=%g, dt=%g' % (theta, dt))
-            # Save plot to HTML img tag with PNG code as embedded data
-            from parampool.utils import save_png_to_str
-            html_text = save_png_to_str(plt, plotwidth=400)
-        
-            return E, html_text
+        In[2]: experiment_compare_schemes()
 
-Generating the user interface
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. _softeng1:basic:docstring:
 
-The web GUI is automatically generated by
-the following code, placed in a file `decay_GUI_generate.py <http://tinyurl.com/nm5587k/softeng1/decay_GUI_generate.py>`__
+Documenting functions and modules
+---------------------------------
+
+We have already emphasized the importance of documenting functions with
+a doc string (see the section :ref:`softeng1:basic:func`). Now it is time
+to show how doc strings should be structured in order to take advantage
+of the documentation utilities in the ``numpy`` module. The idea is
+to follow a convention that in itself makes a good pure text doc string
+in the terminal window
+and at the same time can be translated to beautiful HTML manuals for
+the web.
+
+The conventions for ``numpy`` style doc strings are well
+`documented <https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt>`__, so we here just present a basic example that the reader can adopt.
+Input arguments to a function is listed under a heading ``Parameters``,
+while returned values are listed under ``Returns``. It is a good idea to
+also add an ``Examples`` section on the usage of the function.
+More complicated software may have additional sections, see ``pydoc numpy.load``
+for an example. The markup language available for doc strings is
+Sphinx-extended reStructuredText. The example below shows typical
+constructs: 1) how inline
+mathematics is written with the ``:math:`` directive, 2) how arguments
+to the functions are referred to using single backticks
+inline monospace font for code applies double backticks), and 3) how
+arguments and return values are listed with types and explanation.
 
 .. code-block:: python
 
-        from parampool.generator.flask import generate
-        from decay import main_GUI
-        generate(main_GUI,
-                 filename_controller='decay_GUI_controller.py',
-                 filename_template='decay_GUI_view.py',
-                 filename_model='decay_GUI_model.py')
+        def solver(I, a, T, dt, theta):
+            """
+            Solve :math:`u'=-au` with :math:`u(0)=I` for :math:`t \in (0,T]`
+            with steps of `dt` and the method implied by `theta`.
+        
+            Parameters
+            ----------
+            I: float
+                Initial condition.
+            a: float
+                Parameter in the differential equation.
+            T: float
+                Total simulation time.
+            theta: float, int
+                Parameter in the numerical scheme. 0 gives
+                Forward Euler, 1 Backward Euler, and 0.5
+                the centered Crank-Nicolson scheme.
+        
+            Returns
+            -------
+            `u`: array
+                Solution array.
+            `t`: array
+                Array with time points corresponding to `u`.
+        
+            Examples
+            --------
+            Solve :math:`u' = -\\frac{1}{2}u, u(0)=1.5`
+            with the Crank-Nicolson method:
+        
+            >>> u, t = solver(I=1.5, a=0.5, T=9, theta=0.5)
+            >>> import matplotlib.pyplot as plt
+            >>> plt.plot(t, u)
+            >>> plt.show()
+            """
 
-Running the ``decay_GUI_generate.py`` program results in three new
-files whose names are specified in the call to ``generate``:
+If you follow such doc string conventions in your software, you can
+easily produce nice manuals and you adopt to a standard in the
+Python scientific computing community.
 
- 1. ``decay_GUI_model.py`` defines HTML widgets to be used to set
-    input data in the web interface,
+There are quite some manual steps to use the tool `Sphinx <http://sphinx-doc.org/>`__ to
+prepare a manual, so it is
+recommended to use the a `premade script <http://tinyurl.com/nm5587k/softeng1/make_sphinx_api.py>`__ to automate all the steps.
+(You need to do a ``pip install`` of ``sphinx`` and ``numpydoc`` to make the
+script work.)
+Figure :ref:`softeng1:basic:docstring:fig` provides an example how
+the above doc strings looks like when Sphinx has transformed it to HTML.
 
- 2. ``templates/decay_GUI_views.py`` defines the layout of the web page,
+.. _softeng1:basic:docstring:fig:
 
- 3. ``decay_GUI_controller.py`` runs the web application.
+.. figure:: selfdoc_numpy.png
+   :width: 700
 
-We only need to run the last program, and there is no need to look into
-these files.
-
-Running the web application
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The web GUI is started by
-
-.. code-block:: text
-
-        Terminal> python decay_GUI_controller.py
-
-Open a web browser at the location ``127.0.0.1:5000``. Input fields for
-``I``, ``a``, ``T``, ``dt_values``, and ``theta_values`` are presented.  Figure
-:ref:`softeng1:fig:GUI` shows a part of the resulting page if we run
-with the default values for the input parameters.
-With the techniques demonstrated here, one can
-easily create a tailored web GUI for a particular type of application
-and use it to interactively explore physical and numerical effects.
+   *Example on Sphinx API manual in HTML*
 

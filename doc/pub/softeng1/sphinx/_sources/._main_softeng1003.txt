@@ -1,621 +1,450 @@
 .. !split
 
-Tests for verifying implementations
-===================================
+.. _softeng1:basic:UI:
 
-Any module with functions should have a set of tests that can
-check the
-correctness of the implementations.
-There exists
-well-established procedures and corresponding tools for automating
-the execution of such tests. One can in this way, with a one-line command,
-run large test sets and confirm that the software works (as far as the
-tests tell!). Here we shall illustrate two important
-software testing techniques: *doctest* and *unit testing*.
-The first one is Python specific, while unit testing is the dominating
-test technique for computer software today.
+User interfaces
+===============
 
-Doctests
---------
+It is good programming practice to let programs read input from
+some *user interface*, rather than requiring users to *edit*
+parameter values in the source code. With effective user interfaces
+it becomes easier and safer to apply the code for scientific investigations and
+in particular to automate large-scale investigations by other programs
+(see the section :ref:`softeng1:experiments`).
 
-.. index:: doctests
+Reading input data can be done in many ways. We have to decide on a
+the functionality of the user interface,
+i.e., how we want to operate the program
+when providing input, and then use appropriate tools to implement
+the user interface. There are four basic types of user interface,
+listed here with increasing complexity
+of the implementation:
 
-.. index::
-   single: software testing; doctests
+1. Questions and answers in the terminal window
 
-A doc string, the first string after the function header, is used to
-document the purpose of functions and their arguments
-(see the section :ref:`softeng1:basic:func`). Very often it
-is instructive to include an example in the doc string
-on how to use the function.
-Interactive examples in the Python shell are most illustrative as
-we can see the output resulting from the statements and expressions.
-For example,
-we can in the ``solver`` function include an example on calling
-this function and printing the computed ``u`` and ``t`` arrays:
+2. Command-line arguments
+
+3. Reading data from files
+
+4. Graphical user interfaces (GUIs)
+
+Alternatives 2 and 4 are most popular and will be addressed next.
+The goal is to make it easy for the user to
+set physical and numerical parameters in
+our ``decay.py`` program.
+
+Command-line arguments
+----------------------
+
+The command-line arguments are all the words that appear on the
+command line after the program name. Running a program ``prog``
+as ``prog arg1 arg2`` means that there are two command-line arguments
+(separated by white space): ``arg1`` and ``arg2``.
+Python stores all the command-line arguments in
+the list ``sys.argv``, and there are, in principle, two ways of programming with
+command-line arguments in Python:
+
+ * **Positional arguments:** Decide upon a sequence of parameters
+   on the command line and read
+   their values directly from the ``sys.argv[1:]`` list.
+
+ * **Option-value pairs:**  Use ``--option value`` on
+   the command line to replace the default value of an input parameter
+   ``option`` by ``value`` (and utilize the ``argparse.ArgumentParser`` tool
+   for implementation).
+
+Suppose we want to run some program ``prog.py`` with
+specification of two parameters ``p`` and ``delta`` on the command line.
+With positional command-line arguments we write
+
+.. code-block:: text
+
+        Terminal> python decay.py 2 0.5
+
+and must know that the first argument ``2`` represents ``p`` and the
+next ``0.5`` is the value of ``delta``.
+With option-value pairs we can run
+
+.. code-block:: text
+
+        Terminal> python decay.py --delta 0.5 --p 2
+
+Now, both ``p`` and ``delta`` are supposed to have default values in the program,
+so we need to specify only the parameter that is to be changed from
+its default value, e.g.,
+
+.. code-block:: text
+
+        Terminal> python decay.py --p 2         # p=2, default delta
+        Terminal> python decay.py --delta 0.7   # delta-0.7, default a
+        Terminal> python decay.py               # default a and delta
+
+For our ``decay.py`` module file, we want include functionality such
+that we can read :math:`I`, :math:`a`, :math:`T`, :math:`\theta`, and a range of :math:`\Delta t`
+values from the command line.  A plot is then to be made, comparing
+the different numerical solutions for different :math:`\Delta t` values
+against the exact solution. The technical details of getting the
+command-line information into the program is covered in the next
+two sections.
+
+Positional command-line arguments
+---------------------------------
+
+.. index:: list comprehension
+
+.. index:: sys.argv
+
+The simplest way of reading the input parameters is to
+decide on their sequence on the command line and just index
+the ``sys.argv`` list accordingly.
+Say the sequence is :math:`I`, :math:`a`, :math:`T`, :math:`\theta` followed by an
+arbitrary number of :math:`\Delta t` values. This code extract
+these *positional* command-line arguments:
 
 .. code-block:: python
 
-        def solver(I, a, T, dt, theta):
+        import sys
+        I = float(sys.argv[1])
+        a = float(sys.argv[2])
+        T = float(sys.argv[3])
+        theta = float(sys.argv[4])
+        dt_values = [float(arg) for arg in sys.argv[5:]]
+
+
+.. admonition:: Command-line arguments are strings
+
+   Note that all elements in ``sys.argv`` are string objects.
+   If the values will enter mathematical computations, we need
+   to explicitly convert the strings to numbers.
+
+
+
+
+Instead of specifying the :math:`\theta` value, we could be a bit more
+sophisticated and let the user write the name of the scheme:
+``BE`` for Backward Euler, ``FE`` for Forward Euler, and ``CN``
+for Crank-Nicolson. Then we must map this string to the proper
+:math:`\theta` value, an operation elegantly done by a dictionary:
+
+.. code-block:: python
+
+        scheme = sys.argv[4]
+        scheme2theta = {'BE': 1, 'CN': 0.5, 'FE': 0}
+        if scheme in scheme2theta:
+            theta = scheme2theta[scheme]
+        else:
+            print 'Invalid scheme name:', scheme; sys.exit(1)
+
+Option-value pairs on the command line
+--------------------------------------
+
+.. index:: argparse (Python module)
+
+.. index:: ArgumentParser (Python class)
+
+.. index:: option-value pairs (command line)
+
+.. index:: command-line options and values
+
+.. index:: reading the command line
+
+Now we want to specify option-value pairs on the command line,
+using ``--I`` for ``I`` (:math:`I`), ``--a`` for ``a`` (:math:`a`), ``--T`` for ``T`` (:math:`T`),
+``--scheme`` for the scheme name (``BE``, ``FE``, ``CN``),
+and ``--dt`` for the sequence of ``dt`` (:math:`\Delta t`) values.
+Each parameter must have a sensible default value so
+that we specify the option on the command line only when the default
+value is not suitable. Here is a typical run:
+
+.. code-block:: text
+
+        Terminal> python decay.py --I 2.5 --dt 0.1 0.2 0.01 --a 0.4
+
+Observe the major advantage over positional command-line arguments:
+the input is much easier to read and much easier to write.
+With positional arguments it is easy to mess up the sequence of
+the input parameters and quite challenging to detect errors too,
+unless there are just a couple of arguments.
+
+Python's ``ArgumentParser`` tool in the ``argparse`` module makes it easy
+to create a professional command-line interface to any program. The
+documentation of `ArgumentParser <http://docs.python.org/library/argparse.html>`__ demonstrates its
+versatile applications, so we shall here just list an example
+containing the most basic features. It always pays off to use ``ArgumentParser``
+rather than trying to manually inspect and interpret option-value pairs
+in ``sys.argv``!
+
+The use of ``ArgumentParser`` typically involves three steps:
+
+.. code-block:: python
+
+        import argparse
+        parser = argparse.ArgumentParser()
+        
+        # Step 1: add arguments
+        parser.add_argument('--option_name', ...)
+        
+        # Step 2: interpret the command line
+        args = parser.parse_args()
+        
+        # Step 3: extract values
+        value = args.option_name
+
+A function for setting up all the options is handy:
+
+.. code-block:: python
+
+        def define_command_line_options():
+            import argparse
+            parser = argparse.ArgumentParser()
+            parser.add_argument(
+                '--I', '--initial_condition', type=float,
+                default=1.0, help='initial condition, u(0)',
+                metavar='I')
+            parser.add_argument(
+                '--a', type=float, default=1.0,
+                help='coefficient in ODE', metavar='a')
+            parser.add_argument(
+                '--T', '--stop_time', type=float,
+                default=1.0, help='end time of simulation',
+                metavar='T')
+            parser.add_argument(
+                '--scheme', type=str, default='CN',
+                help='FE, BE, or CN')
+            parser.add_argument(
+                '--dt', '--time_step_values', type=float,
+                default=[1.0], help='time step values',
+                metavar='dt', nargs='+', dest='dt_values')
+            return parser
+
+Each command-line option is defined through the ``parser.add_argument``
+method. Alternative options, like the short ``--I`` and the more
+explaining version ``--initial_condition`` can be defined. Other arguments
+are ``type`` for the Python object type, a default value, and a help
+string, which gets printed if the command-line argument ``-h`` or ``--help`` is
+included. The ``metavar`` argument specifies the value associated with
+the option when the help string is printed. For example, the option for
+:math:`I` has this help output:
+
+.. code-block:: text
+
+        Terminal> python decay.py -h
+          ...
+          --I I, --initial_condition I
+                                initial condition, u(0)
+          ...
+
+The structure of this output is
+
+.. code-block:: text
+
+          --I metavar, --initial_condition metavar
+                                help-string
+
+Finally, the ``--dt`` option demonstrates how to allow for more than one
+value (separated by blanks) through the ``nargs='+'`` keyword argument.
+After the command line is parsed, we get an object where the values of
+the options are stored as attributes. The attribute name is specified
+by the ``dist`` keyword argument, which for the ``--dt`` option is
+``dt_values``. Without the ``dest`` argument, the value of an option ``--opt``
+is stored as the attribute ``opt``.
+
+The code below demonstrates how to read the command line and extract
+the values for each option:
+
+.. code-block:: python
+
+        def read_command_line_argparse():
+            parser = define_command_line_options()
+            args = parser.parse_args()
+            scheme2theta = {'BE': 1, 'CN': 0.5, 'FE': 0}
+            data = (args.I, args.a, args.T, scheme2theta[args.scheme],
+                    args.dt_values)
+            return data
+
+As seen, the values of the command-line options are available as
+attributes in ``args``: ``args.opt`` holds the value of option ``--opt``, unless
+we used the ``dest`` argument (as for ``--dt_values``) for specifying the
+attribute name. The ``args.opt`` attribute has the object type specified
+by ``type`` (``str`` by default).
+
+The making of the plot is not dependent on whether we read data from
+the command line as positional arguments or option-value pairs:
+
+.. code-block:: python
+
+        def experiment_compare_dt(option_value_pairs=False):
+            I, a, T, theta, dt_values = \ 
+               read_command_line_argparse() if option_value_pairs else \ 
+               read_command_line_positional()
+        
+            legends = []
+            for dt in dt_values:
+                u, t = solver(I, a, T, dt, theta)
+                plt.plot(t, u)
+                legends.append('dt=%g' % dt)
+            t_e = np.linspace(0, T, 1001)       # very fine mesh for u_e
+            u_e = exact_solution(t_e, I, a)
+            plt.plot(t_e, u_e, '--')            # dashed line for u_e
+            legends.append('exact')
+            plt.legend(legends, loc='upper right')
+            plt.title('theta=%g' % theta)
+            plotfile = 'tmp'
+            plt.savefig(plotfile + '.png');  plt.savefig(plotfile + '.pdf')
+
+Creating a graphical web user interface
+---------------------------------------
+
+The Python package `Parampool <https://github.com/hplgit/parampool>`__
+can be used to automatically generate a web-based *graphical user interface*
+(GUI) for our simulation program. Although the programming technique
+dramatically simplifies the efforts to create a GUI, the forthcoming
+material on equipping our ``decay`` module with a GUI is quite technical
+and of significantly less importance than knowing how to make
+a command-line interface.
+
+Making a compute function
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The first step is to identify a function
+that performs the computations and that takes the necessary input
+variables as arguments. This is called the *compute function* in
+Parampool terminology. The purpose of this function is to take
+values of :math:`I`, :math:`a`, :math:`T` together with a sequence of :math:`\Delta t` values
+and a sequence of :math:`\theta` and plot the numerical against the
+exact solution for each pair of :math:`(\theta, \Delta t)`.
+The plots can be arranged as a table with the columns being scheme type
+(:math:`\theta` value) and the rows reflecting the discretization parameter
+(:math:`\Delta t` value). Figure :ref:`softeng1:fig:GUI` displays of the
+graphical web interface may look like after results are computed
+(there are :math:`3\times 3` plots in the GUI, but only :math:`2\times 2` are
+visible in the figure).
+
+.. _softeng1:fig:GUI:
+
+.. figure:: web_GUI.png
+   :width: 800
+
+   *Automatically generated graphical web interface*
+
+To tell Parampool what type of input data we have,
+we assign default values of the right type to all arguments in the
+compute function, here called ``main_GUI``:
+
+.. code-block:: python
+
+        def main_GUI(I=1.0, a=.2, T=4.0,
+                     dt_values=[1.25, 0.75, 0.5, 0.1],
+                     theta_values=[0, 0.5, 1]):
+
+The compute function must return the HTML code we want for displaying
+the result in a web page. Here we want to show a
+table of plots.
+Assume for now that the HTML code for one plot and the value of the
+norm of the error can be computed by some other function ``compute4web``.
+The ``main_GUI`` function can then loop over :math:`\Delta t` and :math:`\theta`
+values and put each plot in an HTML table. Appropriate code goes like
+
+.. code-block:: python
+
+        def main_GUI(I=1.0, a=.2, T=4.0,
+                     dt_values=[1.25, 0.75, 0.5, 0.1],
+                     theta_values=[0, 0.5, 1]):
+            # Build HTML code for web page. Arrange plots in columns
+            # corresponding to the theta values, with dt down the rows
+            theta2name = {0: 'FE', 1: 'BE', 0.5: 'CN'}
+            html_text = '<table>\n'
+            for dt in dt_values:
+                html_text += '<tr>\n'
+                for theta in theta_values:
+                    E, html = compute4web(I, a, T, dt, theta)
+                    html_text += """
+        <td>
+        <center><b>%s, dt=%g, error: %.3E</b></center><br>
+        %s
+        </td>
+        """ % (theta2name[theta], dt, E, html)
+                html_text += '</tr>\n'
+            html_text += '</table>\n'
+            return html_text
+
+Making one plot is done in ``compute4web``. The statements should be
+straightforward from earlier examples, but there is one new feature:
+we use a tool in Parampool to embed the PNG code for a plot file
+directly in an HTML image tag. The details are hidden from the
+programmer, who can just rely on
+relevant HTML code in the string ``html_text``. The function looks like
+
+.. code-block:: python
+
+        def compute4web(I, a, T, dt, theta=0.5):
             """
-            Solve u'=-a*u, u(0)=I, for t in (0,T] with steps of dt.
-        
-        
-            >>> u, t = solver(I=0.8, a=1.2, T=1.5, dt=0.5, theta=0.5)
-            >>> for t_n, u_n in zip(t, u):
-            ...     print 't=%.1f, u=%.14f' % (t_n, u_n)
-            t=0.0, u=0.80000000000000
-            t=0.5, u=0.43076923076923
-            t=1.0, u=0.23195266272189
-            t=1.5, u=0.12489758761948
+            Run a case with the solver, compute error measure,
+            and plot the numerical and exact solutions in a PNG
+            plot whose data are embedded in an HTML image tag.
             """
-            ...
+            u, t = solver(I, a, T, dt, theta)
+            u_e = exact_solution(t, I, a)
+            e = u_e - u
+            E = np.sqrt(dt*np.sum(e**2))
+        
+            plt.figure()
+            t_e = np.linspace(0, T, 1001)    # fine mesh for u_e
+            u_e = exact_solution(t_e, I, a)
+            plt.plot(t,   u,   'r--o')       # red dashes w/circles
+            plt.plot(t_e, u_e, 'b-')         # blue line for exact sol.
+            plt.legend(['numerical', 'exact'])
+            plt.xlabel('t')
+            plt.ylabel('u')
+            plt.title('theta=%g, dt=%g' % (theta, dt))
+            # Save plot to HTML img tag with PNG code as embedded data
+            from parampool.utils import save_png_to_str
+            html_text = save_png_to_str(plt, plotwidth=400)
+        
+            return E, html_text
 
-When such interactive demonstrations are inserted in doc strings,
-Python's `doctest <http://docs.python.org/library/doctest.html>`__
-module can be used to automate running all commands
-in interactive sessions and compare new output with the output
-appearing in the doc string.  All we have to do in the current example
-is to run the module file ``decay.py`` with
+Generating the user interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The web GUI is automatically generated by
+the following code, placed in a file `decay_GUI_generate.py <http://tinyurl.com/nm5587k/softeng1/decay_GUI_generate.py>`__
 
 .. code-block:: python
 
-        Terminal> python -m doctest decay.py
+        from parampool.generator.flask import generate
+        from decay import main_GUI
+        generate(main_GUI,
+                 filename_controller='decay_GUI_controller.py',
+                 filename_template='decay_GUI_view.py',
+                 filename_model='decay_GUI_model.py')
 
-This command imports the ``doctest`` module, which runs all
-doctests found in the file and reports discrepancies between
-expected and computed output.
+Running the ``decay_GUI_generate.py`` program results in three new
+files whose names are specified in the call to ``generate``:
 
+ 1. ``decay_GUI_model.py`` defines HTML widgets to be used to set
+    input data in the web interface,
 
-.. admonition:: Doctests prevent command-line arguments
+ 2. ``templates/decay_GUI_views.py`` defines the layout of the web page,
 
-   No additional command-line argument is allowed when running doctests.
-   If your program relies on command-line input, make sure the doctests
-   can be run *without* such input.
+ 3. ``decay_GUI_controller.py`` runs the web application.
 
+We only need to run the last program, and there is no need to look into
+these files.
 
+Running the web application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-The execution command above will report any problem if a test fails.
-For example, changing the last digit ``8`` in the output of the doctest
-to ``7`` triggers a report:
+The web GUI is started by
 
 .. code-block:: text
 
-        Terminal> python -m doctest decay.py
-        ********************************************************
-        File "decay.py", line ...
-        Failed example:
-            for t_n, u_n in zip(t, u):
-                print 't=%.1f, u=%.14f' % (t_n, u_n)
-        Expected:
-            t=0.0, u=0.80000000000000
-            t=0.5, u=0.43076923076923
-            t=1.0, u=0.23195266272189
-            t=1.5, u=0.12489758761947
-        Got:
-            t=0.0, u=0.80000000000000
-            t=0.5, u=0.43076923076923
-            t=1.0, u=0.23195266272189
-            t=1.5, u=0.12489758761948
-
-
-.. admonition:: Pay attention to the number of digits in doctest results
-
-   Note that in the output of ``t`` and ``u`` we write ``u`` with 14 digits.
-   Writing all 16 digits is not a good idea: if the tests are run on
-   different hardware, round-off errors might be different, and
-   the ``doctest`` module detects that the numbers are not precisely the same
-   and reports failures. In the present application, where :math:`0 < u(t) \leq 0.8`,
-   we expect round-off errors to be of size :math:`10^{-16}`, so comparing 15
-   digits would probably be reliable, but we compare 14 to be on the
-   safe side. On the other hand, comparing a small number of digits may
-   hide software errors.
-
-
-
-
-Doctests are highly encouraged as they do two things: 1) demonstrate
-how a function is used and 2) test that the function works.
-
-
-.. admonition:: Caution
-
-   Doctests requires careful coding if they use command-line input or
-   print results to the terminal window. Command-line input must
-   be simulated by filling ``sys.argv`` correctly, e.g.,
-   ``sys.argv = '--I 1.0 --a 5'.split``.
-   The output lines of print statements inside doctests
-   must be copied exactly as they
-   appear when running the statements in an interactive Python shell.
-
-
-
-
-Unit tests and test functions
------------------------------
-
-.. index:: nose tests
-
-.. index:: pytest tests
-
-.. index:: unit testing
-
-.. index::
-   single: software testing; nose
-
-.. index::
-   single: software testing; pytest
-
-The unit testing technique consists of identifying small units
-of code, say a function, and write one or more tests for
-each unit. One test should, ideally, not depend on the outcome of
-other tests. The recommended practice is actually to
-design and write the unit tests first and *then* implement the functions!
-
-In scientific computing it is not always obvious how to best perform
-unit testing. The units is naturally larger than in non-scientific
-software. Very often the solution procedure of a mathematical problem
-identifies a unit, such as our ``solver`` function.
-
-.. index:: test function
-
-.. index::
-   single: software testing; test function
-
-Two Python test frameworks: nose and pytest
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Python offers two very easy-to-use software frameworks for implementing
-unit tests: nose and pytest. These work (almost) in the same way,
-but my recommendation is to go for pytest.
-
-Test function requirements
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Each test can in these frameworks be realized as a *test function*
-that follows three rules:
-
- 1. The name must start with ``test_``.
-
- 2. Function arguments are not allowed.
-
- 3. An ``AssertionError`` exception must be raised if the test fails.
-
-A specific example might be illustrative before proceeding.
-We have the following function that we want to test:
-
-.. code-block:: python
-
-        def double(n):
-            return 2*n
-
-The corresponding test function may look like this:
-
-.. code-block:: python
-
-        def test_double():
-            """Test that double(n) works for one specific n."""
-            n = 4
-            expected = 2*4
-            computed = double(4)
-            if expected != computed:
-                raise AssertionError
-
-The last two lines, however, are never written like this in test functions.
-Instead, use Python's ``assert`` statement: ``assert success, msg``, where
-``success`` is a boolean variable, which is ``False`` if the test fails, and
-``msg`` is *an optional* message string that is printed when the test fails.
-A better version of the test function is therefore
-
-.. code-block:: python
-
-        def test_double():
-            """Test that double(n) works for one specific n."""
-            n = 4
-            expected = 2*4
-            computed = double(4)
-            msg = 'expected %g, computed %g' % (expected, computed)
-            success = expected == computed
-            assert success, msg
-
-Comparison of real numbers
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In scientific computing we very often have to deal with real numbers and
-finite precision arithmetics (round-off errors)
-so the ``==`` operator is not suitable for checking that
-a test passes. Instead, we must be replace ``==`` by a comparison
-based on a tolerance. Here is a slightly different function that
-we want to test:
-
-.. code-block:: python
-
-        def third(x):
-            return x/3.
-
-We write a test function where the expected result is computed as
-:math:`\frac{1}{3}x` rather than :math:`x/3`:
-
-.. code-block:: python
-
-        def test_third():
-            """Check that third(x) works for many x values."""
-            for x in np.linspace(0, 1, 21):
-                expected = (1/3.)*x
-                computed = third(x)
-                success = expected == computed
-                assert success
-
-This ``test_third`` function executes silently, i.e., no failure,
-until ``x`` becomes 0.15. Then round-off errors make the ``==`` comparison
-``False``. In fact, seven ``x`` values face this problem.
-The solution is to compare ``expected`` and ``computed``
-with a small tolerance:
-
-.. code-block:: python
-
-        def test_third():
-            """Check that third(x) works for many x values."""
-            for x in np.linspace(0, 1, 21):
-                expected = (1/3.)*x
-                computed = third(x)
-                tol = 1E-15
-                success = abs(expected - computed) < tol
-                assert success
-
-Real numbers should never be compared with the ``==`` operator, but always
-with the absolute value of the difference and a tolerance.
-
-Special assert functions from nose
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The nose test framework contains more tailored
-*assert functions* that can be called instead of using the ``assert``
-statement. For example, comparing two objects within
-a tolerance, as in the present
-case, can be done by ``assert_almost_equal``:
-
-.. code-block:: python
-
-        import nose.tools as nt
-        
-        def test_third():
-            x = 0.15
-            expected = (1/3.)*x
-            computed = third(x)
-            nt.assert_almost_equal(
-                expected, computed, delta=1E-15,
-                msg='diff=%.17E' % (expected - computed))
-
-Whether to use the plain ``assert`` statement with a comparison based on
-a tolerance or to use the ready-made function ``assert_almost_equal``
-depends on the programmer's preference. The pytest framework (which we
-recommend) sticks to the plain ``assert`` statement.
-
-Locating test functions
-~~~~~~~~~~~~~~~~~~~~~~~
-
-Test functions can reside in a module together with the functions they
-are supposed to verify, or the test functions can be collected in
-separate files having names starting with ``test``. Actually,
-nose and pytest can automatically recursively run all test functions
-in all ``test*.py``
-files in the current and all subdirectories!
-
-The `decay.py <http://tinyurl.com/nm5587k/softeng1/decay.py>`__ module file features
-test functions in the module, but we could equally well have made
-a subdirectory ``tests`` and put the test functions in
-`tests/test_decay.py <http://tinyurl.com/nm5587k/softeng1/tests/test_decay.py>`__.
-
-Running tests
-~~~~~~~~~~~~~
-
-To run all test functions in the file ``decay.py`` do
-
-.. code-block:: text
-
-        Terminal> nosetests -s -v decay.py
-        Terminal> py.test -s -v decay.py
-
-The ``-s`` option ensures that output from the test functions is printed
-in the terminal window, and ``-v`` prints the outcome of each individual
-test function.
-
-Alternatively, if the test functions are in some separate
-``test*.py`` files,
-we can just write
-
-.. code-block:: text
-
-        Terminal> py.test -s -v
-
-to *recursively* run *all* test functions in the current
-directory tree. The corresponding
-
-.. code-block:: text
-
-        Terminal> nosetests -s -v
-
-command does the same, but requires subdirectory names to start
-with ``test`` or end with ``_test`` or ``_tests`` (which is a good habit anyway).
-An example of a ``tests`` directory with a ``test*.py``
-file is found in `src/softeng1/tests <http://tinyurl.com/nm5587k/softeng1/tests>`__.
-
-Installing nose and pytest
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-With ``pip`` available, it is trivial to install nose and/or pytest:
-``sudo pip install nose`` and ``sudo pip install pytest``.
-
-Test function for the solver
-----------------------------
-
-Finding good test problems for verifying the implementation of numerical
-methods is a topic on its own. The challenge is that we very seldom know
-what the numerical errors are. For the present model problem
-:ref:`(2.1) <Eq:softeng1:ode>`-:ref:`(2.2) <Eq:softeng1:u0>` solved by
-:ref:`(2.3) <Eq:softeng1:utheta>` one can, fortunately, derive a formula for
-the numerical approximation:
-
-.. math::
-         u^n = I\left(
-        \frac{1 - (1-\theta) a\Delta t}{1 + \theta a \Delta t}
-        \right)^n{\thinspace .}
-
-Then we know that the implementation should
-produce numbers that agree with this formula to machine precision.
-The formula for :math:`u^n` is known as an *exact discrete solution* of the
-problem and can be coded as
-
-.. code-block:: python
-
-        def exact_discrete_solution(n, I, a, theta, dt):
-            """Return exact discrete solution of the numerical schemes."""
-            dt = float(dt)  # avoid integer division
-            A = (1 - (1-theta)*a*dt)/(1 + theta*dt*a)
-            return I*A**n
-
-A test function can evaluate this solution on a time mesh
-and check that the ``u`` values produced by the ``solver`` function
-do not deviate with more than a small tolerance:
-
-.. code-block:: python
-
-        def test_exact_discrete_solution():
-            """Check that solver reproduces the exact discr. sol."""
-            theta = 0.8; a = 2; I = 0.1; dt = 0.8
-            Nt = int(8/dt)  # no of steps
-            u, t = solver(I=I, a=a, T=Nt*dt, dt=dt, theta=theta)
-        
-            # Evaluate exact discrete solution on the mesh
-            u_de = np.array([exact_discrete_solution(n, I, a, theta, dt)
-                             for n in range(Nt+1)])
-        
-            # Find largest deviation
-            diff = np.abs(u_de - u).max()
-            tol = 1E-14
-            success = diff < tol
-            assert success
-
-An important topic to address in test functions is potentially
-problematic input to functions. For example, if :math:`a`, :math:`\Delta t`, and
-:math:`\theta` are integers, one may face problems with unintended integer
-division in the numerical solution algorithm for the present mathematical
-problem. We should therefore add a test to make sure our ``solver``
-function does not fall into this potential trap:
-
-.. code-block:: python
-
-        def test_potential_integer_division():
-            """Choose variables that can trigger integer division."""
-            theta = 1; a = 1; I = 1; dt = 2
-            Nt = 4
-            u, t = solver(I=I, a=a, T=Nt*dt, dt=dt, theta=theta)
-            u_de = np.array([exact_discrete_solution(n, I, a, theta, dt)
-                             for n in range(Nt+1)])
-            diff = np.abs(u_de - u).max()
-            assert diff < 1E-14
-
-Test function for reading positional command-line arguments
------------------------------------------------------------
-
-The function ``read_command_line_positional`` extracts numbers from the
-command line. To test it, decide on a set of numbers, fill ``sys.argv``
-appropriately, and check that we get the expected numbers:
-
-.. code-block:: python
-
-        def test_read_command_line_positional():
-            # Decide on a data set of input parameters
-            I = 1.6;  a = 1.8;  T = 2.2;  theta = 0.5
-            dt_values = [0.1, 0.2, 0.05]
-            # Expected return from read_command_line_positional
-            expected = [I, a, T, theta, dt_values]
-            # Construct corresponding sys.argv array
-            sys.argv = [sys.argv[0], str(I), str(a), str(T), 'CN'] + \ 
-                       [str(dt) for dt in dt_values]
-            computed = read_command_line_positional()
-            for expected_arg, computed_arg in zip(expected, computed):
-                assert expected_arg == computed_arg
-
-Note that ``sys.argv[0]`` is always the program name and that we have to
-copy that string from the original ``sys.argv`` array to the new one we
-construct in the test function. (Actually, the test function destroys
-the original ``sys.argv`` that Python fetched from the command line.)
-
-Any numerical code writer should always be skeptical to the use of the exact
-equality operator ``==`` in test functions, since round-off errors often
-come into play. Here, however, we set some real values, convert them
-to strings and convert back again to real numbers (of the same precision).
-This string-number conversion does not involve any finite precision
-arithmetics effects so we
-can safely use ``==`` in tests. Note also that the last element in
-``expected`` and ``computed`` is the list ``dt_values``, and ``==`` works
-for comparing two lists too.
-
-Test function for reading option-value pairs
---------------------------------------------
-
-Testing the function ``read_command_line_argparse`` follows the
-set up for the similar function for positional command-line arguments.
-However, the construction of the command line is a bit more complicated.
-We find it convenient to construct the line as a string and then
-split the line into words to get the desired list ``sys.argv``:
-
-.. code-block:: python
-
-        def test_read_command_line_argparse():
-            I = 1.6;  a = 1.8;  T = 2.2;  theta = 0.5
-            dt_values = [0.1, 0.2, 0.05]
-            # Expected return from read_command_line_positional
-            expected = [I, a, T, theta, dt_values]
-            # Construct corresponding sys.argv array
-            cml = '%s --a %s --I %s --T %s --scheme CN --dt ' % \ 
-                  (sys.argv[0], a, I, T)
-            cml = cml + ' '.join([str(dt) for dt in dt_values])
-            sys.argv = cml.split()
-            computed = read_command_line_argparse()
-            for expected_arg, computed_arg in zip(expected, computed):
-                assert expected_arg == computed_arg
-
-
-.. admonition:: Let silent test functions speak up during development
-
-   When you develop test functions in a module, it is common to use IPython
-   to reload the module and call the test function as it gets developed:
-   
-   .. code-block:: ipy
-   
-           In[1]: import decay
-           
-           In[2]: decay.test_read_command_line_argparse()
-           
-           In[3]: reload(decay)  # force new import
-           
-           In[2]: decay.test_read_command_line_argparse()  # test again
-   
-   However, a working test function is completely silent! Many
-   find it psychologically annoying to convince themselves that a
-   completely silent function is doing the right things. It can therefore,
-   during development of a test function, be convenient to insert
-   print statements in the function to monitor that the function body
-   is indeed executed. For example, one can print the expected and
-   computed values in the terminal window.
-
-
-
-
-.. _softeng1:basic:unittest:
-
-Classical class-based unit testing
-----------------------------------
-
-.. index:: unit testing
-
-.. index:: unittest
-
-.. index::
-   single: software testing; unit testing (class-based)
-
-The test functions written for the nose and pytest frameworks are
-very straightforward and to the point, with no framework-required boilerplate
-code. We just write the statements we need to make the computations and
-comparisons and then apply the required ``assert``.
-
-The classical way of implementing unit tests (which derives from the JUnit
-object-oriented tool in Java) leads to much more comprehensive implementations with
-much more boilerplate code.
-Python comes with a built-in module ``unittest`` for doing this type of
-classical unit tests. Although I strongly recommend to use nose or pytest over
-``unittest``, class-based unit testing in the style of ``unittest``
-has a very strong position in computer science and is so widespread
-that even computational scientists should have an idea how such
-unit test code is written. A short demo of ``unittest`` is therefore
-included next.
-
-.. index:: unittest
-
-.. index:: TestCase (class in unittest)
-
-Suppose we have a function ``double(x)`` in a module file ``mymod.py``:
-
-.. code-block:: python
-
-        def double(x):
-            return 2*x
-
-Unit testing with the aid of the ``unittest`` module
-consists of writing a file ``test_mymod.py`` for testing the functions
-in ``mymod.py``. The individual tests must be methods with names
-starting with ``test_`` in a class derived from class ``TestCase`` in
-``unittest``. With one test method for the function ``double``, the
-``test_mymod.py`` file becomes
-
-.. code-block:: python
-
-        import unittest
-        import mymod
-        
-        class TestMyCode(unittest.TestCase):
-            def test_double(self):
-                x = 4
-                expected = 2*x
-                computed = mymod.double(x)
-                self.assertEqual(expected, computed)
-        
-        if __name__ == '__main__':
-            unittest.main()
-
-The test is run by executing the test file ``test_mymod.py`` as a standard
-Python program. There is no support in ``unittest`` for automatically
-locating and running all tests in all test files in a directory tree.
-
-We could use the basic ``assert`` statement as we did with nose and pytest
-functions, but those who write code based on ``unittest`` almost
-exclusively use the wide range of built-in assert functions such
-as ``assertEqual``, ``assertNotEqual``, ``assertAlmostEqual``, to mention
-some of them.
-
-Translation of ``test_exact_discrete_solution``,
-``test_potential_integer_division``, and the other test functions in ``decay.py``
-to ``unittest`` means making a new file ``test_decay.py`` file with a
-test class ``TestDecay`` where the stand-alone functions for
-nose/pytest now become methods in this class.
-
-.. code-block:: python
-
-        import unittest
-        import decay
-        import numpy as np
-        
-        def exact_discrete_solution(n, I, a, theta, dt):
-            ...
-        
-        class TestDecay(unittest.TestCase):
-        
-            def test_exact_discrete_solution(self):
-                theta = 0.8; a = 2; I = 0.1; dt = 0.8
-                Nt = int(8/dt)  # no of steps
-                u, t = decay.solver(I=I, a=a, T=Nt*dt, dt=dt, theta=theta)
-                # Evaluate exact discrete solution on the mesh
-                u_de = np.array([exact_discrete_solution(n, I, a, theta, dt)
-                                 for n in range(Nt+1)])
-                diff = np.abs(u_de - u).max()  # largest deviation
-                self.assertAlmostEqual(diff, 0, delta=1E-14)
-        
-            def test_potential_integer_division(self):
-                ...
-                self.assertAlmostEqual(diff, 0, delta=1E-14)
-        
-            def test_read_command_line_positional(self):
-                ...
-                for expected_arg, computed_arg in zip(expected, computed):
-                    self.assertEqual(expected_arg, computed_arg)
-        
-            def test_read_command_line_argparse(self):
-                ...
-        
-        if __name__ == '__main__':
-            unittest.main()
+        Terminal> python decay_GUI_controller.py
+
+Open a web browser at the location ``127.0.0.1:5000``. Input fields for
+``I``, ``a``, ``T``, ``dt_values``, and ``theta_values`` are presented.  Figure
+:ref:`softeng1:fig:GUI` shows a part of the resulting page if we run
+with the default values for the input parameters.
+With the techniques demonstrated here, one can
+easily create a tailored web GUI for a particular type of application
+and use it to interactively explore physical and numerical effects.
 

@@ -12,6 +12,16 @@
 
 .. max/min pt computation?
 
+Vibration problems lead to differential equations with solutions that
+oscillate in time, typically in a damped or undamped sinusoidal
+fashion.  Such solutions put certain demands on the numerical methods
+compared to other phenomena whose solutions are monotone.
+Both the frequency and amplitude of the oscillations need to be
+accurately handled by the numerical schemes. Most of the reasoning and
+specific building blocks introduced in the fortcoming text can be
+reused to construct sound methods for partial differential equations
+of wave nature in multiple spatial dimensions.
+
 .. _vib:model1:
 
 Finite difference discretization
@@ -364,6 +374,137 @@ convenient to have:
             axis([t[0], t[-1], umin, umax])
             savefig('vib1.png')
             savefig('vib1.pdf')
+        
+        def test_three_steps():
+            I = 1;  w = 2*pi;  dt = 0.1;  T = 1
+            u_by_hand = array([1.000000000000000,
+                               0.802607911978213,
+                               0.288358920740053])
+            u, t = solver(I, w, dt, T)
+            diff = abs(u_by_hand - u[:3]).max()
+            tol = 1E-14
+            assert diff < tol
+        
+        def convergence_rates(m, solver_function, num_periods=8):
+            """
+            Return m-1 empirical estimates of the convergence rate
+            based on m simulations, where the time step is halved
+            for each simulation.
+            """
+            w = 0.35; I = 0.3
+            dt = 2*pi/w/30  # 30 time step per period 2*pi/w
+            T = 2*pi/w*num_periods
+            dt_values = []
+            E_values = []
+            for i in range(m):
+                u, t = solver_function(I, w, dt, T)
+                u_e = u_exact(t, I, w)
+                E = sqrt(dt*sum((u_e-u)**2))
+                dt_values.append(dt)
+                E_values.append(E)
+                dt = dt/2
+        
+            r = [log(E_values[i-1]/E_values[i])/
+                 log(dt_values[i-1]/dt_values[i])
+                 for i in range(1, m, 1)]
+            return r
+        
+        def test_convergence_rates():
+            r = convergence_rates(m=5, solver_function=solver, num_periods=8)
+            # Accept rate to 1 decimal place
+            tol = 0.1
+            assert abs(r[-1] - 2.0) < tol
+        
+        def main(solver_function=solver):
+            import argparse
+            parser = argparse.ArgumentParser()
+            parser.add_argument('--I', type=float, default=1.0)
+            parser.add_argument('--w', type=float, default=2*pi)
+            parser.add_argument('--dt', type=float, default=0.05)
+            parser.add_argument('--num_periods', type=int, default=5)
+            parser.add_argument('--savefig', action='store_true')
+            # Hack to allow --SCITOOLS options (read when importing scitools.std)
+            parser.add_argument('--SCITOOLS_easyviz_backend', default='matplotlib')
+            a = parser.parse_args()
+            I, w, dt, num_periods, savefig = \ 
+               a.I, a.w, a.dt, a.num_periods, a.savefig
+            P = 2*pi/w  # one period
+            T = P*num_periods
+            u, t = solver_function(I, w, dt, T)
+            if num_periods <= 10:
+                visualize(u, t, I, w)
+            else:
+                visualize_front(u, t, I, w, savefig)
+                #visualize_front_ascii(u, t, I, w)
+            #plot_empirical_freq_and_amplitude(u, t, I, w)
+            show()
+        
+        def plot_empirical_freq_and_amplitude(u, t, I, w):
+            minima, maxima = minmax(t, u)
+            p = periods(maxima)
+            a = amplitudes(minima, maxima)
+            figure()
+            plot(range(len(p)), 2*pi/p, 'r-')
+            hold('on')
+            plot(range(len(a)), a, 'b-')
+            plot(range(len(p)), [w]*len(p), 'r--')
+            plot(range(len(a)), [I]*len(a), 'b--')
+            legend(['numerical frequency', 'numerical amplitude',
+                    'analytical frequency', 'anaytical amplitude'],
+                   loc='center right')
+        
+        
+        def visualize_front(u, t, I, w, savefig=False):
+            """
+            Visualize u and the exact solution vs t, using a
+            moving plot window and continuous drawing of the
+            curves as they evolve in time.
+            Makes it easy to plot very long time series.
+            """
+            import scitools.std as st
+            from scitools.MovingPlotWindow import MovingPlotWindow
+        
+            P = 2*pi/w  # one period
+            umin = 1.2*u.min();  umax = -umin
+            plot_manager = MovingPlotWindow(
+                window_width=8*P,
+                dt=t[1]-t[0],
+                yaxis=[umin, umax],
+                mode='continuous drawing')
+            for n in range(1,len(u)):
+                if plot_manager.plot(n):
+                    s = plot_manager.first_index_in_plot
+                    st.plot(t[s:n+1], u[s:n+1], 'r-1',
+                            t[s:n+1], I*cos(w*t)[s:n+1], 'b-1',
+                            title='t=%6.3f' % t[n],
+                            axis=plot_manager.axis(),
+                            show=not savefig) # drop window if savefig
+                    if savefig:
+                        filename = 'tmp_vib%04d.png' % n
+                        st.savefig(filename)
+                        print 'making plot file', filename, 'at t=%g' % t[n]
+                plot_manager.update(n)
+        
+        def visualize_front_ascii(u, t, I, w, fps=10):
+            """
+            Plot u and the exact solution vs t line by line in a
+            terminal window (only using ascii characters).
+            Makes it easy to plot very long time series.
+            """
+            from scitools.avplotter import Plotter
+            import time
+            P = 2*pi/w
+            umin = 1.2*u.min();  umax = -umin
+        
+            p = Plotter(ymin=umin, ymax=umax, width=60, symbols='+o')
+            for n in range(len(u)):
+                print p.plot(t[n], u[n], I*cos(w*t[n])), \ 
+                      '%.1f' % (t[n]/P)
+                time.sleep(1/float(fps))
+        
+        if __name__ == '__main__':
+            main()
+            raw_input()
 
 A corresponding main program calling these functions for a simulation
 of a given number of periods (``num_periods``) may take the form
@@ -518,9 +659,38 @@ good candidate for a unit test:
         def test_convergence_rates():
             r = convergence_rates(m=5, solver_function=solver, num_periods=8)
             # Accept rate to 1 decimal place
-            nt.assert_almost_equal(r[-1], 2.0, places=1)
+            tol = 0.1
+            assert abs(r[-1] - 2.0) < tol
 
 The complete code appears in the file ``vib_undamped.py``.
+
+Scaled model
+~~~~~~~~~~~~
+
+It is advantageous to use dimensionless variables in simulations, because
+fewer parameters need to be set. The present problem is made dimensionless
+by introducing dimensionless variables :math:`\bar t = t/t_c` and :math:`\bar u = u/u_c`,
+where :math:`t_c` and :math:`u_c` are characteristic scales for :math:`t` and :math:`u`,
+respectively. A common choice is to take :math:`t_c` as one period of
+the oscillations, :math:`t_c = 2\pi/w`, and :math:`u_c=I`. This gives the
+dimensionless model (dropping the bars)
+
+.. _Eq:vib:ode1:model:scaled:
+
+.. math::
+   :label: vib:ode1:model:scaled
+        
+        u{\prime\prime} + 4\pi^2 u = 0,\quad u(0)=1,\ u^{\prime}(0)=\alpha,
+        
+        
+
+where :math:`\alpha` is a dimensionless constant
+
+.. math::
+         \alpha = \frac{2\pi V}{wI}{\thinspace .}
+
+Any implementation of :eq:`vib:ode1` with :math:`u^{\prime}(0)=V` can be used for
+:eq:`vib:ode1:model:scaled`: just set :math:`w` as :math:`2\pi` and :math:`V` as :math:`\alpha`.
 
 .. _vib:ode1:longseries:
 
@@ -528,7 +698,8 @@ Long time simulations
 =====================
 
 Figure :ref:`vib:ode1:2dt` shows a comparison of the exact and numerical
-solution for :math:`\Delta t=0.1, 0.05` and :math:`w=2\pi`.
+solution for the scaled model :eq:`vib:ode1:model:scaled` with
+:math:`\Delta t=0.1, 0.05` and :math:`u'(0)=V=0` (:math:`w=2\pi` in the scaled model).
 From the plot we make the following observations:
 
  * The numerical solution seems to have correct amplitude.
@@ -626,10 +797,12 @@ format is popular,
 
 .. code-block:: text
 
-        Terminal> avconv -i tmp_vib%04d.png -r 12 -c:v flv movie.flv
+        Terminal> ffmpeg -i tmp_vib%04d.png -r 12 -c:v flv movie.flv
 
-The ``avconv`` program can be replaced by the ``ffmpeg`` program in
-the above command if desired. The ``-r`` option should come first and
+The ``ffmpeg`` program can be replaced by the ``avconv`` program in
+the above command if desired (but at the time of this writing it seems
+to be more momentum in the ``ffmpeg`` project).
+The ``-r`` option should come first and
 describes the number of frames per second in the movie. The
 ``-i`` option describes the name of the plot files.
 Other formats can be generated by changing the video codec
@@ -1051,9 +1224,9 @@ by L'Hopital's rule or simply asking ``sympy`` or
 
 .. code-block:: python
 
-        >>> import sympy as sp
-        >>> dt, w = sp.symbols('x w')
-        >>> sp.limit((2/dt)*sp.asin(w*dt/2), dt, 0, dir='+')
+        >>> import sympy as sym
+        >>> dt, w = sym.symbols('x w')
+        >>> sym.limit((2/dt)*sym.asin(w*dt/2), dt, 0, dir='+')
         w
 
 Therefore, :math:`\tilde\omega\rightarrow\omega` and obviously
@@ -1837,6 +2010,10 @@ Runge-Kutta 4th-order  :math:`10`    :math:`0.1`                  :math:`3.686`
 Runge-Kutta 4th-order  :math:`10`    :math:`0.05`           :math:`6.928\cdot 10^{-1}`         
 =====================  ==========  ================  ========================================  
 
+[**hpl 1**: The error reductions are not directly in accordance with the order of the schemes, probably caused by :math:`\Delta t` not being in the asympotic regime.]
+
+[**hpl 2**: Could estimate error in energy, that is more general: :math:`e_E\sim C\Delta t^r` and then we do experiments.]
+
 .. Should build a verification test on the energy error.
 
 .. Link phase plane plot to energy
@@ -2083,6 +2260,8 @@ in ``vib_EulerCromer.py``, and combined with a nose test in the function
 discrete solution to machine precision. Another function, ``demo``,
 visualizes the difference between Euler-Cromer scheme and the scheme
 for the second-oder ODE, arising from the mismatch in the first time level.
+
+[**hpl 3**: odespy's Euler-Cromer]
 
 .. is anything gained? is v of higher order than D_2t u from the
 

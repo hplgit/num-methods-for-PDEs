@@ -1,365 +1,242 @@
 .. !split
 
-.. _softeng1:prog:se:class:
+.. _softeng1:prog:se:git:
 
-Classes for problem and solution method
-=======================================
+Packaging the software for other users
+======================================
 
-The numerical solution procedure was compactly and conveniently implemented in
-a Python function ``solver`` in the section :ref:`softeng1:basic:math`.
-In more complicated problems it might
-be beneficial to use classes instead of functions only. Here we shall
-describe a class-based software design well suited for scientific problems
-where there is a mathematical model of some physical phenomenon and
-some numerical methods to solve the equations involved in the model.
+As soon as you have some working software with a potential to be shared
+with others, you should package your software in a standard way such
+that users can easily download your software, install it, improve it,
+and ask you to approve the improvements in new versions of the software.
+During recent years, the software development community has established
+quite firm tools and rules for how this is done.
 
-We introduce a class ``Problem`` to hold the definition of the physical
-problem, and a class ``Solver`` to hold the data and methods needed to
-numerically solve the problem.  The forthcoming text will explain the
-inner workings of these classes and how they represent an alternative
-to the ``solver`` and ``experiment_*`` functions in the ``decay``
-module.
+Software directory tree
+-----------------------
 
-Explaining the details of class programming in Python is considered
-far beyond the scope of this text.  Readers who are unfamiliar with Python
-class programming should first consult one of the many electronic
-Python tutorials or textbooks to come up to speed with concepts and
-syntax of Python classes before reading on. The author has a gentle
-introduction to class programming for scientific applications
-in [Ref2]_, see `Chapter 7 and 9 and Appendix E <http://hplgit.github.io/primer.html/doc/web/index.html>`__.
-Other useful resources are
+We start with organizing our software as a directory tree. Our
+software consists of one module file, ``decay.py``, and potentially
+unit tests in a separate file in a directory ``tests``.
 
- * The Python Tutorial: `<http://docs.python.org/2/tutorial/classes.html>`_
+Distributing just a module file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
- * Wiki book on Python Programming: `<http://en.wikibooks.org/wiki/Python_Programming/Classes>`_
+Let us start out with the minimum solution: just the ``decay.py``
+file containing all test functions for all unit tests. The the software
+is just one file and all we need is a directory with this file.
+In addition, users will expect an installation script ``setup.py``
+and a ``README`` file telling what the software is about, email to the
+author, URL where the software can be downloaded, or other similar
+information.
 
- * ``tutorialspoint.com``: `<http://www.tutorialspoint.com/python/python_classes_objects.htm>`_
-
-The problem class
------------------
-
-.. index:: problem class
-
-The purpose of the problem class is to store all information about
-the mathematical model. This usually means the physical parameters
-and formulas
-in the problem. Looking at our model problem
-:ref:`(2.1) <Eq:softeng1:ode>`-:ref:`(2.2) <Eq:softeng1:u0>`, the physical data cover
-:math:`I`, :math:`a`, and :math:`T`. Since we have an analytical solution of
-the ODE problem, we may add this solution in terms of a Python
-function (or method) to the problem class as well.
-A possible problem class is therefore
+The ``setup.py`` file can be as short as
 
 .. code-block:: python
 
-        from numpy import exp
-        
-        class Problem(object):
-            def __init__(self, I=1, a=1, T=10):
-                self.T, self.I, self.a = I, float(a), T
-        
-            def u_exact(self, t):
-                I, a = self.I, self.a
-                return I*exp(-a*t)
+        from distutils.core import setup
+        setup(name='decay',
+              version='0.1',
+              py_modules=['decay'],
+              scripts=['decay.py'],
+              )
 
-We could in the ``u_exact`` method have written
-``self.I*exp(-self.a*t)``, but using local variables ``I`` and ``a`` allows
-the nicer formula ``I*exp(-a*t)``, which looks much closer to the mathematical
-expression :math:`Ie^{-at}`.  This is not an important issue with the
-current compact formula, but is beneficial in more complicated
-problems with longer formulas to obtain the closest possible
-relationship between code and mathematics. My coding style is to strip
-off the ``self`` prefix when the code expresses mathematical formulas.
+The ``py_modules`` argument specifies a list of modules to be installed, while
+``scripts`` specifies programs to be run. The modules are typically
+installed in some ``lib`` directory on the computer system, e.g.,
+``/usr/local/lib/python2.7/dist-packages``, while executable programs go to
+``/usr/local/bin``. To install the ``decay.py`` in these two places, a user
+just runs
 
-The class data can be set either as arguments in the constructor or
-at any time later, e.g.,
+.. code-block:: text
 
-.. code-block:: python
+        Terminal> sudo python setup.py install
 
-        problem = Problem(T=5)
-        problem.T = 8
-        problem.dt = 1.5
+A user can easily install the software on her personal account if
+a system-wide installation is not desirable. We refer to the
+`installation documentation <https://docs.python.org/2/install/index.html#alternate-installation>`__ for the many arguments that can be given to ``setup.py``.
 
-(Some programmers prefer ``set`` and ``get`` functions for setting and getting
-data in classes, often implemented via *properties* in Python, but
-I consider that overkill when we just have a few data items in a class.)
+The software package is in the case above a directory ``decay`` with three files
 
-It would be convenient if class ``Problem`` could also initialize
-the data from the command line. To this end, we add a method for
-defining a set of command-line options and a method that sets the
-local attributes equal to what was found on the command line.
-The default values associated with the command-line options are taken
-as the values provided to the constructor. Class ``Problem`` now becomes
+.. code-block:: text
 
-.. code-block:: python
+        Terminal> ls decay
+        README   decay.py   setup.py
 
-        class Problem(object):
-            def __init__(self, I=1, a=1, T=10):
-                self.T, self.I, self.a = I, float(a), T
-        
-            def define_command_line_options(self, parser=None):
-                """Return updated (parser) or new ArgumentParser object."""
-                if parser is None:
-                    import argparse
-                    parser = argparse.ArgumentParser()
-        
-                parser.add_argument(
-                    '--I', '--initial_condition', type=float,
-                    default=1.0, help='initial condition, u(0)',
-                    metavar='I')
-                parser.add_argument(
-                    '--a', type=float, default=1.0,
-                    help='coefficient in ODE', metavar='a')
-                parser.add_argument(
-                    '--T', '--stop_time', type=float,
-                    default=1.0, help='end time of simulation',
-                    metavar='T')
-                return parser
-        
-            def init_from_command_line(self, args):
-                """Load attributes from ArgumentParser into instance."""
-                self.I, self.a, self.T = args.I, args.a, args.T
-        
-            def u_exact(self, t):
-                """Return the exact solution u(t)=I*exp(-a*t)."""
-                I, a = self.I, self.a
-                return I*exp(-a*t)
+Distributing a package
+~~~~~~~~~~~~~~~~~~~~~~
 
-Observe that if the user already has an ``ArgumentParser`` object it can be
-supplied, but if she does not have any, class ``Problem`` makes one.
-Python's ``None`` object is used to indicate that a variable is not
-initialized with a proper value.
+If the software consists of more files than one or two modules, one
+should make a Python *package* out of it. In our case we make a
+package ``decay`` containing one module, also called ``decay``.
+A typical import for a user is then
 
-The solver class
-----------------
+.. code-block:: text
 
-.. index:: solver class
+        import decay
+        u, t = decay.decay.solver(...)
 
-.. index:: wrapper (code)
+To make a package ``decay``, create a directory ``decay`` and an empty
+file in it with name ``__init__.py``.
 
-The solver class stores parameters related to the numerical solution method
-and provides a function ``solve`` for solving the problem.
-For convenience, a problem object is given to the constructor
-such a solver object such that the latter also get access to
-physical data. In the present example,
-the numerical solution method involves the parameters :math:`\Delta t`
-and :math:`\theta`, which then constitute the data part of the solver class.
-We include, as in the problem class, functionality for
-reading :math:`\Delta t` and :math:`\theta` from the command line:
+
+.. admonition:: Package import in ``__init__.py``
+
+   One can ease the use of the package by providing a somewhat simpler
+   import like
+   
+   .. code-block:: text
+   
+           import decay
+           u, t = decay.solver(...)
+           
+           # or
+           from decay import solver
+           u, t = solver(...)
+   
+   This is accomplished by putting an import statement in the ``__init__.py``
+   file, which is always run when doing the package import ``import decay``
+   or ``from decay import``. The ``__init__.py`` file reads
+   
+   .. code-block:: python
+   
+           from decay import *
+
+
+
+
+A ``setup.py`` script must now specify the directory name of the package
+and also an executable program (``scripts=``)
+in case we want to run ``decay.py`` as a stand-alone application:
 
 .. code-block:: python
 
-        class Solver(object):
-            def __init__(self, problem, dt=0.1, theta=0.5):
-                self.problem = problem
-                self.dt, self.theta = float(dt), theta
+        from distutils.core import setup
+        import os
         
-            def define_command_line_options(self, parser):
-                """Return updated (parser) or new ArgumentParser object."""
-                parser.add_argument(
-                    '--scheme', type=str, default='CN',
-                    help='FE, BE, or CN')
-                parser.add_argument(
-                    '--dt', '--time_step_values', type=float,
-                    default=[1.0], help='time step values',
-                    metavar='dt', nargs='+', dest='dt_values')
-                return parser
+        setup(name='decay',
+              version='0.1',
+              author='Hans Petter Langtangen',
+              author_email='hpl@simula.no',
+              url='https://github.com/hplgit/decay-package/',
+              packages=['decay'],
+              scripts=[os.path.join('decay', 'decay.py')]
+             )
+
+We have also added some author and download information.
+The reader is referred to the `Distutils documentation <https://docs.python.org/2/distutils/setupscript.html>`__ for more information on how to
+write ``setup.py`` scripts.
+
+
+.. admonition:: Remark about the executable file
+
+   The executable program, ``decay.py``, is above taken to be the complete module
+   file ``decay.py``. It would normally be preferred to instead write a very
+   short script essentially importing ``decay`` and
+   running the test block in ``decay.py``.
+   In this way, we distribute a module and a very short file, say ``decay-main.py``,
+   as executable program:
+   
+   .. code-block:: python
+   
+           import decay
+           decay.experiment_compare_dt(True)
+           decay.plt.show()
+   
+   (This import assumes an ``__init__.py`` file with ``from decay import *``.)
+
+
+
+
+In this package example, we move the unit tests out of the ``decay.py``
+module to a separate file, ``test_decay.py``, and place this file in a
+directory ``tests``. Then the ``nosetests`` and ``py.test`` programs will
+automatically find and execute the tests.
+
+The complete directory structure reads
+
+.. code-block:: text
+
+        Terminal> /bin/ls -R
+        .:
+        decay  README  setup.py
         
-            def init_from_command_line(self, args):
-                """Load attributes from ArgumentParser into instance."""
-                self.dt, self.theta = args.dt, args.theta
+        ./decay:
+        decay.py  __init__.py  tests
         
-            def solve(self):
-                self.u, self.t = solver(
-                    self.problem.I, self.problem.a, self.problem.T,
-                    self.dt, self.theta)
-        
-            def error(self):
-                """Return norm of error at the mesh points."""
-                u_e = self.problem.u_exact(self.t)
-                e = u_e - self.u
-                E = np.sqrt(self.dt*np.sum(e**2))
-                return E
+        ./decay/tests:
+        test_decay.py
 
-Note that we see no need to repeat the body of the previously
-developed and tested ``solver`` function. We just call that function from
-the ``solve`` method.  In this way, class ``Solver`` is merely a class wrapper
-of the stand-alone ``solver`` function. With a single object of class ``Solver``
-we have all the physical and numerical data bundled together with the numerical
-solution method.
+Publishing the software at GitHub
+---------------------------------
 
-Combining the objects
-~~~~~~~~~~~~~~~~~~~~~
+The leading site today for publishing open source software projects is
+GitHub at `<http://github.com>`_, provided you want your software to
+be open to the world. With a paid GitHub account, you can have private
+projects too.
 
-Eventually we need to show how the classes ``Problem`` and ``Solver``
-play together. We read parameters from the command line and make a
-plot with the numerical and exact solution:
+Sign up for a GitHub account if you do not already have one.
+Go to your account settings and provide an SSH key (typically
+the file ``~/.ssh/id_rsa.pub``) such that
+you can communicate with GitHub without being prompted for your password.
+All communication between your computer and GitHub goes via the version
+control system Git. This may at first sight look tedious, but
+this is the way professionals work with software today. With Git you
+have full control of the history of your files, "who did what when",
+and this technology is superior to simpler ones like Dropbox and Google Drive,
+especially when you collaborate with others.
+There is a reason why Git has been the standard of working with files,
+and there is no reason why you should not adopt this tool.
 
-.. code-block:: python
+To create a new project, click on *New repository* on the main page and
+fill out a project name. Click on the check button *Initialize this
+repository with a README*, and click on *Create repository*. The next
+step is to clone (copy) the GitHub repo (short for repository) to
+your own computer(s) and fill it with files. The typical clone command is
 
-        def experiment_classes():
-            problem = Problem()
-            solver = Solver(problem)
-        
-            # Read input from the command line
-            parser = problem.define_command_line_options()
-            parser = solver. define_command_line_options(parser)
-            args = parser.parse_args()
-            problem.init_from_command_line(args)
-            solver. init_from_command_line(args)
-        
-            # Solve and plot
-            solver.solve()
-            import matplotlib.pyplot as plt
-            t_e = np.linspace(0, T, 1001)    # very fine mesh for u_e
-            u_e = problem.u_exact(t_e)
-            print 'Error:', solver.error()
-        
-            plt.plot(t,   u,   'r--o')       # dashed red line with circles
-            plt.plot(t_e, u_e, 'b-')         # blue line for u_e
-            plt.legend(['numerical, theta=%g' % theta, 'exact'])
-            plt.xlabel('t')
-            plt.ylabel('u')
-            plotfile = 'tmp'
-            plt.savefig(plotfile + '.png');  plt.savefig(plotfile + '.pdf')
-            plt.show()
+.. code-block:: text
 
-.. _softeng1:prog:se:class2:
+        Terminal> git clone git://github.com:username/projname.git
 
-Improving the problem and solver classes
-----------------------------------------
+where ``username`` is your GitHub username and ``projname`` is the
+name of the repo (project). The result of ``git clone`` is a
+directory ``projname``. Go to this directory and add files.
+As soon as the repo directory is populated with files, run
 
-The previous ``Problem`` and ``Solver`` classes containing parameters
-soon get much repetitive code when the number of parameters increases.
-Much of this code can be parameterized and be made more compact.
-For this purpose, we decide to collect all parameters in a dictionary,
-``self.prm``, with two associated dictionaries ``self.type`` and
-``self.help`` for holding associated object types and help strings.
-The reason is that processing dictionaries is easier than processing
-a set of individual attributes.
-For the specific ODE example we deal with, the three dictionaries in
-the problem class are typically
+.. code-block:: text
 
-.. code-block:: python
+        Terminal> git add .
+        Terminal> git commit -am 'First registration of project files'
+        Terminal> git push origin master
 
-        self.prm  = dict(I=1, a=1, T=10)
-        self.type = dict(I=float, a=float, T=float)
-        self.help = dict(I='initial condition, u(0)',
-                         a='coefficient in ODE',
-                         T='end time of simulation')
+The above ``git`` commands look cryptic, but these commands plus
+2-3 more are the essence of what you need in your daily work with
+files in small or big
+software projects. I strongly encourage you to
+learn more about `version control systems and project hosting
+sites <http://hplgit.github.io/teamods/bitgit/html/>`__
+[Ref1]_.
 
-Provided a problem or solver class defines these three
-dictionaries in the constructor,
-we can create a super class ``Parameters`` with general code
-for defining command-line options and reading them as well as
-methods for setting and getting each parameter. A ``Problem`` or ``Solver`` for
-a particular mathematical problem can then
-inherit most of the needed functionality and code
-from the ``Parameters`` class. For example,
+Your project files are now stored in the cloud at
+`<https://github.com/username/projname>`_. Anyone can
+get the software by the listed ``git clone`` command you used above,
+or by clicking on the links for zip and tar files.
 
-.. code-block:: python
+Every time you update the project files, you need to register
+the update at GitHub by
 
-        class Problem(Parameters):
-            def __init__(self):
-                self.prm  = dict(I=1, a=1, T=10)
-                self.type = dict(I=float, a=float, T=float)
-                self.help = dict(I='initial condition, u(0)',
-                                 a='coefficient in ODE',
-                                 T='end time of simulation')
-        
-            def u_exact(self, t):
-                I, a = self['I a'.split()]
-                return I*np.exp(-a*t)
-        
-        class Solver(Parameters):
-            def __init__(self, problem):
-                self.problem = problem   # class Problem object
-                self.prm  = dict(dt=0.5, theta=0.5)
-                self.type = dict(dt=float, theta=float)
-                self.help = dict(dt='time step value',
-                                 theta='time discretization parameter')
-        
-            def solve(self):
-                from decay import solver
-                I, a, T = self.problem['I a T'.split()]
-                dt, theta = self['dt theta'.split()]
-                self.u, self.t = solver(I, a, T, dt, theta)
+.. code-block:: text
 
-By inheritance, these classes can automatically do a lot more when it comes to
-reading and assigning parameter values:
+        Terminal> git commit -am 'Description of the changes you made...'
+        Terminal> git push origin master
 
-.. code-block:: python
+The files at GitHub are now synchronized with your local ones.
+Similarly, every time you start working on files in this project,
+make sure you have the latest version:
+``git pull origin master``.
 
-        problem = Problem()
-        solver = Solver(problem)
-        
-        # Read input from the command line
-        parser = problem.define_command_line_options()
-        parser = solver. define_command_line_options(parser)
-        args = parser.parse_args()
-        problem.init_from_command_line(args)
-        solver. init_from_command_line(args)
-        
-        # Other syntax for setting/getting parameter values
-        problem['T'] = 6
-        print 'Time step:', solver['dt']
-        
-        solver.solve()
-        u, t = solver.u, solver.t
-
-A generic class for parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-A simplified version of the parameter class looks as follows:
-
-.. code-block:: python
-
-        class Parameters(object):
-            def __getitem__(self, name):
-                """obj[name] syntax for getting parameters."""
-                if isinstance(name, (list,tuple)):         # get many?
-                    return [self.prm[n] for n in name]
-                else:
-                    return self.prm[name]
-        
-            def __setitem__(self, name, value):
-                """obj[name] = value syntax for setting a parameter."""
-                self.prm[name] = value
-        
-            def define_command_line_options(self, parser=None):
-                """Automatic registering of options."""
-                if parser is None:
-                    import argparse
-                    parser = argparse.ArgumentParser()
-        
-                for name in self.prm:
-                    tp = self.type[name] if name in self.type else str
-                    help = self.help[name] if name in self.help else None
-                    parser.add_argument(
-                        '--' + name, default=self.get(name), metavar=name,
-                        type=tp, help=help)
-        
-                return parser
-        
-            def init_from_command_line(self, args):
-                for name in self.prm:
-                    self.prm[name] = getattr(args, name)
-
-The file `decay_oo.py <http://tinyurl.com/nm5587k/softeng1/decay_oo.py>`__ contains
-a slightly more advanced version of class ``Parameters`` where we
-in the functions for getting and setting parameters
-test for valid parameter names and
-raise exceptions with informative messages if any name is not registered.
-
-We have already sketched the ``Problem`` and ``Solver`` classes that build
-on inheritance from ``Parameters``. We have also shown how they are
-used. The only remaining code is to make the plot, but this code is
-identical to previous versions when the numerical solution is
-available in an object ``t`` and the exact one in ``u_e``.
-
-The advantage with the ``Parameters`` class is that it scales to problems
-with a large number of physical and numerical parameters:
-as long as the parameters are defined once via a dictionary,
-the compact code in class ``Parameters`` can handle any collection of
-parameters of any size.
+You are recommended to read `a quick intro <http://hplgit.github.io/teamods/bitgit/html/>`__ that makes you
+up and going with this style of
+professional work. And you should put all your writings and programming
+projects in repositories in the cloud!
 

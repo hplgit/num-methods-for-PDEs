@@ -1,0 +1,515 @@
+.. !split
+
+.. _fem:deq:1D:varform:ex:
+
+Examples on variational formulations
+====================================
+
+The following sections derive variational formulations for some
+prototype differential equations in 1D, and demonstrate how we with
+ease can handle variable coefficients, mixed Dirichlet and Neumann
+boundary conditions, first-order derivatives, and nonlinearities.
+
+Variable coefficient
+--------------------
+
+Consider the problem
+
+.. math::
+        
+        -\frac{d}{dx}\left( {\alpha}(x)\frac{du}{dx}\right) = f(x),\quad x\in\Omega =[0,L],\ 
+        u(0)=C,\ u(L)=D{\thinspace .}
+        
+
+There are two new features of this problem compared with
+previous examples: a variable
+coefficient :math:`a(x)` and nonzero Dirichlet conditions at both boundary points.
+
+Let us first deal with the boundary conditions. We seek
+
+.. math::
+         u(x) = B(x) + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_i(x),
+
+with :math:`{\psi}_i(0)={\psi}_i(L)=0` for :math:`i\in{\mathcal{I}_s}`. The function :math:`B(x)`
+must then fulfill :math:`B(0)=C` and :math:`B(L)=D`. How :math:`B` varies in between
+:math:`x=0` and :math:`x=L` is not of importance. One possible choice is
+
+.. math::
+         B(x) = C + \frac{1}{L}(D-C)x,
+
+which follows from :ref:`(3.24) <Eq:fem:deq:1D:essBC:Bfunc:gen>` with :math:`p=1`.
+
+We seek :math:`(u-B)\in V`. As usual,
+
+.. math::
+         V = \hbox{span}\{{\psi}_0,\ldots,{\psi}_N\},
+
+but the two Dirichlet boundary conditions demand that
+
+.. math::
+         {\psi}_i(0)={\psi}_i(L)=0, \quad i\in{\mathcal{I}_s}{\thinspace .}
+
+Note that any :math:`v\in V` has the property :math:`v(0)=v(L)=0`.
+
+The residual arises by inserting our :math:`u` in the differential equation:
+
+.. math::
+         R = -\frac{d}{dx}\left( {\alpha}\frac{du}{dx}\right) -f{\thinspace .} 
+
+Galerkin's method is
+
+.. math::
+        
+        (R, v) = 0,\quad \forall v\in V,
+        
+
+or written with explicit integrals,
+
+.. math::
+        
+        \int_{\Omega} \left(-\frac{d}{dx}\left( {\alpha}\frac{du}{dx}\right) -f\right)v {\, \mathrm{d}x} = 0,\quad \forall v\in V {\thinspace .}
+        
+
+We proceed with integration by parts to lower the derivative from
+second to first order:
+
+.. math::
+         -\int_{\Omega} \frac{d}{dx}\left( {\alpha}(x)\frac{du}{dx}\right) v {\, \mathrm{d}x}
+        = \int_{\Omega} {\alpha}(x)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} -
+        \left[{\alpha}\frac{du}{dx}v\right]_0^L
+        {\thinspace .}
+        
+
+The boundary term vanishes since :math:`v(0)=v(L)=0`.
+The variational formulation is then
+
+.. math::
+        
+        \int_{\Omega} {\alpha}(x)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} = \int_{\Omega} f(x)v{\, \mathrm{d}x},\quad
+        \forall v\in V{\thinspace .}
+        
+
+The variational formulation can alternatively be written in a more
+compact form:
+
+.. math::
+        
+        ({\alpha} u',v') = (f,v),\quad \forall v\in V
+        {\thinspace .}
+        
+
+The corresponding abstract notation reads
+
+.. math::
+         a(u,v)=L(v)\quad\forall v\in V,
+
+with
+
+.. math::
+         a(u,v)= ({\alpha} u',v'),\quad L(v)=(f,v) {\thinspace .}  
+
+Note that the :math:`a` in the notation :math:`a(\cdot,\cdot)` is not to be mixed with the
+variable coefficient :math:`a(x)` in the differential equation.
+
+We may insert :math:`u=B + \sum_jc_j{\psi}_j` and :math:`v={\psi}_i` to
+derive the linear system:
+
+.. math::
+        
+        ({\alpha} B' + {\alpha} \sum_{j\in{\mathcal{I}_s}} c_j {\psi}_j', {\psi}_i') =
+        (f,{\psi}_i), \quad i\in{\mathcal{I}_s} {\thinspace .}
+        
+
+Isolating everything with the :math:`c_j` coefficients on the left-hand side
+and all known terms on the right-hand side
+gives
+
+.. math::
+         \sum_{j\in{\mathcal{I}_s}} ({\alpha}{\psi}_j', {\psi}_i')c_j  =
+        (f,{\psi}_i) + (a(D-C)L^{-1}, {\psi}_i'), \quad i\in{\mathcal{I}_s}
+        {\thinspace .}
+        
+
+This is nothing but a linear system :math:`\sum_j A_{i,j}c_j=b_i`
+with
+
+.. math::
+        
+        A_{i,j} &= (a{\psi}_j', {\psi}_i') = \int_{\Omega} {\alpha}(x){\psi}_j'(x),
+        {\psi}_i'(x){\, \mathrm{d}x},\\ 
+        b_i &= (f,{\psi}_i) + (a(D-C)L^{-1},{\psi}_i')=
+        \int_{\Omega} \left(f(x){\psi}_i(x) + {\alpha}(x)\frac{D-C}{L}{\psi}_i'(x)\right) {\, \mathrm{d}x}
+        {\thinspace .}
+        
+
+First-order derivative in the equation and boundary condition
+-------------------------------------------------------------
+
+The next problem to formulate in variational form reads
+
+.. math::
+        
+        -u''(x) + bu'(x) = f(x),\quad x\in\Omega =[0,L],\ 
+        u(0)=C,\ u'(L)=E{\thinspace .}
+        
+
+The new features are a first-order derivative :math:`u'` in the equation
+and the boundary
+condition involving the derivative: :math:`u'(L)=E`.
+Since we have a Dirichlet condition at :math:`x=0`,
+we must force :math:`{\psi}_i(0)=0` and use a boundary function
+to take care of the condition :math:`u(0)=C`.
+Because there is no Dirichlet
+condition on :math:`x=L` we do not make any requirements to :math:`{\psi}_i(L)`.
+The simplest possible choice of :math:`B(x)` is :math:`B(x)=C`.
+
+The expansion for :math:`u` becomes
+
+.. math::
+         u = C + \sum_{j\in{\mathcal{I}_s}} c_j {\psi}_i(x)
+        {\thinspace .}
+        
+
+The variational formulation arises from multiplying the equation by
+a test function :math:`v\in V` and integrating over :math:`\Omega`:
+
+.. math::
+          (-u'' + bu' - f, v) = 0,\quad\forall v\in V
+
+We apply integration by parts to the :math:`u''v` term only. Although we could
+also integrate :math:`u' v` by parts, this is not common.
+The result becomes
+
+.. math::
+         (u',v') + (bu',v) = (f,v) + [u' v]_0^L, \quad\forall v\in V {\thinspace .} 
+
+Now, :math:`v(0)=0` so
+
+.. math::
+         [u' v]_0^L = u'(L)v(L) = E v(L),
+
+because :math:`u'(L)=E`.
+Integration by parts allows us to take care of the Neumann condition
+in the boundary term.
+
+.. index:: natural boundary condition
+
+.. index:: essential boundary condition
+
+
+.. admonition:: Natural and essential boundary conditions
+
+   Omitting a boundary term like :math:`[u'v]_0^L`
+   implies that we actually impose the condition :math:`u'=0` unless there
+   is a Dirichlet condition (i.e., :math:`v=0`) at that point! This result has great
+   practical consequences, because it is easy to forget the boundary
+   term, and this mistake may implicitly
+   set a boundary condition! Since
+   homogeneous Neumann conditions can be incorporated
+   without doing anything, and non-homogeneous Neumann conditions can
+   just be inserted in the boundary term,
+   such conditions are known as *natural boundary conditions*.
+   Dirichlet conditions requires more essential steps in the mathematical
+   formulation, such as forcing all :math:`{\varphi}_i=0` on the boundary
+   and constructing a :math:`B(x)`, and are
+   therefore known as *essential boundary conditions*.
+
+
+
+
+The final variational form reads
+
+.. math::
+         (u',v') + (bu',v) = (f,v) + E v(L), \quad\forall v\in V {\thinspace .} 
+
+In the abstract notation we have
+
+.. math::
+         a(u,v)=L(v)\quad\forall v\in V,
+
+with the particular formulas
+
+.. math::
+         a(u,v)=(u',v') + (bu',v),\quad L(v)= (f,v) + E v(L){\thinspace .} 
+
+The associated linear system is derived by inserting :math:`u=B+\sum_jc_j{\psi}_j`
+and replacing :math:`v` by :math:`{\psi}_i` for :math:`i\in{\mathcal{I}_s}`. Some algebra results in
+
+.. math::
+         \sum_{j\in{\mathcal{I}_s}} \underbrace{(({\psi}_j',{\psi}_i') + (b{\psi}_j',{\psi}_i))}_{A_{i,j}} c_j = \underbrace{(f,{\psi}_i) + E {\psi}_i(L)}_{b_i}
+        {\thinspace .}
+        
+
+Observe that in this problem, the coefficient matrix is not symmetric,
+because of the term
+
+.. math::
+        
+        (b{\psi}_j',{\psi}_i)=\int_{\Omega} b{\psi}_j'{\psi}_i {\, \mathrm{d}x}
+         \neq \int_{\Omega} b {\psi}_i' {\psi}_j {\, \mathrm{d}x} = ({\psi}_i',b{\psi}_j)
+        {\thinspace .}
+        
+
+.. Too early:
+
+.. For finite element basis functions, it is worth noticing that the boundary term
+
+.. :math:`E{\psi}_i(L)` is nonzero only in the entry :math:`b_N` since all
+
+.. :math:`{\psi}_i`, :math:`i\neq N`, are zero at :math:`x=L`, provided the degrees of freedom
+
+.. are numbered from left to right in 1D so that :math:`x_{N}=L`.
+
+Nonlinear coefficient
+---------------------
+
+Finally, we show that the techniques used above to derive variational
+forms also apply to nonlinear differential equation
+problems as well. Here is a model problem with
+a nonlinear coefficient and right-hand side:
+
+.. math::
+        
+        -({\alpha}(u)u')' = f(u),\quad x\in [0,L],\ u(0)=0,\ u'(L)=E
+        {\thinspace .}
+        
+
+Our space :math:`V` has basis :math:`\left\{ {{\psi}}_i \right\}_{i\in{\mathcal{I}_s}}`, and because of the
+condition :math:`u(0)=0`, we must require :math:`{\psi}_i(0)=0`, :math:`i\in{\mathcal{I}_s}`.
+
+Galerkin's method is about inserting the approximate
+:math:`u`, multiplying the differential equation by :math:`v\in V`, and integrate,
+
+.. math::
+         -\int_0^L \frac{d}{dx}\left({\alpha}(u)\frac{du}{dx}\right)v {\, \mathrm{d}x} =
+        \int_0^L f(u)v {\, \mathrm{d}x}\quad\forall v\in V
+        {\thinspace .}
+        
+
+The integration by parts does not differ from the case where we have
+:math:`{\alpha}(x)` instead of :math:`{\alpha}(u)`:
+
+.. math::
+         \int_0^L {\alpha}(u)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} =
+        \int_0^L f(u)v{\, \mathrm{d}x} + [{\alpha}(u)vu']_0^L\quad\forall v\in V
+        {\thinspace .}
+        
+
+The term :math:`{\alpha}(u(0))v(0)u'(0)=0` since :math:`v(0)`.
+The other term, :math:`{\alpha}(u(L))v(L)u'(L)`,
+is used to impose the other boundary condition :math:`u'(L)=E`, resulting in
+
+.. math::
+         \int_0^L {\alpha}(u)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} =
+        \int_0^L f(u)v{\, \mathrm{d}x} + {\alpha}(u(L))v(L)E\quad\forall v\in V,
+        
+
+or alternatively written more compactly as
+
+.. math::
+         ({\alpha}(u)u', v') = (f(u),v) + {\alpha}(u(L))v(L)E\quad\forall v\in V
+        {\thinspace .}
+        
+
+Since the problem is nonlinear, we cannot identify a bilinear
+form :math:`a(u,v)` and a linear form :math:`L(v)`.
+An abstract notation is typically *find :math:`u` such that*
+
+.. math::
+         F(u;v) = 0\quad\forall v\in V,
+
+with
+
+.. math::
+         F(u;v) = (a(u)u', v') - (f(u),v) - a(L)v(L)E
+        {\thinspace .}
+        
+
+By inserting :math:`u=\sum_j c_j{\psi}_j` we get a *nonlinear system of
+algebraic equations* for the unknowns :math:`c_i`, :math:`i\in{\mathcal{I}_s}`. Such systems must
+be solved by constructing a sequence of linear systems whose solutions
+hopefully converge to the solution of the nonlinear system. Frequently applied
+methods are Picard iteration and Newton's method.
+
+.. _fem:deq:1D:varform:ex:DN:case:
+
+Computing with Dirichlet and Neumann conditions
+-----------------------------------------------
+
+.. ex_varform1D.py: case2
+
+Let us perform the necessary calculations to solve
+
+.. math::
+        
+        -u''(x)=2,\quad x\in \Omega=[0,1],\quad u'(0)=C,\ u(1)=D,
+        
+
+using a global polynomial basis :math:`{\psi}_i\sim x^i`.
+The requirements on :math:`{\psi}_i` is that :math:`{\psi}_i(1)=0`, because :math:`u` is
+specified at :math:`x=1`, so a proper set of polynomial basis functions can be
+
+.. math::
+         {\psi}_i(x)=(1-x)^{i+1}, \quad i\in{\mathcal{I}_s}{\thinspace .}
+
+A suitable :math:`B(x)` function
+to handle the boundary condition :math:`u(1)=D` is :math:`B(x)=Dx`.
+The variational formulation becomes
+
+.. math::
+         (u',v') = (2,v) - Cv(0)\quad\forall v\in V{\thinspace .} 
+
+From inserting :math:`u=B + \sum_{j}c_j{\psi}_j` and choosing :math:`v={\psi}_i` we get
+
+.. math::
+         \sum_{j\in{\mathcal{I}_s}} ({\psi}_j',{\psi}_i')c_j = (2,{\psi}_i)
+        - (B',{\psi}_i') - C{\psi}_i(0),\quad i\in{\mathcal{I}_s}{\thinspace .}
+
+The entries in the linear system are then
+
+.. math::
+        
+        A_{i,j} &= ({\psi}_j',{\psi}_i') = \int_{0}^1 {\psi}_i'(x){\psi}_j'(x){\, \mathrm{d}x}
+        = \int_0^1 (i+1)(j+1)(1-x)^{i+j}{\, \mathrm{d}x} = \frac{(i+1)(j+1)}{i + j + 1},\\ 
+        b_i &= (2,{\psi}_i) - (D,{\psi}_i') -C{\psi}_i(0)\\ 
+        &= \int_0^1\left( 2{\psi}_i(x) - D{\psi}_i'(x)\right){\, \mathrm{d}x} -C{\psi}_i(0)\\ 
+        &= \int_0^1 \left( 2(1-x)^{i+1} - D(i+1)(1-x)^i\right){\, \mathrm{d}x}  -C\\ 
+        &= \frac{(D-C)(i+2) + 2}{i+2} = D - C + \frac{2}{i+2}
+        {\thinspace .}
+        
+
+Relevant ``sympy`` commands to help calculate these expressions are
+
+.. code-block:: python
+
+        from sympy import *
+        x, C, D = symbols('x C D')
+        i, j = symbols('i j', integer=True, positive=True)
+        psi_i = (1-x)**(i+1)
+        psi_j = psi_i.subs(i, j)
+        integrand = diff(psi_i, x)*diff(psi_j, x)
+        integrand = simplify(integrand)
+        A_ij = integrate(integrand, (x, 0, 1))
+        A_ij = simplify(A_ij)
+        print 'A_ij:', A_ij
+        f = 2
+        b_i = integrate(f*psi_i, (x, 0, 1)) - \ 
+              integrate(diff(D*x, x)*diff(psi_i, x), (x, 0, 1)) - \ 
+              C*psi_i.subs(x, 0)
+        b_i = simplify(b_i)
+        print 'b_i:', b_i
+
+The output becomes
+
+.. code-block:: text
+
+        A_ij: (i + 1)*(j + 1)/(i + j + 1)
+        b_i: ((-C + D)*(i + 2) + 2)/(i + 2)
+
+We can now choose some :math:`N` and form the linear system, say for :math:`N=1`:
+
+.. code-block:: python
+
+        N = 1
+        A = zeros((N+1, N+1))
+        b = zeros(N+1)
+        print 'fresh b:', b
+        for r in range(N+1):
+            for s in range(N+1):
+                A[r,s] = A_ij.subs(i, r).subs(j, s)
+            b[r,0] = b_i.subs(i, r)
+
+The system becomes
+
+.. math::
+        
+        \left(\begin{array}{cc}
+        1 & 1\\ 
+        1 & 4/3
+        \end{array}\right)
+        \left(\begin{array}{c}
+        c_0\\ 
+        c_1
+        \end{array}\right)
+        =
+        \left(\begin{array}{c}
+        1-C+D\\ 
+        2/3 -C + D
+        \end{array}\right)
+        
+
+The solution (``c = A.LUsolve(b)``)
+becomes :math:`c_0=2 -C+D` and :math:`c_1=-1`, resulting in
+
+.. math::
+        
+        u(x) = 1 -x^2 + D + C(x-1),
+        
+
+We can form this :math:`u` in ``sympy`` and check that the differential equation
+and the boundary conditions are satisfied:
+
+.. code-block:: python
+
+        u = sum(c[r,0]*psi_i.subs(i, r) for r in range(N+1)) + D*x
+        print 'u:', simplify(u)
+        print "u'':", simplify(diff(u, x, x))
+        print 'BC x=0:', simplify(diff(u, x).subs(x, 0))
+        print 'BC x=1:', simplify(u.subs(x, 1))
+
+The output becomes
+
+.. code-block:: text
+
+        u: C*x - C + D - x**2 + 1
+        u'': -2
+        BC x=0: C
+        BC x=1: D
+
+The complete ``sympy`` code is found in `u_xx_2_CD.py <http://tinyurl.com/nm5587k/fem/u_xx_2_CD.py>`__.
+
+The exact solution is found by integrating twice and applying the
+boundary conditions, either by hand or using ``sympy`` as shown in
+the section :ref:`fem:deq:1D:models:simple`.  It appears that the numerical
+solution coincides with the exact one.  This result is to be expected
+because if :math:`({u_{\small\mbox{e}}} - B)\in V`, :math:`u = {u_{\small\mbox{e}}}`, as proved next.
+
+When the numerical method is exact
+----------------------------------
+
+We have some variational formulation: find :math:`(u-B)\in V` such that
+:math:`a(u,v)=L(u)\ \forall V`. The exact solution also fulfills
+:math:`a({u_{\small\mbox{e}}},v)=L(v)`, but normally :math:`({u_{\small\mbox{e}}} -B)` lies in a much larger
+(infinite-dimensional) space. Suppose, nevertheless, that
+:math:`{u_{\small\mbox{e}}} - B = E`, where :math:`E\in V`. That is, apart from Dirichlet conditions,
+:math:`{u_{\small\mbox{e}}}` lies in our finite-dimensional space :math:`V` we use to compute :math:`u`.
+Writing also :math:`u` on the same form :math:`u=B+F`, :math:`F\in V`, we have
+
+.. math::
+        
+        a(B+E,v) &= L(v)\quad\forall v\in V,\\ 
+        a(B+F,v) &= L(v)\quad\forall v\in V{\thinspace .}
+        
+
+Since these are two variational statements in the same space, we
+can subtract them and use the bilinear property of :math:`a(\cdot,\cdot)`:
+
+.. math::
+        
+        a(B+E,v) - a(B+F, v) &= L(v) - L(v)\\ 
+        a(B+E-(B+F),v) &= 0\\ 
+        a(E-F),v) &= 0
+        
+
+If :math:`a(E-F),v) = 0` for all :math:`v` in :math:`V`, then :math:`E-F` must be zero everywhere
+in the domain, i.e., :math:`E=F`. Or in other words: :math:`u={u_{\small\mbox{e}}}`. This proves
+that the exact solution is recovered if :math:`{u_{\small\mbox{e}}} - B` lies in :math:`V`., i.e.,
+can expressed as :math:`\sum_{j\in{\mathcal{I}_s}}d_j{\psi}_j` if :math:`\{{\psi}_j\}_{j\in{\mathcal{I}_s}}`
+is a basis for :math:`V`. The method will then compute the solution :math:`c_j=d_j`,
+:math:`j\in{\mathcal{I}_s}`.
+
+The case treated in the section :ref:`fem:deq:1D:varform:ex:DN:case`
+is of the type where :math:`{u_{\small\mbox{e}}} - B` is a quadratic function that is 0
+at :math:`x=1`, and therefore :math:`({u_{\small\mbox{e}}} -B)\in V`, and the method
+finds the exact solution.
+

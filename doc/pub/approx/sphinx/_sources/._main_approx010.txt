@@ -1,0 +1,388 @@
+.. !split
+
+Finite elements in 2D and 3D
+============================
+
+Finite element approximation is particularly powerful in 2D and 3D because
+the method can handle a geometrically complex domain :math:`\Omega` with ease.
+The principal idea is, as in 1D, to divide the domain into cells
+and use polynomials for approximating a function over a cell.
+Two popular cell shapes are triangles and the quadrilaterals.
+Figures :ref:`fem:approx:fe:2D:fig:rectP1`, :ref:`fem:approx:fe:2D:fig:circP1`,
+and :ref:`fem:approx:fe:2D:fig:rectQ1` provide examples. P1 elements
+means linear functions (:math:`a_0 + a_1x + a_2y`) over triangles, while Q1 elements
+have bilinear functions (:math:`a_0 + a_1x + a_2y + a_3xy`) over rectangular cells.
+Higher-order elements can easily be defined.
+
+.. _fem:approx:fe:2D:fig:rectP1:
+
+.. figure:: mesh2D_rect_P1.png
+   :width: 800
+
+   *Examples on 2D P1 elements*
+
+.. _fem:approx:fe:2D:fig:circP1:
+
+.. figure:: mesh2D_quarter_circle.png
+   :width: 400
+
+   *Examples on 2D P1 elements in a deformed geometry*
+
+.. _fem:approx:fe:2D:fig:rectQ1:
+
+.. figure:: mesh2D_rect_Q1.png
+   :width: 400
+
+   *Examples on 2D Q1 elements*
+
+Basis functions over triangles in the physical domain
+-----------------------------------------------------
+
+Cells with triangular shape will be in main focus here.  With the P1
+triangular element, :math:`u` is a linear function over each cell, as
+depicted in Figure :ref:`fem:approx:fe:2D:fig:femfunc`, with
+discontinuous derivatives at the cell boundaries.
+
+.. _fem:approx:fe:2D:fig:femfunc:
+
+.. figure:: demo2D_4x3r.png
+   :width: 400
+
+   *Example on piecewise linear 2D functions defined on triangles*
+
+We give the vertices of the cells global and local numbers as in 1D.
+The degrees of freedom in the P1 element are the function values at
+a set of nodes, which are the three vertices.
+The basis function :math:`{\varphi}_i(x,y)` is then 1 at the vertex with global vertex
+number :math:`i` and zero at all other vertices.
+On an element, the three degrees of freedom uniquely determine
+the linear basis functions in that element, as usual.
+The global
+:math:`{\varphi}_i(x,y)` function is then a combination of the linear functions
+(planar surfaces)
+over all the neighboring cells
+that have vertex number :math:`i` in common. Figure :ref:`fem:approx:fe:2D:fig:basphi`
+tries to illustrate the shape of such a "pyramid"-like function.
+
+.. _fem:approx:fe:2D:fig:basphi:
+
+.. figure:: demo2D_basisfunc.png
+   :width: 400
+
+   *Example on a piecewise linear 2D basis function over a patch of triangles*
+
+Element matrices and vectors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+As in 1D, we split the integral over :math:`\Omega` into a sum of integrals
+over cells. Also as in 1D, :math:`{\varphi}_i` overlaps :math:`{\varphi}_j`
+(i.e., :math:`{\varphi}_i{\varphi}_j\neq 0`) if and only if
+:math:`i` and :math:`j` are vertices in the same cell. Therefore, the integral
+of :math:`{\varphi}_i{\varphi}_j` over an element is nonzero only when :math:`i` and :math:`j`
+run over the vertex numbers in the element. These nonzero contributions
+to the coefficient matrix are, as in 1D, collected in an element matrix.
+The size of the element matrix becomes :math:`3\times 3` since there are
+three degrees of freedom
+that :math:`i` and :math:`j` run over. Again, as in 1D, we number the
+local vertices in a cell, starting at 0, and add the entries in
+the element matrix into the global system matrix, exactly as in 1D.
+All details and code appear below.
+
+Basis functions over triangles in the reference cell
+----------------------------------------------------
+
+As in 1D, we can define the basis functions and the degrees of freedom
+in a reference cell and then use a mapping from the reference coordinate
+system to the physical coordinate system.
+We also have a mapping of local degrees of freedom numbers to global degrees
+of freedom numbers.
+
+.. (``dof_map``).
+
+The reference cell in an :math:`(X,Y)` coordinate system has vertices
+:math:`(0,0)`, :math:`(1,0)`, and :math:`(0,1)`, corresponding to local vertex numbers
+0, 1, and 2, respectively. The P1 element has linear functions
+:math:`{\tilde{\varphi}}_r(X,Y)` as basis functions, :math:`r=0,1,2`.
+Since a linear function :math:`{\tilde{\varphi}}_r(X,Y)` in 2D is on
+the form :math:`C_{r,0} + C_{r,1}X + C_{r,2}Y`, and hence has three
+parameters :math:`C_{r,0}`, :math:`C_{r,1}`, and :math:`C_{r,2}`, we need three
+degrees of freedom. These are in general taken as the function values at a
+set of nodes. For the P1 element the set of nodes is the three vertices.
+Figure :ref:`fem:approx:fe:2D:fig:P12D` displays the geometry of the
+element and the location of the nodes.
+
+.. _fem:approx:fe:2D:fig:P12D:
+
+.. figure:: P1_2d.png
+   :width: 100
+
+   *2D P1 element*
+
+Requiring :math:`{\tilde{\varphi}}_r=1` at node number :math:`r` and
+:math:`{\tilde{\varphi}}_r=0` at the two other nodes, gives three linear equations to
+determine :math:`C_{r,0}`, :math:`C_{r,1}`, and :math:`C_{r,2}`. The result is
+
+.. math::
+        
+        {\tilde{\varphi}}_0(X,Y) = 1 - X - Y,
+        
+
+.. math::
+          
+        {\tilde{\varphi}}_1(X,Y) = X,
+        
+
+.. math::
+          
+        {\tilde{\varphi}}_2(X,Y) = Y
+        
+
+Higher-order approximations are obtained by increasing the polynomial order,
+adding additional nodes, and letting the degrees of freedom be
+function values at the nodes. Figure :ref:`fem:approx:fe:2D:fig:P22D`
+shows the location of the six nodes in the P2 element.
+
+.. _fem:approx:fe:2D:fig:P22D:
+
+.. figure:: P2_2d.png
+   :width: 100
+
+   *2D P2 element*
+
+.. 2DO: write up local basis funcs for P2
+
+A polynomial of degree :math:`p` in :math:`X` and :math:`Y` has :math:`n_p=(p+1)(p+2)/2` terms
+and hence needs :math:`n_p` nodes. The values at the nodes constitute :math:`n_p`
+degrees of freedom. The location of the nodes for
+:math:`{\tilde{\varphi}}_r` up to degree 6 is displayed in Figure
+:ref:`fem:approx:fe:2D:fig:P162D`.
+
+.. _fem:approx:fe:2D:fig:P162D:
+
+.. figure:: P1-6_2d.png
+   :width: 400
+
+   *2D P1, P2, P3, P4, P5, and P6 elements*
+
+The generalization to 3D is straightforward: the reference element is a
+`tetrahedron <http://en.wikipedia.org/wiki/Tetrahedron>`__
+with vertices :math:`(0,0,0)`, :math:`(1,0,0)`, :math:`(0,1,0)`, and :math:`(0,0,1)`
+in a :math:`X,Y,Z` reference coordinate system. The P1 element has its degrees
+of freedom as four nodes, which are the four vertices, see Figure
+:ref:`fem:approx:fe:2D:fig:P1:123D`. The P2 element adds additional
+nodes along the edges of the cell, yielding a total of 10 nodes and
+degrees of freedom, see
+Figure :ref:`fem:approx:fe:2D:fig:P2:123D`.
+
+.. _fem:approx:fe:2D:fig:P1:123D:
+
+.. figure:: P1-1d2d3d.png
+   :width: 400
+
+   *P1 elements in 1D, 2D, and 3D*
+
+.. _fem:approx:fe:2D:fig:P2:123D:
+
+.. figure:: P2-1d2d3d.png
+   :width: 400
+
+   *P2 elements in 1D, 2D, and 3D*
+
+.. index:: simplex elements
+
+.. index:: simplices
+
+.. index:: faces
+
+.. index:: edges
+
+The interval in 1D, the triangle in 2D, the tetrahedron in 3D, and
+its generalizations to higher space dimensions are known
+as *simplex* cells (the geometry) or *simplex* elements (the geometry,
+basis functions, degrees of freedom, etc.). The plural forms
+`simplices <http://en.wikipedia.org/wiki/Simplex>`__ and
+simplexes are
+also a much used shorter terms when referring to this type of cells or elements.
+The side of a simplex is called a *face*, while the tetrahedron also
+has *edges*.
+
+**Acknowledgment.**
+Figures :ref:`fem:approx:fe:2D:fig:P12D`-:ref:`fem:approx:fe:2D:fig:P2:123D`
+are created by Anders Logg and taken from the `FEniCS book <https://launchpad.net/fenics-book>`__: *Automated Solution of Differential Equations by the Finite Element Method*, edited by A. Logg, K.-A. Mardal, and G. N. Wells, published
+by `Springer <http://goo.gl/lbyVMH>`__, 2012.
+
+Affine mapping of the reference cell
+------------------------------------
+
+Let :math:`{\tilde{\varphi}}_r^{(1)}` denote the basis functions associated
+with the P1 element in 1D, 2D, or 3D, and let :math:`\boldsymbol{x}_{q(e,r)}` be
+the physical coordinates of local vertex number :math:`r` in cell :math:`e`.
+Furthermore,
+let :math:`\boldsymbol{X}` be a point in the reference coordinate system corresponding
+to the point :math:`\boldsymbol{x}` in the physical coordinate system.
+The affine mapping of any :math:`\boldsymbol{X}` onto :math:`\boldsymbol{x}` is
+then defined by
+
+.. index:: affine mapping
+
+.. _Eq:fem:approx:fe:affine:map:
+
+.. math::
+   :label: fem:approx:fe:affine:map
+        
+        \boldsymbol{x} = \sum_{r} {\tilde{\varphi}}_r^{(1)}(\boldsymbol{X})\boldsymbol{x}_{q(e,r)},
+        
+        
+
+where :math:`r` runs over the local vertex numbers in the cell.
+The affine mapping essentially stretches, translates, and rotates
+the triangle. Straight or planar faces of the reference cell are
+therefore mapped onto
+straight or planar faces in the physical coordinate system. The mapping can
+be used for both P1 and higher-order elements, but note that the
+mapping itself always applies the P1 basis functions.
+
+.. _fem:approx:fe:map:fig:2DP1:
+
+.. figure:: ElmT3n2D_map.png
+   :width: 400
+
+   *Affine mapping of a P1 element*
+
+Isoparametric mapping of the reference cell
+-------------------------------------------
+
+.. index:: isoparametric mapping
+
+.. index::
+   single: mapping of reference cells; isoparametric mapping
+
+Instead of using the P1 basis functions in the mapping
+:eq:`fem:approx:fe:affine:map`,
+we may use the basis functions of the actual Pd element:
+
+.. _Eq:fem:approx:fe:isop:map:
+
+.. math::
+   :label: fem:approx:fe:isop:map
+        
+        \boldsymbol{x} = \sum_{r} {\tilde{\varphi}}_r(\boldsymbol{X})\boldsymbol{x}_{q(e,r)},
+        
+        
+
+where :math:`r` runs over all nodes, i.e., all points associated with the
+degrees of freedom. This is called an *isoparametric mapping*.
+For P1 elements it is identical to the affine mapping
+:eq:`fem:approx:fe:affine:map`, but for higher-order elements
+the mapping of the straight or planar faces of the reference cell will
+result in a *curved* face in the physical coordinate system.
+For example, when we use the basis functions of the triangular P2 element
+in 2D in :eq:`fem:approx:fe:isop:map`, the straight faces of the
+reference triangle are mapped onto curved faces of parabolic shape in
+the physical coordinate system, see Figure :ref:`fem:approx:fe:map:fig:2DP2`.
+
+.. _fem:approx:fe:map:fig:2DP2:
+
+.. figure:: ElmT6n2D_map.png
+   :width: 400
+
+   *Isoparametric mapping of a P2 element*
+
+From :eq:`fem:approx:fe:affine:map` or
+:eq:`fem:approx:fe:isop:map` it is easy to realize that the
+vertices are correctly mapped. Consider a vertex with local number :math:`s`.
+Then :math:`{\tilde{\varphi}}_s=1` at this vertex and zero at the others.
+This means that only one term in the sum is nonzero and :math:`\boldsymbol{x}=\boldsymbol{x}_{q(e,s)}`,
+which is the coordinate of this vertex in the global coordinate system.
+
+Computing integrals
+-------------------
+
+Let :math:`\tilde\Omega^r` denote the reference cell and :math:`\Omega^{(e)}`
+the cell in the physical coordinate system. The transformation of
+the integral from the physical to the reference coordinate system reads
+
+.. math::
+        
+        \int_{\Omega^{(e)}}{\varphi}_i (\boldsymbol{x}) {\varphi}_j (\boldsymbol{x}) {\, \mathrm{d}x} =
+        \int_{\tilde\Omega^r} {\tilde{\varphi}}_i (\boldsymbol{X}) {\tilde{\varphi}}_j (\boldsymbol{X})
+        \det J\, {\, \mathrm{d}X},
+        
+
+.. math::
+          
+        \int_{\Omega^{(e)}}{\varphi}_i (\boldsymbol{x}) f(\boldsymbol{x}) {\, \mathrm{d}x} =
+        \int_{\tilde\Omega^r} {\tilde{\varphi}}_i (\boldsymbol{X}) f(\boldsymbol{x}(\boldsymbol{X})) \det J\, {\, \mathrm{d}X},
+        
+
+where :math:`{\, \mathrm{d}x}` means the infinitesimal area element :math:`dx dy` in 2D and
+:math:`dx dy dz` in 3D, with a similar
+definition of :math:`{\, \mathrm{d}X}`. The quantity :math:`\det J` is the determinant of the
+Jacobian of the mapping :math:`\boldsymbol{x}(\boldsymbol{X})`. In 2D,
+
+.. _Eq:fem:approx:fe:2D:mapping:J:detJ:
+
+.. math::
+   :label: fem:approx:fe:2D:mapping:J:detJ
+        
+        J = \left[\begin{array}{cc}
+        \frac{\partial x}{\partial X} & \frac{\partial x}{\partial Y}\\ 
+        \frac{\partial y}{\partial X} & \frac{\partial y}{\partial Y}
+        \end{array}\right], \quad
+        \det J = \frac{\partial x}{\partial X}\frac{\partial y}{\partial Y}
+        - \frac{\partial x}{\partial Y}\frac{\partial y}{\partial X}
+        {\thinspace .}
+        
+        
+
+With the affine mapping
+:eq:`fem:approx:fe:affine:map`, :math:`\det J=2\Delta`, where :math:`\Delta` is
+the area or volume of the cell in the physical coordinate system.
+
+**Remark.**
+Observe that finite elements in 2D and 3D builds on the same
+*ideas* and *concepts* as in 1D, but there is simply much
+more to compute because the
+specific mathematical formulas in 2D and 3D are more complicated
+and the book keeping with dof maps also gets more complicated.
+The manual work is tedious, lengthy, and error-prone
+so automation by the computer is a must.
+
+.. 2DO
+
+.. First: two triangles
+
+.. vertices = [(0,0), (1,0), (0,1), (1,1)]
+
+.. cells = [[0, 1, 3], [0, 3, 2]]
+
+.. dof_map = cells
+
+.. write up affine mapping
+
+.. D is the area that sympy.Triangle can compute :-) No, do that directly! 0.5...
+
+.. rhs: choose simple f=x*y, try hand-calculation or two-step
+
+.. sympy: first integrate in y with (0,1-x) as limits, then
+
+.. integrate the result in x
+
+.. a = integrate(x*y*(1-x-y), (y, 0, 1-x))
+
+.. b = integrate(a, (x,0,1))
+
+.. use the same for local element matrix
+
+.. show assembly
+
+.. should have pysketcher prog for drawing 2D mesh, mark and number nodes
+
+.. and elements
+
+.. Should have example with x**8*(1-x)*y**8*(1-y) worked out, but
+
+.. need software
+
+.. Need 2D exercises
+

@@ -1,0 +1,530 @@
+.. !split
+
+.. _fem:deq:1D:fem1:
+
+Computing with finite elements
+==============================
+
+The purpose of this section is to demonstrate in detail how
+the finite element method can the be applied to the model problem
+
+.. math::
+         -u''(x) = 2,\quad x\in (0,L),\ u(0)=u(L)=0,
+
+with variational formulation
+
+.. math::
+         (u',v') = (2,v)\quad\forall v\in V{\thinspace .}  
+
+The variational formulation is derived in
+the section :ref:`fem:deq:1D:varform`.
+
+Finite element mesh and basis functions
+---------------------------------------
+
+We introduce a finite element mesh with :math:`N_e` cells, all
+with length :math:`h`, and number
+the cells from left to right.
+Choosing P1 elements, there are two
+nodes per cell, and the coordinates of the nodes become
+
+.. math::
+        
+        x_{i} = i h,\quad h=L/N_e,\quad i=0,\ldots,N_n-1=N_e,
+        
+
+provided we number the nodes from left to right.
+
+Each of the nodes, :math:`i`, is associated a finite element basis function
+:math:`{\varphi}_i(x)`.  When approximating a given function :math:`f` by a finite
+element function :math:`u`, we expand :math:`u` using finite element basis
+functions associated with *all* nodes in the mesh. The parameter
+:math:`N`, which counts the unknowns from 0 to :math:`N` then equations :math:`N_n-1`.
+However, when solving differential equations we will often have
+:math:`N<N_n-1` because of Dirichlet boundary conditions. Why this is the case
+will now be explained in detail.
+
+In our case with homogeneous Dirichlet boundary conditions we do not
+need any boundary function :math:`B(x)` and can work with the expansion
+
+.. _Eq:fem:deq:1D:fem1:ex:u:
+
+.. math::
+   :label: fem:deq:1D:fem1:ex:u
+        
+        u(x) = \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x){\thinspace .}
+        
+        
+
+Because of the boundary conditions, we must demand
+:math:`{\psi}_i(0)={\psi}_i(L)=0`, :math:`i\in{\mathcal{I}_s}`. When :math:`{\psi}_i` for all
+:math:`i=0,\ldots,N` is to be selected among the finite element basis
+functions :math:`{\varphi}_j`, :math:`i=0,\ldots,N_n-1`, we have to avoid using
+:math:`{\varphi}_j` functions that do not vanish at :math:`x_{0}=0` and
+:math:`x_{N_n-1}=L`. However, all :math:`{\varphi}_j` vanish at these two nodes for
+:math:`j=1,\ldots,N_n-2`.  Only basis functions associated with the end nodes,
+:math:`{\varphi}_0` and :math:`{\varphi}_{N_n-1}`, violate the boundary conditions of
+our differential equation. Therefore, we select the basis functions
+:math:`{\varphi}_i` to be the set of finite element basis functions associated
+with all the interior nodes in the mesh:
+
+.. math::
+         {\psi}_i={\varphi}_{i+1},\quad i=0,\ldots,N{\thinspace .}
+
+The :math:`i` index runs over all the unknowns :math:`c_i` in the expansion
+for :math:`u`, and in this case :math:`N=N_n-3`.
+
+In the general case, the nodes are not necessarily numbered from left
+to right, so we introduce a mapping from the node numbering, or more
+precisely the degree of freedom numbering, to the numbering of
+the unknowns in the final equation system. These unknowns take on
+the numbers :math:`0,\ldots,N`. Unknown number :math:`j` in the linear system
+corresponds to degree of freedom number :math:`\nu (j)`, :math:`j\in{\mathcal{I}_s}`.
+We can then write
+
+.. math::
+         {\psi}_i={\varphi}_{\nu(i)},\quad i=0,\ldots,N{\thinspace .}
+
+With a regular numbering as in the present example,
+:math:`\nu(j) = j+1`, :math:`j=0,\ldots,N=N_n-3`.
+
+.. _fem:deq:1D:comp:global:
+
+Computation in the global physical domain
+-----------------------------------------
+
+We shall first perform a computation in the :math:`x`
+coordinate system because the integrals can be easily computed
+here by simple, visual,
+geometric considerations. This is called a global approach
+since we work in the :math:`x` coordinate system and compute integrals on
+the global domain :math:`[0,L]`.
+
+The entries in the coefficient matrix and right-hand side are
+
+.. math::
+        
+        A_{i,j}=\int_0^L{\psi}_i'(x){\psi}_j'(x) {\, \mathrm{d}x},\quad
+        b_i=\int_0^L2{\psi}_i(x) {\, \mathrm{d}x}, \quad i,j\in{\mathcal{I}_s}{\thinspace .}
+        
+
+Expressed in terms of finite element basis functions :math:`{\varphi}_i` we
+get the alternative expressions
+
+.. math::
+        
+        A_{i,j}=\int_0^L{\varphi}_{i+1}'(x){\varphi}_{j+1}'(x) {\, \mathrm{d}x},\quad
+        b_i=\int_0^L2{\varphi}_{i+1}(x) {\, \mathrm{d}x},\quad i,j\in{\mathcal{I}_s}{\thinspace .}
+        
+
+For the following calculations the subscripts on the finite
+element basis functions are more conveniently written as
+:math:`i` and :math:`j` instead of :math:`i+1` and :math:`j+1`, so our notation becomes
+
+.. math::
+        
+        A_{i-1,j-1}=\int_0^L{\varphi}_{i}'(x){\varphi}_{j}'(x) {\, \mathrm{d}x},\quad
+        b_{i-1}=\int_0^L2{\varphi}_{i}(x) {\, \mathrm{d}x},
+        
+
+where the :math:`i` and :math:`j` indices run as :math:`i,j=1,\ldots,N+1=N_n-2`.
+
+The :math:`{\varphi}_i(x)` function is a hat function with peak at :math:`x=x_{i}`
+and a linear variation in :math:`[x_{i-1},x_{i}]` and
+:math:`[x_{i},x_{i+1}]`.
+The derivative is :math:`1/h` to the left of :math:`x_{i}` and :math:`-1/h` to
+the right, or more formally,
+
+.. _Eq:fem:approx:fe:Dphi:1:formula2:
+
+.. math::
+   :label: fem:approx:fe:Dphi:1:formula2
+        
+        {\varphi}_i'(x) = \left\lbrace\begin{array}{ll}
+        0, & x < x_{i-1},\\ 
+        h^{-1},
+        & x_{i-1} \leq x < x_{i},\\ 
+        -h^{-1},
+        & x_{i} \leq x < x_{i+1},\\ 
+        0, & x\geq x_{i+1}
+        \end{array}
+        \right.
+        
+        
+
+Figure :ref:`fem:approx:fe:fig:dP1` shows :math:`{\varphi}_2'(x)` and :math:`{\varphi}_3'(x)`.
+
+.. _fem:approx:fe:fig:dP1:
+
+.. figure:: fe_mesh1D_dphi_2_3.png
+   :width: 400
+
+   *Illustration of the derivative of piecewise linear basis functions associated with nodes in cell 2*
+
+.. FIGURE: [fig-varform/phi/mpl_fe_dbasis_p1_4e_lab, width=600]  Illustration of the derivative of piecewise linear basis functions associated with nodes in cell 1.
+
+We realize that :math:`{\varphi}_i'` and :math:`{\varphi}_j'` has no overlap, and hence their
+product vanishes, unless :math:`i` and :math:`j` are nodes belonging to the same
+cell. The only nonzero contributions to the coefficient matrix are
+therefore
+
+.. math::
+        
+        A_{i-1,i-2} &=\int_0^L{\varphi}_i'(x) {\varphi}_{i-1}'(x) {\, \mathrm{d}x},\\ 
+        A_{i-1,i-1}&=\int_0^L{\varphi}_{i}'(x)^2 {\, \mathrm{d}x}, \\ 
+        A_{i-1,i}&=\int_0^L{\varphi}_{i}'(x){\varphi}_{i+1}'(x) {\, \mathrm{d}x},
+        
+
+for :math:`i=1,\ldots,N+1`, but for :math:`i=1`, :math:`A_{i-1,i-2}` is not defined,
+and for :math:`i=N+1`, :math:`A_{i-1,i}` is not defined.
+
+We see that :math:`{\varphi}_{i-1}'(x)` and :math:`{\varphi}_i'(x)` have overlap of one
+cell :math:`\Omega^{(i-1)}=[x_{i-1},x_{i}]` and that their product
+then is :math:`-1/h^{2}`. The integrand is constant and therefore
+:math:`A_{i-1,i-2}=-h^{-2}h=-h^{-1}`.
+A similar reasoning can be applied to
+:math:`A_{i-1,i}`, which also becomes :math:`-h^{-1}`. The integral of
+:math:`{\varphi}_i'(x)^2` gets contributions from two cells,
+:math:`\Omega^{(i-1)}=[x_{i-1},x_{i}]` and
+:math:`\Omega^{(i)}=[x_{i},x_{i+1}]`, but :math:`{\varphi}_i'(x)^2=h^{-2}` in
+both cells, and the length of the integration interval is :math:`2h` so
+we get
+:math:`A_{i-1,i-1}=2h^{-1}`.
+
+The right-hand side involves an integral of :math:`2{\varphi}_i(x)`,
+:math:`i=1,\ldots,N_n-2`,
+which is just the area under a hat function of height 1 and width
+:math:`2h`, i.e., equal to :math:`h`. Hence, :math:`b_{i-1}=2h`.
+
+To summarize the linear system, we switch from :math:`i` to :math:`i+1` such that
+we can write
+
+.. math::
+         A_{i,i-1}=A_{i,i+1}=-h^{-1},\quad A_{i,i}=2h^{-1},\quad
+        b_i = 2h{\thinspace .}
+
+The equation system to be solved only involves the unknowns
+:math:`c_i` for :math:`i\in{\mathcal{I}_s}`. With our numbering of unknowns and
+nodes, we have that :math:`c_i` equals :math:`u(x_{i+1})`.
+The complete matrix system that takes the following form:
+
+.. _Eq:fem:deq:1D:ex1:Ab:glob:
+
+.. math::
+   :label: fem:deq:1D:ex1:Ab:glob
+        
+        \frac{1}{h}\left(
+        \begin{array}{ccccccccc}
+        1 & -1 & 0
+        &\cdots &
+        \cdots & \cdots & \cdots &
+        \cdots & 0 \\ 
+        -1 & 2 & -1 & \ddots &   & &  & &  \vdots \\ 
+        0 & -1 & 2 & -1 &
+        \ddots & &  &  & \vdots \\ 
+        \vdots & \ddots &  & \ddots & \ddots & 0 &  & & \vdots \\ 
+        \vdots &  & \ddots & \ddots & \ddots & \ddots & \ddots & & \vdots \\ 
+        \vdots & &  & 0 & -1 & 2 & -1 & \ddots & \vdots \\ 
+        \vdots & & &  & \ddots & \ddots & \ddots &\ddots  & 0 \\ 
+        \vdots & & & &  &\ddots  & \ddots &\ddots  & -1 \\ 
+        0 &\cdots & \cdots &\cdots & \cdots & \cdots  & 0 & -1 & 1
+        \end{array}
+        \right)
+        \left(
+        \begin{array}{c}
+        c_0 \\ 
+        \vdots\\ 
+        \vdots\\ 
+        \vdots \\ 
+        \vdots \\ 
+        \vdots \\ 
+        \vdots \\ 
+        \vdots\\ 
+        c_{N}
+        \end{array}
+        \right)
+        =
+        \left(
+        \begin{array}{c}
+        2h \\ 
+        \vdots\\ 
+        \vdots\\ 
+        \vdots \\ 
+        \vdots \\ 
+        \vdots \\ 
+        \vdots \\ 
+        \vdots\\ 
+        2h
+        \end{array}
+        \right)
+        
+        
+
+Comparison with a finite difference discretization
+--------------------------------------------------
+
+A typical row in the matrix system can be written as
+
+.. _Eq:fem:deq:1D:fem:ex1:c:
+
+.. math::
+   :label: fem:deq:1D:fem:ex1:c
+        
+        -\frac{1}{h}c_{i-1} + \frac{2}{h}c_{i} - \frac{1}{h}c_{i+1} = 2h{\thinspace .}
+        
+        
+
+Let us introduce the notation :math:`u_j` for the value of :math:`u` at node :math:`j`:
+:math:`u_j=u(x_{j})` since we have the interpretation
+:math:`u(x_{j})=\sum_jc_j{\varphi}(x_{j})=\sum_j c_j\delta_{ij}=c_j`.
+The unknowns :math:`c_0,\ldots,c_N` are :math:`u_1,\ldots,u_{N_n-2}`.
+Shifting :math:`i` with :math:`i+1` in :eq:`fem:deq:1D:fem:ex1:c` and inserting
+:math:`u_i = c_{i-1}`, we get
+
+.. _Eq:fem:deq:1D:fem:ex1:
+
+.. math::
+   :label: fem:deq:1D:fem:ex1
+        
+        -\frac{1}{h}u_{i-1} + \frac{2}{h}u_{i} - \frac{1}{h}u_{i+1} = 2h,
+        
+        
+
+A finite difference discretization of :math:`-u''(x)=2` by a centered,
+second-order finite difference approximation :math:`u''(x_i)\approx [D_x D_x u]_i`
+with :math:`\Delta x = h`
+yields
+
+.. math::
+        
+        -\frac{u_{i-1} - 2u_{i} + u_{i+1}}{h^2} = 2,
+        
+
+which is, in fact, equivalent to :eq:`fem:deq:1D:fem:ex1` if
+:eq:`fem:deq:1D:fem:ex1` is divided by :math:`h`.
+Therefore, the finite difference and the finite element method are
+equivalent in this simple test problem.
+
+Sometimes a finite element method generates the finite difference
+equations on a uniform mesh, and sometimes the finite element method
+generates equations that are different.  The differences are modest,
+but may influence the numerical quality of the solution significantly,
+especially in time-dependent problems.
+
+.. There will be many examples illustrating this point.
+
+.. _fem:deq:1D:comp:elmwise:
+
+Cellwise computations  (1)
+--------------------------
+
+We now employ the cell by cell computational procedure where
+an element matrix and vector are calculated for each cell and
+assembled in the global linear system.
+All integrals are mapped to the local reference coordinate system
+:math:`X\in [-1,1]`.
+In the present case, the matrix entries contain derivatives
+with respect to :math:`x`,
+
+.. math::
+        
+        A_{i-1,j-1}^{(e)}=\int_{\Omega^{(e)}} {\varphi}_i'(x){\varphi}_j'(x) {\, \mathrm{d}x}
+        = \int_{-1}^1 \frac{d}{dx}{\tilde{\varphi}}_r(X)\frac{d}{dx}{\tilde{\varphi}}_s(X)
+        \frac{h}{2} {\, \mathrm{d}X},
+        
+
+where the global degree of freedom :math:`i` is related to the local
+degree of freedom :math:`r` through :math:`i=q(e,r)`. Similarly,
+:math:`j=q(e,s)`. The local degrees of freedom run as :math:`r,s=0,1` for a P1
+element.
+
+The integral for the element matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are simple formulas for the basis functions :math:`{\tilde{\varphi}}_r(X)` as
+functions of :math:`X`.
+However, we now
+need to find the derivative of :math:`{\tilde{\varphi}}_r(X)` with respect to :math:`x`.
+Given
+
+.. math::
+         {\tilde{\varphi}}_0(X)=\frac{1}{2}(1-X),\quad{\tilde{\varphi}}_1(X)=\frac{1}{2}(1+X), 
+
+we can easily compute :math:`d{\tilde{\varphi}}_r/ dX`:
+
+.. math::
+        
+        \frac{d{\tilde{\varphi}}_0}{dX} = -\frac{1}{2},\quad  \frac{d{\tilde{\varphi}}_1}{dX} = \frac{1}{2}{\thinspace .}
+        
+
+From the chain rule,
+
+.. math::
+        
+        \frac{d{\tilde{\varphi}}_r}{dx} = \frac{d{\tilde{\varphi}}_r}{dX}\frac{dX}{dx}
+        = \frac{2}{h}\frac{d{\tilde{\varphi}}_r}{dX}{\thinspace .}  
+
+The transformed integral is then
+
+.. math::
+        
+        A_{i-1,j-1}^{(e)}=\int_{\Omega^{(e)}} {\varphi}_i'(x){\varphi}_j'(x) {\, \mathrm{d}x}
+        = \int_{-1}^1 \frac{2}{h}\frac{d{\tilde{\varphi}}_r}{dX}\frac{2}{h}\frac{d{\tilde{\varphi}}_s}{dX}
+        \frac{h}{2} {\, \mathrm{d}X}
+        {\thinspace .}
+        
+
+The integral for the element vector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The right-hand side is transformed according to
+
+.. math::
+        
+        b_{i-1}^{(e)} = \int_{\Omega^{(e)}} 2{\varphi}_i(x) {\, \mathrm{d}x} =
+        \int_{-1}^12{\tilde{\varphi}}_r(X)\frac{h}{2} {\, \mathrm{d}X},\quad i=q(e,r),\ r=0,1
+        {\thinspace .}
+        
+
+Detailed calculations of the element matrix and vector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Specifically for P1 elements we arrive at the following calculations for
+the element matrix entries:
+
+.. math::
+        
+        \tilde A_{0,0}^{(e)} &= \int_{-1}^1\frac{2}{h}\left(-\frac{1}{2}\right)
+        \frac{2}{h}\left(-\frac{1}{2}\right)\frac{h}{2} {\, \mathrm{d}X} = \frac{1}{h}\\ 
+        \tilde A_{0,1}^{(e)} &= \int_{-1}^1\frac{2}{h}\left(-\frac{1}{2}\right)
+        \frac{2}{h}\left(\frac{1}{2}\right)\frac{h}{2} {\, \mathrm{d}X} = -\frac{1}{h}\\ 
+        \tilde A_{1,0}^{(e)} &= \int_{-1}^1\frac{2}{h}\left(\frac{1}{2}\right)
+        \frac{2}{h}\left(-\frac{1}{2}\right)\frac{h}{2} {\, \mathrm{d}X} = -\frac{1}{h}\\ 
+        \tilde A_{1,1}^{(e)} &= \int_{-1}^1\frac{2}{h}\left(\frac{1}{2}\right)
+        \frac{2}{h}\left(\frac{1}{2}\right)\frac{h}{2} {\, \mathrm{d}X} = \frac{1}{h}
+        
+
+The element vector entries become
+
+.. math::
+        
+        \tilde b_0^{(e)} &= \int_{-1}^12\frac{1}{2}(1-X)\frac{h}{2} {\, \mathrm{d}X} = h\\ 
+        \tilde b_1^{(e)} &= \int_{-1}^12\frac{1}{2}(1+X)\frac{h}{2} {\, \mathrm{d}X} = h{\thinspace .}
+        
+
+Expressing these entries in matrix and vector notation, we have
+
+.. _Eq:fem:deq:1D:ex1:Ab:elm:
+
+.. math::
+   :label: fem:deq:1D:ex1:Ab:elm
+        
+        \tilde A^{(e)} =\frac{1}{h}\left(\begin{array}{rr}
+        1 & -1\\ 
+        -1 & 1
+        \end{array}\right),\quad
+        \tilde b^{(e)} = h\left(\begin{array}{c}
+        1\\ 
+        1
+        \end{array}\right){\thinspace .}
+        
+        
+
+Contributions from the first and last cell
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The first and last cell involve only one unknown and one basis function
+because of the Dirichlet boundary conditions at the first and last
+node.
+The element matrix therefore becomes a :math:`1\times 1` matrix and there
+is only one entry in the element vector. On cell 0, only :math:`{\psi}_0={\varphi}_1`
+is involved, corresponding to integration with :math:`{\tilde{\varphi}}_1`. On cell :math:`N_e`,
+only :math:`{\psi}_N={\varphi}_{N_n-2}` is involved, corresponding to
+integration with :math:`{\tilde{\varphi}}_0`.
+We then get the special end-cell contributions
+
+.. _Eq:fem:deq:1D:ex1:Ab:elm:ends:
+
+.. math::
+   :label: fem:deq:1D:ex1:Ab:elm:ends
+        
+        \tilde A^{(e)} =\frac{1}{h}\left(\begin{array}{r}
+        1
+        \end{array}\right),\quad
+        \tilde b^{(e)} = h\left(\begin{array}{c}
+        1
+        \end{array}\right),
+        
+        
+
+for :math:`e=0` and :math:`e=N_e`. In these cells, we have only one degree of
+freedom, not two as in the interior cells.
+
+Assembly
+~~~~~~~~
+
+The next step is to assemble the contributions from the various cells.
+The assembly of an element matrix and vector into the global matrix
+and right-hand side can be expressed as
+
+.. math::
+        
+        A_{q(e,r),q(e,s)} = A_{q(e,r),q(e,s)} + \tilde A^{(e)}_{r,s},\quad
+        b_{q(e,r)} = b_{q(e,r)} + \tilde b^{(e)}_{r},\quad
+        
+
+for :math:`r` and :math:`s` running over all local degrees of freedom in cell :math:`e`.
+
+To make the assembly algorithm more precise, it is convenient to set up
+Python data structures and a code snippet for carrying out all details
+of the algorithm.
+For a mesh of four equal-sized P1 elements and :math:`L=2` we have
+
+.. code-block:: python
+
+        vertices = [0, 0.5, 1, 1.5, 2]
+        cells = [[0, 1], [1, 2], [2, 3], [3, 4]]
+        dof_map = [[0], [0, 1], [1, 2], [2]]
+
+The total number of degrees of freedom is 3, being the function
+values at the internal 3 nodes where :math:`u` is unknown.
+In cell 0 we have global degree of freedom 0, the next
+cell has :math:`u` unknown at its two nodes, which become
+global degrees of freedom 0 and 1, and so forth according to
+the ``dof_map`` list. The mathematical :math:`q(e,r)` quantity is nothing
+but the ``dof_map`` list.
+
+Assume all element matrices are stored in a list ``Ae`` such that
+``Ae[e][i,j]`` is :math:`\tilde A_{i,j}^{(e)}`. A corresponding list
+for the element vectors is named ``be``, where ``be[e][r]`` is
+:math:`\tilde b_r^{(e)}`.
+A Python code snippet
+illustrates all details of the assembly algorithm:
+
+.. code-block:: python
+
+        # A[i,j]: coefficient matrix, b[i]: right-hand side
+        for e in range(len(Ae)):
+            for r in range(Ae[e].shape[0]):
+                for s in range(Ae[e].shape[1]):
+                    A[dof_map[e,r],dof_map[e,s]] += Ae[e][i,j]
+                b[dof_map[e,r]] += be[e][i,j]
+
+The general case with ``N_e`` P1 elements of length ``h`` has
+
+.. code-block:: python
+
+        N_n = N_e + 1
+        vertices = [i*h for i in range(N_n)]
+        cells = [[e, e+1] for e in range(N_e)]
+        dof_map = [[0]] + [[e-1, e] for i in range(1, N_e)] + [[N_n-2]]
+
+Carrying out the assembly results in a linear system that is identical
+to :eq:`fem:deq:1D:ex1:Ab:glob`, which is not surprising since
+the procedures is mathematically equivalent to the calculations
+in the physical domain.
+
+A fundamental problem with the matrix system we have assembled is that
+the boundary conditions are not incorporated if :math:`u(0)` or :math:`u(L)`
+are different from zero. The next sections deals with this issue.
+

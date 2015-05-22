@@ -1,0 +1,529 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Computing with finite elements</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Computing with variational forms" href="index.html" />
+    <link rel="next" title="Boundary conditions: specified nonzero value" href="._main_varform005.html" />
+    <link rel="prev" title="Examples on variational formulations" href="._main_varform003.html" />
+ 
+  
+       <style type="text/css">
+         div.admonition {
+           background-color: whiteSmoke;
+           border: 1px solid #bababa;
+         }
+       </style>
+      </head>
+    
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_varform005.html" title="Boundary conditions: specified nonzero value"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="._main_varform003.html" title="Examples on variational formulations"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Computing with variational forms</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="computing-with-finite-elements">
+<span id="fem-deq-1d-fem1"></span><h1>Computing with finite elements<a class="headerlink" href="#computing-with-finite-elements" title="Permalink to this headline">¶</a></h1>
+<p>The purpose of this section is to demonstrate in detail how
+the finite element method can the be applied to the model problem</p>
+<div class="math">
+\[-u''(x) = 2,\quad x\in (0,L),\ u(0)=u(L)=0,\]</div>
+<p>with variational formulation</p>
+<div class="math">
+\[(u',v') = (2,v)\quad\forall v\in V{\thinspace .}\]</div>
+<p>The variational formulation is derived in
+the section <a class="reference internal" href="._main_varform002.html#fem-deq-1d-varform"><em>Integration by parts</em></a>.</p>
+<div class="section" id="finite-element-mesh-and-basis-functions">
+<h2>Finite element mesh and basis functions<a class="headerlink" href="#finite-element-mesh-and-basis-functions" title="Permalink to this headline">¶</a></h2>
+<p>We introduce a finite element mesh with <span class="math">\(N_e\)</span> cells, all
+with length <span class="math">\(h\)</span>, and number
+the cells from left to right.
+Choosing P1 elements, there are two
+nodes per cell, and the coordinates of the nodes become</p>
+<div class="math">
+\[x_{i} = i h,\quad h=L/N_e,\quad i=0,\ldots,N_n-1=N_e,\]</div>
+<p>provided we number the nodes from left to right.</p>
+<p>Each of the nodes, <span class="math">\(i\)</span>, is associated a finite element basis function
+<span class="math">\({\varphi}_i(x)\)</span>.  When approximating a given function <span class="math">\(f\)</span> by a finite
+element function <span class="math">\(u\)</span>, we expand <span class="math">\(u\)</span> using finite element basis
+functions associated with <em>all</em> nodes in the mesh. The parameter
+<span class="math">\(N\)</span>, which counts the unknowns from 0 to <span class="math">\(N\)</span> then equations <span class="math">\(N_n-1\)</span>.
+However, when solving differential equations we will often have
+<span class="math">\(N&lt;N_n-1\)</span> because of Dirichlet boundary conditions. Why this is the case
+will now be explained in detail.</p>
+<p>In our case with homogeneous Dirichlet boundary conditions we do not
+need any boundary function <span class="math">\(B(x)\)</span> and can work with the expansion</p>
+<div class="math" id="equation-fem:deq:1D:fem1:ex:u">
+<span id="eq-fem-deq-1d-fem1-ex-u"></span><span class="eqno">(1)</span>\[     u(x) = \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x){\thinspace .}\]</div>
+<p>Because of the boundary conditions, we must demand
+<span class="math">\({\psi}_i(0)={\psi}_i(L)=0\)</span>, <span class="math">\(i\in{\mathcal{I}_s}\)</span>. When <span class="math">\({\psi}_i\)</span> for all
+<span class="math">\(i=0,\ldots,N\)</span> is to be selected among the finite element basis
+functions <span class="math">\({\varphi}_j\)</span>, <span class="math">\(i=0,\ldots,N_n-1\)</span>, we have to avoid using
+<span class="math">\({\varphi}_j\)</span> functions that do not vanish at <span class="math">\(x_{0}=0\)</span> and
+<span class="math">\(x_{N_n-1}=L\)</span>. However, all <span class="math">\({\varphi}_j\)</span> vanish at these two nodes for
+<span class="math">\(j=1,\ldots,N_n-2\)</span>.  Only basis functions associated with the end nodes,
+<span class="math">\({\varphi}_0\)</span> and <span class="math">\({\varphi}_{N_n-1}\)</span>, violate the boundary conditions of
+our differential equation. Therefore, we select the basis functions
+<span class="math">\({\varphi}_i\)</span> to be the set of finite element basis functions associated
+with all the interior nodes in the mesh:</p>
+<div class="math">
+\[{\psi}_i={\varphi}_{i+1},\quad i=0,\ldots,N{\thinspace .}\]</div>
+<p>The <span class="math">\(i\)</span> index runs over all the unknowns <span class="math">\(c_i\)</span> in the expansion
+for <span class="math">\(u\)</span>, and in this case <span class="math">\(N=N_n-3\)</span>.</p>
+<p>In the general case, the nodes are not necessarily numbered from left
+to right, so we introduce a mapping from the node numbering, or more
+precisely the degree of freedom numbering, to the numbering of
+the unknowns in the final equation system. These unknowns take on
+the numbers <span class="math">\(0,\ldots,N\)</span>. Unknown number <span class="math">\(j\)</span> in the linear system
+corresponds to degree of freedom number <span class="math">\(\nu (j)\)</span>, <span class="math">\(j\in{\mathcal{I}_s}\)</span>.
+We can then write</p>
+<div class="math">
+\[{\psi}_i={\varphi}_{\nu(i)},\quad i=0,\ldots,N{\thinspace .}\]</div>
+<p>With a regular numbering as in the present example,
+<span class="math">\(\nu(j) = j+1\)</span>, <span class="math">\(j=0,\ldots,N=N_n-3\)</span>.</p>
+</div>
+<div class="section" id="computation-in-the-global-physical-domain">
+<span id="fem-deq-1d-comp-global"></span><h2>Computation in the global physical domain<a class="headerlink" href="#computation-in-the-global-physical-domain" title="Permalink to this headline">¶</a></h2>
+<p>We shall first perform a computation in the <span class="math">\(x\)</span>
+coordinate system because the integrals can be easily computed
+here by simple, visual,
+geometric considerations. This is called a global approach
+since we work in the <span class="math">\(x\)</span> coordinate system and compute integrals on
+the global domain <span class="math">\([0,L]\)</span>.</p>
+<p>The entries in the coefficient matrix and right-hand side are</p>
+<div class="math">
+\[A_{i,j}=\int_0^L{\psi}_i'(x){\psi}_j'(x) {\, \mathrm{d}x},\quad
+b_i=\int_0^L2{\psi}_i(x) {\, \mathrm{d}x}, \quad i,j\in{\mathcal{I}_s}{\thinspace .}\]</div>
+<p>Expressed in terms of finite element basis functions <span class="math">\({\varphi}_i\)</span> we
+get the alternative expressions</p>
+<div class="math">
+\[A_{i,j}=\int_0^L{\varphi}_{i+1}'(x){\varphi}_{j+1}'(x) {\, \mathrm{d}x},\quad
+b_i=\int_0^L2{\varphi}_{i+1}(x) {\, \mathrm{d}x},\quad i,j\in{\mathcal{I}_s}{\thinspace .}\]</div>
+<p>For the following calculations the subscripts on the finite
+element basis functions are more conveniently written as
+<span class="math">\(i\)</span> and <span class="math">\(j\)</span> instead of <span class="math">\(i+1\)</span> and <span class="math">\(j+1\)</span>, so our notation becomes</p>
+<div class="math">
+\[A_{i-1,j-1}=\int_0^L{\varphi}_{i}'(x){\varphi}_{j}'(x) {\, \mathrm{d}x},\quad
+b_{i-1}=\int_0^L2{\varphi}_{i}(x) {\, \mathrm{d}x},\]</div>
+<p>where the <span class="math">\(i\)</span> and <span class="math">\(j\)</span> indices run as <span class="math">\(i,j=1,\ldots,N+1=N_n-2\)</span>.</p>
+<p>The <span class="math">\({\varphi}_i(x)\)</span> function is a hat function with peak at <span class="math">\(x=x_{i}\)</span>
+and a linear variation in <span class="math">\([x_{i-1},x_{i}]\)</span> and
+<span class="math">\([x_{i},x_{i+1}]\)</span>.
+The derivative is <span class="math">\(1/h\)</span> to the left of <span class="math">\(x_{i}\)</span> and <span class="math">\(-1/h\)</span> to
+the right, or more formally,</p>
+<div class="math" id="equation-fem:approx:fe:Dphi:1:formula2">
+<span id="eq-fem-approx-fe-dphi-1-formula2"></span><span class="eqno">(2)</span>\[\begin{split}     {\varphi}_i'(x) = \left\lbrace\begin{array}{ll}
+     0, &amp; x &lt; x_{i-1},\\
+     h^{-1},
+     &amp; x_{i-1} \leq x &lt; x_{i},\\
+     -h^{-1},
+     &amp; x_{i} \leq x &lt; x_{i+1},\\
+     0, &amp; x\geq x_{i+1}
+     \end{array}
+     \right.\end{split}\]</div>
+<p>Figure <a class="reference internal" href="#fem-approx-fe-fig-dp1"><em>Illustration of the derivative of piecewise linear basis functions associated with nodes in cell 2</em></a> shows <span class="math">\({\varphi}_2'(x)\)</span> and <span class="math">\({\varphi}_3'(x)\)</span>.</p>
+<div class="figure" id="fem-approx-fe-fig-dp1">
+<a class="reference internal image-reference" href="_images/fe_mesh1D_dphi_2_3.png"><img alt="_images/fe_mesh1D_dphi_2_3.png" src="_images/fe_mesh1D_dphi_2_3.png" style="width: 400px;" /></a>
+<p class="caption"><em>Illustration of the derivative of piecewise linear basis functions associated with nodes in cell 2</em></p>
+</div>
+<p>We realize that <span class="math">\({\varphi}_i'\)</span> and <span class="math">\({\varphi}_j'\)</span> has no overlap, and hence their
+product vanishes, unless <span class="math">\(i\)</span> and <span class="math">\(j\)</span> are nodes belonging to the same
+cell. The only nonzero contributions to the coefficient matrix are
+therefore</p>
+<div class="math">
+\[\begin{split}A_{i-1,i-2} &amp;=\int_0^L{\varphi}_i'(x) {\varphi}_{i-1}'(x) {\, \mathrm{d}x},\\
+A_{i-1,i-1}&amp;=\int_0^L{\varphi}_{i}'(x)^2 {\, \mathrm{d}x}, \\
+A_{i-1,i}&amp;=\int_0^L{\varphi}_{i}'(x){\varphi}_{i+1}'(x) {\, \mathrm{d}x},\end{split}\]</div>
+<p>for <span class="math">\(i=1,\ldots,N+1\)</span>, but for <span class="math">\(i=1\)</span>, <span class="math">\(A_{i-1,i-2}\)</span> is not defined,
+and for <span class="math">\(i=N+1\)</span>, <span class="math">\(A_{i-1,i}\)</span> is not defined.</p>
+<p>We see that <span class="math">\({\varphi}_{i-1}'(x)\)</span> and <span class="math">\({\varphi}_i'(x)\)</span> have overlap of one
+cell <span class="math">\(\Omega^{(i-1)}=[x_{i-1},x_{i}]\)</span> and that their product
+then is <span class="math">\(-1/h^{2}\)</span>. The integrand is constant and therefore
+<span class="math">\(A_{i-1,i-2}=-h^{-2}h=-h^{-1}\)</span>.
+A similar reasoning can be applied to
+<span class="math">\(A_{i-1,i}\)</span>, which also becomes <span class="math">\(-h^{-1}\)</span>. The integral of
+<span class="math">\({\varphi}_i'(x)^2\)</span> gets contributions from two cells,
+<span class="math">\(\Omega^{(i-1)}=[x_{i-1},x_{i}]\)</span> and
+<span class="math">\(\Omega^{(i)}=[x_{i},x_{i+1}]\)</span>, but <span class="math">\({\varphi}_i'(x)^2=h^{-2}\)</span> in
+both cells, and the length of the integration interval is <span class="math">\(2h\)</span> so
+we get
+<span class="math">\(A_{i-1,i-1}=2h^{-1}\)</span>.</p>
+<p>The right-hand side involves an integral of <span class="math">\(2{\varphi}_i(x)\)</span>,
+<span class="math">\(i=1,\ldots,N_n-2\)</span>,
+which is just the area under a hat function of height 1 and width
+<span class="math">\(2h\)</span>, i.e., equal to <span class="math">\(h\)</span>. Hence, <span class="math">\(b_{i-1}=2h\)</span>.</p>
+<p>To summarize the linear system, we switch from <span class="math">\(i\)</span> to <span class="math">\(i+1\)</span> such that
+we can write</p>
+<div class="math">
+\[A_{i,i-1}=A_{i,i+1}=-h^{-1},\quad A_{i,i}=2h^{-1},\quad
+b_i = 2h{\thinspace .}\]</div>
+<p>The equation system to be solved only involves the unknowns
+<span class="math">\(c_i\)</span> for <span class="math">\(i\in{\mathcal{I}_s}\)</span>. With our numbering of unknowns and
+nodes, we have that <span class="math">\(c_i\)</span> equals <span class="math">\(u(x_{i+1})\)</span>.
+The complete matrix system that takes the following form:</p>
+<div class="math" id="equation-fem:deq:1D:ex1:Ab:glob">
+<span id="eq-fem-deq-1d-ex1-ab-glob"></span><span class="eqno">(3)</span>\[\begin{split}     \frac{1}{h}\left(
+     \begin{array}{ccccccccc}
+     1 &amp; -1 &amp; 0
+     &amp;\cdots &amp;
+     \cdots &amp; \cdots &amp; \cdots &amp;
+     \cdots &amp; 0 \\
+     -1 &amp; 2 &amp; -1 &amp; \ddots &amp;   &amp; &amp;  &amp; &amp;  \vdots \\
+     0 &amp; -1 &amp; 2 &amp; -1 &amp;
+     \ddots &amp; &amp;  &amp;  &amp; \vdots \\
+     \vdots &amp; \ddots &amp;  &amp; \ddots &amp; \ddots &amp; 0 &amp;  &amp; &amp; \vdots \\
+     \vdots &amp;  &amp; \ddots &amp; \ddots &amp; \ddots &amp; \ddots &amp; \ddots &amp; &amp; \vdots \\
+     \vdots &amp; &amp;  &amp; 0 &amp; -1 &amp; 2 &amp; -1 &amp; \ddots &amp; \vdots \\
+     \vdots &amp; &amp; &amp;  &amp; \ddots &amp; \ddots &amp; \ddots &amp;\ddots  &amp; 0 \\
+     \vdots &amp; &amp; &amp; &amp;  &amp;\ddots  &amp; \ddots &amp;\ddots  &amp; -1 \\
+     0 &amp;\cdots &amp; \cdots &amp;\cdots &amp; \cdots &amp; \cdots  &amp; 0 &amp; -1 &amp; 1
+     \end{array}
+     \right)
+     \left(
+     \begin{array}{c}
+     c_0 \\
+     \vdots\\
+     \vdots\\
+     \vdots \\
+     \vdots \\
+     \vdots \\
+     \vdots \\
+     \vdots\\
+     c_{N}
+     \end{array}
+     \right)
+     =
+     \left(
+     \begin{array}{c}
+     2h \\
+     \vdots\\
+     \vdots\\
+     \vdots \\
+     \vdots \\
+     \vdots \\
+     \vdots \\
+     \vdots\\
+     2h
+     \end{array}
+     \right)\end{split}\]</div>
+</div>
+<div class="section" id="comparison-with-a-finite-difference-discretization">
+<h2>Comparison with a finite difference discretization<a class="headerlink" href="#comparison-with-a-finite-difference-discretization" title="Permalink to this headline">¶</a></h2>
+<p>A typical row in the matrix system can be written as</p>
+<div class="math" id="equation-fem:deq:1D:fem:ex1:c">
+<span id="eq-fem-deq-1d-fem-ex1-c"></span><span class="eqno">(4)</span>\[     -\frac{1}{h}c_{i-1} + \frac{2}{h}c_{i} - \frac{1}{h}c_{i+1} = 2h{\thinspace .}\]</div>
+<p>Let us introduce the notation <span class="math">\(u_j\)</span> for the value of <span class="math">\(u\)</span> at node <span class="math">\(j\)</span>:
+<span class="math">\(u_j=u(x_{j})\)</span> since we have the interpretation
+<span class="math">\(u(x_{j})=\sum_jc_j{\varphi}(x_{j})=\sum_j c_j\delta_{ij}=c_j\)</span>.
+The unknowns <span class="math">\(c_0,\ldots,c_N\)</span> are <span class="math">\(u_1,\ldots,u_{N_n-2}\)</span>.
+Shifting <span class="math">\(i\)</span> with <span class="math">\(i+1\)</span> in <a href="#equation-fem:deq:1D:fem:ex1:c">(4)</a> and inserting
+<span class="math">\(u_i = c_{i-1}\)</span>, we get</p>
+<div class="math" id="equation-fem:deq:1D:fem:ex1">
+<span id="eq-fem-deq-1d-fem-ex1"></span><span class="eqno">(5)</span>\[     -\frac{1}{h}u_{i-1} + \frac{2}{h}u_{i} - \frac{1}{h}u_{i+1} = 2h,\]</div>
+<p>A finite difference discretization of <span class="math">\(-u''(x)=2\)</span> by a centered,
+second-order finite difference approximation <span class="math">\(u''(x_i)\approx [D_x D_x u]_i\)</span>
+with <span class="math">\(\Delta x = h\)</span>
+yields</p>
+<div class="math">
+\[-\frac{u_{i-1} - 2u_{i} + u_{i+1}}{h^2} = 2,\]</div>
+<p>which is, in fact, equivalent to <a href="#equation-fem:deq:1D:fem:ex1">(5)</a> if
+<a href="#equation-fem:deq:1D:fem:ex1">(5)</a> is divided by <span class="math">\(h\)</span>.
+Therefore, the finite difference and the finite element method are
+equivalent in this simple test problem.</p>
+<p>Sometimes a finite element method generates the finite difference
+equations on a uniform mesh, and sometimes the finite element method
+generates equations that are different.  The differences are modest,
+but may influence the numerical quality of the solution significantly,
+especially in time-dependent problems.</p>
+</div>
+<div class="section" id="cellwise-computations-1">
+<span id="fem-deq-1d-comp-elmwise"></span><h2>Cellwise computations  (1)<a class="headerlink" href="#cellwise-computations-1" title="Permalink to this headline">¶</a></h2>
+<p>We now employ the cell by cell computational procedure where
+an element matrix and vector are calculated for each cell and
+assembled in the global linear system.
+All integrals are mapped to the local reference coordinate system
+<span class="math">\(X\in [-1,1]\)</span>.
+In the present case, the matrix entries contain derivatives
+with respect to <span class="math">\(x\)</span>,</p>
+<div class="math">
+\[A_{i-1,j-1}^{(e)}=\int_{\Omega^{(e)}} {\varphi}_i'(x){\varphi}_j'(x) {\, \mathrm{d}x}
+= \int_{-1}^1 \frac{d}{dx}{\tilde{\varphi}}_r(X)\frac{d}{dx}{\tilde{\varphi}}_s(X)
+\frac{h}{2} {\, \mathrm{d}X},\]</div>
+<p>where the global degree of freedom <span class="math">\(i\)</span> is related to the local
+degree of freedom <span class="math">\(r\)</span> through <span class="math">\(i=q(e,r)\)</span>. Similarly,
+<span class="math">\(j=q(e,s)\)</span>. The local degrees of freedom run as <span class="math">\(r,s=0,1\)</span> for a P1
+element.</p>
+<div class="section" id="the-integral-for-the-element-matrix">
+<h3>The integral for the element matrix<a class="headerlink" href="#the-integral-for-the-element-matrix" title="Permalink to this headline">¶</a></h3>
+<p>There are simple formulas for the basis functions <span class="math">\({\tilde{\varphi}}_r(X)\)</span> as
+functions of <span class="math">\(X\)</span>.
+However, we now
+need to find the derivative of <span class="math">\({\tilde{\varphi}}_r(X)\)</span> with respect to <span class="math">\(x\)</span>.
+Given</p>
+<div class="math">
+\[{\tilde{\varphi}}_0(X)=\frac{1}{2}(1-X),\quad{\tilde{\varphi}}_1(X)=\frac{1}{2}(1+X),\]</div>
+<p>we can easily compute <span class="math">\(d{\tilde{\varphi}}_r/ dX\)</span>:</p>
+<div class="math">
+\[\frac{d{\tilde{\varphi}}_0}{dX} = -\frac{1}{2},\quad  \frac{d{\tilde{\varphi}}_1}{dX} = \frac{1}{2}{\thinspace .}\]</div>
+<p>From the chain rule,</p>
+<div class="math">
+\[\frac{d{\tilde{\varphi}}_r}{dx} = \frac{d{\tilde{\varphi}}_r}{dX}\frac{dX}{dx}
+= \frac{2}{h}\frac{d{\tilde{\varphi}}_r}{dX}{\thinspace .}\]</div>
+<p>The transformed integral is then</p>
+<div class="math">
+\[A_{i-1,j-1}^{(e)}=\int_{\Omega^{(e)}} {\varphi}_i'(x){\varphi}_j'(x) {\, \mathrm{d}x}
+= \int_{-1}^1 \frac{2}{h}\frac{d{\tilde{\varphi}}_r}{dX}\frac{2}{h}\frac{d{\tilde{\varphi}}_s}{dX}
+\frac{h}{2} {\, \mathrm{d}X}
+{\thinspace .}\]</div>
+</div>
+<div class="section" id="the-integral-for-the-element-vector">
+<h3>The integral for the element vector<a class="headerlink" href="#the-integral-for-the-element-vector" title="Permalink to this headline">¶</a></h3>
+<p>The right-hand side is transformed according to</p>
+<div class="math">
+\[b_{i-1}^{(e)} = \int_{\Omega^{(e)}} 2{\varphi}_i(x) {\, \mathrm{d}x} =
+\int_{-1}^12{\tilde{\varphi}}_r(X)\frac{h}{2} {\, \mathrm{d}X},\quad i=q(e,r),\ r=0,1
+{\thinspace .}\]</div>
+</div>
+<div class="section" id="detailed-calculations-of-the-element-matrix-and-vector">
+<h3>Detailed calculations of the element matrix and vector<a class="headerlink" href="#detailed-calculations-of-the-element-matrix-and-vector" title="Permalink to this headline">¶</a></h3>
+<p>Specifically for P1 elements we arrive at the following calculations for
+the element matrix entries:</p>
+<div class="math">
+\[\begin{split}\tilde A_{0,0}^{(e)} &amp;= \int_{-1}^1\frac{2}{h}\left(-\frac{1}{2}\right)
+\frac{2}{h}\left(-\frac{1}{2}\right)\frac{h}{2} {\, \mathrm{d}X} = \frac{1}{h}\\
+\tilde A_{0,1}^{(e)} &amp;= \int_{-1}^1\frac{2}{h}\left(-\frac{1}{2}\right)
+\frac{2}{h}\left(\frac{1}{2}\right)\frac{h}{2} {\, \mathrm{d}X} = -\frac{1}{h}\\
+\tilde A_{1,0}^{(e)} &amp;= \int_{-1}^1\frac{2}{h}\left(\frac{1}{2}\right)
+\frac{2}{h}\left(-\frac{1}{2}\right)\frac{h}{2} {\, \mathrm{d}X} = -\frac{1}{h}\\
+\tilde A_{1,1}^{(e)} &amp;= \int_{-1}^1\frac{2}{h}\left(\frac{1}{2}\right)
+\frac{2}{h}\left(\frac{1}{2}\right)\frac{h}{2} {\, \mathrm{d}X} = \frac{1}{h}\end{split}\]</div>
+<p>The element vector entries become</p>
+<div class="math">
+\[\begin{split}\tilde b_0^{(e)} &amp;= \int_{-1}^12\frac{1}{2}(1-X)\frac{h}{2} {\, \mathrm{d}X} = h\\
+\tilde b_1^{(e)} &amp;= \int_{-1}^12\frac{1}{2}(1+X)\frac{h}{2} {\, \mathrm{d}X} = h{\thinspace .}\end{split}\]</div>
+<p>Expressing these entries in matrix and vector notation, we have</p>
+<div class="math" id="equation-fem:deq:1D:ex1:Ab:elm">
+<span id="eq-fem-deq-1d-ex1-ab-elm"></span><span class="eqno">(6)</span>\[\begin{split}     \tilde A^{(e)} =\frac{1}{h}\left(\begin{array}{rr}
+     1 &amp; -1\\
+     -1 &amp; 1
+     \end{array}\right),\quad
+     \tilde b^{(e)} = h\left(\begin{array}{c}
+     1\\
+     1
+     \end{array}\right){\thinspace .}\end{split}\]</div>
+</div>
+<div class="section" id="contributions-from-the-first-and-last-cell">
+<h3>Contributions from the first and last cell<a class="headerlink" href="#contributions-from-the-first-and-last-cell" title="Permalink to this headline">¶</a></h3>
+<p>The first and last cell involve only one unknown and one basis function
+because of the Dirichlet boundary conditions at the first and last
+node.
+The element matrix therefore becomes a <span class="math">\(1\times 1\)</span> matrix and there
+is only one entry in the element vector. On cell 0, only <span class="math">\({\psi}_0={\varphi}_1\)</span>
+is involved, corresponding to integration with <span class="math">\({\tilde{\varphi}}_1\)</span>. On cell <span class="math">\(N_e\)</span>,
+only <span class="math">\({\psi}_N={\varphi}_{N_n-2}\)</span> is involved, corresponding to
+integration with <span class="math">\({\tilde{\varphi}}_0\)</span>.
+We then get the special end-cell contributions</p>
+<div class="math" id="equation-fem:deq:1D:ex1:Ab:elm:ends">
+<span id="eq-fem-deq-1d-ex1-ab-elm-ends"></span><span class="eqno">(7)</span>\[     \tilde A^{(e)} =\frac{1}{h}\left(\begin{array}{r}
+     1
+     \end{array}\right),\quad
+     \tilde b^{(e)} = h\left(\begin{array}{c}
+     1
+     \end{array}\right),\]</div>
+<p>for <span class="math">\(e=0\)</span> and <span class="math">\(e=N_e\)</span>. In these cells, we have only one degree of
+freedom, not two as in the interior cells.</p>
+</div>
+<div class="section" id="assembly">
+<h3>Assembly<a class="headerlink" href="#assembly" title="Permalink to this headline">¶</a></h3>
+<p>The next step is to assemble the contributions from the various cells.
+The assembly of an element matrix and vector into the global matrix
+and right-hand side can be expressed as</p>
+<div class="math">
+\[A_{q(e,r),q(e,s)} = A_{q(e,r),q(e,s)} + \tilde A^{(e)}_{r,s},\quad
+b_{q(e,r)} = b_{q(e,r)} + \tilde b^{(e)}_{r},\quad\]</div>
+<p>for <span class="math">\(r\)</span> and <span class="math">\(s\)</span> running over all local degrees of freedom in cell <span class="math">\(e\)</span>.</p>
+<p>To make the assembly algorithm more precise, it is convenient to set up
+Python data structures and a code snippet for carrying out all details
+of the algorithm.
+For a mesh of four equal-sized P1 elements and <span class="math">\(L=2\)</span> we have</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">vertices</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+<span class="n">cells</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]]</span>
+<span class="n">dof_map</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+</pre></div>
+</div>
+<p>The total number of degrees of freedom is 3, being the function
+values at the internal 3 nodes where <span class="math">\(u\)</span> is unknown.
+In cell 0 we have global degree of freedom 0, the next
+cell has <span class="math">\(u\)</span> unknown at its two nodes, which become
+global degrees of freedom 0 and 1, and so forth according to
+the <tt class="docutils literal"><span class="pre">dof_map</span></tt> list. The mathematical <span class="math">\(q(e,r)\)</span> quantity is nothing
+but the <tt class="docutils literal"><span class="pre">dof_map</span></tt> list.</p>
+<p>Assume all element matrices are stored in a list <tt class="docutils literal"><span class="pre">Ae</span></tt> such that
+<tt class="docutils literal"><span class="pre">Ae[e][i,j]</span></tt> is <span class="math">\(\tilde A_{i,j}^{(e)}\)</span>. A corresponding list
+for the element vectors is named <tt class="docutils literal"><span class="pre">be</span></tt>, where <tt class="docutils literal"><span class="pre">be[e][r]</span></tt> is
+<span class="math">\(\tilde b_r^{(e)}\)</span>.
+A Python code snippet
+illustrates all details of the assembly algorithm:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># A[i,j]: coefficient matrix, b[i]: right-hand side</span>
+<span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Ae</span><span class="p">)):</span>
+    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Ae</span><span class="p">[</span><span class="n">e</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Ae</span><span class="p">[</span><span class="n">e</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">A</span><span class="p">[</span><span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">,</span><span class="n">r</span><span class="p">],</span><span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">,</span><span class="n">s</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">Ae</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+        <span class="n">b</span><span class="p">[</span><span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">,</span><span class="n">r</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">be</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The general case with <tt class="docutils literal"><span class="pre">N_e</span></tt> P1 elements of length <tt class="docutils literal"><span class="pre">h</span></tt> has</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">N_n</span> <span class="o">=</span> <span class="n">N_e</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="n">vertices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">h</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_n</span><span class="p">)]</span>
+<span class="n">cells</span> <span class="o">=</span> <span class="p">[[</span><span class="n">e</span><span class="p">,</span> <span class="n">e</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_e</span><span class="p">)]</span>
+<span class="n">dof_map</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">+</span> <span class="p">[[</span><span class="n">e</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">e</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">N_e</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[[</span><span class="n">N_n</span><span class="o">-</span><span class="mi">2</span><span class="p">]]</span>
+</pre></div>
+</div>
+<p>Carrying out the assembly results in a linear system that is identical
+to <a href="#equation-fem:deq:1D:ex1:Ab:glob">(3)</a>, which is not surprising since
+the procedures is mathematically equivalent to the calculations
+in the physical domain.</p>
+<p>A fundamental problem with the matrix system we have assembled is that
+the boundary conditions are not incorporated if <span class="math">\(u(0)\)</span> or <span class="math">\(u(L)\)</span>
+are different from zero. The next sections deals with this issue.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Computing with finite elements</a><ul>
+<li><a class="reference internal" href="#finite-element-mesh-and-basis-functions">Finite element mesh and basis functions</a></li>
+<li><a class="reference internal" href="#computation-in-the-global-physical-domain">Computation in the global physical domain</a></li>
+<li><a class="reference internal" href="#comparison-with-a-finite-difference-discretization">Comparison with a finite difference discretization</a></li>
+<li><a class="reference internal" href="#cellwise-computations-1">Cellwise computations  (1)</a><ul>
+<li><a class="reference internal" href="#the-integral-for-the-element-matrix">The integral for the element matrix</a></li>
+<li><a class="reference internal" href="#the-integral-for-the-element-vector">The integral for the element vector</a></li>
+<li><a class="reference internal" href="#detailed-calculations-of-the-element-matrix-and-vector">Detailed calculations of the element matrix and vector</a></li>
+<li><a class="reference internal" href="#contributions-from-the-first-and-last-cell">Contributions from the first and last cell</a></li>
+<li><a class="reference internal" href="#assembly">Assembly</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="._main_varform003.html"
+                        title="previous chapter">Examples on variational formulations</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_varform005.html"
+                        title="next chapter">Boundary conditions: specified nonzero value</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_varform004.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_varform005.html" title="Boundary conditions: specified nonzero value"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="._main_varform003.html" title="Examples on variational formulations"
+             >previous</a> |</li>
+        <li><a href="index.html">Computing with variational forms</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

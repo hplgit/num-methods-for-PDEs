@@ -1,239 +1,661 @@
 .. !split
 
-.. _softeng1:prog:se:git:
+Tests for verifying implementations
+===================================
 
-Packaging the software for other users
-======================================
+Any module with functions should have a set of tests that can
+check the
+correctness of the implementations.
+There exists
+well-established procedures and corresponding tools for automating
+the execution of such tests. One can in this way, with a one-line command,
+run large test sets and confirm that the software works (as far as the
+tests tell!). Here we shall illustrate two important
+software testing techniques: *doctest* and *unit testing*.
+The first one is Python specific, while unit testing is the dominating
+test technique for computer software today.
 
-As soon as you have some working software with a potential to be shared
-with others, you should package your software in a standard way such
-that users can easily download your software, install it, improve it,
-and ask you to approve the improvements in new versions of the software.
-During recent years, the software development community has established
-quite firm tools and rules for how this is done.
+Doctests
+--------
 
-Software directory tree
------------------------
+.. index:: doctests
 
-We start with organizing our software as a directory tree. Our
-software consists of one module file, ``decay.py``, and potentially
-unit tests in a separate file in a directory ``tests``.
+.. index::
+   single: software testing; doctests
 
-Distributing just a module file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Let us start out with the minimum solution: just the ``decay.py``
-file containing all test functions for all unit tests. The the software
-is just one file and all we need is a directory with this file.
-In addition, users will expect an installation script ``setup.py``
-and a ``README`` file telling what the software is about, email to the
-author, URL where the software can be downloaded, or other similar
-information.
-
-The ``setup.py`` file can be as short as
+A doc string, the first string after the function header, is used to
+document the purpose of functions and their arguments
+(see the section :ref:`softeng1:basic:func`). Very often it
+is instructive to include an example in the doc string
+on how to use the function.
+Interactive examples in the Python shell are most illustrative as
+we can see the output resulting from the statements and expressions.
+For example,
+we can in the ``solver`` function include an example on calling
+this function and printing the computed ``u`` and ``t`` arrays:
 
 .. code-block:: python
 
-        from distutils.core import setup
-        setup(name='decay',
-              version='0.1',
-              py_modules=['decay'],
-              scripts=['decay.py'],
-              )
+        def solver(I, a, T, dt, theta):
+            """
+            Solve u'=-a*u, u(0)=I, for t in (0,T] with steps of dt.
+        
+        
+            >>> u, t = solver(I=0.8, a=1.2, T=1.5, dt=0.5, theta=0.5)
+            >>> for t_n, u_n in zip(t, u):
+            ...     print 't=%.1f, u=%.14f' % (t_n, u_n)
+            t=0.0, u=0.80000000000000
+            t=0.5, u=0.43076923076923
+            t=1.0, u=0.23195266272189
+            t=1.5, u=0.12489758761948
+            """
+            ...
 
-The ``py_modules`` argument specifies a list of modules to be installed, while
-``scripts`` specifies programs to be run. The modules are typically
-installed in some ``lib`` directory on the computer system, e.g.,
-``/usr/local/lib/python2.7/dist-packages``, while executable programs go to
-``/usr/local/bin``. To install the ``decay.py`` in these two places, a user
-just runs
+When such interactive demonstrations are inserted in doc strings,
+Python's `doctest <http://docs.python.org/library/doctest.html>`__
+module can be used to automate running all commands
+in interactive sessions and compare new output with the output
+appearing in the doc string.  All we have to do in the current example
+is to run the module file ``decay.py`` with
+
+.. code-block:: python
+
+        Terminal> python -m doctest decay.py
+
+This command imports the ``doctest`` module, which runs all
+doctests found in the file and reports discrepancies between
+expected and computed output.
+Alternatively, the test block in a module may run all doctests
+by
+
+.. code-block:: python
+
+        if __name__ == '__main__':
+            import doctest
+            doctest.testmod()
+
+Doctests can also be embedded in nose/pytest unit tests
+as explained in the next section.
+
+
+.. admonition:: Doctests prevent command-line arguments
+
+   No additional command-line argument is allowed when running doctests.
+   If your program relies on command-line input, make sure the doctests
+   can be run *without* such input.
+
+
+
+
+The execution command above will report any problem if a test fails.
+For example, changing the last digit ``8`` in the output of the doctest
+to ``7`` triggers a report:
 
 .. code-block:: text
 
-        Terminal> sudo python setup.py install
+        Terminal> python -m doctest decay.py
+        ********************************************************
+        File "decay.py", line ...
+        Failed example:
+            for t_n, u_n in zip(t, u):
+                print 't=%.1f, u=%.14f' % (t_n, u_n)
+        Expected:
+            t=0.0, u=0.80000000000000
+            t=0.5, u=0.43076923076923
+            t=1.0, u=0.23195266272189
+            t=1.5, u=0.12489758761947
+        Got:
+            t=0.0, u=0.80000000000000
+            t=0.5, u=0.43076923076923
+            t=1.0, u=0.23195266272189
+            t=1.5, u=0.12489758761948
 
-A user can easily install the software on her personal account if
-a system-wide installation is not desirable. We refer to the
-`installation documentation <https://docs.python.org/2/install/index.html#alternate-installation>`__ for the many arguments that can be given to ``setup.py``.
 
-The software package is in the case above a directory ``decay`` with three files
+.. admonition:: Pay attention to the number of digits in doctest results
+
+   Note that in the output of ``t`` and ``u`` we write ``u`` with 14 digits.
+   Writing all 16 digits is not a good idea: if the tests are run on
+   different hardware, round-off errors might be different, and
+   the ``doctest`` module detects that the numbers are not precisely the same
+   and reports failures. In the present application, where :math:`0 < u(t) \leq 0.8`,
+   we expect round-off errors to be of size :math:`10^{-16}`, so comparing 15
+   digits would probably be reliable, but we compare 14 to be on the
+   safe side. On the other hand, comparing a small number of digits may
+   hide software errors.
+
+
+
+
+Doctests are highly encouraged as they do two things: 1) demonstrate
+how a function is used and 2) test that the function works.
+
+
+.. admonition:: Caution
+
+   Doctests requires careful coding if they use command-line input or
+   print results to the terminal window. Command-line input must
+   be simulated by filling ``sys.argv`` correctly, e.g.,
+   ``sys.argv = '--I 1.0 --a 5'.split``.
+   The output lines of print statements inside doctests
+   must be copied exactly as they
+   appear when running the statements in an interactive Python shell.
+
+
+
+
+Unit tests and test functions
+-----------------------------
+
+.. index:: nose tests
+
+.. index:: pytest tests
+
+.. index:: unit testing
+
+.. index::
+   single: software testing; nose
+
+.. index::
+   single: software testing; pytest
+
+The unit testing technique consists of identifying small units
+of code, say a function, and write one or more tests for
+each unit. One test should, ideally, not depend on the outcome of
+other tests. The recommended practice is actually to
+design and write the unit tests first and *then* implement the functions!
+
+In scientific computing it is not always obvious how to best perform
+unit testing. The units is naturally larger than in non-scientific
+software. Very often the solution procedure of a mathematical problem
+identifies a unit, such as our ``solver`` function.
+
+.. index:: test function
+
+.. index::
+   single: software testing; test function
+
+Two Python test frameworks: nose and pytest
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Python offers two very easy-to-use software frameworks for implementing
+unit tests: nose and pytest. These work (almost) in the same way,
+but my recommendation is to go for pytest.
+
+Test function requirements
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each test can in these frameworks be realized as a *test function*
+that follows three rules:
+
+ 1. The name must start with ``test_``.
+
+ 2. Function arguments are not allowed.
+
+ 3. An ``AssertionError`` exception must be raised if the test fails.
+
+A specific example might be illustrative before proceeding.
+We have the following function that we want to test:
+
+.. code-block:: python
+
+        def double(n):
+            return 2*n
+
+The corresponding test function may look like this:
+
+.. code-block:: python
+
+        def test_double():
+            """Test that double(n) works for one specific n."""
+            n = 4
+            expected = 2*4
+            computed = double(4)
+            if expected != computed:
+                raise AssertionError
+
+The last two lines, however, are never written like this in test functions.
+Instead, use Python's ``assert`` statement: ``assert success, msg``, where
+``success`` is a boolean variable, which is ``False`` if the test fails, and
+``msg`` is *an optional* message string that is printed when the test fails.
+A better version of the test function is therefore
+
+.. code-block:: python
+
+        def test_double():
+            """Test that double(n) works for one specific n."""
+            n = 4
+            expected = 2*4
+            computed = double(4)
+            msg = 'expected %g, computed %g' % (expected, computed)
+            success = expected == computed
+            assert success, msg
+
+Comparison of real numbers
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In scientific computing we very often have to deal with real numbers and
+finite precision arithmetics (round-off errors)
+so the ``==`` operator is not suitable for checking that
+a test passes. Instead, we must be replace ``==`` by a comparison
+based on a tolerance. Here is a slightly different function that
+we want to test:
+
+.. code-block:: python
+
+        def third(x):
+            return x/3.
+
+We write a test function where the expected result is computed as
+:math:`\frac{1}{3}x` rather than :math:`x/3`:
+
+.. code-block:: python
+
+        def test_third():
+            """Check that third(x) works for many x values."""
+            for x in np.linspace(0, 1, 21):
+                expected = (1/3.)*x
+                computed = third(x)
+                success = expected == computed
+                assert success
+
+This ``test_third`` function executes silently, i.e., no failure,
+until ``x`` becomes 0.15. Then round-off errors make the ``==`` comparison
+``False``. In fact, seven ``x`` values face this problem.
+The solution is to compare ``expected`` and ``computed``
+with a small tolerance:
+
+.. code-block:: python
+
+        def test_third():
+            """Check that third(x) works for many x values."""
+            for x in np.linspace(0, 1, 21):
+                expected = (1/3.)*x
+                computed = third(x)
+                tol = 1E-15
+                success = abs(expected - computed) < tol
+                assert success
+
+Real numbers should never be compared with the ``==`` operator, but always
+with the absolute value of the difference and a tolerance.
+
+Special assert functions from nose
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The nose test framework contains more tailored
+*assert functions* that can be called instead of using the ``assert``
+statement. For example, comparing two objects within
+a tolerance, as in the present
+case, can be done by ``assert_almost_equal``:
+
+.. code-block:: python
+
+        import nose.tools as nt
+        
+        def test_third():
+            x = 0.15
+            expected = (1/3.)*x
+            computed = third(x)
+            nt.assert_almost_equal(
+                expected, computed, delta=1E-15,
+                msg='diff=%.17E' % (expected - computed))
+
+Whether to use the plain ``assert`` statement with a comparison based on
+a tolerance or to use the ready-made function ``assert_almost_equal``
+depends on the programmer's preference. The pytest framework (which we
+recommend) sticks to the plain ``assert`` statement.
+
+Locating test functions
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Test functions can reside in a module together with the functions they
+are supposed to verify, or the test functions can be collected in
+separate files having names starting with ``test``. Actually,
+nose and pytest can automatically recursively run all test functions
+in all ``test*.py``
+files in the current and all subdirectories!
+
+The `decay.py <http://tinyurl.com/nm5587k/softeng1/decay.py>`__ module file features
+test functions in the module, but we could equally well have made
+a subdirectory ``tests`` and put the test functions in
+`tests/test_decay.py <http://tinyurl.com/nm5587k/softeng1/tests/test_decay.py>`__.
+
+Running tests
+~~~~~~~~~~~~~
+
+To run all test functions in the file ``decay.py`` do
 
 .. code-block:: text
 
-        Terminal> ls decay
-        README   decay.py   setup.pu
+        Terminal> nosetests -s -v decay.py
+        Terminal> py.test -s -v decay.py
 
-Distributing a package
-~~~~~~~~~~~~~~~~~~~~~~
+The ``-s`` option ensures that output from the test functions is printed
+in the terminal window, and ``-v`` prints the outcome of each individual
+test function.
 
-If the software consists of more files than one or two modules, one
-should make a Python *package* out of it. In our case we make a
-package ``decay`` containing one module, also called ``decay``.
-A typical import for a user is then
+Alternatively, if the test functions are in some separate
+``test*.py`` files,
+we can just write
 
 .. code-block:: text
 
+        Terminal> py.test -s -v
+
+to *recursively* run *all* test functions in the current
+directory tree. The corresponding
+
+.. code-block:: text
+
+        Terminal> nosetests -s -v
+
+command does the same, but requires subdirectory names to start
+with ``test`` or end with ``_test`` or ``_tests`` (which is a good habit anyway).
+An example of a ``tests`` directory with a ``test*.py``
+file is found in `src/softeng1/tests <http://tinyurl.com/nm5587k/softeng1/tests>`__.
+
+.. index:: doctest in test function
+
+Embedding doctests in a test function
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Doctests can also be executed from nose/pytest unit tests. Here
+is an example of a file `test_decay_doctest.py <http://tinyurl.com/nm5587k/softeng1/tests/test_decay_doctest.py>`__ where we in the test block run all the doctests
+in the imported module ``decay``, but we also include a test function that
+does the same:
+
+.. code-block:: python
+
+        import sys, os
+        sys.path.insert(0, os.pardir)
         import decay
-        u, t = decay.decay.solver(...)
+        import doctest
+        
+        def test_decay_module_with_doctest():
+            """Doctest embedded in a nose/pytest unit test."""
+            # Test all functions with doctest in module decay
+            failure_count, test_count = doctest.testmod(m=decay)
+            assert failure_count == 0
+        
+        if __name__ == '__main__':
+            # Run all functions with doctests in this module
+            failure_count, test_count = doctest.testmod(m=decay)
 
-To make a package ``decay``, create a directory ``decay`` and an empty
-file in it with name ``__init__.py``.
+We can then run ``py.test`` or ``nosetests`` and trigger the doctest.
 
+Installing nose and pytest
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. admonition:: Package import in ``__init__.py``
+With ``pip`` available, it is trivial to install nose and/or pytest:
+``sudo pip install nose`` and ``sudo pip install pytest``.
 
-   One can ease the use of the package by providing a somewhat simpler
-   import like
-   
-   .. code-block:: text
-   
-           import decay
-           u, t = decay.solver(...)
-           
-           # or
-           from decay import solver
-           u, t = solver(...)
-   
-   This is accomplished by putting an import statement in the ``__init__.py``
-   file, which is always run when doing the package import ``import decay``
-   or ``from decay import``. The ``__init__.py`` file reads
-   
-   .. code-block:: python
-   
-           from decay import *
+Test function for the solver
+----------------------------
 
+Finding good test problems for verifying the implementation of numerical
+methods is a topic on its own. The challenge is that we very seldom know
+what the numerical errors are. For the present model problem
+:ref:`(3.1) <Eq:softeng1:ode>`-:ref:`(3.2) <Eq:softeng1:u0>` solved by
+:ref:`(3.3) <Eq:softeng1:utheta>` one can, fortunately, derive a formula for
+the numerical approximation:
 
+.. math::
+         u^n = I\left(
+        \frac{1 - (1-\theta) a\Delta t}{1 + \theta a \Delta t}
+        \right)^n{\thinspace .}
 
-
-A ``setup.py`` script must now specify the directory name of the package
-and also an executable program (``scripts=``)
-in case we want to run ``decay.py`` as a stand-alone application:
+Then we know that the implementation should
+produce numbers that agree with this formula to machine precision.
+The formula for :math:`u^n` is known as an *exact discrete solution* of the
+problem and can be coded as
 
 .. code-block:: python
 
-        from distutils.core import setup
-        import os
+        def exact_discrete_solution(n, I, a, theta, dt):
+            """Return exact discrete solution of the numerical schemes."""
+            dt = float(dt)  # avoid integer division
+            A = (1 - (1-theta)*a*dt)/(1 + theta*dt*a)
+            return I*A**n
+
+A test function can evaluate this solution on a time mesh
+and check that the ``u`` values produced by the ``solver`` function
+do not deviate with more than a small tolerance:
+
+.. code-block:: python
+
+        def test_exact_discrete_solution():
+            """Check that solver reproduces the exact discr. sol."""
+            theta = 0.8; a = 2; I = 0.1; dt = 0.8
+            Nt = int(8/dt)  # no of steps
+            u, t = solver(I=I, a=a, T=Nt*dt, dt=dt, theta=theta)
         
-        setup(name='decay',
-              version='0.1',
-              author='Hans Petter Langtangen',
-              author_email='hpl@simula.no',
-              url='https://github.com/hplgit/decay-package/',
-              packages=['decay'],
-              scripts=[os.path.join('decay', 'decay.py')]
-             )
-
-We have also added some author and download information.
-The reader is referred to the `Distutils documentation <https://docs.python.org/2/distutils/setupscript.html>`__ for more information on how to
-write ``setup.py`` scripts.
-
-
-.. admonition:: Remark about the executable file
-
-   The executable program, ``decay.py``, is above taken to be the complete module
-   file ``decay.py``. It would normally be preferred to instead write a very
-   short script essentially importing ``decay`` and
-   running the test block in ``decay.py``.
-   In this way, we distribute a module and a very short file, say ``decay-main.py``,
-   as executable program:
-   
-   .. code-block:: python
-   
-           import decay
-           decay.experiment_compare_dt(True)
-           decay.plt.show()
-   
-   (This import assumes an ``__init__.py`` file with ``from decay import *``.)
-
-
-
-
-In this package example, we move the unit tests out of the ``decay.py``
-module to a separate file, ``test_decay.py``, and place this file in a
-directory ``tests``. Then the ``nosetests`` and ``py.test`` programs will
-automatically find and execute the tests.
-
-The complete directory structure reads
-
-.. code-block:: text
-
-        Terminal> /bin/ls -R
-        .:
-        decay  README  setup.py
+            # Evaluate exact discrete solution on the mesh
+            u_de = np.array([exact_discrete_solution(n, I, a, theta, dt)
+                             for n in range(Nt+1)])
         
-        ./decay:
-        decay.py  __init__.py  tests
+            # Find largest deviation
+            diff = np.abs(u_de - u).max()
+            tol = 1E-14
+            success = diff < tol
+            assert success
+
+An important topic to address in test functions is potentially
+problematic input to functions. For example, if :math:`a`, :math:`\Delta t`, and
+:math:`\theta` are integers, one may face problems with unintended integer
+division in the numerical solution algorithm for the present mathematical
+problem. We should therefore add a test to make sure our ``solver``
+function does not fall into this potential trap:
+
+.. code-block:: python
+
+        def test_potential_integer_division():
+            """Choose variables that can trigger integer division."""
+            theta = 1; a = 1; I = 1; dt = 2
+            Nt = 4
+            u, t = solver(I=I, a=a, T=Nt*dt, dt=dt, theta=theta)
+            u_de = np.array([exact_discrete_solution(n, I, a, theta, dt)
+                             for n in range(Nt+1)])
+            diff = np.abs(u_de - u).max()
+            assert diff < 1E-14
+
+Test function for reading positional command-line arguments
+-----------------------------------------------------------
+
+The function ``read_command_line_positional`` extracts numbers from the
+command line. To test it, decide on a set of numbers, fill ``sys.argv``
+appropriately, and check that we get the expected numbers:
+
+.. code-block:: python
+
+        def test_read_command_line_positional():
+            # Decide on a data set of input parameters
+            I = 1.6;  a = 1.8;  T = 2.2;  theta = 0.5
+            dt_values = [0.1, 0.2, 0.05]
+            # Expected return from read_command_line_positional
+            expected = [I, a, T, theta, dt_values]
+            # Construct corresponding sys.argv array
+            sys.argv = [sys.argv[0], str(I), str(a), str(T), 'CN'] + \ 
+                       [str(dt) for dt in dt_values]
+            computed = read_command_line_positional()
+            for expected_arg, computed_arg in zip(expected, computed):
+                assert expected_arg == computed_arg
+
+Note that ``sys.argv[0]`` is always the program name and that we have to
+copy that string from the original ``sys.argv`` array to the new one we
+construct in the test function. (Actually, the test function destroys
+the original ``sys.argv`` that Python fetched from the command line.)
+
+Any numerical code writer should always be skeptical to the use of the exact
+equality operator ``==`` in test functions, since round-off errors often
+come into play. Here, however, we set some real values, convert them
+to strings and convert back again to real numbers (of the same precision).
+This string-number conversion does not involve any finite precision
+arithmetics effects so we
+can safely use ``==`` in tests. Note also that the last element in
+``expected`` and ``computed`` is the list ``dt_values``, and ``==`` works
+for comparing two lists too.
+
+Test function for reading option-value pairs
+--------------------------------------------
+
+Testing the function ``read_command_line_argparse`` follows the
+set up for the similar function for positional command-line arguments.
+However, the construction of the command line is a bit more complicated.
+We find it convenient to construct the line as a string and then
+split the line into words to get the desired list ``sys.argv``:
+
+.. code-block:: python
+
+        def test_read_command_line_argparse():
+            I = 1.6;  a = 1.8;  T = 2.2;  theta = 0.5
+            dt_values = [0.1, 0.2, 0.05]
+            # Expected return from read_command_line_positional
+            expected = [I, a, T, theta, dt_values]
+            # Construct corresponding sys.argv array
+            cml = '%s --a %s --I %s --T %s --scheme CN --dt ' % \ 
+                  (sys.argv[0], a, I, T)
+            cml = cml + ' '.join([str(dt) for dt in dt_values])
+            sys.argv = cml.split()
+            computed = read_command_line_argparse()
+            for expected_arg, computed_arg in zip(expected, computed):
+                assert expected_arg == computed_arg
+
+
+.. admonition:: Let silent test functions speak up during development
+
+   When you develop test functions in a module, it is common to use IPython
+   to reload the module and call the test function as it gets developed:
+   
+   .. code-block:: ipy
+   
+           In[1]: import decay
+           
+           In[2]: decay.test_read_command_line_argparse()
+           
+           In[3]: reload(decay)  # force new import
+           
+           In[2]: decay.test_read_command_line_argparse()  # test again
+   
+   However, a working test function is completely silent! Many
+   find it psychologically annoying to convince themselves that a
+   completely silent function is doing the right things. It can therefore,
+   during development of a test function, be convenient to insert
+   print statements in the function to monitor that the function body
+   is indeed executed. For example, one can print the expected and
+   computed values in the terminal window.
+
+
+
+
+.. _softeng1:basic:unittest:
+
+Classical class-based unit testing
+----------------------------------
+
+.. index:: unit testing
+
+.. index:: unittest
+
+.. index::
+   single: software testing; unit testing (class-based)
+
+The test functions written for the nose and pytest frameworks are
+very straightforward and to the point, with no framework-required boilerplate
+code. We just write the statements we need to make the computations and
+comparisons and then apply the required ``assert``.
+
+The classical way of implementing unit tests (which derives from the
+JUnit object-oriented tool in Java) leads to much more comprehensive
+implementations with much more boilerplate code.  Python comes with a
+built-in module ``unittest`` for doing this type of classical unit
+tests. Although I strongly recommend to use nose or pytest over
+``unittest``, class-based unit testing in the style of ``unittest`` has a
+very strong position in computer science and is so widespread that
+even computational scientists should have an idea how such unit test
+code is written. A short demo of ``unittest`` is therefore included
+next.
+
+.. index:: unittest
+
+.. index:: TestCase (class in unittest)
+
+Suppose we have a function ``double(x)`` in a module file ``mymod.py``:
+
+.. code-block:: python
+
+        def double(x):
+            return 2*x
+
+Unit testing with the aid of the ``unittest`` module
+consists of writing a file ``test_mymod.py`` for testing the functions
+in ``mymod.py``. The individual tests must be methods with names
+starting with ``test_`` in a class derived from class ``TestCase`` in
+``unittest``. With one test method for the function ``double``, the
+``test_mymod.py`` file becomes
+
+.. code-block:: python
+
+        import unittest
+        import mymod
         
-        ./decay/tests:
-        test_decay.py
+        class TestMyCode(unittest.TestCase):
+            def test_double(self):
+                x = 4
+                expected = 2*x
+                computed = mymod.double(x)
+                self.assertEqual(expected, computed)
+        
+        if __name__ == '__main__':
+            unittest.main()
 
-Publishing the software at GitHub
----------------------------------
+The test is run by executing the test file ``test_mymod.py`` as a standard
+Python program. There is no support in ``unittest`` for automatically
+locating and running all tests in all test files in a directory tree.
 
-The leading site today for publishing open source software projects is
-GitHub at `<http://github.com>`_, provided you want your software to
-be open to the world. With a paid GitHub account, you can have private
-projects too.
+We could use the basic ``assert`` statement as we did with nose and pytest
+functions, but those who write code based on ``unittest`` almost
+exclusively use the wide range of built-in assert functions such
+as ``assertEqual``, ``assertNotEqual``, ``assertAlmostEqual``, to mention
+some of them.
 
-Sign up for a GitHub account if you do not already have one.
-Go to your account settings and provide an SSH key (typically
-the file ``~/.ssh/id_rsa.pub``) such that
-you can communicate with GitHub without being prompted for your password.
-All communication between your computer and GitHub goes via the version
-control system Git. This may at first sight look tedious, but
-this is the way professionals work with software today. With Git you
-have full control of the history of your files, "who did what when",
-and this technology is superior to simpler ones like Dropbox and Google Drive,
-especially when you collaborate with others.
-There is a reason why Git has been the standard of working with files,
-and there is no reason why you should not adopt this tool.
+Translation of ``test_exact_discrete_solution``,
+``test_potential_integer_division``, and the other test functions in ``decay.py``
+to ``unittest`` means making a new file ``test_decay.py`` file with a
+test class ``TestDecay`` where the stand-alone functions for
+nose/pytest now become methods in this class.
 
-To create a new project, click on *New repository* on the main page and
-fill out a project name. Click on the check button *Initialize this
-repository with a README*, and click on *Create repository*. The next
-step is to clone (copy) the GitHub repo (short for repository) to
-your own computer(s) and fill it with files. The typical clone command is
+.. code-block:: python
 
-.. code-block:: text
-
-        Terminal> git clone git://github.com:username/projname.git
-
-where ``username`` is your GitHub username and ``projname`` is the
-name of the repo (project). The result of ``git clone`` is a
-directory ``projname``. Go to this directory and add files.
-As soon as the repo directory is populated with files, run
-
-.. code-block:: text
-
-        Terminal> git add .
-        Terminal> git commit -am 'First registration of project files'
-        Terminal> git push origin master
-
-The above ``git`` commands look cryptic, but these commands plus
-2-3 more are the essence of what you need in your daily work with
-files in small or big
-software projects. I strongly encourage you to
-learn more about `version control systems and project hosting
-sites <http://hplgit.github.io/teamods/bitgit/html/>`__
-[Ref1]_.
-
-Your project files are now stored in the cloud at
-`<https://github.com/username/projname>`_. Anyone can
-get the software by the listed ``git clone`` command you used above,
-or by clicking on the links for zip and tar files.
-
-Every time you update the project files, you need to register
-the update at GitHub by
-
-.. code-block:: text
-
-        Terminal> git commit -am 'Description of the changes you made...'
-        Terminal> git push origin master
-
-The files at GitHub are now synchronized with your local ones.
-
-You are recommended to read `a quick intro <http://hplgit.github.io/teamods/bitgit/html/>`__ that makes you
-you up and going with this style of
-professional work. And you should put all your writings and programming
-projects in repositories in the cloud!
+        import unittest
+        import decay
+        import numpy as np
+        
+        def exact_discrete_solution(n, I, a, theta, dt):
+            ...
+        
+        class TestDecay(unittest.TestCase):
+        
+            def test_exact_discrete_solution(self):
+                theta = 0.8; a = 2; I = 0.1; dt = 0.8
+                Nt = int(8/dt)  # no of steps
+                u, t = decay.solver(I=I, a=a, T=Nt*dt, dt=dt, theta=theta)
+                # Evaluate exact discrete solution on the mesh
+                u_de = np.array([exact_discrete_solution(n, I, a, theta, dt)
+                                 for n in range(Nt+1)])
+                diff = np.abs(u_de - u).max()  # largest deviation
+                self.assertAlmostEqual(diff, 0, delta=1E-14)
+        
+            def test_potential_integer_division(self):
+                ...
+                self.assertAlmostEqual(diff, 0, delta=1E-14)
+        
+            def test_read_command_line_positional(self):
+                ...
+                for expected_arg, computed_arg in zip(expected, computed):
+                    self.assertEqual(expected_arg, computed_arg)
+        
+            def test_read_command_line_argparse(self):
+                ...
+        
+        if __name__ == '__main__':
+            unittest.main()
 

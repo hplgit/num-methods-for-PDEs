@@ -1,515 +1,530 @@
 .. !split
 
-.. _fem:deq:1D:varform:ex:
+.. _fem:deq:1D:fem1:
 
-Examples on variational formulations
-====================================
+Computing with finite elements
+==============================
 
-The following sections derive variational formulations for some
-prototype differential equations in 1D, and demonstrate how we with
-ease can handle variable coefficients, mixed Dirichlet and Neumann
-boundary conditions, first-order derivatives, and nonlinearities.
+The purpose of this section is to demonstrate in detail how
+the finite element method can the be applied to the model problem
 
-Variable coefficient
---------------------
+.. math::
+         -u''(x) = 2,\quad x\in (0,L),\ u(0)=u(L)=0,
 
-Consider the problem
+with variational formulation
+
+.. math::
+         (u',v') = (2,v)\quad\forall v\in V{\thinspace .}  
+
+The variational formulation is derived in
+the section :ref:`fem:deq:1D:varform`.
+
+Finite element mesh and basis functions
+---------------------------------------
+
+We introduce a finite element mesh with :math:`N_e` cells, all
+with length :math:`h`, and number
+the cells from left to right.
+Choosing P1 elements, there are two
+nodes per cell, and the coordinates of the nodes become
 
 .. math::
         
-        -\frac{d}{dx}\left( {\alpha}(x)\frac{du}{dx}\right) = f(x),\quad x\in\Omega =[0,L],\ 
-        u(0)=C,\ u(L)=D{\thinspace .}
+        x_{i} = i h,\quad h=L/N_e,\quad i=0,\ldots,N_n-1=N_e,
         
 
-There are two new features of this problem compared with
-previous examples: a variable
-coefficient :math:`a(x)` and nonzero Dirichlet conditions at both boundary points.
+provided we number the nodes from left to right.
 
-Let us first deal with the boundary conditions. We seek
+Each of the nodes, :math:`i`, is associated a finite element basis function
+:math:`{\varphi}_i(x)`.  When approximating a given function :math:`f` by a finite
+element function :math:`u`, we expand :math:`u` using finite element basis
+functions associated with *all* nodes in the mesh. The parameter
+:math:`N`, which counts the unknowns from 0 to :math:`N` then equations :math:`N_n-1`.
+However, when solving differential equations we will often have
+:math:`N<N_n-1` because of Dirichlet boundary conditions. Why this is the case
+will now be explained in detail.
 
-.. math::
-         u(x) = B(x) + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_i(x),
+In our case with homogeneous Dirichlet boundary conditions we do not
+need any boundary function :math:`B(x)` and can work with the expansion
 
-with :math:`{\psi}_i(0)={\psi}_i(L)=0` for :math:`i\in{\mathcal{I}_s}`. The function :math:`B(x)`
-must then fulfill :math:`B(0)=C` and :math:`B(L)=D`. How :math:`B` varies in between
-:math:`x=0` and :math:`x=L` is not of importance. One possible choice is
-
-.. math::
-         B(x) = C + \frac{1}{L}(D-C)x,
-
-which follows from :ref:`(3.24) <Eq:fem:deq:1D:essBC:Bfunc:gen>` with :math:`p=1`.
-
-We seek :math:`(u-B)\in V`. As usual,
+.. _Eq:fem:deq:1D:fem1:ex:u:
 
 .. math::
-         V = \hbox{span}\{{\psi}_0,\ldots,{\psi}_N\},
-
-but the two Dirichlet boundary conditions demand that
-
-.. math::
-         {\psi}_i(0)={\psi}_i(L)=0, \quad i\in{\mathcal{I}_s}{\thinspace .}
-
-Note that any :math:`v\in V` has the property :math:`v(0)=v(L)=0`.
-
-The residual arises by inserting our :math:`u` in the differential equation:
-
-.. math::
-         R = -\frac{d}{dx}\left( {\alpha}\frac{du}{dx}\right) -f{\thinspace .} 
-
-Galerkin's method is
-
-.. math::
+   :label: fem:deq:1D:fem1:ex:u
         
-        (R, v) = 0,\quad \forall v\in V,
+        u(x) = \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x){\thinspace .}
+        
         
 
-or written with explicit integrals,
+Because of the boundary conditions, we must demand
+:math:`{\psi}_i(0)={\psi}_i(L)=0`, :math:`i\in{\mathcal{I}_s}`. When :math:`{\psi}_i` for all
+:math:`i=0,\ldots,N` is to be selected among the finite element basis
+functions :math:`{\varphi}_j`, :math:`i=0,\ldots,N_n-1`, we have to avoid using
+:math:`{\varphi}_j` functions that do not vanish at :math:`x_{0}=0` and
+:math:`x_{N_n-1}=L`. However, all :math:`{\varphi}_j` vanish at these two nodes for
+:math:`j=1,\ldots,N_n-2`.  Only basis functions associated with the end nodes,
+:math:`{\varphi}_0` and :math:`{\varphi}_{N_n-1}`, violate the boundary conditions of
+our differential equation. Therefore, we select the basis functions
+:math:`{\varphi}_i` to be the set of finite element basis functions associated
+with all the interior nodes in the mesh:
 
 .. math::
-        
-        \int_{\Omega} \left(-\frac{d}{dx}\left( {\alpha}\frac{du}{dx}\right) -f\right)v {\, \mathrm{d}x} = 0,\quad \forall v\in V {\thinspace .}
-        
+         {\psi}_i={\varphi}_{i+1},\quad i=0,\ldots,N{\thinspace .}
 
-We proceed with integration by parts to lower the derivative from
-second to first order:
+The :math:`i` index runs over all the unknowns :math:`c_i` in the expansion
+for :math:`u`, and in this case :math:`N=N_n-3`.
 
-.. math::
-         -\int_{\Omega} \frac{d}{dx}\left( {\alpha}(x)\frac{du}{dx}\right) v {\, \mathrm{d}x}
-        = \int_{\Omega} {\alpha}(x)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} -
-        \left[{\alpha}\frac{du}{dx}v\right]_0^L
-        {\thinspace .}
-        
-
-The boundary term vanishes since :math:`v(0)=v(L)=0`.
-The variational formulation is then
+In the general case, the nodes are not necessarily numbered from left
+to right, so we introduce a mapping from the node numbering, or more
+precisely the degree of freedom numbering, to the numbering of
+the unknowns in the final equation system. These unknowns take on
+the numbers :math:`0,\ldots,N`. Unknown number :math:`j` in the linear system
+corresponds to degree of freedom number :math:`\nu (j)`, :math:`j\in{\mathcal{I}_s}`.
+We can then write
 
 .. math::
-        
-        \int_{\Omega} {\alpha}(x)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} = \int_{\Omega} f(x)v{\, \mathrm{d}x},\quad
-        \forall v\in V{\thinspace .}
-        
+         {\psi}_i={\varphi}_{\nu(i)},\quad i=0,\ldots,N{\thinspace .}
 
-The variational formulation can alternatively be written in a more
-compact form:
+With a regular numbering as in the present example,
+:math:`\nu(j) = j+1`, :math:`j=0,\ldots,N=N_n-3`.
+
+.. _fem:deq:1D:comp:global:
+
+Computation in the global physical domain
+-----------------------------------------
+
+We shall first perform a computation in the :math:`x`
+coordinate system because the integrals can be easily computed
+here by simple, visual,
+geometric considerations. This is called a global approach
+since we work in the :math:`x` coordinate system and compute integrals on
+the global domain :math:`[0,L]`.
+
+The entries in the coefficient matrix and right-hand side are
 
 .. math::
         
-        ({\alpha} u',v') = (f,v),\quad \forall v\in V
-        {\thinspace .}
+        A_{i,j}=\int_0^L{\psi}_i'(x){\psi}_j'(x) {\, \mathrm{d}x},\quad
+        b_i=\int_0^L2{\psi}_i(x) {\, \mathrm{d}x}, \quad i,j\in{\mathcal{I}_s}{\thinspace .}
         
 
-The corresponding abstract notation reads
-
-.. math::
-         a(u,v)=L(v)\quad\forall v\in V,
-
-with
-
-.. math::
-         a(u,v)= ({\alpha} u',v'),\quad L(v)=(f,v) {\thinspace .}  
-
-Note that the :math:`a` in the notation :math:`a(\cdot,\cdot)` is not to be mixed with the
-variable coefficient :math:`a(x)` in the differential equation.
-
-We may insert :math:`u=B + \sum_jc_j{\psi}_j` and :math:`v={\psi}_i` to
-derive the linear system:
+Expressed in terms of finite element basis functions :math:`{\varphi}_i` we
+get the alternative expressions
 
 .. math::
         
-        ({\alpha} B' + {\alpha} \sum_{j\in{\mathcal{I}_s}} c_j {\psi}_j', {\psi}_i') =
-        (f,{\psi}_i), \quad i\in{\mathcal{I}_s} {\thinspace .}
+        A_{i,j}=\int_0^L{\varphi}_{i+1}'(x){\varphi}_{j+1}'(x) {\, \mathrm{d}x},\quad
+        b_i=\int_0^L2{\varphi}_{i+1}(x) {\, \mathrm{d}x},\quad i,j\in{\mathcal{I}_s}{\thinspace .}
         
 
-Isolating everything with the :math:`c_j` coefficients on the left-hand side
-and all known terms on the right-hand side
-gives
-
-.. math::
-         \sum_{j\in{\mathcal{I}_s}} ({\alpha}{\psi}_j', {\psi}_i')c_j  =
-        (f,{\psi}_i) + (a(D-C)L^{-1}, {\psi}_i'), \quad i\in{\mathcal{I}_s}
-        {\thinspace .}
-        
-
-This is nothing but a linear system :math:`\sum_j A_{i,j}c_j=b_i`
-with
+For the following calculations the subscripts on the finite
+element basis functions are more conveniently written as
+:math:`i` and :math:`j` instead of :math:`i+1` and :math:`j+1`, so our notation becomes
 
 .. math::
         
-        A_{i,j} &= (a{\psi}_j', {\psi}_i') = \int_{\Omega} {\alpha}(x){\psi}_j'(x),
-        {\psi}_i'(x){\, \mathrm{d}x},\\ 
-        b_i &= (f,{\psi}_i) + (a(D-C)L^{-1},{\psi}_i')=
-        \int_{\Omega} \left(f(x){\psi}_i(x) + {\alpha}(x)\frac{D-C}{L}{\psi}_i'(x)\right) {\, \mathrm{d}x}
-        {\thinspace .}
+        A_{i-1,j-1}=\int_0^L{\varphi}_{i}'(x){\varphi}_{j}'(x) {\, \mathrm{d}x},\quad
+        b_{i-1}=\int_0^L2{\varphi}_{i}(x) {\, \mathrm{d}x},
         
 
-First-order derivative in the equation and boundary condition
--------------------------------------------------------------
+where the :math:`i` and :math:`j` indices run as :math:`i,j=1,\ldots,N+1=N_n-2`.
 
-The next problem to formulate in variational form reads
+The :math:`{\varphi}_i(x)` function is a hat function with peak at :math:`x=x_{i}`
+and a linear variation in :math:`[x_{i-1},x_{i}]` and
+:math:`[x_{i},x_{i+1}]`.
+The derivative is :math:`1/h` to the left of :math:`x_{i}` and :math:`-1/h` to
+the right, or more formally,
 
-.. math::
-        
-        -u''(x) + bu'(x) = f(x),\quad x\in\Omega =[0,L],\ 
-        u(0)=C,\ u'(L)=E{\thinspace .}
-        
-
-The new features are a first-order derivative :math:`u'` in the equation
-and the boundary
-condition involving the derivative: :math:`u'(L)=E`.
-Since we have a Dirichlet condition at :math:`x=0`,
-we must force :math:`{\psi}_i(0)=0` and use a boundary function
-to take care of the condition :math:`u(0)=C`.
-Because there is no Dirichlet
-condition on :math:`x=L` we do not make any requirements to :math:`{\psi}_i(L)`.
-The simplest possible choice of :math:`B(x)` is :math:`B(x)=C`.
-
-The expansion for :math:`u` becomes
+.. _Eq:fem:approx:fe:Dphi:1:formula2:
 
 .. math::
-         u = C + \sum_{j\in{\mathcal{I}_s}} c_j {\psi}_i(x)
-        {\thinspace .}
+   :label: fem:approx:fe:Dphi:1:formula2
+        
+        {\varphi}_i'(x) = \left\lbrace\begin{array}{ll}
+        0, & x < x_{i-1},\\ 
+        h^{-1},
+        & x_{i-1} \leq x < x_{i},\\ 
+        -h^{-1},
+        & x_{i} \leq x < x_{i+1},\\ 
+        0, & x\geq x_{i+1}
+        \end{array}
+        \right.
+        
         
 
-The variational formulation arises from multiplying the equation by
-a test function :math:`v\in V` and integrating over :math:`\Omega`:
+Figure :ref:`fem:approx:fe:fig:dP1` shows :math:`{\varphi}_2'(x)` and :math:`{\varphi}_3'(x)`.
 
-.. math::
-          (-u'' + bu' - f, v) = 0,\quad\forall v\in V
+.. _fem:approx:fe:fig:dP1:
 
-We apply integration by parts to the :math:`u''v` term only. Although we could
-also integrate :math:`u' v` by parts, this is not common.
-The result becomes
+.. figure:: fe_mesh1D_dphi_2_3.png
+   :width: 400
 
-.. math::
-         (u',v') + (bu',v) = (f,v) + [u' v]_0^L, \quad\forall v\in V {\thinspace .} 
+   *Illustration of the derivative of piecewise linear basis functions associated with nodes in cell 2*
 
-Now, :math:`v(0)=0` so
+.. FIGURE: [fig-varform/phi/mpl_fe_dbasis_p1_4e_lab, width=600]  Illustration of the derivative of piecewise linear basis functions associated with nodes in cell 1.
 
-.. math::
-         [u' v]_0^L = u'(L)v(L) = E v(L),
-
-because :math:`u'(L)=E`.
-Integration by parts allows us to take care of the Neumann condition
-in the boundary term.
-
-.. index:: natural boundary condition
-
-.. index:: essential boundary condition
-
-
-.. admonition:: Natural and essential boundary conditions
-
-   Omitting a boundary term like :math:`[u'v]_0^L`
-   implies that we actually impose the condition :math:`u'=0` unless there
-   is a Dirichlet condition (i.e., :math:`v=0`) at that point! This result has great
-   practical consequences, because it is easy to forget the boundary
-   term, and this mistake may implicitly
-   set a boundary condition! Since
-   homogeneous Neumann conditions can be incorporated
-   without doing anything, and non-homogeneous Neumann conditions can
-   just be inserted in the boundary term,
-   such conditions are known as *natural boundary conditions*.
-   Dirichlet conditions requires more essential steps in the mathematical
-   formulation, such as forcing all :math:`{\varphi}_i=0` on the boundary
-   and constructing a :math:`B(x)`, and are
-   therefore known as *essential boundary conditions*.
-
-
-
-
-The final variational form reads
-
-.. math::
-         (u',v') + (bu',v) = (f,v) + E v(L), \quad\forall v\in V {\thinspace .} 
-
-In the abstract notation we have
-
-.. math::
-         a(u,v)=L(v)\quad\forall v\in V,
-
-with the particular formulas
-
-.. math::
-         a(u,v)=(u',v') + (bu',v),\quad L(v)= (f,v) + E v(L){\thinspace .} 
-
-The associated linear system is derived by inserting :math:`u=B+\sum_jc_j{\psi}_j`
-and replacing :math:`v` by :math:`{\psi}_i` for :math:`i\in{\mathcal{I}_s}`. Some algebra results in
-
-.. math::
-         \sum_{j\in{\mathcal{I}_s}} \underbrace{(({\psi}_j',{\psi}_i') + (b{\psi}_j',{\psi}_i))}_{A_{i,j}} c_j = \underbrace{(f,{\psi}_i) + E {\psi}_i(L)}_{b_i}
-        {\thinspace .}
-        
-
-Observe that in this problem, the coefficient matrix is not symmetric,
-because of the term
+We realize that :math:`{\varphi}_i'` and :math:`{\varphi}_j'` has no overlap, and hence their
+product vanishes, unless :math:`i` and :math:`j` are nodes belonging to the same
+cell. The only nonzero contributions to the coefficient matrix are
+therefore
 
 .. math::
         
-        (b{\psi}_j',{\psi}_i)=\int_{\Omega} b{\psi}_j'{\psi}_i {\, \mathrm{d}x}
-         \neq \int_{\Omega} b {\psi}_i' {\psi}_j {\, \mathrm{d}x} = ({\psi}_i',b{\psi}_j)
-        {\thinspace .}
+        A_{i-1,i-2} &=\int_0^L{\varphi}_i'(x) {\varphi}_{i-1}'(x) {\, \mathrm{d}x},\\ 
+        A_{i-1,i-1}&=\int_0^L{\varphi}_{i}'(x)^2 {\, \mathrm{d}x}, \\ 
+        A_{i-1,i}&=\int_0^L{\varphi}_{i}'(x){\varphi}_{i+1}'(x) {\, \mathrm{d}x},
         
 
-.. Too early:
+for :math:`i=1,\ldots,N+1`, but for :math:`i=1`, :math:`A_{i-1,i-2}` is not defined,
+and for :math:`i=N+1`, :math:`A_{i-1,i}` is not defined.
 
-.. For finite element basis functions, it is worth noticing that the boundary term
+We see that :math:`{\varphi}_{i-1}'(x)` and :math:`{\varphi}_i'(x)` have overlap of one
+cell :math:`\Omega^{(i-1)}=[x_{i-1},x_{i}]` and that their product
+then is :math:`-1/h^{2}`. The integrand is constant and therefore
+:math:`A_{i-1,i-2}=-h^{-2}h=-h^{-1}`.
+A similar reasoning can be applied to
+:math:`A_{i-1,i}`, which also becomes :math:`-h^{-1}`. The integral of
+:math:`{\varphi}_i'(x)^2` gets contributions from two cells,
+:math:`\Omega^{(i-1)}=[x_{i-1},x_{i}]` and
+:math:`\Omega^{(i)}=[x_{i},x_{i+1}]`, but :math:`{\varphi}_i'(x)^2=h^{-2}` in
+both cells, and the length of the integration interval is :math:`2h` so
+we get
+:math:`A_{i-1,i-1}=2h^{-1}`.
 
-.. :math:`E{\psi}_i(L)` is nonzero only in the entry :math:`b_N` since all
+The right-hand side involves an integral of :math:`2{\varphi}_i(x)`,
+:math:`i=1,\ldots,N_n-2`,
+which is just the area under a hat function of height 1 and width
+:math:`2h`, i.e., equal to :math:`h`. Hence, :math:`b_{i-1}=2h`.
 
-.. :math:`{\psi}_i`, :math:`i\neq N`, are zero at :math:`x=L`, provided the degrees of freedom
-
-.. are numbered from left to right in 1D so that :math:`x_{N}=L`.
-
-Nonlinear coefficient
----------------------
-
-Finally, we show that the techniques used above to derive variational
-forms also apply to nonlinear differential equation
-problems as well. Here is a model problem with
-a nonlinear coefficient and right-hand side:
+To summarize the linear system, we switch from :math:`i` to :math:`i+1` such that
+we can write
 
 .. math::
+         A_{i,i-1}=A_{i,i+1}=-h^{-1},\quad A_{i,i}=2h^{-1},\quad
+        b_i = 2h{\thinspace .}
+
+The equation system to be solved only involves the unknowns
+:math:`c_i` for :math:`i\in{\mathcal{I}_s}`. With our numbering of unknowns and
+nodes, we have that :math:`c_i` equals :math:`u(x_{i+1})`.
+The complete matrix system that takes the following form:
+
+.. _Eq:fem:deq:1D:ex1:Ab:glob:
+
+.. math::
+   :label: fem:deq:1D:ex1:Ab:glob
         
-        -({\alpha}(u)u')' = f(u),\quad x\in [0,L],\ u(0)=0,\ u'(L)=E
-        {\thinspace .}
-        
-
-Our space :math:`V` has basis :math:`\left\{ {{\psi}}_i \right\}_{i\in{\mathcal{I}_s}}`, and because of the
-condition :math:`u(0)=0`, we must require :math:`{\psi}_i(0)=0`, :math:`i\in{\mathcal{I}_s}`.
-
-Galerkin's method is about inserting the approximate
-:math:`u`, multiplying the differential equation by :math:`v\in V`, and integrate,
-
-.. math::
-         -\int_0^L \frac{d}{dx}\left({\alpha}(u)\frac{du}{dx}\right)v {\, \mathrm{d}x} =
-        \int_0^L f(u)v {\, \mathrm{d}x}\quad\forall v\in V
-        {\thinspace .}
-        
-
-The integration by parts does not differ from the case where we have
-:math:`{\alpha}(x)` instead of :math:`{\alpha}(u)`:
-
-.. math::
-         \int_0^L {\alpha}(u)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} =
-        \int_0^L f(u)v{\, \mathrm{d}x} + [{\alpha}(u)vu']_0^L\quad\forall v\in V
-        {\thinspace .}
-        
-
-The term :math:`{\alpha}(u(0))v(0)u'(0)=0` since :math:`v(0)`.
-The other term, :math:`{\alpha}(u(L))v(L)u'(L)`,
-is used to impose the other boundary condition :math:`u'(L)=E`, resulting in
-
-.. math::
-         \int_0^L {\alpha}(u)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} =
-        \int_0^L f(u)v{\, \mathrm{d}x} + {\alpha}(u(L))v(L)E\quad\forall v\in V,
-        
-
-or alternatively written more compactly as
-
-.. math::
-         ({\alpha}(u)u', v') = (f(u),v) + {\alpha}(u(L))v(L)E\quad\forall v\in V
-        {\thinspace .}
-        
-
-Since the problem is nonlinear, we cannot identify a bilinear
-form :math:`a(u,v)` and a linear form :math:`L(v)`.
-An abstract notation is typically *find :math:`u` such that*
-
-.. math::
-         F(u;v) = 0\quad\forall v\in V,
-
-with
-
-.. math::
-         F(u;v) = (a(u)u', v') - (f(u),v) - a(L)v(L)E
-        {\thinspace .}
-        
-
-By inserting :math:`u=\sum_j c_j{\psi}_j` we get a *nonlinear system of
-algebraic equations* for the unknowns :math:`c_i`, :math:`i\in{\mathcal{I}_s}`. Such systems must
-be solved by constructing a sequence of linear systems whose solutions
-hopefully converge to the solution of the nonlinear system. Frequently applied
-methods are Picard iteration and Newton's method.
-
-.. _fem:deq:1D:varform:ex:DN:case:
-
-Computing with Dirichlet and Neumann conditions
------------------------------------------------
-
-.. ex_varform1D.py: case2
-
-Let us perform the necessary calculations to solve
-
-.. math::
-        
-        -u''(x)=2,\quad x\in \Omega=[0,1],\quad u'(0)=C,\ u(1)=D,
-        
-
-using a global polynomial basis :math:`{\psi}_i\sim x^i`.
-The requirements on :math:`{\psi}_i` is that :math:`{\psi}_i(1)=0`, because :math:`u` is
-specified at :math:`x=1`, so a proper set of polynomial basis functions can be
-
-.. math::
-         {\psi}_i(x)=(1-x)^{i+1}, \quad i\in{\mathcal{I}_s}{\thinspace .}
-
-A suitable :math:`B(x)` function
-to handle the boundary condition :math:`u(1)=D` is :math:`B(x)=Dx`.
-The variational formulation becomes
-
-.. math::
-         (u',v') = (2,v) - Cv(0)\quad\forall v\in V{\thinspace .} 
-
-From inserting :math:`u=B + \sum_{j}c_j{\psi}_j` and choosing :math:`v={\psi}_i` we get
-
-.. math::
-         \sum_{j\in{\mathcal{I}_s}} ({\psi}_j',{\psi}_i')c_j = (2,{\psi}_i)
-        - (B',{\psi}_i') - C{\psi}_i(0),\quad i\in{\mathcal{I}_s}{\thinspace .}
-
-The entries in the linear system are then
-
-.. math::
-        
-        A_{i,j} &= ({\psi}_j',{\psi}_i') = \int_{0}^1 {\psi}_i'(x){\psi}_j'(x){\, \mathrm{d}x}
-        = \int_0^1 (i+1)(j+1)(1-x)^{i+j}{\, \mathrm{d}x} = \frac{(i+1)(j+1)}{i + j + 1},\\ 
-        b_i &= (2,{\psi}_i) - (D,{\psi}_i') -C{\psi}_i(0)\\ 
-        &= \int_0^1\left( 2{\psi}_i(x) - D{\psi}_i'(x)\right){\, \mathrm{d}x} -C{\psi}_i(0)\\ 
-        &= \int_0^1 \left( 2(1-x)^{i+1} - D(i+1)(1-x)^i\right){\, \mathrm{d}x}  -C\\ 
-        &= \frac{(D-C)(i+2) + 2}{i+2} = D - C + \frac{2}{i+2}
-        {\thinspace .}
-        
-
-Relevant ``sympy`` commands to help calculate these expressions are
-
-.. code-block:: python
-
-        from sympy import *
-        x, C, D = symbols('x C D')
-        i, j = symbols('i j', integer=True, positive=True)
-        psi_i = (1-x)**(i+1)
-        psi_j = psi_i.subs(i, j)
-        integrand = diff(psi_i, x)*diff(psi_j, x)
-        integrand = simplify(integrand)
-        A_ij = integrate(integrand, (x, 0, 1))
-        A_ij = simplify(A_ij)
-        print 'A_ij:', A_ij
-        f = 2
-        b_i = integrate(f*psi_i, (x, 0, 1)) - \ 
-              integrate(diff(D*x, x)*diff(psi_i, x), (x, 0, 1)) - \ 
-              C*psi_i.subs(x, 0)
-        b_i = simplify(b_i)
-        print 'b_i:', b_i
-
-The output becomes
-
-.. code-block:: text
-
-        A_ij: (i + 1)*(j + 1)/(i + j + 1)
-        b_i: ((-C + D)*(i + 2) + 2)/(i + 2)
-
-We can now choose some :math:`N` and form the linear system, say for :math:`N=1`:
-
-.. code-block:: python
-
-        N = 1
-        A = zeros((N+1, N+1))
-        b = zeros(N+1)
-        print 'fresh b:', b
-        for r in range(N+1):
-            for s in range(N+1):
-                A[r,s] = A_ij.subs(i, r).subs(j, s)
-            b[r,0] = b_i.subs(i, r)
-
-The system becomes
-
-.. math::
-        
-        \left(\begin{array}{cc}
-        1 & 1\\ 
-        1 & 4/3
-        \end{array}\right)
-        \left(\begin{array}{c}
-        c_0\\ 
-        c_1
-        \end{array}\right)
+        \frac{1}{h}\left(
+        \begin{array}{ccccccccc}
+        1 & -1 & 0
+        &\cdots &
+        \cdots & \cdots & \cdots &
+        \cdots & 0 \\ 
+        -1 & 2 & -1 & \ddots &   & &  & &  \vdots \\ 
+        0 & -1 & 2 & -1 &
+        \ddots & &  &  & \vdots \\ 
+        \vdots & \ddots &  & \ddots & \ddots & 0 &  & & \vdots \\ 
+        \vdots &  & \ddots & \ddots & \ddots & \ddots & \ddots & & \vdots \\ 
+        \vdots & &  & 0 & -1 & 2 & -1 & \ddots & \vdots \\ 
+        \vdots & & &  & \ddots & \ddots & \ddots &\ddots  & 0 \\ 
+        \vdots & & & &  &\ddots  & \ddots &\ddots  & -1 \\ 
+        0 &\cdots & \cdots &\cdots & \cdots & \cdots  & 0 & -1 & 1
+        \end{array}
+        \right)
+        \left(
+        \begin{array}{c}
+        c_0 \\ 
+        \vdots\\ 
+        \vdots\\ 
+        \vdots \\ 
+        \vdots \\ 
+        \vdots \\ 
+        \vdots \\ 
+        \vdots\\ 
+        c_{N}
+        \end{array}
+        \right)
         =
-        \left(\begin{array}{c}
-        1-C+D\\ 
-        2/3 -C + D
-        \end{array}\right)
+        \left(
+        \begin{array}{c}
+        2h \\ 
+        \vdots\\ 
+        \vdots\\ 
+        \vdots \\ 
+        \vdots \\ 
+        \vdots \\ 
+        \vdots \\ 
+        \vdots\\ 
+        2h
+        \end{array}
+        \right)
+        
         
 
-The solution (``c = A.LUsolve(b)``)
-becomes :math:`c_0=2 -C+D` and :math:`c_1=-1`, resulting in
+Comparison with a finite difference discretization
+--------------------------------------------------
+
+A typical row in the matrix system can be written as
+
+.. _Eq:fem:deq:1D:fem:ex1:c:
+
+.. math::
+   :label: fem:deq:1D:fem:ex1:c
+        
+        -\frac{1}{h}c_{i-1} + \frac{2}{h}c_{i} - \frac{1}{h}c_{i+1} = 2h{\thinspace .}
+        
+        
+
+Let us introduce the notation :math:`u_j` for the value of :math:`u` at node :math:`j`:
+:math:`u_j=u(x_{j})` since we have the interpretation
+:math:`u(x_{j})=\sum_jc_j{\varphi}(x_{j})=\sum_j c_j\delta_{ij}=c_j`.
+The unknowns :math:`c_0,\ldots,c_N` are :math:`u_1,\ldots,u_{N_n-2}`.
+Shifting :math:`i` with :math:`i+1` in :eq:`fem:deq:1D:fem:ex1:c` and inserting
+:math:`u_i = c_{i-1}`, we get
+
+.. _Eq:fem:deq:1D:fem:ex1:
+
+.. math::
+   :label: fem:deq:1D:fem:ex1
+        
+        -\frac{1}{h}u_{i-1} + \frac{2}{h}u_{i} - \frac{1}{h}u_{i+1} = 2h,
+        
+        
+
+A finite difference discretization of :math:`-u''(x)=2` by a centered,
+second-order finite difference approximation :math:`u''(x_i)\approx [D_x D_x u]_i`
+with :math:`\Delta x = h`
+yields
 
 .. math::
         
-        u(x) = 1 -x^2 + D + C(x-1),
+        -\frac{u_{i-1} - 2u_{i} + u_{i+1}}{h^2} = 2,
         
 
-We can form this :math:`u` in ``sympy`` and check that the differential equation
-and the boundary conditions are satisfied:
+which is, in fact, equivalent to :eq:`fem:deq:1D:fem:ex1` if
+:eq:`fem:deq:1D:fem:ex1` is divided by :math:`h`.
+Therefore, the finite difference and the finite element method are
+equivalent in this simple test problem.
+
+Sometimes a finite element method generates the finite difference
+equations on a uniform mesh, and sometimes the finite element method
+generates equations that are different.  The differences are modest,
+but may influence the numerical quality of the solution significantly,
+especially in time-dependent problems.
+
+.. There will be many examples illustrating this point.
+
+.. _fem:deq:1D:comp:elmwise:
+
+Cellwise computations  (1)
+--------------------------
+
+We now employ the cell by cell computational procedure where
+an element matrix and vector are calculated for each cell and
+assembled in the global linear system.
+All integrals are mapped to the local reference coordinate system
+:math:`X\in [-1,1]`.
+In the present case, the matrix entries contain derivatives
+with respect to :math:`x`,
+
+.. math::
+        
+        A_{i-1,j-1}^{(e)}=\int_{\Omega^{(e)}} {\varphi}_i'(x){\varphi}_j'(x) {\, \mathrm{d}x}
+        = \int_{-1}^1 \frac{d}{dx}{\tilde{\varphi}}_r(X)\frac{d}{dx}{\tilde{\varphi}}_s(X)
+        \frac{h}{2} {\, \mathrm{d}X},
+        
+
+where the global degree of freedom :math:`i` is related to the local
+degree of freedom :math:`r` through :math:`i=q(e,r)`. Similarly,
+:math:`j=q(e,s)`. The local degrees of freedom run as :math:`r,s=0,1` for a P1
+element.
+
+The integral for the element matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are simple formulas for the basis functions :math:`{\tilde{\varphi}}_r(X)` as
+functions of :math:`X`.
+However, we now
+need to find the derivative of :math:`{\tilde{\varphi}}_r(X)` with respect to :math:`x`.
+Given
+
+.. math::
+         {\tilde{\varphi}}_0(X)=\frac{1}{2}(1-X),\quad{\tilde{\varphi}}_1(X)=\frac{1}{2}(1+X), 
+
+we can easily compute :math:`d{\tilde{\varphi}}_r/ dX`:
+
+.. math::
+        
+        \frac{d{\tilde{\varphi}}_0}{dX} = -\frac{1}{2},\quad  \frac{d{\tilde{\varphi}}_1}{dX} = \frac{1}{2}{\thinspace .}
+        
+
+From the chain rule,
+
+.. math::
+        
+        \frac{d{\tilde{\varphi}}_r}{dx} = \frac{d{\tilde{\varphi}}_r}{dX}\frac{dX}{dx}
+        = \frac{2}{h}\frac{d{\tilde{\varphi}}_r}{dX}{\thinspace .}  
+
+The transformed integral is then
+
+.. math::
+        
+        A_{i-1,j-1}^{(e)}=\int_{\Omega^{(e)}} {\varphi}_i'(x){\varphi}_j'(x) {\, \mathrm{d}x}
+        = \int_{-1}^1 \frac{2}{h}\frac{d{\tilde{\varphi}}_r}{dX}\frac{2}{h}\frac{d{\tilde{\varphi}}_s}{dX}
+        \frac{h}{2} {\, \mathrm{d}X}
+        {\thinspace .}
+        
+
+The integral for the element vector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The right-hand side is transformed according to
+
+.. math::
+        
+        b_{i-1}^{(e)} = \int_{\Omega^{(e)}} 2{\varphi}_i(x) {\, \mathrm{d}x} =
+        \int_{-1}^12{\tilde{\varphi}}_r(X)\frac{h}{2} {\, \mathrm{d}X},\quad i=q(e,r),\ r=0,1
+        {\thinspace .}
+        
+
+Detailed calculations of the element matrix and vector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Specifically for P1 elements we arrive at the following calculations for
+the element matrix entries:
+
+.. math::
+        
+        \tilde A_{0,0}^{(e)} &= \int_{-1}^1\frac{2}{h}\left(-\frac{1}{2}\right)
+        \frac{2}{h}\left(-\frac{1}{2}\right)\frac{h}{2} {\, \mathrm{d}X} = \frac{1}{h}\\ 
+        \tilde A_{0,1}^{(e)} &= \int_{-1}^1\frac{2}{h}\left(-\frac{1}{2}\right)
+        \frac{2}{h}\left(\frac{1}{2}\right)\frac{h}{2} {\, \mathrm{d}X} = -\frac{1}{h}\\ 
+        \tilde A_{1,0}^{(e)} &= \int_{-1}^1\frac{2}{h}\left(\frac{1}{2}\right)
+        \frac{2}{h}\left(-\frac{1}{2}\right)\frac{h}{2} {\, \mathrm{d}X} = -\frac{1}{h}\\ 
+        \tilde A_{1,1}^{(e)} &= \int_{-1}^1\frac{2}{h}\left(\frac{1}{2}\right)
+        \frac{2}{h}\left(\frac{1}{2}\right)\frac{h}{2} {\, \mathrm{d}X} = \frac{1}{h}
+        
+
+The element vector entries become
+
+.. math::
+        
+        \tilde b_0^{(e)} &= \int_{-1}^12\frac{1}{2}(1-X)\frac{h}{2} {\, \mathrm{d}X} = h\\ 
+        \tilde b_1^{(e)} &= \int_{-1}^12\frac{1}{2}(1+X)\frac{h}{2} {\, \mathrm{d}X} = h{\thinspace .}
+        
+
+Expressing these entries in matrix and vector notation, we have
+
+.. _Eq:fem:deq:1D:ex1:Ab:elm:
+
+.. math::
+   :label: fem:deq:1D:ex1:Ab:elm
+        
+        \tilde A^{(e)} =\frac{1}{h}\left(\begin{array}{rr}
+        1 & -1\\ 
+        -1 & 1
+        \end{array}\right),\quad
+        \tilde b^{(e)} = h\left(\begin{array}{c}
+        1\\ 
+        1
+        \end{array}\right){\thinspace .}
+        
+        
+
+Contributions from the first and last cell
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The first and last cell involve only one unknown and one basis function
+because of the Dirichlet boundary conditions at the first and last
+node.
+The element matrix therefore becomes a :math:`1\times 1` matrix and there
+is only one entry in the element vector. On cell 0, only :math:`{\psi}_0={\varphi}_1`
+is involved, corresponding to integration with :math:`{\tilde{\varphi}}_1`. On cell :math:`N_e`,
+only :math:`{\psi}_N={\varphi}_{N_n-2}` is involved, corresponding to
+integration with :math:`{\tilde{\varphi}}_0`.
+We then get the special end-cell contributions
+
+.. _Eq:fem:deq:1D:ex1:Ab:elm:ends:
+
+.. math::
+   :label: fem:deq:1D:ex1:Ab:elm:ends
+        
+        \tilde A^{(e)} =\frac{1}{h}\left(\begin{array}{r}
+        1
+        \end{array}\right),\quad
+        \tilde b^{(e)} = h\left(\begin{array}{c}
+        1
+        \end{array}\right),
+        
+        
+
+for :math:`e=0` and :math:`e=N_e`. In these cells, we have only one degree of
+freedom, not two as in the interior cells.
+
+Assembly
+~~~~~~~~
+
+The next step is to assemble the contributions from the various cells.
+The assembly of an element matrix and vector into the global matrix
+and right-hand side can be expressed as
+
+.. math::
+        
+        A_{q(e,r),q(e,s)} = A_{q(e,r),q(e,s)} + \tilde A^{(e)}_{r,s},\quad
+        b_{q(e,r)} = b_{q(e,r)} + \tilde b^{(e)}_{r},\quad
+        
+
+for :math:`r` and :math:`s` running over all local degrees of freedom in cell :math:`e`.
+
+To make the assembly algorithm more precise, it is convenient to set up
+Python data structures and a code snippet for carrying out all details
+of the algorithm.
+For a mesh of four equal-sized P1 elements and :math:`L=2` we have
 
 .. code-block:: python
 
-        u = sum(c[r,0]*psi_i.subs(i, r) for r in range(N+1)) + D*x
-        print 'u:', simplify(u)
-        print "u'':", simplify(diff(u, x, x))
-        print 'BC x=0:', simplify(diff(u, x).subs(x, 0))
-        print 'BC x=1:', simplify(u.subs(x, 1))
+        vertices = [0, 0.5, 1, 1.5, 2]
+        cells = [[0, 1], [1, 2], [2, 3], [3, 4]]
+        dof_map = [[0], [0, 1], [1, 2], [2]]
 
-The output becomes
+The total number of degrees of freedom is 3, being the function
+values at the internal 3 nodes where :math:`u` is unknown.
+In cell 0 we have global degree of freedom 0, the next
+cell has :math:`u` unknown at its two nodes, which become
+global degrees of freedom 0 and 1, and so forth according to
+the ``dof_map`` list. The mathematical :math:`q(e,r)` quantity is nothing
+but the ``dof_map`` list.
 
-.. code-block:: text
+Assume all element matrices are stored in a list ``Ae`` such that
+``Ae[e][i,j]`` is :math:`\tilde A_{i,j}^{(e)}`. A corresponding list
+for the element vectors is named ``be``, where ``be[e][r]`` is
+:math:`\tilde b_r^{(e)}`.
+A Python code snippet
+illustrates all details of the assembly algorithm:
 
-        u: C*x - C + D - x**2 + 1
-        u'': -2
-        BC x=0: C
-        BC x=1: D
+.. code-block:: python
 
-The complete ``sympy`` code is found in `u_xx_2_CD.py <http://tinyurl.com/nm5587k/fem/u_xx_2_CD.py>`__.
+        # A[i,j]: coefficient matrix, b[i]: right-hand side
+        for e in range(len(Ae)):
+            for r in range(Ae[e].shape[0]):
+                for s in range(Ae[e].shape[1]):
+                    A[dof_map[e,r],dof_map[e,s]] += Ae[e][i,j]
+                b[dof_map[e,r]] += be[e][i,j]
 
-The exact solution is found by integrating twice and applying the
-boundary conditions, either by hand or using ``sympy`` as shown in
-the section :ref:`fem:deq:1D:models:simple`.  It appears that the numerical
-solution coincides with the exact one.  This result is to be expected
-because if :math:`({u_{\small\mbox{e}}} - B)\in V`, :math:`u = {u_{\small\mbox{e}}}`, as proved next.
+The general case with ``N_e`` P1 elements of length ``h`` has
 
-When the numerical method is exact
-----------------------------------
+.. code-block:: python
 
-We have some variational formulation: find :math:`(u-B)\in V` such that
-:math:`a(u,v)=L(u)\ \forall V`. The exact solution also fulfills
-:math:`a({u_{\small\mbox{e}}},v)=L(v)`, but normally :math:`({u_{\small\mbox{e}}} -B)` lies in a much larger
-(infinite-dimensional) space. Suppose, nevertheless, that
-:math:`{u_{\small\mbox{e}}} - B = E`, where :math:`E\in V`. That is, apart from Dirichlet conditions,
-:math:`{u_{\small\mbox{e}}}` lies in our finite-dimensional space :math:`V` we use to compute :math:`u`.
-Writing also :math:`u` on the same form :math:`u=B+F`, :math:`F\in V`, we have
+        N_n = N_e + 1
+        vertices = [i*h for i in range(N_n)]
+        cells = [[e, e+1] for e in range(N_e)]
+        dof_map = [[0]] + [[e-1, e] for i in range(1, N_e)] + [[N_n-2]]
 
-.. math::
-        
-        a(B+E,v) &= L(v)\quad\forall v\in V,\\ 
-        a(B+F,v) &= L(v)\quad\forall v\in V{\thinspace .}
-        
+Carrying out the assembly results in a linear system that is identical
+to :eq:`fem:deq:1D:ex1:Ab:glob`, which is not surprising since
+the procedures is mathematically equivalent to the calculations
+in the physical domain.
 
-Since these are two variational statements in the same space, we
-can subtract them and use the bilinear property of :math:`a(\cdot,\cdot)`:
-
-.. math::
-        
-        a(B+E,v) - a(B+F, v) &= L(v) - L(v)\\ 
-        a(B+E-(B+F),v) &= 0\\ 
-        a(E-F),v) &= 0
-        
-
-If :math:`a(E-F),v) = 0` for all :math:`v` in :math:`V`, then :math:`E-F` must be zero everywhere
-in the domain, i.e., :math:`E=F`. Or in other words: :math:`u={u_{\small\mbox{e}}}`. This proves
-that the exact solution is recovered if :math:`{u_{\small\mbox{e}}} - B` lies in :math:`V`., i.e.,
-can expressed as :math:`\sum_{j\in{\mathcal{I}_s}}d_j{\psi}_j` if :math:`\{{\psi}_j\}_{j\in{\mathcal{I}_s}}`
-is a basis for :math:`V`. The method will then compute the solution :math:`c_j=d_j`,
-:math:`j\in{\mathcal{I}_s}`.
-
-The case treated in the section :ref:`fem:deq:1D:varform:ex:DN:case`
-is of the type where :math:`{u_{\small\mbox{e}}} - B` is a quadratic function that is 0
-at :math:`x=1`, and therefore :math:`({u_{\small\mbox{e}}} -B)\in V`, and the method
-finds the exact solution.
+A fundamental problem with the matrix system we have assembled is that
+the boundary conditions are not incorporated if :math:`u(0)` or :math:`u(L)`
+are different from zero. The next sections deals with this issue.
 

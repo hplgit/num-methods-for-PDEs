@@ -264,19 +264,19 @@ and ``Omega`` is a 2-tuple/list holding the limits of the domain :math:`\Omega`:
 
 .. code-block:: python
 
-        import sympy as sp
+        import sympy as sym
         
         def least_squares(f, psi, Omega):
             N = len(psi) - 1
-            A = sp.zeros((N+1, N+1))
-            b = sp.zeros((N+1, 1))
-            x = sp.Symbol('x')
+            A = sym.zeros((N+1, N+1))
+            b = sym.zeros((N+1, 1))
+            x = sym.Symbol('x')
             for i in range(N+1):
                 for j in range(i, N+1):
-                    A[i,j] = sp.integrate(psi[i]*psi[j],
+                    A[i,j] = sym.integrate(psi[i]*psi[j],
                                           (x, Omega[0], Omega[1]))
                     A[j,i] = A[i,j]
-                b[i,0] = sp.integrate(psi[i]*f, (x, Omega[0], Omega[1]))
+                b[i,0] = sym.integrate(psi[i]*f, (x, Omega[0], Omega[1]))
             c = A.LUsolve(b)
             u = 0
             for i in range(len(psi)):
@@ -312,27 +312,27 @@ the improved version of function ``least_squares``:
 
         def least_squares(f, psi, Omega, symbolic=True):
             N = len(psi) - 1
-            A = sp.zeros((N+1, N+1))
-            b = sp.zeros((N+1, 1))
-            x = sp.Symbol('x')
+            A = sym.zeros((N+1, N+1))
+            b = sym.zeros((N+1, 1))
+            x = sym.Symbol('x')
             for i in range(N+1):
                 for j in range(i, N+1):
                     integrand = psi[i]*psi[j]
                     if symbolic:
-                        I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
-                    if not symbolic or isinstance(I, sp.Integral):
+                        I = sym.integrate(integrand, (x, Omega[0], Omega[1]))
+                    if not symbolic or isinstance(I, sym.Integral):
                         # Could not integrate symbolically,
                         # fall back on numerical integration
-                        integrand = sp.lambdify([x], integrand)
-                        I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
+                        integrand = sym.lambdify([x], integrand)
+                        I = sym.mpmath.quad(integrand, [Omega[0], Omega[1]])
                     A[i,j] = A[j,i] = I
         
                 integrand = psi[i]*f
                 if symbolic:
-                    I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
-                if not symbolic or isinstance(I, sp.Integral):
-                    integrand = sp.lambdify([x], integrand)
-                    I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
+                    I = sym.integrate(integrand, (x, Omega[0], Omega[1]))
+                if not symbolic or isinstance(I, sym.Integral):
+                    integrand = sym.lambdify([x], integrand)
+                    I = sym.mpmath.quad(integrand, [Omega[0], Omega[1]])
                 b[i,0] = I
             c = A.LUsolve(b)  # symbolic solve
             # c is a sympy Matrix object, numbers are in c[i,0]
@@ -353,9 +353,9 @@ computations:
 .. code-block:: python
 
         def comparison_plot(f, u, Omega, filename='tmp.pdf'):
-            x = sp.Symbol('x')
-            f = sp.lambdify([x], f, modules="numpy")
-            u = sp.lambdify([x], u, modules="numpy")
+            x = sym.Symbol('x')
+            f = sym.lambdify([x], f, modules="numpy")
+            u = sym.lambdify([x], u, modules="numpy")
             resolution = 401  # no of points in plot
             xcoor  = linspace(Omega[0], Omega[1], resolution)
             exact  = f(xcoor)
@@ -393,12 +393,12 @@ The answer is quickly found by running
 .. code-block:: python
 
         >>> from approx1D import *
-        >>> x = sp.Symbol('x')
+        >>> x = sym.Symbol('x')
         >>> f = 10*(x-1)**2-1
         >>> u, c = least_squares(f=f, psi=[1, x, x**2], Omega=[1, 2])
         >>> print u
         10*x**2 - 20*x + 9
-        >>> print sp.expand(f)
+        >>> print sym.expand(f)
         10*x**2 - 20*x + 9
 
 Now, what if we use :math:`{\psi}_i(x)=x^i` for :math:`i=0,1,\ldots,N=40`?
@@ -569,7 +569,7 @@ the section :ref:`fem:approx:global:linear` can then be computed by the
 
         N = 3
         from sympy import sin, pi
-        x = sp.Symbol('x')
+        x = sym.Symbol('x')
         psi = [sin(pi*(i+1)*x) for i in range(N+1)]
         f = 10*(x-1)**2 - 1
         Omega = [0, 1]
@@ -689,10 +689,10 @@ the matrix is diagonal and only the diagonal elements need to be computed:
             N = len(psi) - 1
             A = [0]*(N+1)
             b = [0]*(N+1)
-            x = sp.Symbol('x')
+            x = sym.Symbol('x')
             for i in range(N+1):
-                A[i] = sp.integrate(psi[i]**2, (x, Omega[0], Omega[1]))
-                b[i] = sp.integrate(psi[i]*f,  (x, Omega[0], Omega[1]))
+                A[i] = sym.integrate(psi[i]**2, (x, Omega[0], Omega[1]))
+                b[i] = sym.integrate(psi[i]*f,  (x, Omega[0], Omega[1]))
             c = [b[i]/A[i] for i in range(len(b))]
             u = 0
             for i in range(len(psi)):
@@ -711,19 +711,19 @@ fails:
             N = len(psi) - 1
             A = [0]*(N+1)       # plain list to hold symbolic expressions
             b = [0]*(N+1)
-            x = sp.Symbol('x')
+            x = sym.Symbol('x')
             for i in range(N+1):
                 # Diagonal matrix term
-                A[i] = sp.integrate(psi[i]**2, (x, Omega[0], Omega[1]))
+                A[i] = sym.integrate(psi[i]**2, (x, Omega[0], Omega[1]))
         
                 # Right-hand side term
                 integrand = psi[i]*f
                 if symbolic:
-                    I = sp.integrate(integrand,  (x, Omega[0], Omega[1]))
-                if not symbolic or isinstance(I, sp.Integral):
+                    I = sym.integrate(integrand,  (x, Omega[0], Omega[1]))
+                if not symbolic or isinstance(I, sym.Integral):
                     print 'numerical integration of', integrand
-                    integrand = sp.lambdify([x], integrand)
-                    I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
+                    integrand = sym.lambdify([x], integrand)
+                    I = sym.mpmath.quad(integrand, [Omega[0], Omega[1]])
                 b[i] = I
             c = [b[i]/A[i] for i in range(len(b))]
             u = 0
@@ -778,7 +778,7 @@ rule based on the points in ``x``.
                             lambda x: psi(x,i)*psi(x,j),
                             Omega[0], Omega[1], epsabs=1E-9, epsrel=1E-9)[0]
                     elif integration_method == 'sympy':
-                        A_ij = sp.mpmath.quad(
+                        A_ij = sym.mpmath.quad(
                             lambda x: psi(x,i)*psi(x,j),
                             [Omega[0], Omega[1]])
                     else:
@@ -791,7 +791,7 @@ rule based on the points in ``x``.
                         lambda x: f(x)*psi(x,i), Omega[0], Omega[1],
                         epsabs=1E-9, epsrel=1E-9)[0]
                 elif integration_method == 'sympy':
-                    b_i = sp.mpmath.quad(
+                    b_i = sym.mpmath.quad(
                         lambda x: f(x)*psi(x,i), [Omega[0], Omega[1]])
                 else:
                     values = f(x)*psi(x,i)
@@ -884,12 +884,12 @@ for the coefficients :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}`:
 
         def interpolation(f, psi, points):
             N = len(psi) - 1
-            A = sp.zeros((N+1, N+1))
-            b = sp.zeros((N+1, 1))
-            x = sp.Symbol('x')
+            A = sym.zeros((N+1, N+1))
+            b = sym.zeros((N+1, 1))
+            x = sym.Symbol('x')
             # Turn psi and f into Python functions
-            psi = [sp.lambdify([x], psi[i]) for i in range(N+1)]
-            f = sp.lambdify([x], f)
+            psi = [sym.lambdify([x], psi[i]) for i in range(N+1)]
+            f = sym.lambdify([x], f)
             for i in range(N+1):
                 for j in range(N+1):
                     A[i,j] = psi[j](points[i])
@@ -948,7 +948,7 @@ using two collocation points :math:`x_0=1+1/3` and :math:`x_1=1+2/3`:
         f = 10*(x-1)**2 - 1
         psi = [1, x]
         Omega = [1, 2]
-        points = [1 + sp.Rational(1,3), 1 + sp.Rational(2,3)]
+        points = [1 + sym.Rational(1,3), 1 + sym.Rational(2,3)]
         u = interpolation(f, psi, points)
         comparison_plot(f, u, Omega)
 
@@ -1071,15 +1071,15 @@ The next function computes a complete basis using equidistant points throughout
 .. code-block:: python
 
         def Lagrange_polynomials_01(x, N):
-            if isinstance(x, sp.Symbol):
-                h = sp.Rational(1, N-1)
+            if isinstance(x, sym.Symbol):
+                h = sym.Rational(1, N-1)
             else:
                 h = 1.0/(N-1)
             points = [i*h for i in range(N)]
             psi = [Lagrange_polynomial(x, i, points) for i in range(N)]
             return psi, points
 
-When ``x`` is an ``sp.Symbol`` object, we let the
+When ``x`` is an ``sym.Symbol`` object, we let the
 spacing between
 the interpolation points, ``h``, be a ``sympy`` rational number
 for nice end results in the formulas for :math:`{\psi}_i`.
@@ -1088,14 +1088,14 @@ signifies numerical computing, and then we let ``h`` be a floating-point
 number.
 Observe that the ``Lagrange_polynomial`` function works equally well
 in the symbolic and numerical case - just think of ``x`` being an
-``sp.Symbol`` object or a Python ``float``.
+``sym.Symbol`` object or a Python ``float``.
 A little interactive session illustrates the difference between symbolic
 and numerical computing of the basis functions and points:
 
 .. code-block:: ipy
 
-        >>> import sympy as sp
-        >>> x = sp.Symbol('x')
+        >>> import sympy as sym
+        >>> x = sym.Symbol('x')
         >>> psi, points = Lagrange_polynomials_01(x, N=3)
         >>> points
         [0, 1/2, 1]
@@ -1143,8 +1143,8 @@ and the interpolation techniques can be done by
 
 .. code-block:: python
 
-        x = sp.Symbol('x')
-        f = sp.sin(2*sp.pi*x)
+        x = sym.Symbol('x')
+        f = sym.sin(2*sym.pi*x)
         psi, points = Lagrange_polynomials_01(x, N)
         Omega=[0, 1]
         u, c = least_squares(f, psi, Omega)
@@ -1207,8 +1207,8 @@ both uniformly distributed points and Chebyshev nodes:
 
         def Lagrange_polynomials(x, N, Omega, point_distribution='uniform'):
             if point_distribution == 'uniform':
-                if isinstance(x, sp.Symbol):
-                    h = sp.Rational(Omega[1] - Omega[0], N)
+                if isinstance(x, sym.Symbol):
+                    h = sym.Rational(Omega[1] - Omega[0], N)
                 else:
                     h = (Omega[1] - Omega[0])/float(N)
                 points = [Omega[0] + i*h for i in range(N+1)]
@@ -1277,24 +1277,24 @@ integration.
 
         def least_squares(f, psi, Omega):
             N = len(psi) - 1
-            A = sp.zeros((N+1, N+1))
-            b = sp.zeros((N+1, 1))
-            x = sp.Symbol('x')
+            A = sym.zeros((N+1, N+1))
+            b = sym.zeros((N+1, 1))
+            x = sym.Symbol('x')
             for i in range(N+1):
                 for j in range(i, N+1):
                     integrand = psi[i]*psi[j]
-                    I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
-                    if isinstance(I, sp.Integral):
+                    I = sym.integrate(integrand, (x, Omega[0], Omega[1]))
+                    if isinstance(I, sym.Integral):
                         # Could not integrate symbolically, fallback
                         # on numerical integration with mpmath.quad
-                        integrand = sp.lambdify([x], integrand)
-                        I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
+                        integrand = sym.lambdify([x], integrand)
+                        I = sym.mpmath.quad(integrand, [Omega[0], Omega[1]])
                     A[i,j] = A[j,i] = I
                 integrand = psi[i]*f
-                I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
-                if isinstance(I, sp.Integral):
-                    integrand = sp.lambdify([x], integrand)
-                    I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
+                I = sym.integrate(integrand, (x, Omega[0], Omega[1]))
+                if isinstance(I, sym.Integral):
+                    integrand = sym.lambdify([x], integrand)
+                    I = sym.mpmath.quad(integrand, [Omega[0], Omega[1]])
                 b[i,0] = I
             c = A.LUsolve(b)
             u = 0

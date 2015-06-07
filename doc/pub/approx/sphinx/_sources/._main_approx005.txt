@@ -27,12 +27,12 @@ of degree ``d``:
 
 .. code-block:: python
 
-        import sympy as sp
+        import sympy as sym
         import numpy as np
         
         def phi_r(r, X, d):
-            if isinstance(X, sp.Symbol):
-                h = sp.Rational(1, d)  # node spacing
+            if isinstance(X, sym.Symbol):
+                h = sym.Rational(1, d)  # node spacing
                 nodes = [2*i*h - 1 for i in range(d+1)]
             else:
                 # assume X is numeric: use floats for nodes
@@ -63,7 +63,7 @@ symbolic expressions, is constructed by
 .. code-block:: python
 
         def basis(d=1):
-            X = sp.Symbol('X')
+            X = sym.Symbol('X')
             phi = [phi_r(r, X, d) for r in range(d+1)]
             return phi
 
@@ -74,16 +74,16 @@ the element matrix:
 
         def element_matrix(phi, Omega_e, symbolic=True):
             n = len(phi)
-            A_e = sp.zeros((n, n))
-            X = sp.Symbol('X')
+            A_e = sym.zeros((n, n))
+            X = sym.Symbol('X')
             if symbolic:
-                h = sp.Symbol('h')
+                h = sym.Symbol('h')
             else:
                 h = Omega_e[1] - Omega_e[0]
             detJ = h/2  # dx/dX
             for r in range(n):
                 for s in range(r, n):
-                    A_e[r,s] = sp.integrate(phi[r]*phi[s]*detJ, (X, -1, 1))
+                    A_e[r,s] = sym.integrate(phi[r]*phi[s]*detJ, (X, -1, 1))
                     A_e[s,r] = A_e[r,s]
             return A_e
 
@@ -115,18 +115,18 @@ procedure:
 
         def element_vector(f, phi, Omega_e, symbolic=True):
             n = len(phi)
-            b_e = sp.zeros((n, 1))
+            b_e = sym.zeros((n, 1))
             # Make f a function of X
-            X = sp.Symbol('X')
+            X = sym.Symbol('X')
             if symbolic:
-                h = sp.Symbol('h')
+                h = sym.Symbol('h')
             else:
                 h = Omega_e[1] - Omega_e[0]
             x = (Omega_e[0] + Omega_e[1])/2 + h/2*X  # mapping
             f = f.subs('x', x)  # substitute mapping formula for x
             detJ = h/2  # dx/dX
             for r in range(n):
-                b_e[r] = sp.integrate(f*phi[r]*detJ, (X, -1, 1))
+                b_e[r] = sym.integrate(f*phi[r]*detJ, (X, -1, 1))
             return b_e
 
 Here we need to replace the symbol ``x`` in the expression for ``f``
@@ -150,12 +150,12 @@ before an unsuccessful conclusion so we may also introduce a parameter
         def element_vector(f, phi, Omega_e, symbolic=True):
                 ...
                 if symbolic:
-                    I = sp.integrate(f*phi[r]*detJ, (X, -1, 1))
-                if not symbolic or isinstance(I, sp.Integral):
+                    I = sym.integrate(f*phi[r]*detJ, (X, -1, 1))
+                if not symbolic or isinstance(I, sym.Integral):
                     h = Omega_e[1] - Omega_e[0]  # Ensure h is numerical
                     detJ = h/2
-                    integrand = sp.lambdify([X], f*phi[r]*detJ)
-                    I = sp.mpmath.quad(integrand, [-1, 1])
+                    integrand = sym.lambdify([X], f*phi[r]*detJ)
+                    I = sym.mpmath.quad(integrand, [-1, 1])
                 b_e[r] = I
                 ...
 
@@ -178,8 +178,8 @@ takes the following form
         def assemble(nodes, elements, phi, f, symbolic=True):
             N_n, N_e = len(nodes), len(elements)
             if symbolic:
-                A = sp.zeros((N_n, N_n))
-                b = sp.zeros((N_n, 1))    # note: (N_n, 1) matrix
+                A = sym.zeros((N_n, N_n))
+                b = sym.zeros((N_n, 1))    # note: (N_n, 1) matrix
             else:
                 A = np.zeros((N_n, N_n))
                 b = np.zeros(N_n)
@@ -231,7 +231,7 @@ Let us first work with a symbolic element length:
 
 .. code-block:: ipy
 
-        >>> h, x = sp.symbols('h x')
+        >>> h, x = sym.symbols('h x')
         >>> nodes = [0, h, 2*h]
         >>> elements = [[0, 1], [1, 2]]
         >>> phi = basis(d=1)
@@ -273,7 +273,7 @@ The associated ``sympy`` calculations are
 
 .. code-block:: ipy
 
-        >>> fn = sp.lambdify([x], f)
+        >>> fn = sym.lambdify([x], f)
         >>> c = [fn(xc) for xc in nodes]
         >>> c
         [0, h*(1 - h), 2*h*(1 - 2*h)]
@@ -295,7 +295,7 @@ and still done by ``sympy`` and the ``assemble`` function, go as follows:
         >>> nodes = [0, 0.5, 1]
         >>> elements = [[0, 1], [1, 2]]
         >>> phi = basis(d=1)
-        >>> x = sp.Symbol('x')
+        >>> x = sym.Symbol('x')
         >>> f = x*(1-x)
         >>> A, b = assemble(nodes, elements, phi, f, symbolic=False)
         >>> A
@@ -503,9 +503,9 @@ The results arise from the program
 
 .. code-block:: python
 
-        import sympy as sp
+        import sympy as sym
         from fe_approx1D import approximate
-        x = sp.Symbol('x')
+        x = sym.Symbol('x')
         
         approximate(f=x*(1-x)**8, symbolic=False, d=1, N_e=4)
         approximate(f=x*(1-x)**8, symbolic=False, d=2, N_e=2)

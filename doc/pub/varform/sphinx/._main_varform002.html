@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Basic principles for approximating differential equations</title>
+    <title>Examples on variational formulations</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -25,7 +25,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/javascript" src="_static/sidebar.js"></script>
 
         <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
@@ -44,9 +44,9 @@
         </style>
 
     
-    <link rel="top" title="Computing with variational forms" href="index.html" />
-    <link rel="next" title="Examples on variational formulations" href="._main_varform003.html" />
-    <link rel="prev" title="&lt;no title&gt;" href="._main_varform001.html" />
+    <link rel="top" title="Stationary variational forms" href="index.html" />
+    <link rel="next" title="Computing with finite elements" href="._main_varform003.html" />
+    <link rel="prev" title="Basic principles for approximating differential equations" href="._main_varform001.html" />
  
   
        <style type="text/css">
@@ -65,12 +65,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="._main_varform003.html" title="Examples on variational formulations"
+          <a href="._main_varform003.html" title="Computing with finite elements"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="._main_varform001.html" title="&lt;no title&gt;"
+          <a href="._main_varform001.html" title="Basic principles for approximating differential equations"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">Computing with variational forms</a> &raquo;</li> 
+        <li><a href="index.html">Stationary variational forms</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -79,729 +79,345 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="basic-principles-for-approximating-differential-equations">
-<span id="fem-deq-1d-principles"></span><h1>Basic principles for approximating differential equations<a class="headerlink" href="#basic-principles-for-approximating-differential-equations" title="Permalink to this headline">¶</a></h1>
-<p>The finite element method is a very flexible approach for solving partial
-differential equations. Its two most attractive features are the ease
-of handling domains of complex shape in two and three dimensions and
-the ease of constructing higher-order discretization methods. The
-finite element method is usually applied for discretization in space,
-and therefore spatial problems will be our focus in the coming sections.
-Extensions to time-dependent problems may, for instance, use finite difference
-approximations in time.</p>
-<p>Before studying how finite element methods are used to tackle differential
-equation, we first look at how global basis functions and the
-least squares, Galerkin, and collocation principles can be used to solve
-differential equations.</p>
-<div class="section" id="differential-equation-models">
-<span id="fem-deq-1d-models"></span><h2>Differential equation models<a class="headerlink" href="#differential-equation-models" title="Permalink to this headline">¶</a></h2>
-<p>Let us consider an abstract differential equation for a function <span class="math">\(u(x)\)</span> of
-one variable, written as</p>
+  <div class="section" id="examples-on-variational-formulations">
+<span id="fem-deq-1d-varform-ex"></span><h1>Examples on variational formulations<a class="headerlink" href="#examples-on-variational-formulations" title="Permalink to this headline">¶</a></h1>
+<p>The following sections derive variational formulations for some
+prototype differential equations in 1D, and demonstrate how we with
+ease can handle variable coefficients, mixed Dirichlet and Neumann
+boundary conditions, first-order derivatives, and nonlinearities.</p>
+<div class="section" id="variable-coefficient">
+<h2>Variable coefficient<a class="headerlink" href="#variable-coefficient" title="Permalink to this headline">¶</a></h2>
+<p>Consider the problem</p>
 <div class="math">
-\[\mathcal{L}(u) = 0,\quad x\in\Omega{\thinspace .}\]</div>
-<p>Here are a few examples on possible choices of <span class="math">\(\mathcal{L}(u)\)</span>, of
-increasing complexity:</p>
-<div class="math" id="equation-fem:deq:1D:L1">
-<span id="eq-fem-deq-1d-l1"></span><span class="eqno">(1)</span>\[     \mathcal{L}(u) = \frac{d^2u}{dx^2} - f(x),\]</div>
-<div class="math" id="equation-fem:deq:1D:L2">
-<span id="eq-fem-deq-1d-l2"></span><span class="eqno">(2)</span>\[     \mathcal{L}(u) = \frac{d}{dx}\left({\alpha}(x)\frac{du}{dx}\right) + f(x),\]</div>
-<div class="math" id="equation-fem:deq:1D:L3">
-<span id="eq-fem-deq-1d-l3"></span><span class="eqno">(3)</span>\[     \mathcal{L}(u) = \frac{d}{dx}\left({\alpha}(u)\frac{du}{dx}\right) - au + f(x),\]</div>
-<div class="math" id="equation-fem:deq:1D:L4">
-<span id="eq-fem-deq-1d-l4"></span><span class="eqno">(4)</span>\[     \mathcal{L}(u) = \frac{d}{dx}\left({\alpha}(u)\frac{du}{dx}\right) + f(u,x)\]\[     {\thinspace .}\]</div>
-<p>Both <span class="math">\({\alpha}(x)\)</span> and <span class="math">\(f(x)\)</span> are considered as specified functions,
-while <span class="math">\(a\)</span> is a prescribed parameter.  Differential equations
-corresponding to <a href="#equation-fem:deq:1D:L1">(1)</a>-<a href="#equation-fem:deq:1D:L2">(2)</a> arise in
-diffusion phenomena, such as steady transport of heat in solids and
-flow of viscous fluids between flat plates. The form
-<a href="#equation-fem:deq:1D:L3">(3)</a> arises when transient diffusion or wave
-phenomenon are discretized in time by finite differences. The equation
-<a href="#equation-fem:deq:1D:L4">(4)</a> appear in chemical models when diffusion of a
-substance is combined with chemical reactions. Also in biology,
-<a href="#equation-fem:deq:1D:L4">(4)</a> plays an important role, both for spreading of
-species and in models involving generation and
-propagation of electrical signals.</p>
-<p>Let <span class="math">\(\Omega =[0,L]\)</span> be the domain in one space dimension.
-In addition to the differential equation, <span class="math">\(u\)</span> must fulfill
-boundary conditions at the boundaries of the domain, <span class="math">\(x=0\)</span> and <span class="math">\(x=L\)</span>.
-When <span class="math">\(\mathcal{L}\)</span> contains up to second-order derivatives, as in the
-examples above, <span class="math">\(m=1\)</span>, we need one boundary condition at each of
-the (two) boundary points, here abstractly specified as</p>
+\[-\frac{d}{dx}\left( {\alpha}(x)\frac{du}{dx}\right) = f(x),\quad x\in\Omega =[0,L],\
+u(0)=C,\ u(L)=D{\thinspace .}\]</div>
+<p>There are two new features of this problem compared with
+previous examples: a variable
+coefficient <span class="math">\(a(x)\)</span> and nonzero Dirichlet conditions at both boundary points.</p>
+<p>Let us first deal with the boundary conditions. We seek</p>
 <div class="math">
-\[\mathcal{B}_0(u)=0,\ x=0,\quad \mathcal{B}_1(u)=0,\ x=L\]</div>
-<p>There are three common choices of boundary conditions:</p>
+\[u(x) = B(x) + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_i(x),\]</div>
+<p>with <span class="math">\({\psi}_i(0)={\psi}_i(L)=0\)</span> for <span class="math">\(i\in{\mathcal{I}_s}\)</span>. The function <span class="math">\(B(x)\)</span>
+must then fulfill <span class="math">\(B(0)=C\)</span> and <span class="math">\(B(L)=D\)</span>. How <span class="math">\(B\)</span> varies in between
+<span class="math">\(x=0\)</span> and <span class="math">\(x=L\)</span> is not of importance. One possible choice is</p>
 <div class="math">
-\[\mathcal{B}_i(u) = u - g,\quad \hbox{Dirichlet condition}\]</div>
+\[B(x) = C + \frac{1}{L}(D-C)x,\]</div>
+<p>which follows from <a class="reference internal" href="._main_varform001.html#eq-fem-deq-1d-essbc-bfunc-gen"><span>(2.24)</span></a> with <span class="math">\(p=1\)</span>.</p>
+<p>We seek <span class="math">\((u-B)\in V\)</span>. As usual,</p>
 <div class="math">
-\[\mathcal{B}_i(u) = -{\alpha} \frac{du}{dx} - g,\quad \hbox{Neumann condition}\]</div>
+\[V = \hbox{span}\{{\psi}_0,\ldots,{\psi}_N\},\]</div>
+<p>but the two Dirichlet boundary conditions demand that</p>
 <div class="math">
-\[\mathcal{B}_i(u) = -{\alpha} \frac{du}{dx} - h(u-g),\quad \hbox{Robin condition}\]</div>
-<p>Here, <span class="math">\(g\)</span> and <span class="math">\(a\)</span> are specified quantities.</p>
-<p>From now on we shall use <span class="math">\({u_{\small\mbox{e}}}(x)\)</span> as symbol for the <em>exact</em> solution,
-fulfilling</p>
+\[{\psi}_i(0)={\psi}_i(L)=0, \quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
+<p>Note that any <span class="math">\(v\in V\)</span> has the property <span class="math">\(v(0)=v(L)=0\)</span>.</p>
+<p>The residual arises by inserting our <span class="math">\(u\)</span> in the differential equation:</p>
 <div class="math">
-\[\mathcal{L}({u_{\small\mbox{e}}})=0,\quad x\in\Omega,\]</div>
-<p>while <span class="math">\(u(x)\)</span> is our notation for an <em>approximate</em> solution of the differential
-equation.</p>
-<div class="admonition-remark-on-notation admonition">
-<p class="first admonition-title">Remark on notation</p>
-<p class="last">In the literature about the finite element method,
-is common to use <span class="math">\(u\)</span> as the exact solution and <span class="math">\(u_h\)</span> as the
-approximate solution, where <span class="math">\(h\)</span> is a discretization parameter. However,
-the vast part of the present text is about the approximate solutions,
-and having a subscript <span class="math">\(h\)</span> attached all the time
-is cumbersome. Of equal importance is the close correspondence between
-implementation and mathematics that we strive to achieve in this text:
-when it is natural to use <tt class="docutils literal"><span class="pre">u</span></tt> and not <tt class="docutils literal"><span class="pre">u_h</span></tt> in
-code, we let the mathematical notation be dictated by the code&#8217;s
-preferred notation. After all, it is the powerful computer implementations
-of the finite element method that justifies studying the mathematical
-formulation and aspects of the method.</p>
-</div>
-</div>
-<div class="section" id="simple-model-problems">
-<span id="fem-deq-1d-models-simple"></span><h2>Simple model problems<a class="headerlink" href="#simple-model-problems" title="Permalink to this headline">¶</a></h2>
-<p>A common model problem used much in the forthcoming examples is</p>
-<div class="math" id="equation-fem:deq:1D:model1">
-<span id="eq-fem-deq-1d-model1"></span><span class="eqno">(5)</span>\[     -u''(x) = f(x),\quad x\in\Omega=[0,L],\quad u(0)=0,\ u(L)=D
-     {\thinspace .}\]</div>
-<p>A closely related problem with a different boundary condition at
-<span class="math">\(x=0\)</span> reads</p>
-<div class="math" id="equation-fem:deq:1D:model2">
-<span id="eq-fem-deq-1d-model2"></span><span class="eqno">(6)</span>\[     -u''(x) = f(x),\quad x\in\Omega=[0,L],\quad u'(0)=C,\ u(L)=D{\thinspace .}\]</div>
-<p>A third variant has a variable coefficient,</p>
-<div class="math" id="equation-fem:deq:1D:model3">
-<span id="eq-fem-deq-1d-model3"></span><span class="eqno">(7)</span>\[     -({\alpha}(x)u'(x))' = f(x),\quad x\in\Omega=[0,L],\quad u'(0)=C,\ u(L)=D{\thinspace .}\]</div>
-<p>We can easily solve these using <tt class="docutils literal"><span class="pre">sympy</span></tt>. For <a href="#equation-fem:deq:1D:model1">(5)</a>
-we can write the function</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">model1</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">D</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Solve -u&#39;&#39; = f(x), u(0)=0, u(L)=D.&quot;&quot;&quot;</span>
-    <span class="n">u_x</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sp</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span> <span class="o">+</span> <span class="n">c_0</span>
-    <span class="n">u</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">u_x</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span> <span class="o">+</span> <span class="n">c_1</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">solve</span><span class="p">([</span><span class="n">u</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">-</span><span class="mi">0</span><span class="p">,</span> <span class="n">u</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">L</span><span class="p">)</span><span class="o">-</span><span class="n">D</span><span class="p">],</span> <span class="p">[</span><span class="n">c_0</span><span class="p">,</span> <span class="n">c_1</span><span class="p">])</span>
-    <span class="n">u</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">c_0</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="n">c_0</span><span class="p">])</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">c_1</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="n">c_1</span><span class="p">])</span>
-    <span class="n">u</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">simplify</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">u</span>
-</pre></div>
-</div>
-<p>Calling <tt class="docutils literal"><span class="pre">model1(2,</span> <span class="pre">L,</span> <span class="pre">D)</span></tt> results in the solution</p>
-<div class="math" id="equation-fem:deq:1D:model1:sol">
-<span id="eq-fem-deq-1d-model1-sol"></span><span class="eqno">(8)</span>\[     u(x) = \frac{1}{L}x \left(D + L^{2} - L x\right)\]</div>
-<p>Model <a href="#equation-fem:deq:1D:model2">(6)</a> can be solved by</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">model2</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">D</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Solve -u&#39;&#39; = f(x), u&#39;(0)=C, u(L)=D.&quot;&quot;&quot;</span>
-    <span class="n">u_x</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sp</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span> <span class="o">+</span> <span class="n">c_0</span>
-    <span class="n">u</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">u_x</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span> <span class="o">+</span> <span class="n">c_1</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">solve</span><span class="p">([</span><span class="n">sp</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">u</span><span class="p">,</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">-</span><span class="n">C</span><span class="p">,</span> <span class="n">u</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">L</span><span class="p">)</span><span class="o">-</span><span class="n">D</span><span class="p">],</span> <span class="p">[</span><span class="n">c_0</span><span class="p">,</span> <span class="n">c_1</span><span class="p">])</span>
-    <span class="n">u</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">c_0</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="n">c_0</span><span class="p">])</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">c_1</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="n">c_1</span><span class="p">])</span>
-    <span class="n">u</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">simplify</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">u</span>
-</pre></div>
-</div>
-<p>to yield</p>
-<div class="math" id="equation-fem:deq:1D:model2:sol">
-<span id="eq-fem-deq-1d-model2-sol"></span><span class="eqno">(9)</span>\[     u(x) = - x^{2} + C x - C L + D + L^{2},\]</div>
-<p>if <span class="math">\(f(x)=2\)</span>. Model <a href="#equation-fem:deq:1D:model3">(7)</a> requires a bit more involved
-code,</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">model3</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">D</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Solve -(a*u&#39;)&#39; = f(x), u(0)=C, u(L)=D.&quot;&quot;&quot;</span>
-    <span class="n">au_x</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sp</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span> <span class="o">+</span> <span class="n">c_0</span>
-    <span class="n">u</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">au_x</span><span class="o">/</span><span class="n">a</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span> <span class="o">+</span> <span class="n">c_1</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">solve</span><span class="p">([</span><span class="n">u</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">-</span><span class="n">C</span><span class="p">,</span> <span class="n">u</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">L</span><span class="p">)</span><span class="o">-</span><span class="n">D</span><span class="p">],</span> <span class="p">[</span><span class="n">c_0</span><span class="p">,</span> <span class="n">c_1</span><span class="p">])</span>
-    <span class="n">u</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">c_0</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="n">c_0</span><span class="p">])</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">c_1</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="n">c_1</span><span class="p">])</span>
-    <span class="n">u</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">simplify</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">u</span>
-</pre></div>
-</div>
-<p>With <span class="math">\(f(x)=0\)</span> and <span class="math">\({\alpha}(x)=1+x^2\)</span> we get</p>
+\[R = -\frac{d}{dx}\left( {\alpha}\frac{du}{dx}\right) -f{\thinspace .}\]</div>
+<p>Galerkin&#8217;s method is</p>
 <div class="math">
-\[u(x) =
-\frac{C \operatorname{atan}{\left (L \right )} - C \operatorname{atan}{\left (x \right )} + D \operatorname{atan}{\left (x \right )}}{\operatorname{atan}{\left (L \right )}}\]</div>
-</div>
-<div class="section" id="forming-the-residual">
-<span id="fem-deq-1d-residual-min"></span><h2>Forming the residual<a class="headerlink" href="#forming-the-residual" title="Permalink to this headline">¶</a></h2>
-<p>The fundamental idea is to seek an approximate solution
-<span class="math">\(u\)</span> in some space <span class="math">\(V\)</span>,</p>
+\[(R, v) = 0,\quad \forall v\in V,\]</div>
+<p>or written with explicit integrals,</p>
 <div class="math">
-\[V = \hbox{span}\{ {\psi}_0(x),\ldots,{\psi}_N(x)\},\]</div>
-<p>which means that <span class="math">\(u\)</span> can always be expressed as a linear combination
-of the basis functions <span class="math">\(\left\{ {{\varphi}}_i \right\}_{i\in{\mathcal{I}_s}}\)</span>, with <span class="math">\({\mathcal{I}_s}\)</span> as
-the index set <span class="math">\(\{0,\ldots,N\}\)</span>:</p>
+\[\int_{\Omega} \left(-\frac{d}{dx}\left( {\alpha}\frac{du}{dx}\right) -f\right)v {\, \mathrm{d}x} = 0,\quad \forall v\in V {\thinspace .}\]</div>
+<p>We proceed with integration by parts to lower the derivative from
+second to first order:</p>
 <div class="math">
-\[u(x) = \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x){\thinspace .}\]</div>
-<p>The coefficients <span class="math">\(\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}\)</span> are unknowns to be computed.</p>
-<p>(Later, in the section <a class="reference internal" href="._main_varform005.html#fem-deq-1d-essbc"><em>Boundary conditions: specified nonzero value</em></a>, we will see that if we specify boundary values of <span class="math">\(u\)</span> different
-from zero, we must look for an approximate solution
-<span class="math">\(u(x) = B(x) + \sum_{j} c_j{\psi}_j(x)\)</span>,
-where <span class="math">\(\sum_{j}c_j{\psi}_j\in V\)</span> and <span class="math">\(B(x)\)</span> is some function for
-incorporating the right boundary values. Because of <span class="math">\(B(x)\)</span>, <span class="math">\(u\)</span> will not
-necessarily lie in <span class="math">\(V\)</span>. This modification does not imply any difficulties.)</p>
-<p>We need principles for deriving <span class="math">\(N+1\)</span> equations to determine the
-<span class="math">\(N+1\)</span> unknowns <span class="math">\(\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}\)</span>.
-When approximating a given function <span class="math">\(f\)</span> by <span class="math">\(u=\sum_jc_j{\varphi}_j\)</span>,
-a key idea is to minimize the square norm of the
-approximation error <span class="math">\(e=u-f\)</span> or (equivalently) demand that <span class="math">\(e\)</span> is
-orthogonal to <span class="math">\(V\)</span>. Working with <span class="math">\(e\)</span> is not so useful here since
-the approximation error in our case is <span class="math">\(e={u_{\small\mbox{e}}} - u\)</span> and <span class="math">\({u_{\small\mbox{e}}}\)</span> is
-unknown. The only general indicator we have on the quality of the approximate
-solution is to what degree <span class="math">\(u\)</span> fulfills the differential equation.
-Inserting <span class="math">\(u=\sum_j c_j {\psi}_j\)</span> into <span class="math">\(\mathcal{L}(u)\)</span> reveals that the
-result is not zero, because <span class="math">\(u\)</span> is only likely to equal <span class="math">\({u_{\small\mbox{e}}}\)</span>.
-The nonzero result,</p>
-<div class="math" id="index-0">
-\[R = \mathcal{L}(u) = \mathcal{L}(\sum_j c_j {\psi}_j),\]</div>
-<p>is called the <em>residual</em> and measures the
-error in fulfilling the governing equation.</p>
-<p>Various principles for determining <span class="math">\(\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}\)</span> try to minimize
-<span class="math">\(R\)</span> in some sense. Note that <span class="math">\(R\)</span> varies with <span class="math">\(x\)</span> and
-the <span class="math">\(\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}\)</span> parameters. We may write this dependence
-explicitly as</p>
-<div class="math">
-\[R = R(x; c_0, \ldots, c_N){\thinspace .}\]</div>
-<p>Below, we present three principles for making <span class="math">\(R\)</span> small:
-a least squares method, a projection or Galerkin method, and
-a collocation or interpolation method.</p>
-</div>
-<div class="section" id="the-least-squares-method-1">
-<h2>The least squares method  (1)<a class="headerlink" href="#the-least-squares-method-1" title="Permalink to this headline">¶</a></h2>
-<p>The least-squares method aims to find <span class="math">\(\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}\)</span> such that
-the square norm of the residual</p>
-<div class="math">
-\[||R|| = (R, R) = \int_{\Omega} R^2 {\, \mathrm{d}x}\]</div>
-<p>is minimized. By introducing
-an inner product of two functions <span class="math">\(f\)</span> and <span class="math">\(g\)</span>
-on <span class="math">\(\Omega\)</span> as</p>
-<div class="math">
-\[(f,g) = \int_{\Omega} f(x)g(x) {\, \mathrm{d}x},\]</div>
-<p>the least-squares method can be defined as</p>
-<div class="math">
-\[\min_{c_0,\ldots,c_N} E = (R,R){\thinspace .}\]</div>
-<p>Differentiating with respect to the free parameters <span class="math">\(\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}\)</span>
-gives the <span class="math">\(N+1\)</span> equations</p>
-<div class="math" id="equation-fem:deq:1D:LS:eq1">
-<span id="eq-fem-deq-1d-ls-eq1"></span><span class="eqno">(10)</span>\[     \int_{\Omega} 2R\frac{\partial R}{\partial c_i} {\, \mathrm{d}x} = 0\quad
-     \Leftrightarrow\quad (R,\frac{\partial R}{\partial c_i})=0,\quad
-     i\in{\mathcal{I}_s}{\thinspace .}\]</div>
-</div>
-<div class="section" id="the-galerkin-method-1">
-<h2>The Galerkin method  (1)<a class="headerlink" href="#the-galerkin-method-1" title="Permalink to this headline">¶</a></h2>
-<p>The least-squares
-principle is equivalent to demanding the error to be orthogonal to
-the space <span class="math">\(V\)</span> when approximating a function <span class="math">\(f\)</span> by <span class="math">\(u\in V\)</span>.
-With a differential equation
-we do not know the true error so we must instead require the residual <span class="math">\(R\)</span>
-to be orthogonal to <span class="math">\(V\)</span>. This idea implies
-seeking <span class="math">\(\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}\)</span> such that</p>
-<div class="math" id="equation-fem:deq:1D:Galerkin0">
-<span id="eq-fem-deq-1d-galerkin0"></span><span class="eqno">(11)</span>\[     (R,v)=0,\quad \forall v\in V{\thinspace .}\]</div>
-<p>This is the Galerkin method for differential equations.</p>
-<p>This statement is equivalent to <span class="math">\(R\)</span> being orthogonal to the <span class="math">\(N+1\)</span>
-basis functions only:</p>
-<div class="math" id="equation-fem:deq:1D:Galerkin">
-<span id="eq-fem-deq-1d-galerkin"></span><span class="eqno">(12)</span>\[     (R,{\psi}_i)=0,\quad i\in{\mathcal{I}_s},\]</div>
-<p>resulting in <span class="math">\(N+1\)</span> equations for determining <span class="math">\(\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}\)</span>.</p>
-</div>
-<div class="section" id="the-method-of-weighted-residuals">
-<h2>The Method of Weighted Residuals<a class="headerlink" href="#the-method-of-weighted-residuals" title="Permalink to this headline">¶</a></h2>
-<p>A generalization of the Galerkin method is to demand that <span class="math">\(R\)</span>
-is orthogonal to some space <span class="math">\(W\)</span>, but not necessarily the same
-space as <span class="math">\(V\)</span> where we seek the unknown function.
-This generalization is naturally called the <em>method of weighted residuals</em>:</p>
-<div class="math" id="equation-fem:deq:1D:WRM0">
-<span id="eq-fem-deq-1d-wrm0"></span><span class="eqno">(13)</span>\[     (R,v)=0,\quad \forall v\in W{\thinspace .}\]</div>
-<p>If <span class="math">\(\{w_0,\ldots,w_N\}\)</span> is a basis for <span class="math">\(W\)</span>, we can equivalently
-express the method of weighted residuals as</p>
-<div class="math" id="equation-fem:deq:1D:WRM">
-<span id="eq-fem-deq-1d-wrm"></span><span class="eqno">(14)</span>\[     (R,w_i)=0,\quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
-<p>The result is <span class="math">\(N+1\)</span> equations for <span class="math">\(\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}\)</span>.</p>
-<p>The least-squares method can also be viewed as a weighted residual
-method with <span class="math">\(w_i = \partial R/\partial c_i\)</span>.</p>
-<div class="admonition-variational-formulation-of-the-continuous-problem admonition" id="index-1">
-<p class="first admonition-title">Variational formulation of the continuous problem</p>
-<p class="last">Formulations like <a href="#equation-fem:deq:1D:WRM0">(13)</a> (or
-<a href="#equation-fem:deq:1D:WRM">(14)</a>) and <a href="#equation-fem:deq:1D:Galerkin0">(11)</a>
-(or <a href="#equation-fem:deq:1D:Galerkin">(12)</a>) are known as
-<em>variational formulations</em>.
-These equations are in this text primarily used for a numerical approximation
-<span class="math">\(u\in V\)</span>, where <span class="math">\(V\)</span> is a <em>finite-dimensional</em> space with dimension
-<span class="math">\(N+1\)</span>. However, we may also let <span class="math">\(V\)</span> be an <em>infinite-dimensional</em> space
-containing the exact solution <span class="math">\({u_{\small\mbox{e}}}(x)\)</span> such that also <span class="math">\({u_{\small\mbox{e}}}\)</span>
-fulfills the same variational formulation. The variational formulation is in
-that case a mathematical way of stating the problem and acts as an
-alternative to the usual formulation of a differential equation with
-initial and/or boundary conditions.</p>
-</div>
-</div>
-<div class="section" id="test-and-trial-functions">
-<h2>Test and Trial Functions<a class="headerlink" href="#test-and-trial-functions" title="Permalink to this headline">¶</a></h2>
-<span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><p id="index-5">In the context of the Galerkin method and the method of weighted residuals it is
-common to use the name <em>trial function</em> for the approximate <span class="math">\(u =
-\sum_j c_j {\psi}_j\)</span>.</p>
-<p>The space containing the trial function is known as the <em>trial space</em>.
-The function <span class="math">\(v\)</span> entering the orthogonality requirement in
-the Galerkin method and the method of weighted residuals is called
-<em>test function</em>, and so are the <span class="math">\({\psi}_i\)</span> or <span class="math">\(w_i\)</span> functions that are
-used as weights in the inner products with the residual.  The space
-where the test functions comes from is naturally called the
-<em>test space</em>.</p>
-<p>We see that in the method of weighted residuals the test and trial spaces
-are different and so are the test and trial functions.
-In the Galerkin method the test and trial spaces are the same (so far).</p>
-<div class="admonition-remark admonition">
-<p class="first admonition-title">Remark</p>
-<p class="last">It may be subject to debate whether
-it is only the form of <a href="#equation-fem:deq:1D:WRM0">(13)</a> or <a href="#equation-fem:deq:1D:Galerkin0">(11)</a>
-after integration by parts, as explained in the section <a class="reference internal" href="#fem-deq-1d-varform"><em>Integration by parts</em></a>,
-that qualifies for the term variational formulation. The result after
-integration by parts is what is obtained after taking the <em>first
-variation</em> of an optimization problem, see the section <a class="reference internal" href="#fem-deq-1d-optimization"><em>Variational problems and optimization of functionals</em></a>. However, here we use variational formulation as a common term for
-formulations which, in contrast to the differential equation <span class="math">\(R=0\)</span>,
-instead demand that an average of <span class="math">\(R\)</span> is zero: <span class="math">\((R,v)=0\)</span> for all <span class="math">\(v\)</span> in some space.</p>
-</div>
-</div>
-<div class="section" id="the-collocation-method-1">
-<h2>The collocation method  (1)<a class="headerlink" href="#the-collocation-method-1" title="Permalink to this headline">¶</a></h2>
-<p>The idea of the collocation method is to demand that <span class="math">\(R\)</span> vanishes
-at <span class="math">\(N+1\)</span> selected points <span class="math">\(x_{0},\ldots,x_{N}\)</span> in <span class="math">\(\Omega\)</span>:</p>
-<div class="math" id="equation-fem:deq:1D:collocation">
-<span id="eq-fem-deq-1d-collocation"></span><span class="eqno">(15)</span>\[     R(x_{i}; c_0,\ldots,c_N)=0,\quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
-<p>The collocation method can also be viewed as a method of weighted residuals
-with Dirac delta functions as weighting functions.
-Let <span class="math">\(\delta (x-x_{i})\)</span> be the Dirac delta function centered around
-<span class="math">\(x=x_{i}\)</span> with the properties that <span class="math">\(\delta (x-x_{i})=0\)</span> for <span class="math">\(x\neq x_{i}\)</span>
-and</p>
-<div class="math" id="equation-fem:deq:1D:Dirac">
-<span id="eq-fem-deq-1d-dirac"></span><span class="eqno">(16)</span>\[     \int_{\Omega} f(x)\delta (x-x_{i}) {\, \mathrm{d}x} =
-     f(x_{i}),\quad x_{i}\in\Omega{\thinspace .}\]</div>
-<p>Intuitively, we may think of <span class="math">\(\delta (x-x_{i})\)</span> as a very peak-shaped
-function around <span class="math">\(x=x_{i}\)</span> with integral 1, roughly visualized
-in Figure <a class="reference internal" href="#fem-deq-1d-fig-dirac"><em>Approximation of delta functions by narrow Gaussian functions</em></a>.
-Because of <a href="#equation-fem:deq:1D:Dirac">(16)</a>, we can let <span class="math">\(w_i=\delta(x-x_{i})\)</span>
-be weighting functions in the method of weighted residuals,
-and <a href="#equation-fem:deq:1D:WRM">(14)</a> becomes equivalent to
-<a href="#equation-fem:deq:1D:collocation">(15)</a>.</p>
-<div class="figure" id="fem-deq-1d-fig-dirac">
-<a class="reference internal image-reference" href="_images/delta_func_weight.png"><img alt="_images/delta_func_weight.png" src="_images/delta_func_weight.png" style="width: 400px;" /></a>
-<p class="caption"><em>Approximation of delta functions by narrow Gaussian functions</em></p>
-</div>
-<div class="section" id="the-subdomain-collocation-method">
-<h3>The subdomain collocation method<a class="headerlink" href="#the-subdomain-collocation-method" title="Permalink to this headline">¶</a></h3>
-<p>The idea of this approach is to demand the integral of <span class="math">\(R\)</span> to vanish
-over <span class="math">\(N+1\)</span> subdomains <span class="math">\(\Omega_i\)</span> of <span class="math">\(\Omega\)</span>:</p>
-<div class="math">
-\[\int_{\Omega_i} R\, {\, \mathrm{d}x}=0,\quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
-<p>This statement can also be expressed as a weighted residual method</p>
-<div class="math">
-\[\int_{\Omega} Rw_i\, {\, \mathrm{d}x}=0,\quad i\in{\mathcal{I}_s},\]</div>
-<p>where <span class="math">\(w_i=1\)</span> for <span class="math">\(x\in\Omega_i\)</span> and <span class="math">\(w_i=0\)</span> otherwise.</p>
-</div>
-</div>
-<div class="section" id="examples-on-using-the-principles">
-<span id="fem-deq-1d-ex-sines"></span><h2>Examples on using the principles<a class="headerlink" href="#examples-on-using-the-principles" title="Permalink to this headline">¶</a></h2>
-<p>Let us now apply global basis functions to illustrate the principles
-for minimizing <span class="math">\(R\)</span>.</p>
-<div class="section" id="the-model-problem">
-<h3>The model problem<a class="headerlink" href="#the-model-problem" title="Permalink to this headline">¶</a></h3>
-<p>We consider the differential equation problem</p>
-<div class="math" id="equation-fem:deq:1D:model1b">
-<span id="eq-fem-deq-1d-model1b"></span><span class="eqno">(17)</span>\[     -u''(x) = f(x),\quad x\in\Omega=[0,L],\quad u(0)=0,\ u(L)=0
-     {\thinspace .}\]</div>
-</div>
-<div class="section" id="basis-functions">
-<h3>Basis functions<a class="headerlink" href="#basis-functions" title="Permalink to this headline">¶</a></h3>
-<p>Our choice of basis functions <span class="math">\({\psi}_i\)</span>
-for <span class="math">\(V\)</span> is</p>
-<div class="math" id="equation-fem:deq:1D:ex:sines:psi">
-<span id="eq-fem-deq-1d-ex-sines-psi"></span><span class="eqno">(18)</span>\[     {\psi}_i(x) = {\sin\left((i+1)\pi\frac{x}{L}\right)},\quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
-<p>An important property of these functions is that <span class="math">\({\psi}_i(0)={\psi}_i(L)=0\)</span>,
-which means that the boundary conditions on <span class="math">\(u\)</span> are fulfilled:</p>
-<div class="math">
-\[u(0) = \sum_jc_j{\psi}_j(0) = 0,\quad u(L) = \sum_jc_j{\psi}_j(L) =0
+\[-\int_{\Omega} \frac{d}{dx}\left( {\alpha}(x)\frac{du}{dx}\right) v {\, \mathrm{d}x}
+= \int_{\Omega} {\alpha}(x)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} -
+\left[{\alpha}\frac{du}{dx}v\right]_0^L
 {\thinspace .}\]</div>
-<p>Another nice property is that the chosen sine functions
-are orthogonal on <span class="math">\(\Omega\)</span>:</p>
+<p>The boundary term vanishes since <span class="math">\(v(0)=v(L)=0\)</span>.
+The variational formulation is then</p>
 <div class="math">
-\[\begin{split}\int\limits_0^L {\sin\left((i+1)\pi\frac{x}{L}\right)}{\sin\left((j+1)\pi\frac{x}{L}\right)}\, {\, \mathrm{d}x} = \left\lbrace
-\begin{array}{ll} \frac{1}{2} L &amp; i=j  \\ 0, &amp; i\neq j
-\end{array}\right.\end{split}\]</div>
-<p>provided <span class="math">\(i\)</span> and <span class="math">\(j\)</span> are integers.</p>
-</div>
-<div class="section" id="the-residual">
-<h3>The residual<a class="headerlink" href="#the-residual" title="Permalink to this headline">¶</a></h3>
-<p>We can readily calculate the following explicit expression for the
-residual:</p>
+\[\int_{\Omega} {\alpha}(x)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} = \int_{\Omega} f(x)v{\, \mathrm{d}x},\quad
+\forall v\in V{\thinspace .}\]</div>
+<p>The variational formulation can alternatively be written in a more
+compact form:</p>
 <div class="math">
-\[R(x;c_0, \ldots, c_N) = u''(x) + f(x),\nonumber\]</div>
-<div class="math">
-\[= \frac{d^2}{dx^2}\left(\sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x)\right)
-+ f(x),\nonumber\]</div>
-<div class="math" id="equation-fem:deq:1D:ex:sines:res">
-<span id="eq-fem-deq-1d-ex-sines-res"></span><span class="eqno">(19)</span>\[     = \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j''(x) + f(x){\thinspace .}\]</div>
-</div>
-<div class="section" id="the-least-squares-method-2">
-<h3>The least squares method  (2)<a class="headerlink" href="#the-least-squares-method-2" title="Permalink to this headline">¶</a></h3>
-<p>The equations <a href="#equation-fem:deq:1D:LS:eq1">(10)</a>
-in the least squares method require an expression for
-<span class="math">\(\partial R/\partial c_i\)</span>. We have</p>
-<div class="math">
-\[\frac{\partial R}{\partial c_i} =
-\frac{\partial}{\partial c_i}
-\left(\sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j''(x) + f(x)\right)
-= \sum_{j\in{\mathcal{I}_s}} \frac{\partial c_j}{\partial c_i}{\psi}_j''(x)
-= {\psi}_i''(x){\thinspace .}\]</div>
-<p>The governing equations for <span class="math">\(\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}\)</span> are then</p>
-<div class="math">
-\[(\sum_j c_j {\psi}_j'' + f,{\psi}_i'')=0,\quad i\in{\mathcal{I}_s},\]</div>
-<p>which can be rearranged as</p>
-<div class="math">
-\[\sum_{j\in{\mathcal{I}_s}}({\psi}_i'',{\psi}_j'')c_j = -(f,{\psi}_i''),\quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
-<p>This is nothing but a linear system</p>
-<div class="math">
-\[\sum_{j\in{\mathcal{I}_s}}A_{i,j}c_j = b_i,\quad i\in{\mathcal{I}_s},\]</div>
-<p>with</p>
-<div class="math">
-\[A_{i,j} = ({\psi}_i'',{\psi}_j'')\nonumber\]</div>
-<div class="math">
-\[= \pi^4(i+1)^2(j+1)^2L^{-4}\int_0^L {\sin\left((i+1)\pi\frac{x}{L}\right)}{\sin\left((j+1)\pi\frac{x}{L}\right)}\, {\, \mathrm{d}x}\nonumber\]</div>
-<div class="math">
-\[= \left\lbrace
-\begin{array}{ll} {1\over2}L^{-3}\pi^4(i+1)^4  i=j\]</div>
-<div class="math">
-\[0,  i\neq j
-\end{array}\right.\]</div>
-<div class="math">
-\[b_i = -(f,{\psi}_i'') = (i+1)^2\pi^2L^{-2}\int_0^Lf(x){\sin\left((i+1)\pi\frac{x}{L}\right)}\, {\, \mathrm{d}x}\]</div>
-<p>Since the coefficient matrix is diagonal we can easily solve for</p>
-<div class="math" id="equation-fem:deq:1D:ex:sines:solution">
-<span id="eq-fem-deq-1d-ex-sines-solution"></span><span class="eqno">(20)</span>\[     c_i = \frac{2L}{\pi^2(i+1)^2}\int_0^Lf(x){\sin\left((i+1)\pi\frac{x}{L}\right)}\, {\, \mathrm{d}x}{\thinspace .}\]</div>
-<p>With the special choice of <span class="math">\(f(x)=2\)</span> can be calculated in <tt class="docutils literal"><span class="pre">sympy</span></tt> by</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-
-<span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;i j&#39;</span><span class="p">,</span> <span class="n">integer</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-<span class="n">x</span><span class="p">,</span> <span class="n">L</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;x L&#39;</span><span class="p">)</span>
-<span class="n">f</span> <span class="o">=</span> <span class="mi">2</span>
-<span class="n">a</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">L</span><span class="o">/</span><span class="p">(</span><span class="n">pi</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-<span class="n">c_i</span> <span class="o">=</span> <span class="n">a</span><span class="o">*</span><span class="n">integrate</span><span class="p">(</span><span class="n">f</span><span class="o">*</span><span class="n">sin</span><span class="p">((</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">pi</span><span class="o">*</span><span class="n">x</span><span class="o">/</span><span class="n">L</span><span class="p">),</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">L</span><span class="p">))</span>
-<span class="n">c_i</span> <span class="o">=</span> <span class="n">simplify</span><span class="p">(</span><span class="n">c_i</span><span class="p">)</span>
-<span class="k">print</span> <span class="n">c_i</span>
-</pre></div>
-</div>
-<p>The answer becomes</p>
-<div class="math">
-\[c_i = 4 \frac{L^{2} \left(\left(-1\right)^{i} + 1\right)}{\pi^{3}
-\left(i^{3} + 3 i^{2} + 3 i + 1\right)}\]</div>
-<p>Now, <span class="math">\(1+(-1)^i=0\)</span> for <span class="math">\(i\)</span> odd, so only the coefficients with even index
-are nonzero. Introducing <span class="math">\(i=2k\)</span> for <span class="math">\(k=0,\ldots,N/2\)</span> to count the
-relevant indices (for <span class="math">\(N\)</span> odd, <span class="math">\(k\)</span> goes to <span class="math">\((N-1)/2\)</span>), we get the solution</p>
-<div class="math">
-\[u(x) = \sum_{k=0}^{N/2} \frac{8L^2}{\pi^3(2k+1)^3}{\sin\left((2k+1)\pi\frac{x}{L}\right)}{\thinspace .}\]</div>
-<p>The coefficients decay very fast: <span class="math">\(c_2 = c_0/27\)</span>, <span class="math">\(c_4=c_0/125\)</span>.
-The solution will therefore be dominated by the first term,</p>
-<div class="math">
-\[u(x) \approx \frac{8L^2}{\pi^3}\sin\left(\pi\frac{x}{L}\right){\thinspace .}\]</div>
-</div>
-<div class="section" id="the-galerkin-method-2">
-<h3>The Galerkin method  (2)<a class="headerlink" href="#the-galerkin-method-2" title="Permalink to this headline">¶</a></h3>
-<p>The Galerkin principle <a href="#equation-fem:deq:1D:Galerkin0">(11)</a>
-applied to <a href="#equation-fem:deq:1D:model1b">(17)</a> consists of inserting
-our special residual <a href="#equation-fem:deq:1D:ex:sines:res">(19)</a> in
-<a href="#equation-fem:deq:1D:Galerkin0">(11)</a></p>
-<div class="math">
-\[(u''+f,v)=0,\quad \forall v\in V,\]</div>
-<p>or</p>
-<div class="math">
-\[(u'',v) = -(f,v),\quad\forall v\in V{\thinspace .}\]</div>
-<p>This is the variational formulation, based on the Galerkin principle,
-of our differential equation.
-The <span class="math">\(\forall v\in V\)</span> requirement is equivalent to
-demanding the equation <span class="math">\((u'',v) = -(f,v)\)</span> to be fulfilled for all
-basis functions <span class="math">\(v={\psi}_i\)</span>, <span class="math">\(i\in{\mathcal{I}_s}\)</span>, see
-<a href="#equation-fem:deq:1D:Galerkin0">(11)</a> and <a href="#equation-fem:deq:1D:Galerkin">(12)</a>.
-We therefore have</p>
-<div class="math">
-\[(\sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j'', {\psi}_i)=-(f,{\psi}_i),\quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
-<p>This equation can be rearranged to a form that explicitly shows
-that we get a linear system for the unknowns <span class="math">\(\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}\)</span>:</p>
-<div class="math">
-\[\sum_{j\in{\mathcal{I}_s}} ({\psi}_i,{\psi}_j'')c_j = (f, {\psi}_i),\quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
-<p>For the particular choice of the basis functions <a href="#equation-fem:deq:1D:ex:sines:psi">(18)</a>
-we get in fact the same linear system
-as in the least squares method
-because <span class="math">\({\psi}''= -(i+1)^2\pi^2L^{-2}{\psi}\)</span>.</p>
-</div>
-<div class="section" id="the-collocation-method-2">
-<h3>The collocation method  (2)<a class="headerlink" href="#the-collocation-method-2" title="Permalink to this headline">¶</a></h3>
-<p>For the collocation method <a href="#equation-fem:deq:1D:collocation">(15)</a> we need to
-decide upon a set of <span class="math">\(N+1\)</span> collocation points in <span class="math">\(\Omega\)</span>. A simple
-choice is to use uniformly spaced points: <span class="math">\(x_{i}=i\Delta x\)</span>, where
-<span class="math">\(\Delta x = L/N\)</span> in our case (<span class="math">\(N\geq 1\)</span>). However, these points
-lead to at least two rows in the matrix consisting of zeros
-(since <span class="math">\({\psi}_i(x_{0})=0\)</span> and <span class="math">\({\psi}_i(x_{N})=0\)</span>), thereby making the matrix
-singular and non-invertible. This forces us to choose some other
-collocation points, e.g., random points or points uniformly distributed
-in the interior of <span class="math">\(\Omega\)</span>.
-Demanding the residual to vanish
-at these points leads, in our model problem <a href="#equation-fem:deq:1D:model1b">(17)</a>, to
-the equations</p>
-<div class="math">
-\[-\sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j''(x_{i}) = f(x_{i}),\quad i\in{\mathcal{I}_s},\]</div>
-<p>which is seen to be a linear system with entries</p>
-<div class="math">
-\[A_{i,j}=-{\psi}_j''(x_{i})=
-(j+1)^2\pi^2L^{-2}\sin\left((j+1)\pi \frac{x_i}{L}\right),\]</div>
-<p>in the coefficient matrix and entries
-<span class="math">\(b_i=2\)</span> for the right-hand side (when <span class="math">\(f(x)=2\)</span>).</p>
-<p>The special case of <span class="math">\(N=0\)</span>
-can sometimes be of interest. A natural choice is then the midpoint
-<span class="math">\(x_{0}=L/2\)</span> of the domain, resulting in
-<span class="math">\(A_{0,0} = -{\psi}_0''(x_{0}) = \pi^2L^{-2}\)</span>, <span class="math">\(f(x_0)=2\)</span>,
-and hence <span class="math">\(c_0=2L^2/\pi^2\)</span>.</p>
-</div>
-<div class="section" id="comparison">
-<h3>Comparison<a class="headerlink" href="#comparison" title="Permalink to this headline">¶</a></h3>
-<p>In the present model problem, with <span class="math">\(f(x)=2\)</span>, the exact solution is
-<span class="math">\(u(x)=x(L-x)\)</span>, while for <span class="math">\(N=0\)</span> the Galerkin and least squares method
-result in <span class="math">\(u(x)=8L^2\pi^{-3}\sin (\pi x/L)\)</span> and the
-collocation method leads to <span class="math">\(u(x)=2L^2\pi^{-2}\sin (\pi x/L)\)</span>.
-We can quickly use <tt class="docutils literal"><span class="pre">sympy</span></tt> to verify that the maximum error
-occurs at the midpoint <span class="math">\(x=L/2\)</span> and find what the errors are:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sympy</span> <span class="kn">as</span> <span class="nn">sp</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># Computing with Dirichlet conditions: -u&#39;&#39;=2 and sines</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="p">,</span> <span class="n">L</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s">&#39;x L&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">e_Galerkin</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="n">L</span><span class="o">-</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">8</span><span class="o">*</span><span class="n">L</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">x</span><span class="o">/</span><span class="n">L</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">e_colloc</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="n">L</span><span class="o">-</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">L</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">x</span><span class="o">/</span><span class="n">L</span><span class="p">)</span>
-
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># Verify max error for x=L/2</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">dedx_Galerkin</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">e_Galerkin</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">dedx_Galerkin</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">L</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
-<span class="go">0</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">dedx_colloc</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">e_colloc</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">dedx_colloc</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">L</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
-<span class="go">0</span>
-
-<span class="go"># Compute max error: x=L/2, evaluate numerical, and simplify</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">sp</span><span class="o">.</span><span class="n">simplify</span><span class="p">(</span><span class="n">e_Galerkin</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">L</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">evalf</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
-<span class="go">-0.00812*L**2</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">sp</span><span class="o">.</span><span class="n">simplify</span><span class="p">(</span><span class="n">e_colloc</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">L</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">evalf</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
-<span class="go">0.0473*L**2</span>
-</pre></div>
-</div>
-<p>The error in the collocation method is about 6 times larger than
-the error in the Galerkin or least squares method.</p>
-</div>
-</div>
-<div class="section" id="integration-by-parts">
-<span id="fem-deq-1d-varform"></span><h2>Integration by parts<a class="headerlink" href="#integration-by-parts" title="Permalink to this headline">¶</a></h2>
-<p id="index-6">A problem arises if we want to apply popular finite element functions
-to solve our model problem <a href="#equation-fem:deq:1D:model1b">(17)</a>
-by the standard least squares, Galerkin, or collocation methods: the piecewise
-polynomials <span class="math">\({\psi}_i(x)\)</span> have discontinuous derivatives at the
-cell boundaries which makes it problematic to compute
-the second-order derivative.  This fact actually makes the least squares and
-collocation methods less suitable for finite element approximation of
-the unknown function. (By rewriting the equation <span class="math">\(-u''=f\)</span> as a
-system of two first-order equations, <span class="math">\(u'=v\)</span> and <span class="math">\(-v'=f\)</span>, the
-least squares method can be applied. Also, differentiating discontinuous
-functions can actually be handled by distribution theory in
-mathematics.)  The Galerkin method and the method of
-weighted residuals can, however, be applied together with finite
-element basis functions if we use <em>integration by parts</em>
-as a means for transforming a second-order derivative to a first-order
-one.</p>
-<p>Consider the model problem <a href="#equation-fem:deq:1D:model1b">(17)</a> and its
-Galerkin formulation</p>
-<div class="math">
-\[-(u'',v) = (f,v)\quad\forall v\in V{\thinspace .}\]</div>
-<p>Using integration by parts in the Galerkin method,
-we can move a derivative of <span class="math">\(u\)</span> onto <span class="math">\(v\)</span>:</p>
-<div class="math">
-\[\int_0^L u''(x)v(x) {\, \mathrm{d}x} = - \int_0^Lu'(x)v'(x){\, \mathrm{d}x}
-+ [vu']_0^L\nonumber\]</div>
-<div class="math" id="equation-fem:deq:1D:intbyparts">
-<span id="eq-fem-deq-1d-intbyparts"></span><span class="eqno">(21)</span>\[     = - \int_0^Lu'(x)v'(x) {\, \mathrm{d}x}
-     + u'(L)v(L) - u'(0)v(0){\thinspace .}\]</div>
-<p>Usually, one integrates the problem at the stage where the <span class="math">\(u\)</span> and <span class="math">\(v\)</span>
-functions enter the formulation.
-Alternatively, but less common, we can integrate by parts in the expressions for
-the matrix entries:</p>
-<div class="math">
-\[\int_0^L{\psi}_i(x){\psi}_j''(x) {\, \mathrm{d}x} =
-- \int_0^L{\psi}_i'(x){\psi}_j'(x) dx
-+ [{\psi}_i{\psi}_j']_0^L\nonumber\]</div>
-<div class="math" id="equation-fem:deq:1D:intbyparts0">
-<span id="eq-fem-deq-1d-intbyparts0"></span><span class="eqno">(22)</span>\[     = - \int_0^L{\psi}_i'(x){\psi}_j'(x) {\, \mathrm{d}x}
-     + {\psi}_i(L){\psi}_j'(L) - {\psi}_i(0){\psi}_j'(0){\thinspace .}\]</div>
-<p>Integration by parts serves to reduce the order of the derivatives and
-to make the coefficient matrix symmetric since
-<span class="math">\(({\psi}_i',{\psi}_j') = ({\psi}_i',{\psi}_j')\)</span>.
-The symmetry property depends
-on the type of terms that enter the differential equation.
-As will be seen later in the section <a class="reference internal" href="._main_varform006.html#fem-deq-1d-bc-nat"><em>Boundary conditions: specified derivative</em></a>,
-integration by parts also provides a method for implementing
-boundary conditions involving <span class="math">\(u'\)</span>.</p>
-<p>With the choice <a href="#equation-fem:deq:1D:ex:sines:psi">(18)</a> of basis functions we see
-that the &#8220;boundary terms&#8221; <span class="math">\({\psi}_i(L){\psi}_j'(L)\)</span> and <span class="math">\({\psi}_i(0){\psi}_j'(0)\)</span>
-vanish since <span class="math">\({\psi}_i(0)={\psi}_i(L)=0\)</span>.</p>
-<span class="target" id="index-7"></span><div class="section" id="weak-form">
-<span id="index-8"></span><h3>Weak form<a class="headerlink" href="#weak-form" title="Permalink to this headline">¶</a></h3>
-<p>Since the variational formulation after integration by parts make
-weaker demands on the differentiability of <span class="math">\(u\)</span> and the basis
-functions <span class="math">\({\psi}_i\)</span>,
-the resulting integral formulation is referred to as a <em>weak form</em> of
-the differential equation problem. The original variational formulation
-with second-order derivatives, or the differential equation problem
-with second-order derivative, is then the <em>strong form</em>, with
-stronger requirements on the differentiability of the functions.</p>
-<p>For differential equations with second-order derivatives, expressed as
-variational formulations and solved by finite element methods, we will
-always perform integration by parts to arrive at expressions involving
-only first-order derivatives.</p>
-</div>
-</div>
-<div class="section" id="boundary-function">
-<span id="fem-deq-1d-essbc-bfunc"></span><h2>Boundary function<a class="headerlink" href="#boundary-function" title="Permalink to this headline">¶</a></h2>
-<p>So far we have assumed zero Dirichlet boundary conditions, typically
-<span class="math">\(u(0)=u(L)=0\)</span>, and we have demanded that <span class="math">\({\psi}_i(0)={\psi}_i(L)=0\)</span>
-for <span class="math">\(i\in{\mathcal{I}_s}\)</span>. What about a boundary condition like <span class="math">\(u(L)=D\neq0\)</span>?
-This condition immediately faces a problem:
-<span class="math">\(u = \sum_j c_j{\varphi}_j(L) = 0\)</span> since all <span class="math">\({\varphi}_i(L)=0\)</span>.</p>
-<p>A boundary condition of the form <span class="math">\(u(L)=D\)</span> can be implemented by
-demanding that all <span class="math">\({\psi}_i(L)=0\)</span>, but adding a
-<em>boundary function</em> <span class="math">\(B(x)\)</span> with the right boundary value, <span class="math">\(B(L)=D\)</span>, to
-the expansion for <span class="math">\(u\)</span>:</p>
-<div class="math">
-\[u(x) = B(x) + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x)
+\[({\alpha} u',v') = (f,v),\quad \forall v\in V
 {\thinspace .}\]</div>
-<p>This <span class="math">\(u\)</span> gets the right value at <span class="math">\(x=L\)</span>:</p>
-<div class="math">
-\[u(L) = B(L) + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(L) = B(L) = D{\thinspace .}\]</div>
-<p>The idea is that for any boundary where <span class="math">\(u\)</span> is known we demand <span class="math">\({\psi}_i\)</span> to
-vanish and construct a function <span class="math">\(B(x)\)</span> to attain the boundary value of <span class="math">\(u\)</span>.
-There are no restrictions how <span class="math">\(B(x)\)</span> varies with <span class="math">\(x\)</span> in the interior of the
-domain, so this variation needs to be constructed in some way.</p>
-<p>For example, with <span class="math">\(u(0)=0\)</span> and
-<span class="math">\(u(L)=D\)</span>, we can choose <span class="math">\(B(x)=x D/L\)</span>, since this form ensures that
-<span class="math">\(B(x)\)</span> fulfills the boundary conditions: <span class="math">\(B(0)=0\)</span> and <span class="math">\(B(L)=D\)</span>.
-The unknown function is then sought on the form</p>
-<div class="math" id="equation-fem:deq:1D:essBC:Bfunc:u1">
-<span id="eq-fem-deq-1d-essbc-bfunc-u1"></span><span class="eqno">(23)</span>\[     u(x) = \frac{x}{L}D + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x),\]</div>
-<p>with <span class="math">\({\psi}_i(0)={\psi}_i(L)=0\)</span>.</p>
-<p>The <span class="math">\(B(x)\)</span> function can be chosen in many ways as long as its boundary
-values are correct. For example, <span class="math">\(B(x)=D(x/L)^p\)</span> for any power <span class="math">\(p\)</span>
-will work fine in the above example.</p>
-<p>As another example, consider a domain <span class="math">\(\Omega = [a,b]\)</span>
-where the boundary conditions are <span class="math">\(u(a)=U_a\)</span> and <span class="math">\(u(b)=U_b\)</span>.  A class
-of possible <span class="math">\(B(x)\)</span> functions is</p>
-<div class="math" id="equation-fem:deq:1D:essBC:Bfunc:gen  B(x)=U_a + \frac{U_b-U_a}{(b-a)^p}(x-a)^p,\quad p&gt;0 {\thinspace .}">
-<span id="eq-fem-deq-1d-essbc-bfunc-gen"></span></div>
-<p>Real applications will most likely use the simplest version, <span class="math">\(p=1\)</span>,
-but here such a <span class="math">\(p\)</span> parameter was included to demonstrate the
-ambiguity in the construction of <span class="math">\(B(x)\)</span>.</p>
-<div class="admonition-summary admonition">
-<p class="first admonition-title">Summary</p>
-<p class="last">The general procedure of incorporating Dirichlet boundary
-conditions goes as follows.
-Let <span class="math">\(\partial\Omega_E\)</span> be the part(s) of the boundary
-<span class="math">\(\partial\Omega\)</span> of the domain <span class="math">\(\Omega\)</span> where <span class="math">\(u\)</span> is specified.
-Set <span class="math">\({\psi}_i=0\)</span> at the points in <span class="math">\(\partial\Omega_E\)</span> and seek <span class="math">\(u\)</span>
-as</p>
-</div>
-<div class="math" id="equation-fem:deq:1D:essBC:Bfunc:u2">
-<span id="eq-fem-deq-1d-essbc-bfunc-u2"></span><span class="eqno">(25)</span>\[        u(x) = B(x) + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x),\]\[where  \( B(x) \)  equals the boundary conditions on  \( u \)  at  \( \partial\Omega_E \) .\]</div>
-<p><strong>Remark.</strong>
-With the <span class="math">\(B(x)\)</span> term, <span class="math">\(u\)</span> does not in general lie in <span class="math">\(V=\hbox{span}\,
-\{{\psi}_0,\ldots,{\psi}_N\}\)</span> anymore. Moreover, when a prescribed value
-of <span class="math">\(u\)</span> at the boundary, say <span class="math">\(u(a)=U_a\)</span> is different from zero, it does
-not make sense to say that <span class="math">\(u\)</span> lies in a vector space, because
-this space does not obey the requirements of addition and scalar multiplication.
-For example,
-<span class="math">\(2u\)</span> does not lie in the space since its boundary value is <span class="math">\(2U_a\)</span>,
-which is incorrect. It only makes sense to split <span class="math">\(u\)</span> in two parts,
-as done above, and have the unknown part <span class="math">\(\sum_j c_j {\psi}_j\)</span> in a
-proper function space.</p>
-</div>
-<div class="section" id="abstract-notation-for-variational-formulations">
-<span id="fem-deq-1d-varform-abstract"></span><h2>Abstract notation for variational formulations<a class="headerlink" href="#abstract-notation-for-variational-formulations" title="Permalink to this headline">¶</a></h2>
-<p>We have seen that variational formulations end up with a formula involving
-<span class="math">\(u\)</span> and <span class="math">\(v\)</span>, such as <span class="math">\((u',v')\)</span> and a formula involving <span class="math">\(v\)</span> and known
-functions, such as <span class="math">\((f,v)\)</span>. A widely used notation is to introduce an abstract
-variational statement written as <span class="math">\(a(u,v)=L(v)\)</span>,
-where <span class="math">\(a(u,v)\)</span> is a so-called <em>bilinear form</em> involving all the terms
-that contain both the test and trial
-function, while <span class="math">\(L(v)\)</span> is a <em>linear form</em> containing all the terms without
-the trial function. For example, the statement</p>
-<div class="math">
-\[\int_{\Omega} u' v' {\, \mathrm{d}x} =
-\int_{\Omega} fv{\, \mathrm{d}x}\quad\hbox{or}\quad (u',v') = (f,v)
-\quad\forall v\in V\]</div>
-<p>can be written in abstract form: <em>find  \( u \)  such that</em></p>
-<div class="math">
-\[a(u,v) = L(v)\quad \forall v\in V,\]</div>
-<p>where we have the definitions</p>
-<div class="math">
-\[a(u,v) = (u',v'),\quad L(v) = (f,v){\thinspace .}\]</div>
-<p>The term <em>linear</em> means that <span class="math">\(L(\alpha_1 v_1 + \alpha_2 v_2)
-=\alpha_1 L(v_1) + \alpha_2 L(v_2)\)</span> for two test functions <span class="math">\(v_1\)</span> and <span class="math">\(v_2\)</span>, and
-scalar parameters <span class="math">\(\alpha_1\)</span> and <span class="math">\(\alpha_2\)</span>. Similarly, the term <em>bilinear</em>
-means that <span class="math">\(a(u,v)\)</span> is linear in both its arguments:</p>
-<div class="math">
-\[\begin{split}a(\alpha_1 u_1 + \alpha_2 u_2, v) &amp;= \alpha_1 a(u_1,v) + \alpha_2 a(u_2, v),
-\\
-a(u, \alpha_1 v_1 + \alpha_2 v_2) &amp;= \alpha_1 a(u,v_1) + \alpha_2 a(u, v_2)
-{\thinspace .}\end{split}\]</div>
-<p>In nonlinear problems these linearity properties do not hold in general
-and the abstract notation is then <span class="math">\(F(u;v)=0\)</span>.</p>
-<p>The matrix system associated with <span class="math">\(a(u,v)=L(v)\)</span> can also be written in
-an abstract form by inserting <span class="math">\(v={\psi}_i\)</span> and <span class="math">\(u=\sum_j c_j{\psi}_j\)</span>
-in <span class="math">\(a(u,v)=L(v)\)</span>. Using the linear properties, we get</p>
-<div class="math">
-\[\sum_{j\in{\mathcal{I}_s}} a({\psi}_j,{\psi}_i) c_j = L({\psi}_i),\quad i\in{\mathcal{I}_s},\]</div>
-<p>which is a linear system</p>
-<div class="math">
-\[\sum_{j\in{\mathcal{I}_s}}A_{i,j}c_j = b_i,\quad i\in{\mathcal{I}_s},\]</div>
-<p>where</p>
-<div class="math">
-\[A_{i,j} =a({\psi}_j,{\psi}_i), \quad b_i = L({\psi}_i){\thinspace .}\]</div>
-<p>In many problems, <span class="math">\(a(u,v)\)</span> is symmetric such that
-<span class="math">\(a({\psi}_j,{\psi}_i) = a({\psi}_i,{\psi}_j)\)</span>. In those cases the
-coefficient matrix becomes symmetric, <span class="math">\(A_{i,j}=A_{j,i}\)</span>, a property
-that can simplify solution algorithms for linear systems
-and make them more stable in addition to saving memory and computations.</p>
-<p>The abstract notation <span class="math">\(a(u,v)=L(v)\)</span> for linear differential equation problems
-is much used in the literature and
-in description of finite element software (in particular the
-<a class="reference external" href="http://fenicsproject.org">FEniCS</a> documentation). We shall
-frequently summarize variational forms using this notation.</p>
-</div>
-<div class="section" id="variational-problems-and-optimization-of-functionals">
-<span id="fem-deq-1d-optimization"></span><h2>Variational problems and optimization of functionals<a class="headerlink" href="#variational-problems-and-optimization-of-functionals" title="Permalink to this headline">¶</a></h2>
-<p>If <span class="math">\(a(u,v)=a(v,u)\)</span>, it can be shown that the variational statement</p>
+<p>The corresponding abstract notation reads</p>
 <div class="math">
 \[a(u,v)=L(v)\quad\forall v\in V,\]</div>
-<p>is equivalent to minimizing the functional</p>
+<p>with</p>
 <div class="math">
-\[F(v) = {\frac{1}{2}}a(v,v) - L(v)\]</div>
-<p>over all functions <span class="math">\(v\in V\)</span>. That is,</p>
+\[a(u,v)= ({\alpha} u',v'),\quad L(v)=(f,v) {\thinspace .}\]</div>
+<p>Note that the <span class="math">\(a\)</span> in the notation <span class="math">\(a(\cdot,\cdot)\)</span> is not to be mixed with the
+variable coefficient <span class="math">\(a(x)\)</span> in the differential equation.</p>
+<p>We may insert <span class="math">\(u=B + \sum_jc_j{\psi}_j\)</span> and <span class="math">\(v={\psi}_i\)</span> to
+derive the linear system:</p>
 <div class="math">
-\[F(u)\leq F(v)\quad \forall v\in V{\thinspace .}\]</div>
-<p>Inserting a <span class="math">\(v=\sum_j c_j{\psi}_j\)</span> turns minimization of <span class="math">\(F(v)\)</span> into
-minimization of a quadratic function</p>
+\[({\alpha} B' + {\alpha} \sum_{j\in{\mathcal{I}_s}} c_j {\psi}_j', {\psi}_i') =
+(f,{\psi}_i), \quad i\in{\mathcal{I}_s} {\thinspace .}\]</div>
+<p>Isolating everything with the <span class="math">\(c_j\)</span> coefficients on the left-hand side
+and all known terms on the right-hand side
+gives</p>
 <div class="math">
-\[\bar F(c_0,\ldots,c_N) = \sum_{j\in{\mathcal{I}_s}}\sum_{i\in{\mathcal{I}_s}} a({\psi}_i,{\psi}_j)c_ic_j - \sum_{j\in{\mathcal{I}_s}} L({\psi}_j)c_j\]</div>
-<p>of <span class="math">\(N+1\)</span> parameters.</p>
-<p>Minimization of <span class="math">\(\bar F\)</span> implies</p>
+\[\sum_{j\in{\mathcal{I}_s}} ({\alpha}{\psi}_j', {\psi}_i')c_j  =
+(f,{\psi}_i) + (a(D-C)L^{-1}, {\psi}_i'), \quad i\in{\mathcal{I}_s}
+{\thinspace .}\]</div>
+<p>This is nothing but a linear system <span class="math">\(\sum_j A_{i,j}c_j=b_i\)</span>
+with</p>
 <div class="math">
-\[\frac{\partial\bar F}{\partial c_i}=0,\quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
-<p>After some algebra one finds</p>
+\[\begin{split}A_{i,j} &amp;= (a{\psi}_j', {\psi}_i') = \int_{\Omega} {\alpha}(x){\psi}_j'(x),
+{\psi}_i'(x){\, \mathrm{d}x},\\
+b_i &amp;= (f,{\psi}_i) + (a(D-C)L^{-1},{\psi}_i')=
+\int_{\Omega} \left(f(x){\psi}_i(x) + {\alpha}(x)\frac{D-C}{L}{\psi}_i'(x)\right) {\, \mathrm{d}x}
+{\thinspace .}\end{split}\]</div>
+</div>
+<div class="section" id="first-order-derivative-in-the-equation-and-boundary-condition">
+<h2>First-order derivative in the equation and boundary condition<a class="headerlink" href="#first-order-derivative-in-the-equation-and-boundary-condition" title="Permalink to this headline">¶</a></h2>
+<p>The next problem to formulate in variational form reads</p>
 <div class="math">
-\[\sum_{j\in{\mathcal{I}_s}} a({\psi}_i,{\psi}_j)c_j = L({\psi}_i),\quad i\in{\mathcal{I}_s},\]</div>
-<p>which is the same system as that arising from <span class="math">\(a(u,v)=L(v)\)</span>.</p>
-<p>Many traditional applications of the finite element method, especially
-in solid mechanics and structural analysis, start with formulating <span class="math">\(F(v)\)</span>
-from physical principles, such as minimization of energy, and then
-proceeds with deriving <span class="math">\(a(u,v)=L(v)\)</span>, which is the equation usually desired
-in implementations.</p>
+\[-u''(x) + bu'(x) = f(x),\quad x\in\Omega =[0,L],\
+u(0)=C,\ u'(L)=E{\thinspace .}\]</div>
+<p>The new features are a first-order derivative <span class="math">\(u'\)</span> in the equation
+and the boundary
+condition involving the derivative: <span class="math">\(u'(L)=E\)</span>.
+Since we have a Dirichlet condition at <span class="math">\(x=0\)</span>,
+we must force <span class="math">\({\psi}_i(0)=0\)</span> and use a boundary function
+to take care of the condition <span class="math">\(u(0)=C\)</span>.
+Because there is no Dirichlet
+condition on <span class="math">\(x=L\)</span> we do not make any requirements to <span class="math">\({\psi}_i(L)\)</span>.
+The simplest possible choice of <span class="math">\(B(x)\)</span> is <span class="math">\(B(x)=C\)</span>.</p>
+<p>The expansion for <span class="math">\(u\)</span> becomes</p>
+<div class="math">
+\[u = C + \sum_{j\in{\mathcal{I}_s}} c_j {\psi}_i(x)
+{\thinspace .}\]</div>
+<p>The variational formulation arises from multiplying the equation by
+a test function <span class="math">\(v\in V\)</span> and integrating over <span class="math">\(\Omega\)</span>:</p>
+<div class="math">
+\[(-u'' + bu' - f, v) = 0,\quad\forall v\in V\]</div>
+<p>We apply integration by parts to the <span class="math">\(u''v\)</span> term only. Although we could
+also integrate <span class="math">\(u' v\)</span> by parts, this is not common.
+The result becomes</p>
+<div class="math">
+\[(u',v') + (bu',v) = (f,v) + [u' v]_0^L, \quad\forall v\in V {\thinspace .}\]</div>
+<p>Now, <span class="math">\(v(0)=0\)</span> so</p>
+<div class="math">
+\[[u' v]_0^L = u'(L)v(L) = E v(L),\]</div>
+<p>because <span class="math">\(u'(L)=E\)</span>.
+Integration by parts allows us to take care of the Neumann condition
+in the boundary term.</p>
+<span class="target" id="index-0"></span><div class="admonition-natural-and-essential-boundary-conditions admonition" id="index-1">
+<p class="first admonition-title">Natural and essential boundary conditions</p>
+<p class="last">Omitting a boundary term like <span class="math">\([u'v]_0^L\)</span>
+implies that we actually impose the condition <span class="math">\(u'=0\)</span> unless there
+is a Dirichlet condition (i.e., <span class="math">\(v=0\)</span>) at that point! This result has great
+practical consequences, because it is easy to forget the boundary
+term, and this mistake may implicitly
+set a boundary condition! Since
+homogeneous Neumann conditions can be incorporated
+without doing anything, and non-homogeneous Neumann conditions can
+just be inserted in the boundary term,
+such conditions are known as <em>natural boundary conditions</em>.
+Dirichlet conditions requires more essential steps in the mathematical
+formulation, such as forcing all <span class="math">\({\varphi}_i=0\)</span> on the boundary
+and constructing a <span class="math">\(B(x)\)</span>, and are
+therefore known as <em>essential boundary conditions</em>.</p>
+</div>
+<p>The final variational form reads</p>
+<div class="math">
+\[(u',v') + (bu',v) = (f,v) + E v(L), \quad\forall v\in V {\thinspace .}\]</div>
+<p>In the abstract notation we have</p>
+<div class="math">
+\[a(u,v)=L(v)\quad\forall v\in V,\]</div>
+<p>with the particular formulas</p>
+<div class="math">
+\[a(u,v)=(u',v') + (bu',v),\quad L(v)= (f,v) + E v(L){\thinspace .}\]</div>
+<p>The associated linear system is derived by inserting <span class="math">\(u=B+\sum_jc_j{\psi}_j\)</span>
+and replacing <span class="math">\(v\)</span> by <span class="math">\({\psi}_i\)</span> for <span class="math">\(i\in{\mathcal{I}_s}\)</span>. Some algebra results in</p>
+<div class="math">
+\[\sum_{j\in{\mathcal{I}_s}} \underbrace{(({\psi}_j',{\psi}_i') + (b{\psi}_j',{\psi}_i))}_{A_{i,j}} c_j = \underbrace{(f,{\psi}_i) + E {\psi}_i(L)}_{b_i}
+{\thinspace .}\]</div>
+<p>Observe that in this problem, the coefficient matrix is not symmetric,
+because of the term</p>
+<div class="math">
+\[(b{\psi}_j',{\psi}_i)=\int_{\Omega} b{\psi}_j'{\psi}_i {\, \mathrm{d}x}
+ \neq \int_{\Omega} b {\psi}_i' {\psi}_j {\, \mathrm{d}x} = ({\psi}_i',b{\psi}_j)
+{\thinspace .}\]</div>
+</div>
+<div class="section" id="nonlinear-coefficient">
+<h2>Nonlinear coefficient<a class="headerlink" href="#nonlinear-coefficient" title="Permalink to this headline">¶</a></h2>
+<p>Finally, we show that the techniques used above to derive variational
+forms also apply to nonlinear differential equation
+problems as well. Here is a model problem with
+a nonlinear coefficient and right-hand side:</p>
+<div class="math">
+\[-({\alpha}(u)u')' = f(u),\quad x\in [0,L],\ u(0)=0,\ u'(L)=E
+{\thinspace .}\]</div>
+<p>Our space <span class="math">\(V\)</span> has basis <span class="math">\(\left\{ {{\psi}}_i \right\}_{i\in{\mathcal{I}_s}}\)</span>, and because of the
+condition <span class="math">\(u(0)=0\)</span>, we must require <span class="math">\({\psi}_i(0)=0\)</span>, <span class="math">\(i\in{\mathcal{I}_s}\)</span>.</p>
+<p>Galerkin&#8217;s method is about inserting the approximate
+<span class="math">\(u\)</span>, multiplying the differential equation by <span class="math">\(v\in V\)</span>, and integrate,</p>
+<div class="math">
+\[-\int_0^L \frac{d}{dx}\left({\alpha}(u)\frac{du}{dx}\right)v {\, \mathrm{d}x} =
+\int_0^L f(u)v {\, \mathrm{d}x}\quad\forall v\in V
+{\thinspace .}\]</div>
+<p>The integration by parts does not differ from the case where we have
+<span class="math">\({\alpha}(x)\)</span> instead of <span class="math">\({\alpha}(u)\)</span>:</p>
+<div class="math">
+\[\int_0^L {\alpha}(u)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} =
+\int_0^L f(u)v{\, \mathrm{d}x} + [{\alpha}(u)vu']_0^L\quad\forall v\in V
+{\thinspace .}\]</div>
+<p>The term <span class="math">\({\alpha}(u(0))v(0)u'(0)=0\)</span> since <span class="math">\(v(0)\)</span>.
+The other term, <span class="math">\({\alpha}(u(L))v(L)u'(L)\)</span>,
+is used to impose the other boundary condition <span class="math">\(u'(L)=E\)</span>, resulting in</p>
+<div class="math">
+\[\int_0^L {\alpha}(u)\frac{du}{dx}\frac{dv}{dx}{\, \mathrm{d}x} =
+\int_0^L f(u)v{\, \mathrm{d}x} + {\alpha}(u(L))v(L)E\quad\forall v\in V,\]</div>
+<p>or alternatively written more compactly as</p>
+<div class="math">
+\[({\alpha}(u)u', v') = (f(u),v) + {\alpha}(u(L))v(L)E\quad\forall v\in V
+{\thinspace .}\]</div>
+<p>Since the problem is nonlinear, we cannot identify a bilinear
+form <span class="math">\(a(u,v)\)</span> and a linear form <span class="math">\(L(v)\)</span>.
+An abstract notation is typically <em>find  \( u \)  such that</em></p>
+<div class="math">
+\[F(u;v) = 0\quad\forall v\in V,\]</div>
+<p>with</p>
+<div class="math">
+\[F(u;v) = (a(u)u', v') - (f(u),v) - a(L)v(L)E
+{\thinspace .}\]</div>
+<p>By inserting <span class="math">\(u=\sum_j c_j{\psi}_j\)</span> we get a <em>nonlinear system of
+algebraic equations</em> for the unknowns <span class="math">\(c_i\)</span>, <span class="math">\(i\in{\mathcal{I}_s}\)</span>. Such systems must
+be solved by constructing a sequence of linear systems whose solutions
+hopefully converge to the solution of the nonlinear system. Frequently applied
+methods are Picard iteration and Newton&#8217;s method.</p>
+</div>
+<div class="section" id="computing-with-dirichlet-and-neumann-conditions">
+<span id="fem-deq-1d-varform-ex-dn-case"></span><h2>Computing with Dirichlet and Neumann conditions<a class="headerlink" href="#computing-with-dirichlet-and-neumann-conditions" title="Permalink to this headline">¶</a></h2>
+<p>Let us perform the necessary calculations to solve</p>
+<div class="math">
+\[-u''(x)=2,\quad x\in \Omega=[0,1],\quad u'(0)=C,\ u(1)=D,\]</div>
+<p>using a global polynomial basis <span class="math">\({\psi}_i\sim x^i\)</span>.
+The requirements on <span class="math">\({\psi}_i\)</span> is that <span class="math">\({\psi}_i(1)=0\)</span>, because <span class="math">\(u\)</span> is
+specified at <span class="math">\(x=1\)</span>, so a proper set of polynomial basis functions can be</p>
+<div class="math">
+\[{\psi}_i(x)=(1-x)^{i+1}, \quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
+<p>A suitable <span class="math">\(B(x)\)</span> function
+to handle the boundary condition <span class="math">\(u(1)=D\)</span> is <span class="math">\(B(x)=Dx\)</span>.
+The variational formulation becomes</p>
+<div class="math">
+\[(u',v') = (2,v) - Cv(0)\quad\forall v\in V{\thinspace .}\]</div>
+<p>From inserting <span class="math">\(u=B + \sum_{j}c_j{\psi}_j\)</span> and choosing <span class="math">\(v={\psi}_i\)</span> we get</p>
+<div class="math">
+\[\sum_{j\in{\mathcal{I}_s}} ({\psi}_j',{\psi}_i')c_j = (2,{\psi}_i)
+- (B',{\psi}_i') - C{\psi}_i(0),\quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
+<p>The entries in the linear system are then</p>
+<div class="math">
+\[\begin{split}A_{i,j} &amp;= ({\psi}_j',{\psi}_i') = \int_{0}^1 {\psi}_i'(x){\psi}_j'(x){\, \mathrm{d}x}
+= \int_0^1 (i+1)(j+1)(1-x)^{i+j}{\, \mathrm{d}x} = \frac{(i+1)(j+1)}{i + j + 1},\\
+b_i &amp;= (2,{\psi}_i) - (D,{\psi}_i') -C{\psi}_i(0)\\
+&amp;= \int_0^1\left( 2{\psi}_i(x) - D{\psi}_i'(x)\right){\, \mathrm{d}x} -C{\psi}_i(0)\\
+&amp;= \int_0^1 \left( 2(1-x)^{i+1} - D(i+1)(1-x)^i\right){\, \mathrm{d}x}  -C\\
+&amp;= \frac{(D-C)(i+2) + 2}{i+2} = D - C + \frac{2}{i+2}
+{\thinspace .}\end{split}\]</div>
+<p>Relevant <code class="docutils literal"><span class="pre">sympy</span></code> commands to help calculate these expressions are</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">x</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;x C D&#39;</span><span class="p">)</span>
+<span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;i j&#39;</span><span class="p">,</span> <span class="n">integer</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">positive</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">psi_i</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">x</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">psi_j</span> <span class="o">=</span> <span class="n">psi_i</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+<span class="n">integrand</span> <span class="o">=</span> <span class="n">diff</span><span class="p">(</span><span class="n">psi_i</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">diff</span><span class="p">(</span><span class="n">psi_j</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+<span class="n">integrand</span> <span class="o">=</span> <span class="n">simplify</span><span class="p">(</span><span class="n">integrand</span><span class="p">)</span>
+<span class="n">A_ij</span> <span class="o">=</span> <span class="n">integrate</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">A_ij</span> <span class="o">=</span> <span class="n">simplify</span><span class="p">(</span><span class="n">A_ij</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;A_ij:&#39;</span><span class="p">,</span> <span class="n">A_ij</span>
+<span class="n">f</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">b_i</span> <span class="o">=</span> <span class="n">integrate</span><span class="p">(</span><span class="n">f</span><span class="o">*</span><span class="n">psi_i</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">-</span> \
+      <span class="n">integrate</span><span class="p">(</span><span class="n">diff</span><span class="p">(</span><span class="n">D</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">diff</span><span class="p">(</span><span class="n">psi_i</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">-</span> \
+      <span class="n">C</span><span class="o">*</span><span class="n">psi_i</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">b_i</span> <span class="o">=</span> <span class="n">simplify</span><span class="p">(</span><span class="n">b_i</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;b_i:&#39;</span><span class="p">,</span> <span class="n">b_i</span>
+</pre></div>
+</div>
+<p>The output becomes</p>
+<div class="highlight-text"><div class="highlight"><pre>A_ij: (i + 1)*(j + 1)/(i + j + 1)
+b_i: ((-C + D)*(i + 2) + 2)/(i + 2)
+</pre></div>
+</div>
+<p>We can now choose some <span class="math">\(N\)</span> and form the linear system, say for <span class="math">\(N=1\)</span>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">N</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;fresh b:&#39;</span><span class="p">,</span> <span class="n">b</span>
+<span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">A</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">A_ij</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+    <span class="n">b</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">b_i</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The system becomes</p>
+<div class="math">
+\[\begin{split}\left(\begin{array}{cc}
+1 &amp; 1\\
+1 &amp; 4/3
+\end{array}\right)
+\left(\begin{array}{c}
+c_0\\
+c_1
+\end{array}\right)
+=
+\left(\begin{array}{c}
+1-C+D\\
+2/3 -C + D
+\end{array}\right)\end{split}\]</div>
+<p>The solution (<code class="docutils literal"><span class="pre">c</span> <span class="pre">=</span> <span class="pre">A.LUsolve(b)</span></code>)
+becomes <span class="math">\(c_0=2 -C+D\)</span> and <span class="math">\(c_1=-1\)</span>, resulting in</p>
+<div class="math">
+\[u(x) = 1 -x^2 + D + C(x-1),\]</div>
+<p>We can form this <span class="math">\(u\)</span> in <code class="docutils literal"><span class="pre">sympy</span></code> and check that the differential equation
+and the boundary conditions are satisfied:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">u</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">psi_i</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span> <span class="o">+</span> <span class="n">D</span><span class="o">*</span><span class="n">x</span>
+<span class="k">print</span> <span class="s">&#39;u:&#39;</span><span class="p">,</span> <span class="n">simplify</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;u&#39;&#39;:&quot;</span><span class="p">,</span> <span class="n">simplify</span><span class="p">(</span><span class="n">diff</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
+<span class="k">print</span> <span class="s">&#39;BC x=0:&#39;</span><span class="p">,</span> <span class="n">simplify</span><span class="p">(</span><span class="n">diff</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="k">print</span> <span class="s">&#39;BC x=1:&#39;</span><span class="p">,</span> <span class="n">simplify</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The output becomes</p>
+<div class="highlight-text"><div class="highlight"><pre>u: C*x - C + D - x**2 + 1
+u&#39;&#39;: -2
+BC x=0: C
+BC x=1: D
+</pre></div>
+</div>
+<p>The complete <code class="docutils literal"><span class="pre">sympy</span></code> code is found in <a class="reference external" href="http://tinyurl.com/nm5587k/fem/u_xx_2_CD.py">u_xx_2_CD.py</a>.</p>
+<p>The exact solution is found by integrating twice and applying the
+boundary conditions, either by hand or using <code class="docutils literal"><span class="pre">sympy</span></code> as shown in
+the section <a class="reference internal" href="._main_varform001.html#fem-deq-1d-models-simple"><span>Simple model problems</span></a>.  It appears that the numerical
+solution coincides with the exact one.  This result is to be expected
+because if <span class="math">\(({u_{\small\mbox{e}}} - B)\in V\)</span>, <span class="math">\(u = {u_{\small\mbox{e}}}\)</span>, as proved next.</p>
+</div>
+<div class="section" id="when-the-numerical-method-is-exact">
+<h2>When the numerical method is exact<a class="headerlink" href="#when-the-numerical-method-is-exact" title="Permalink to this headline">¶</a></h2>
+<p>We have some variational formulation: find <span class="math">\((u-B)\in V\)</span> such that
+<span class="math">\(a(u,v)=L(u)\ \forall V\)</span>. The exact solution also fulfills
+<span class="math">\(a({u_{\small\mbox{e}}},v)=L(v)\)</span>, but normally <span class="math">\(({u_{\small\mbox{e}}} -B)\)</span> lies in a much larger
+(infinite-dimensional) space. Suppose, nevertheless, that
+<span class="math">\({u_{\small\mbox{e}}} - B = E\)</span>, where <span class="math">\(E\in V\)</span>. That is, apart from Dirichlet conditions,
+<span class="math">\({u_{\small\mbox{e}}}\)</span> lies in our finite-dimensional space <span class="math">\(V\)</span> we use to compute <span class="math">\(u\)</span>.
+Writing also <span class="math">\(u\)</span> on the same form <span class="math">\(u=B+F\)</span>, <span class="math">\(F\in V\)</span>, we have</p>
+<div class="math">
+\[\begin{split}a(B+E,v) &amp;= L(v)\quad\forall v\in V,\\
+a(B+F,v) &amp;= L(v)\quad\forall v\in V{\thinspace .}\end{split}\]</div>
+<p>Since these are two variational statements in the same space, we
+can subtract them and use the bilinear property of <span class="math">\(a(\cdot,\cdot)\)</span>:</p>
+<div class="math">
+\[\begin{split}a(B+E,v) - a(B+F, v) &amp;= L(v) - L(v)\\
+a(B+E-(B+F),v) &amp;= 0\\
+a(E-F),v) &amp;= 0\end{split}\]</div>
+<p>If <span class="math">\(a(E-F),v) = 0\)</span> for all <span class="math">\(v\)</span> in <span class="math">\(V\)</span>, then <span class="math">\(E-F\)</span> must be zero everywhere
+in the domain, i.e., <span class="math">\(E=F\)</span>. Or in other words: <span class="math">\(u={u_{\small\mbox{e}}}\)</span>. This proves
+that the exact solution is recovered if <span class="math">\({u_{\small\mbox{e}}} - B\)</span> lies in <span class="math">\(V\)</span>., i.e.,
+can expressed as <span class="math">\(\sum_{j\in{\mathcal{I}_s}}d_j{\psi}_j\)</span> if <span class="math">\(\{{\psi}_j\}_{j\in{\mathcal{I}_s}}\)</span>
+is a basis for <span class="math">\(V\)</span>. The method will then compute the solution <span class="math">\(c_j=d_j\)</span>,
+<span class="math">\(j\in{\mathcal{I}_s}\)</span>.</p>
+<p>The case treated in the section <a class="reference internal" href="#fem-deq-1d-varform-ex-dn-case"><span>Computing with Dirichlet and Neumann conditions</span></a>
+is of the type where <span class="math">\({u_{\small\mbox{e}}} - B\)</span> is a quadratic function that is 0
+at <span class="math">\(x=1\)</span>, and therefore <span class="math">\(({u_{\small\mbox{e}}} -B)\in V\)</span>, and the method
+finds the exact solution.</p>
 </div>
 </div>
 
@@ -818,45 +434,22 @@ in implementations.</p>
             </center>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Basic principles for approximating differential equations</a><ul>
-<li><a class="reference internal" href="#differential-equation-models">Differential equation models</a></li>
-<li><a class="reference internal" href="#simple-model-problems">Simple model problems</a></li>
-<li><a class="reference internal" href="#forming-the-residual">Forming the residual</a></li>
-<li><a class="reference internal" href="#the-least-squares-method-1">The least squares method  (1)</a></li>
-<li><a class="reference internal" href="#the-galerkin-method-1">The Galerkin method  (1)</a></li>
-<li><a class="reference internal" href="#the-method-of-weighted-residuals">The Method of Weighted Residuals</a></li>
-<li><a class="reference internal" href="#test-and-trial-functions">Test and Trial Functions</a></li>
-<li><a class="reference internal" href="#the-collocation-method-1">The collocation method  (1)</a><ul>
-<li><a class="reference internal" href="#the-subdomain-collocation-method">The subdomain collocation method</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#examples-on-using-the-principles">Examples on using the principles</a><ul>
-<li><a class="reference internal" href="#the-model-problem">The model problem</a></li>
-<li><a class="reference internal" href="#basis-functions">Basis functions</a></li>
-<li><a class="reference internal" href="#the-residual">The residual</a></li>
-<li><a class="reference internal" href="#the-least-squares-method-2">The least squares method  (2)</a></li>
-<li><a class="reference internal" href="#the-galerkin-method-2">The Galerkin method  (2)</a></li>
-<li><a class="reference internal" href="#the-collocation-method-2">The collocation method  (2)</a></li>
-<li><a class="reference internal" href="#comparison">Comparison</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#integration-by-parts">Integration by parts</a><ul>
-<li><a class="reference internal" href="#weak-form">Weak form</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#boundary-function">Boundary function</a></li>
-<li><a class="reference internal" href="#abstract-notation-for-variational-formulations">Abstract notation for variational formulations</a></li>
-<li><a class="reference internal" href="#variational-problems-and-optimization-of-functionals">Variational problems and optimization of functionals</a></li>
+<li><a class="reference internal" href="#">Examples on variational formulations</a><ul>
+<li><a class="reference internal" href="#variable-coefficient">Variable coefficient</a></li>
+<li><a class="reference internal" href="#first-order-derivative-in-the-equation-and-boundary-condition">First-order derivative in the equation and boundary condition</a></li>
+<li><a class="reference internal" href="#nonlinear-coefficient">Nonlinear coefficient</a></li>
+<li><a class="reference internal" href="#computing-with-dirichlet-and-neumann-conditions">Computing with Dirichlet and Neumann conditions</a></li>
+<li><a class="reference internal" href="#when-the-numerical-method-is-exact">When the numerical method is exact</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="._main_varform001.html"
-                        title="previous chapter">&lt;no title&gt;</a></p>
+                        title="previous chapter">Basic principles for approximating differential equations</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="._main_varform003.html"
-                        title="next chapter">Examples on variational formulations</a></p>
+                        title="next chapter">Computing with finite elements</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/._main_varform002.txt"
@@ -886,12 +479,12 @@ in implementations.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="._main_varform003.html" title="Examples on variational formulations"
+          <a href="._main_varform003.html" title="Computing with finite elements"
              >next</a> |</li>
         <li class="right" >
-          <a href="._main_varform001.html" title="&lt;no title&gt;"
+          <a href="._main_varform001.html" title="Basic principles for approximating differential equations"
              >previous</a> |</li>
-        <li><a href="index.html">Computing with variational forms</a> &raquo;</li> 
+        <li><a href="index.html">Stationary variational forms</a> &raquo;</li> 
       </ul>
     </div>
 <div class="wrapper">

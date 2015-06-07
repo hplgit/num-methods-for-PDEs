@@ -1,369 +1,336 @@
 .. !split
 
-.. _fem:deq:1D:BC:nat:
+.. _fem:deq:1D:code:global:
 
-Boundary conditions: specified derivative
-=========================================
+Implementation
+==============
 
-Suppose our model problem :math:`-u''(x)=f(x)` features
-the boundary conditions :math:`u'(0)=C` and :math:`u(L)=D`.
-As already indicated in the section :ref:`fem:deq:1D:varform:ex`,
-the former condition can be incorporated through the boundary term
-that arises from integration by parts. This details of this method will now be
-illustrated in the context of finite element basis functions.
+It is tempting to create a
+program with symbolic calculations to perform all the steps in the
+computational machinery,
+both for automating the work and for documenting the complete algorithms.
+As we have seen, there are quite many details involved with
+finite element computations and incorporation of boundary conditions.
+An implementation will also act as a structured summary of all these details.
 
-The variational formulation
----------------------------
+Global basis functions
+----------------------
 
-Starting with the Galerkin method,
+We first consider implementations when :math:`{\psi}_i` are global functions
+are hence different from zero on most of :math:`\Omega =[0,L]` so all integrals
+need integration over the entire domain. Since the expressions for
+the entries in the linear system depend on the differential equation
+problem being solved, the user must supply the necessary formulas via
+Python functions. The implementations here attempt to perform symbolic
+calculations, but fall back on numerical computations if the symbolic
+ones fail.
 
-.. math::
-        
-        \int_0^L(u''(x)+f(x)){\psi}_i(x) {\, \mathrm{d}x} = 0,\quad i\in{\mathcal{I}_s},
-        
-
-integrating :math:`u''{\psi}_i` by parts results in
-
-.. math::
-        
-        \int_0^Lu'(x)'{\psi}_i'(x) {\, \mathrm{d}x} -(u'(L){\psi}_i(L) - u'(0){\psi}_i(0)) =
-        \int_0^L f(x){\psi}_i(x) {\, \mathrm{d}x}, \quad i\in{\mathcal{I}_s}{\thinspace .}
-        
-
-The first boundary term, :math:`u'(L){\psi}_i(L)`,
-vanishes because :math:`u(L)=D`. There are two arguments for
-this result, explained in detail below.
-The second boundary
-term, :math:`u'(0){\psi}_i(0)`, can be used to implement the condition :math:`u'(0)=C`,
-provided :math:`{\psi}_i(0)\neq 0` for some :math:`i` (but with finite elements
-we fortunately have :math:`{\psi}_0(0)=1`).
-The variational form of the differential equation then becomes
-
-.. _Eq:fem:deq:1D:BC:nat:varform:
-
-.. math::
-   :label: fem:deq:1D:BC:nat:varform
-         \int_0^Lu'(x){\varphi}_i'(x) {\, \mathrm{d}x} + C{\varphi}_i(0) =
-        \int_0^L f(x){\varphi}_i(x) {\, \mathrm{d}x},\quad i\in{\mathcal{I}_s}{\thinspace .}
-        
-        
-
-.. _fem:deq:1D:BC:nat:uLtest:
-
-Boundary term vanishes because of the test functions
-----------------------------------------------------
-
-At points where :math:`u` is known we may require :math:`{\psi}_i` to vanish.
-Here, :math:`u(L)=D` and then :math:`{\psi}_i(L)=0`, :math:`i\in{\mathcal{I}_s}`. Obviously,
-the boundary term :math:`u'(L){\psi}_i(L)` then vanishes.
-
-The set of basis functions :math:`\left\{ {{\psi}}_i \right\}_{i\in{\mathcal{I}_s}}` contains in this
-case all the finite element basis functions on the mesh, expect
-the one that is 1 at :math:`x=L`. The basis function that is left out is
-used in a boundary function :math:`B(x)` instead.
-With a left-to-right numbering,
-:math:`{\psi}_i = {\varphi}_i`, :math:`i=0,\ldots,N_n-2`, and :math:`B(x)=D{\varphi}_{N_n-1}`:
-
-.. math::
-         u(x) = D{\varphi}_{N_n-1}(x) + \sum_{j=0}^{N=N_n-2} c_j{\varphi}_j(x){\thinspace .}
-
-Inserting this expansion for :math:`u` in the variational form
-:eq:`fem:deq:1D:BC:nat:varform` leads to the linear system
-
-.. _Eq:fem:deq:1D:natBC:
-
-.. math::
-   :label: fem:deq:1D:natBC
-        
-        \sum_{j=0}^{N}\left(
-        \int_0^L {\varphi}_i'(x){\varphi}_j'(x) {\, \mathrm{d}x} \right)c_j =
-        \int_0^L\left(f(x){\varphi}_i(x) -D{\varphi}_{N_n-1}'(x){\varphi}_i'(x)\right) {\, \mathrm{d}x}
-         - C{\varphi}_i(0),
-        
-        
-
-for :math:`i=0,\ldots,N=N_n-2`.
-
-.. _fem:deq:1D:BC:nat:uLmod:
-
-Boundary term vanishes because of linear system modifications
--------------------------------------------------------------
-
-We may, as an alternative to the approach in the previous section, use
-a basis :math:`\left\{ {{\psi}}_i \right\}_{i\in{\mathcal{I}_s}}` which contains all the finite element
-functions on the mesh: :math:`{\psi}_i={\varphi}_i`, :math:`i=0,\ldots,N_n-1=N`.  In
-this case, :math:`u'(L){\psi}_i(L)=u'(L){\varphi}_i(L)\neq 0` for the :math:`i`
-corresponding to the boundary node at :math:`x=L` (where :math:`{\varphi}_i=1`).
-The number of this node is :math:`i=N_n-1=N` if a left-to-right numbering of
-nodes is utilized.
-
-However, even though :math:`u'(L){\varphi}_{N_n-1}(L)\neq 0`, we do not need to
-compute this term.  For :math:`i<N_n-1` we realize that :math:`{\varphi}_i(L)=0`.  The
-only nonzero contribution to the right-hand side from the affects
-:math:`b_{N_n-1}` (:math:`i=N`). Without a boundary function we must implement the
-condition :math:`u(L)=D` by the equivalent statement :math:`c_N=D` and modify the
-linear system accordingly. This modification will erase the last
-row and replace :math:`b_N` by another value. Any attempt to compute
-the boundary term :math:`u'(L){\varphi}_{N_n-1}(L)` and store it in :math:`b_N` will be
-lost. Therefore, we can safely forget about boundary terms
-corresponding to Dirichlet boundary conditions also when we use
-the methods from the section :ref:`fem:deq:1D:fem:essBC:Bfunc:modsys`
-or the section :ref:`fem:deq:1D:fem:essBC:Bfunc:modsys:symm`.
-
-The expansion for :math:`u` reads
+The user must prepare a function
+``integrand_lhs(psi, i, j)`` for returning the integrand of the
+integral that contributes to matrix entry :math:`(i,j)`.
+The ``psi`` variable is a Python dictionary holding the basis
+functions and their derivatives in symbolic form. More precisely,
+``psi[q]`` is a list of
 
 .. math::
         
-        u(x) = \sum_{j\in{\mathcal{I}_s}} c_j{\varphi}_j(x){\thinspace .}
-        
-
-Insertion in the variational form
-:eq:`fem:deq:1D:BC:nat:varform` leads to
-the linear system
-
-.. _Eq:fem:deq:1D:natBC2:
-
-.. math::
-   :label: fem:deq:1D:natBC2
-        
-        \sum_{j\in{\mathcal{I}_s}}\left(
-        \int_0^L {\varphi}_i'(x){\varphi}_j'(x) {\, \mathrm{d}x} \right)c_j =
-        \int_0^L\left(f(x){\varphi}_i(x)\right) {\, \mathrm{d}x}
-         - C{\varphi}_i(0),\quad i\in{\mathcal{I}_s}
+        \{\frac{d^q{\psi}_0}{dx^q},\ldots,\frac{d^q{\psi}_{N_n-1}}{dx^q}\}
         {\thinspace .}
         
+
+Similarly, ``integrand_rhs(psi, i)`` returns the integrand
+for entry number :math:`i` in the right-hand side vector.
+
+Since we also have contributions to the right-hand side vector,
+and potentially also the
+matrix, from boundary terms without any integral, we introduce two
+additional functions, ``boundary_lhs(psi, i, j)`` and
+``boundary_rhs(psi, i)`` for returning terms in the variational
+formulation that are not to be integrated over the domain :math:`\Omega`.
+Examples shown later will explain in more detail how these
+user-supplied function may look like.
+
+The linear system can be computed and solved symbolically by
+the following function:
+
+.. code-block:: python
+
+        import sympy as sym
         
+        def solve(integrand_lhs, integrand_rhs, psi, Omega,
+                  boundary_lhs=None, boundary_rhs=None):
+            N = len(psi[0]) - 1
+            A = sym.zeros((N+1, N+1))
+            b = sym.zeros((N+1, 1))
+            x = sym.Symbol('x')
+            for i in range(N+1):
+                for j in range(i, N+1):
+                    integrand = integrand_lhs(psi, i, j)
+                    I = sym.integrate(integrand, (x, Omega[0], Omega[1]))
+                    if boundary_lhs is not None:
+                        I += boundary_lhs(psi, i, j)
+                    A[i,j] = A[j,i] = I   # assume symmetry
+                integrand = integrand_rhs(psi, i)
+                I = sym.integrate(integrand, (x, Omega[0], Omega[1]))
+                if boundary_rhs is not None:
+                    I += boundary_rhs(psi, i)
+                b[i,0] = I
+            c = A.LUsolve(b)
+            u = sum(c[i,0]*psi[0][i] for i in range(len(psi[0])))
+            return u
 
-After having computed the system, we replace the last row by
-:math:`c_N=D`, either straightforwardly as in
-the section :ref:`fem:deq:1D:fem:essBC:Bfunc:modsys` or in a symmetric
-fashion as in the section :ref:`fem:deq:1D:fem:essBC:Bfunc:modsys:symm`.
-These modifications can also be performed in the element matrix and
-vector for the right-most cell.
+Not surprisingly, symbolic solution of differential
+equations, discretized by a Galerkin or least squares method
+with global basis functions,
+is of limited interest beyond the simplest problems, because
+symbolic integration might be very time consuming or impossible, not
+only in ``sympy`` but also in
+`WolframAlpha <http://wolframalpha.com>`__
+(which applies the perhaps most powerful symbolic integration
+software available today: Mathematica). Numerical integration
+as an option is therefore desirable.
 
-.. _fem:deq:1D:BC:nat:Aub:
+The extended ``solve`` function below tries to combine symbolic and
+numerical integration.  The latter can be enforced by the user, or it
+can be invoked after a non-successful symbolic integration (being
+detected by an ``Integral`` object as the result of the integration
+in ``sympy``).
 
-Direct computation of the global linear system
-----------------------------------------------
+.. see the section :ref:`fem:approx:global:Lagrange`).
 
-We now turn to actual computations with P1 finite elements.
-The focus is on how the linear system and
-the element matrices and vectors are modified by the
-condition :math:`u'(0)=C`.
+Note that for a
+numerical integration, symbolic expressions must be converted to
+Python functions (using ``lambdify``), and the expressions cannot contain
+other symbols than ``x``. The real ``solve`` routine in the
+`varform1D.py <http://tinyurl.com/nm5587k/fem/varform1D.py>`__
+file has error checking and meaningful error messages in such cases.
+The ``solve`` code below is a condensed version of the real one, with
+the purpose of showing how to automate the Galerkin or least squares
+method for solving differential equations in 1D with global basis functions:
 
-Consider first the approach where Dirichlet conditions are incorporated
-by a :math:`B(x)` function and the known degree of freedom
-:math:`C_{N_n-1}` is left out from the linear system
-(see the section :ref:`fem:deq:1D:BC:nat:uLtest`).
-The relevant formula for the linear
-system is given by :eq:`fem:deq:1D:natBC`.
-There are three differences compared to the extensively
-computed case where :math:`u(0)=0` in the sections :ref:`fem:deq:1D:comp:global` and :ref:`fem:deq:1D:comp:elmwise`.
-First, because we do not have a Dirichlet
-condition at the left boundary, we need to extend the linear system
-:ref:`(5.3) <Eq:fem:deq:1D:ex1:Ab:glob>` with an equation associated with the node
-:math:`x_{0}=0`.
-According to the section :ref:`fem:deq:1D:fem:essBC:Bfunc:modsys`, this
-extension consists of including :math:`A_{0,0}=1/h`, :math:`A_{0,1}=-1/h`, and :math:`b_0=h`.
-For :math:`i>0` we have :math:`A_{i,i}=2/h`, :math:`A_{i-1,i}=A_{i,i+1}=-1/h`.
-Second, we need to include
-the extra term
-:math:`-C{\varphi}_i(0)` on the right-hand side. Since all :math:`{\varphi}_i(0)=0`
-for :math:`i=1,\ldots,N`, this term reduces to :math:`-C{\varphi}_0(0)=-C` and
-affects only the first equation (:math:`i=0`). We simply add :math:`-C` to :math:`b_0`
-such that :math:`b_0=h - C`.
-Third, the boundary term :math:`-\int_0^L D{\varphi}_{N_n-1}(x){\varphi}_i{\, \mathrm{d}x}`
-must be computed. Since :math:`i=0,\ldots,N=N_n-2`, this integral can only
-get a nonzero contribution with :math:`i=N_n-2` over the last cell.
-The result becomes :math:`-Dh/6`.
-The resulting linear system can be summarized in the form
+.. code-block:: python
 
-.. _Eq:fem:deq:1D:BC:nat:Aub:system:
+        def solve(integrand_lhs, integrand_rhs, psi, Omega,
+                  boundary_lhs=None, boundary_rhs=None, symbolic=True):
+            N = len(psi[0]) - 1
+            A = sym.zeros((N+1, N+1))
+            b = sym.zeros((N+1, 1))
+            x = sym.Symbol('x')
+            for i in range(N+1):
+                for j in range(i, N+1):
+                    integrand = integrand_lhs(psi, i, j)
+                    if symbolic:
+                        I = sym.integrate(integrand, (x, Omega[0], Omega[1]))
+                        if isinstance(I, sym.Integral):
+                            symbolic = False  # force num.int. hereafter
+                    if not symbolic:
+                        integrand = sym.lambdify([x], integrand)
+                        I = sym.mpmath.quad(integrand, [Omega[0], Omega[1]])
+                    if boundary_lhs is not None:
+                        I += boundary_lhs(psi, i, j)
+                    A[i,j] = A[j,i] = I
+                integrand = integrand_rhs(psi, i)
+                if symbolic:
+                    I = sym.integrate(integrand, (x, Omega[0], Omega[1]))
+                    if isinstance(I, sym.Integral):
+                        symbolic = False
+                if not symbolic:
+                    integrand = sym.lambdify([x], integrand)
+                    I = sym.mpmath.quad(integrand, [Omega[0], Omega[1]])
+                if boundary_rhs is not None:
+                    I += boundary_rhs(psi, i)
+                b[i,0] = I
+            c = A.LUsolve(b)
+            u = sum(c[i,0]*psi[0][i] for i in range(len(psi[0])))
+            return u
+
+Example: constant right-hand side
+---------------------------------
+
+To demonstrate the code above, we address
 
 .. math::
-   :label: fem:deq:1D:BC:nat:Aub:system
-        
-        \frac{1}{h}\left(
-        \begin{array}{ccccccccc}
-        1 & -1 & 0 &\cdots & \cdots & \cdots & \cdots & \cdots & 0 \\ 
-        -1 & 2 & -1 & \ddots &   & &  & &  \vdots \\ 
-        0 & -1 & 2 & -1 &
-        \ddots & &  &  & \vdots \\ 
-        \vdots & \ddots &  & \ddots & \ddots & 0 &  & & \vdots \\ 
-        \vdots &  & \ddots & \ddots & \ddots & \ddots & \ddots & & \vdots \\ 
-        \vdots & &  & 0 & -1 & 2 & -1 & \ddots & \vdots \\ 
-        \vdots & & &  & \ddots & \ddots & \ddots &\ddots  & 0 \\ 
-        \vdots & & & &  &\ddots  & \ddots &\ddots  & -1 \\ 
-        0 &\cdots & \cdots &\cdots & \cdots & \cdots  & 0 & -1 & 2
-        \end{array}
-        \right)
-        \left(
-        \begin{array}{c}
-        c_0 \\ 
-        \vdots\\ 
-        \vdots\\ 
-        \vdots \\ 
-        \vdots \\ 
-        \vdots \\ 
-        \vdots \\ 
-        \vdots\\ 
-        c_{N}
-        \end{array}
-        \right)
-        =
-        \left(
-        \begin{array}{c}
-        h - C \\ 
-        2h\\ 
-        \vdots\\ 
-        \vdots \\ 
-        \vdots \\ 
-        \vdots \\ 
-        \vdots \\ 
-        \vdots\\ 
-        2h - Dh/6
-        \end{array}
-        \right){\thinspace .}
-        
-        
+         -u''(x)=b,\quad x\in\Omega=[0,1],\quad u(0)=1,\ u(1)=0,
 
-Next we consider the technique where we modify the linear system to
-incorporate Dirichlet conditions
-(see the section :ref:`fem:deq:1D:BC:nat:uLmod`). Now :math:`N=N_n-1`.
-The two differences from the
-case above is that the :math:`-\int_0^LD{\varphi}_{N_n-1}{\varphi}_i{\, \mathrm{d}x}` term is
-left out of the right-hand side and an extra last row associated
-with the node :math:`x_{N_n-1}=L` where the Dirichlet condition applies
-is appended to the system.
-This last row is anyway replaced by the condition :math:`c_N=D` or this
-condition can be incorporated in a symmetric fashion. Using the simplest,
-former approach gives
-
-.. _Eq:fem:deq:1D:BC:nat:Aub:system:mod:
+with :math:`b` as a (symbolic) constant. A possible basis for the space :math:`V`
+is :math:`{\psi}_i(x) = x^{i+1}(1-x)`, :math:`i\in{\mathcal{I}_s}`. Note that
+:math:`{\psi}_i(0)={\psi}_i(1)=0` as required by the Dirichlet conditions.
+We need a :math:`B(x)` function to take care of the known boundary
+values of :math:`u`. Any function :math:`B(x)=1-x^p`, :math:`p\in\mathbb{R}`, is a candidate,
+and one arbitrary choice from this family
+is :math:`B(x)=1-x^3`. The unknown function is then written as
 
 .. math::
-   :label: fem:deq:1D:BC:nat:Aub:system:mod
         
-        \frac{1}{h}\left(
-        \begin{array}{ccccccccc}
-        1 & -1 & 0 &\cdots & \cdots & \cdots & \cdots & \cdots & 0 \\ 
-        -1 & 2 & -1 & \ddots &   & &  & &  \vdots \\ 
-        0 & -1 & 2 & -1 &
-        \ddots & &  &  & \vdots \\ 
-        \vdots & \ddots &  & \ddots & \ddots & 0 &  & & \vdots \\ 
-        \vdots &  & \ddots & \ddots & \ddots & \ddots & \ddots & & \vdots \\ 
-        \vdots & &  & 0 & -1 & 2 & -1 & \ddots & \vdots \\ 
-        \vdots & & &  & \ddots & \ddots & \ddots &\ddots  & 0 \\ 
-        \vdots & & & &  &\ddots  & -1 & 2  & -1 \\ 
-        0 &\cdots & \cdots &\cdots & \cdots & \cdots  & 0 & 0 & h
-        \end{array}
-        \right)
-        \left(
-        \begin{array}{c}
-        c_0 \\ 
-        \vdots\\ 
-        \vdots\\ 
-        \vdots \\ 
-        \vdots \\ 
-        \vdots \\ 
-        \vdots \\ 
-        \vdots\\ 
-        c_{N}
-        \end{array}
-        \right)
-        =
-        \left(
-        \begin{array}{c}
-        h - C \\ 
-        2h\\ 
-        \vdots\\ 
-        \vdots \\ 
-        \vdots \\ 
-        \vdots \\ 
-        \vdots \\ 
-        2h \\ 
-        D
-        \end{array}
-        \right){\thinspace .}
-        
+        u(x) = B(x) + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x){\thinspace .}
         
 
-.. Note: show equivalence between the two systems!!!
-
-Cellwise computations  (2)
---------------------------
-
-Now we compute with one element at a time, working in the reference
-coordinate system :math:`X\in [-1,1]`.
-We need to see how the
-:math:`u'(0)=C` condition affects the element matrix and vector.
-The extra term :math:`-C{\varphi}_i(0)` in the variational formulation
-only affects the element vector in the first cell.
-On the reference cell, :math:`-C{\varphi}_i(0)` is transformed to
-:math:`-C{\tilde{\varphi}}_r(-1)`, where :math:`r` counts local degrees of freedom.
-We have :math:`{\tilde{\varphi}}_0(-1)=1` and :math:`{\tilde{\varphi}}_1(-1)=0` so
-we are left with the contribution
-:math:`-C{\tilde{\varphi}}_0(-1)=-C` to :math:`\tilde b^{(0)}_0`:
-
-.. _Eq:fem:deq:1D:ex1:Ab:elm:bc:nat:
+Let us use the Galerkin method to derive the variational formulation.
+Multiplying the differential
+equation by :math:`v` and integrate by parts yield
 
 .. math::
-   :label: fem:deq:1D:ex1:Ab:elm:bc:nat
         
-        \tilde A^{(0)} =
-        A = \frac{1}{h}\left(\begin{array}{rr}
-        1 & 1\\ 
-        -1 & 1
-        \end{array}\right),\quad
-        \tilde b^{(0)} = \left(\begin{array}{c}
-        h - C\\ 
-        h
-        \end{array}\right){\thinspace .}
-        
+        \int_0^1 u'v' {\, \mathrm{d}x} = \int_0^1 fv {\, \mathrm{d}x}\quad\forall v\in V,
         
 
-No other element matrices or vectors are affected by the :math:`-C{\varphi}_i(0)`
-boundary term.
-
-There are two alternative ways of incorporating the Dirichlet condition.
-Following the section :ref:`fem:deq:1D:BC:nat:uLtest`, we get
-a :math:`1\times 1` element matrix in the last cell and
-an element vector with an extra term containing :math:`D`:
-
-.. _Eq:fem:deq:1D:ex1:Ab:elm:ends:
+and with :math:`u=B + \sum_jc_j{\psi}_j` we get the linear system
 
 .. math::
-   :label: fem:deq:1D:ex1:Ab:elm:ends
         
-        \tilde A^{(e)} =\frac{1}{h}\left(\begin{array}{r}
-        1
-        \end{array}\right),\quad
-        \tilde b^{(e)} = h\left(\begin{array}{c}
-        1 - D/6
-        \end{array}\right),
-        
+        \sum_{j\in{\mathcal{I}_s}}\left(\int_0^1{\psi}_i'{\psi}_j' {\, \mathrm{d}x}\right)c_j =
+        \int_0^1(f{\psi}_i-B'{\psi}_i') {\, \mathrm{d}x},
+        \quad i\in{\mathcal{I}_s}{\thinspace .}
         
 
-Alternatively, we include the degree of freedom at the node with
-:math:`u` specified. The element matrix and vector must then be modified
-to constrain the :math:`\tilde c_1 = c_N` value at local node :math:`r=1`:
+The application can be coded as follows in ``sympy``:
 
-.. _Eq:fem:deq:1D:ex1:Ab:elm:bc:nat:mod:
+.. code-block:: python
 
-.. math::
-   :label: fem:deq:1D:ex1:Ab:elm:bc:nat:mod
+        x, b = sym.symbols('x b')
+        f = b
+        B = 1 - x**3
+        dBdx = sym.diff(B, x)
         
-        \tilde A^{(N_e)} =
-        A = \frac{1}{h}\left(\begin{array}{rr}
-        1 & 1\\ 
-        0 & h
-        \end{array}\right),\quad
-        \tilde b^{(N_e)} = \left(\begin{array}{c}
-        h\\ 
-        D
-        \end{array}\right){\thinspace .}
+        # Compute basis functions and their derivatives
+        N = 3
+        psi = {0: [x**(i+1)*(1-x) for i in range(N+1)]}
+        psi[1] = [sym.diff(psi_i, x) for psi_i in psi[0]]
         
+        def integrand_lhs(psi, i, j):
+            return psi[1][i]*psi[1][j]
         
+        def integrand_rhs(psi, i):
+            return f*psi[0][i] - dBdx*psi[1][i]
+        
+        Omega = [0, 1]
+        
+        u_bar = solve(integrand_lhs, integrand_rhs, psi, Omega,
+                      verbose=True, symbolic=True)
+        u = B + u_bar
+        print 'solution u:', sym.simplify(sym.expand(u))
 
-.. Assemble and show that it is correct
+The printout of ``u`` reads ``-b*x**2/2 + b*x/2 - x + 1``.
+Note that expanding ``u`` and then simplifying is in the present case
+necessary to get a compact, final expression with ``sympy``.
+A non-expanded ``u`` might be preferable in other cases - this depends on
+the problem in question.
+
+The exact solution :math:`{u_{\small\mbox{e}}}(x)` can be derived by
+some ``sympy`` code that closely follows the examples in
+the section :ref:`fem:deq:1D:models:simple`. The idea is to integrate
+:math:`-u''=b` twice and determine the integration constants from
+the boundary conditions:
+
+.. code-block:: python
+
+        C1, C2 = sym.symbols('C1 C2')    # integration constants
+        f1 = sym.integrate(f, x) + C1
+        f2 = sym.integrate(f1, x) + C2
+        # Find C1 and C2 from the boundary conditions u(0)=0, u(1)=1
+        s = sym.solve([u_e.subs(x,0) - 1, u_e.subs(x,1) - 0], [C1, C2])
+        # Form the exact solution
+        u_e = -f2 + s[C1]*x + s[C2]
+        print 'analytical solution:', u_e
+        print 'error:', sym.simplify(sym.expand(u - u_e))
+
+The last line prints ``0``, which is not surprising when
+:math:`{u_{\small\mbox{e}}}(x)` is a parabola and our approximate :math:`u` contains polynomials up to
+degree 4. It suffices to have :math:`N=1`, i.e., polynomials of degree
+2, to recover the exact solution.
+
+We can play around with the code and test that with :math:`f\sim x^p`,
+the solution is a polynomial of degree :math:`p+2`, and :math:`N=p+1` guarantees
+that the approximate solution is exact.
+
+Although the symbolic code is capable of integrating many choices of :math:`f(x)`,
+the symbolic expressions for :math:`u` quickly become lengthy and non-informative,
+so numerical integration in the code, and hence numerical answers,
+have the greatest application potential.
+
+Finite elements
+---------------
+
+Implementation of the finite element algorithms for differential
+equations follows closely the algorithm for approximation of functions.
+The new additional ingredients are
+
+1. other types of integrands (as implied by the variational formulation)
+
+2. additional boundary terms in the variational formulation for
+   Neumann boundary conditions
+
+3. modification of element matrices and vectors due to Dirichlet
+   boundary conditions
+
+Point 1 and 2 can be taken care of by letting the user supply
+functions defining the integrands and boundary terms on the
+left- and right-hand side of the equation system:
+
+.. code-block:: python
+
+        integrand_lhs(phi, r, s, x)
+        boundary_lhs(phi, r, s, x)
+        integrand_rhs(phi, r, x)
+        boundary_rhs(phi, r, x)
+
+Here, ``phi`` is a dictionary where ``phi[q]`` holds a list of
+the derivatives of order ``q`` of the basis functions at the
+an evaluation point; ``r`` and ``s`` are indices for the corresponding
+entries in the element matrix and vector, and ``x`` is the global
+coordinate value corresponding to the current evaluation point.
+
+Given a mesh represented by ``vertices``, ``cells``, and ``dof_map`` as
+explained before, we can write a pseudo Python code to list all
+the steps in the computational algorithm for finite element solution
+of a differential equation.
+
+.. code-block:: python
+
+        <Declare global matrix and rhs: A, b>
+        
+        for e in range(len(cells)):
+        
+            # Compute element matrix and vector
+            n = len(dof_map[e])  # no of dofs in this element
+            h = vertices[cells[e][1]] - vertices[cells[e][1]]
+            <Declare element matrix and vector: A_e, b_e>
+        
+            # Integrate over the reference cell
+            points, weights = <numerical integration rule>
+            for X, w in zip(points, weights):
+                phi = <basis functions and derivatives at X>
+                detJ = h/2
+                x = <affine mapping from X>
+                for r in range(n):
+                    for s in range(n):
+                        A_e[r,s] += integrand_lhs(phi, r, s, x)*detJ*w
+                    b_e[r] += integrand_rhs(phi, r, x)*detJ*w
+        
+            # Add boundary terms
+            for r in range(n):
+                for s in range(n):
+                    A_e[r,s] += boundary_lhs(phi, r, s, x)*detJ*w
+                b_e[r] += boundary_rhs(phi, r, x)*detJ*w
+        
+            # Incorporate essential boundary conditions
+            for r in range(n):
+                global_dof = dof_map[e][r]
+                if global_dof in essbc_dofs:
+                    # dof r is subject to an essential condition
+                    value = essbc_docs[global_dof]
+                    # Symmetric modification
+                    b_e -= value*A_e[:,r]
+                    A_e[r,:] = 0
+                    A_e[:,r] = 0
+                    A_e[r,r] = 1
+                    b_e[r] = value
+        
+            # Assemble
+            for r in range(n):
+                for s in range(n):
+                    A[dof_map[e][r], dof_map[e][r]] += A_e[r,s]
+                b[dof_map[e][r] += b_e[r]
+        
+        <solve linear system>
 

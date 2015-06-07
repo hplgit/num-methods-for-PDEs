@@ -1,336 +1,505 @@
 .. !split
 
-.. _fem:deq:1D:code:global:
+.. _fem:deq:2D:varform:
 
-Implementation
-==============
+Variational formulations in 2D and 3D
+=====================================
 
-It is tempting to create a
-program with symbolic calculations to perform all the steps in the
-computational machinery,
-both for automating the work and for documenting the complete algorithms.
-As we have seen, there are quite many details involved with
-finite element computations and incorporation of boundary conditions.
-An implementation will also act as a structured summary of all these details.
-
-Global basis functions
-----------------------
-
-We first consider implementations when :math:`{\psi}_i` are global functions
-are hence different from zero on most of :math:`\Omega =[0,L]` so all integrals
-need integration over the entire domain. Since the expressions for
-the entries in the linear system depend on the differential equation
-problem being solved, the user must supply the necessary formulas via
-Python functions. The implementations here attempt to perform symbolic
-calculations, but fall back on numerical computations if the symbolic
-ones fail.
-
-The user must prepare a function
-``integrand_lhs(psi, i, j)`` for returning the integrand of the
-integral that contributes to matrix entry :math:`(i,j)`.
-The ``psi`` variable is a Python dictionary holding the basis
-functions and their derivatives in symbolic form. More precisely,
-``psi[q]`` is a list of
+The major difference between deriving variational formulations in 2D and 3D
+compared to 1D is the rule for integrating by parts.
+A typical second-order term in a PDE may be written in dimension-independent
+notation as
 
 .. math::
-        
-        \{\frac{d^q{\psi}_0}{dx^q},\ldots,\frac{d^q{\psi}_{N_n-1}}{dx^q}\}
+         \nabla^2 u \quad\hbox{or}\quad \nabla\cdot\left( a(\boldsymbol{x})\nabla u\right)
         {\thinspace .}
         
 
-Similarly, ``integrand_rhs(psi, i)`` returns the integrand
-for entry number :math:`i` in the right-hand side vector.
-
-Since we also have contributions to the right-hand side vector,
-and potentially also the
-matrix, from boundary terms without any integral, we introduce two
-additional functions, ``boundary_lhs(psi, i, j)`` and
-``boundary_rhs(psi, i)`` for returning terms in the variational
-formulation that are not to be integrated over the domain :math:`\Omega`.
-Examples shown later will explain in more detail how these
-user-supplied function may look like.
-
-The linear system can be computed and solved symbolically by
-the following function:
-
-.. code-block:: python
-
-        import sympy as sp
-        
-        def solve(integrand_lhs, integrand_rhs, psi, Omega,
-                  boundary_lhs=None, boundary_rhs=None):
-            N = len(psi[0]) - 1
-            A = sp.zeros((N+1, N+1))
-            b = sp.zeros((N+1, 1))
-            x = sp.Symbol('x')
-            for i in range(N+1):
-                for j in range(i, N+1):
-                    integrand = integrand_lhs(psi, i, j)
-                    I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
-                    if boundary_lhs is not None:
-                        I += boundary_lhs(psi, i, j)
-                    A[i,j] = A[j,i] = I   # assume symmetry
-                integrand = integrand_rhs(psi, i)
-                I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
-                if boundary_rhs is not None:
-                    I += boundary_rhs(psi, i)
-                b[i,0] = I
-            c = A.LUsolve(b)
-            u = sum(c[i,0]*psi[0][i] for i in range(len(psi[0])))
-            return u
-
-Not surprisingly, symbolic solution of differential
-equations, discretized by a Galerkin or least squares method
-with global basis functions,
-is of limited interest beyond the simplest problems, because
-symbolic integration might be very time consuming or impossible, not
-only in ``sympy`` but also in
-`WolframAlpha <http://wolframalpha.com>`__
-(which applies the perhaps most powerful symbolic integration
-software available today: Mathematica). Numerical integration
-as an option is therefore desirable.
-
-The extended ``solve`` function below tries to combine symbolic and
-numerical integration.  The latter can be enforced by the user, or it
-can be invoked after a non-successful symbolic integration (being
-detected by an ``Integral`` object as the result of the integration
-in ``sympy``).
-
-.. see the section :ref:`fem:approx:global:Lagrange`).
-
-Note that for a
-numerical integration, symbolic expressions must be converted to
-Python functions (using ``lambdify``), and the expressions cannot contain
-other symbols than ``x``. The real ``solve`` routine in the
-`varform1D.py <http://tinyurl.com/nm5587k/fem/varform1D.py>`__
-file has error checking and meaningful error messages in such cases.
-The ``solve`` code below is a condensed version of the real one, with
-the purpose of showing how to automate the Galerkin or least squares
-method for solving differential equations in 1D with global basis functions:
-
-.. code-block:: python
-
-        def solve(integrand_lhs, integrand_rhs, psi, Omega,
-                  boundary_lhs=None, boundary_rhs=None, symbolic=True):
-            N = len(psi[0]) - 1
-            A = sp.zeros((N+1, N+1))
-            b = sp.zeros((N+1, 1))
-            x = sp.Symbol('x')
-            for i in range(N+1):
-                for j in range(i, N+1):
-                    integrand = integrand_lhs(psi, i, j)
-                    if symbolic:
-                        I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
-                        if isinstance(I, sp.Integral):
-                            symbolic = False  # force num.int. hereafter
-                    if not symbolic:
-                        integrand = sp.lambdify([x], integrand)
-                        I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
-                    if boundary_lhs is not None:
-                        I += boundary_lhs(psi, i, j)
-                    A[i,j] = A[j,i] = I
-                integrand = integrand_rhs(psi, i)
-                if symbolic:
-                    I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
-                    if isinstance(I, sp.Integral):
-                        symbolic = False
-                if not symbolic:
-                    integrand = sp.lambdify([x], integrand)
-                    I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
-                if boundary_rhs is not None:
-                    I += boundary_rhs(psi, i)
-                b[i,0] = I
-            c = A.LUsolve(b)
-            u = sum(c[i,0]*psi[0][i] for i in range(len(psi[0])))
-            return u
-
-Example: constant right-hand side
----------------------------------
-
-To demonstrate the code above, we address
+The explicit forms in a 2D problem become
 
 .. math::
-         -u''(x)=b,\quad x\in\Omega=[0,1],\quad u(0)=1,\ u(1)=0,
+         \nabla^2 u = \nabla\cdot\nabla u =
+        \frac{\partial^2 u}{\partial x^2} +
+        \frac{\partial^2 u}{\partial y^2},
+        
 
-with :math:`b` as a (symbolic) constant. A possible basis for the space :math:`V`
-is :math:`{\psi}_i(x) = x^{i+1}(1-x)`, :math:`i\in{\mathcal{I}_s}`. Note that
-:math:`{\psi}_i(0)={\psi}_i(1)=0` as required by the Dirichlet conditions.
-We need a :math:`B(x)` function to take care of the known boundary
-values of :math:`u`. Any function :math:`B(x)=1-x^p`, :math:`p\in\mathbb{R}`, is a candidate,
-and one arbitrary choice from this family
-is :math:`B(x)=1-x^3`. The unknown function is then written as
+and
 
 .. math::
         
-        u(x) = B(x) + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x){\thinspace .}
+        \nabla\cdot\left( a(\boldsymbol{x})\nabla u\right) =
+        \frac{\partial}{\partial x}\left( a(x,y)\frac{\partial u}{\partial x}\right) +
+        \frac{\partial}{\partial y}\left( a(x,y)\frac{\partial u}{\partial y}\right)
+        {\thinspace .}
         
 
-Let us use the Galerkin method to derive the variational formulation.
-Multiplying the differential
-equation by :math:`v` and integrate by parts yield
+We shall continue with the latter operator as the form arises from
+just setting :math:`a=1`.
+
+The general rule for integrating by parts is often referred to as
+`Green's first identity <http://en.wikipedia.org/wiki/Green's_identities>`__:
+
+.. _Eq:fem:deq:2D:int:by:parts:
+
+.. math::
+   :label: fem:deq:2D:int:by:parts
+        
+        -\int_{\Omega} \nabla\cdot (a(\boldsymbol{x})\nabla u) v{\, \mathrm{d}x} =
+        \int_{\Omega} a(\boldsymbol{x})\nabla u\cdot\nabla v {\, \mathrm{d}x} -
+        \int_{\partial\Omega} a\frac{\partial u}{\partial n} v {\, \mathrm{d}s},
+        
+        
+
+where :math:`\partial\Omega` is the boundary of :math:`\Omega` and
+:math:`\partial u/\partial n = \boldsymbol{n}\cdot\nabla u` is the derivative
+of :math:`u` in the outward normal direction, :math:`\boldsymbol{n}` being an outward
+unit normal to :math:`\partial\Omega`. The integrals :math:`\int_\Omega (){\, \mathrm{d}x}` are
+area integrals in 2D and volume integrals in 3D, while
+:math:`\int_{\partial\Omega} (){\, \mathrm{d}s}` is a line integral in 2D and a surface
+integral in 3D.
+
+Let us divide the boundary into two parts:
+
+ * :math:`\partial\Omega_N`, where we have Neumann conditions
+   :math:`-a\frac{\partial u}{\partial n} = g`, and
+
+ * :math:`\partial\Omega_D`, where we have Dirichlet conditions
+   :math:`u = u_0`.
+
+The test functions :math:`v` are required to vanish on :math:`\partial\Omega_D`.
+
+**Example.**
+
+Here is a quite general, stationary, linear PDE arising in many problems:
 
 .. math::
         
-        \int_0^1 u'v' {\, \mathrm{d}x} = \int_0^1 fv {\, \mathrm{d}x}\quad\forall v\in V,
+        \boldsymbol{v}\cdot\nabla u + \alpha u = \nabla\cdot\left( a\nabla u\right) + f,
+        \quad\boldsymbol{x}\in\Omega,
         
 
-and with :math:`u=B + \sum_jc_j{\psi}_j` we get the linear system
+.. math::
+          
+        u = u_0,\quad\boldsymbol{x}\in\partial\Omega_D,
+        
+
+.. math::
+          
+        -a\frac{\partial u}{\partial n} = g,\quad\boldsymbol{x}\in\partial\Omega_N
+        {\thinspace .}
+        
+
+The vector field :math:`\boldsymbol{v}` and the scalar functions :math:`a`, :math:`\alpha`, :math:`f`, :math:`u_0`, and
+:math:`g` may vary with the spatial coordinate :math:`\boldsymbol{x}` and must be known.
+
+Such a second-order PDE needs exactly one boundary condition at each
+point of the boundary, so :math:`\partial\Omega_N\cup\partial\Omega_D`
+must be the complete boundary :math:`\partial\Omega`.
+
+Assume that the boundary function :math:`u_0(\boldsymbol{x})` is defined for all :math:`\boldsymbol{x}\in\Omega`.
+The unknown function can then be expanded as
+
+.. math::
+         u = B + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j,\quad B = u_0 {\thinspace .} 
+
+The variational formula is obtained from Galerkin's method, which
+technically implies multiplying the PDE by a test
+function :math:`v` and integrating over :math:`\Omega`:
 
 .. math::
         
-        \sum_{j\in{\mathcal{I}_s}}\left(\int_0^1{\psi}_i'{\psi}_j' {\, \mathrm{d}x}\right)c_j =
-        \int_0^1(f{\psi}_i-B'{\psi}_i') {\, \mathrm{d}x},
-        \quad i\in{\mathcal{I}_s}{\thinspace .}
+        \int_{\Omega} (\boldsymbol{v}\cdot\nabla u + \alpha u)v{\, \mathrm{d}x} =
+        \int_{\Omega} \nabla\cdot\left( a\nabla u\right){\, \mathrm{d}x} + \int_{\Omega}fv {\, \mathrm{d}x}
+        {\thinspace .}
         
 
-The application can be coded as follows in ``sympy``:
+The second-order term is integrated by parts, according to
 
-.. code-block:: python
-
-        x, b = sp.symbols('x b')
-        f = b
-        B = 1 - x**3
-        dBdx = sp.diff(B, x)
+.. math::
         
-        # Compute basis functions and their derivatives
-        N = 3
-        psi = {0: [x**(i+1)*(1-x) for i in range(N+1)]}
-        psi[1] = [sp.diff(psi_i, x) for psi_i in psi[0]]
+        \int_{\Omega} \nabla\cdot\left( a\nabla u\right)v {\, \mathrm{d}x} =
+        -\int_{\Omega} a\nabla u\cdot\nabla v{\, \mathrm{d}x}
+        + \int_{\partial\Omega} a\frac{\partial u}{\partial n} v{\, \mathrm{d}s}
+        {\thinspace .}
         
-        def integrand_lhs(psi, i, j):
-            return psi[1][i]*psi[1][j]
+
+The variational form now reads
+
+.. math::
         
-        def integrand_rhs(psi, i):
-            return f*psi[0][i] - dBdx*psi[1][i]
+        \int_{\Omega} (\boldsymbol{v}\cdot\nabla u + \alpha u)v{\, \mathrm{d}x} =
+        -\int_{\Omega} a\nabla u\cdot\nabla v{\, \mathrm{d}x}
+        + \int_{\partial\Omega} a\frac{\partial u}{\partial n} v{\, \mathrm{d}s}
+        + \int_{\Omega} fv {\, \mathrm{d}x}
+        {\thinspace .}
         
-        Omega = [0, 1]
+
+The boundary term can be developed further by noticing that :math:`v\neq 0`
+only on :math:`\partial\Omega_N`,
+
+.. math::
+         \int_{\partial\Omega} a\frac{\partial u}{\partial n} v{\, \mathrm{d}s}
+        = \int_{\partial\Omega_N} a\frac{\partial u}{\partial n} v{\, \mathrm{d}s},
         
-        u_bar = solve(integrand_lhs, integrand_rhs, psi, Omega,
-                      verbose=True, symbolic=True)
-        u = B + u_bar
-        print 'solution u:', sp.simplify(sp.expand(u))
 
-The printout of ``u`` reads ``-b*x**2/2 + b*x/2 - x + 1``.
-Note that expanding ``u`` and then simplifying is in the present case
-necessary to get a compact, final expression with ``sympy``.
-A non-expanded ``u`` might be preferable in other cases - this depends on
-the problem in question.
+and that on :math:`\partial\Omega_N`, we have the condition
+:math:`a\frac{\partial u}{\partial n}=-g`, so the term becomes
 
-The exact solution :math:`{u_{\small\mbox{e}}}(x)` can be derived by
-some ``sympy`` code that closely follows the examples in
-the section :ref:`fem:deq:1D:models:simple`. The idea is to integrate
-:math:`-u''=b` twice and determine the integration constants from
-the boundary conditions:
-
-.. code-block:: python
-
-        C1, C2 = sp.symbols('C1 C2')    # integration constants
-        f1 = sp.integrate(f, x) + C1
-        f2 = sp.integrate(f1, x) + C2
-        # Find C1 and C2 from the boundary conditions u(0)=0, u(1)=1
-        s = sp.solve([u_e.subs(x,0) - 1, u_e.subs(x,1) - 0], [C1, C2])
-        # Form the exact solution
-        u_e = -f2 + s[C1]*x + s[C2]
-        print 'analytical solution:', u_e
-        print 'error:', sp.simplify(sp.expand(u - u_e))
-
-The last line prints ``0``, which is not surprising when
-:math:`{u_{\small\mbox{e}}}(x)` is a parabola and our approximate :math:`u` contains polynomials up to
-degree 4. It suffices to have :math:`N=1`, i.e., polynomials of degree
-2, to recover the exact solution.
-
-We can play around with the code and test that with :math:`f\sim x^p`,
-the solution is a polynomial of degree :math:`p+2`, and :math:`N=p+1` guarantees
-that the approximate solution is exact.
-
-Although the symbolic code is capable of integrating many choices of :math:`f(x)`,
-the symbolic expressions for :math:`u` quickly become lengthy and non-informative,
-so numerical integration in the code, and hence numerical answers,
-have the greatest application potential.
-
-Finite elements
----------------
-
-Implementation of the finite element algorithms for differential
-equations follows closely the algorithm for approximation of functions.
-The new additional ingredients are
-
-1. other types of integrands (as implied by the variational formulation)
-
-2. additional boundary terms in the variational formulation for
-   Neumann boundary conditions
-
-3. modification of element matrices and vectors due to Dirichlet
-   boundary conditions
-
-Point 1 and 2 can be taken care of by letting the user supply
-functions defining the integrands and boundary terms on the
-left- and right-hand side of the equation system:
-
-.. code-block:: python
-
-        integrand_lhs(phi, r, s, x)
-        boundary_lhs(phi, r, s, x)
-        integrand_rhs(phi, r, x)
-        boundary_rhs(phi, r, x)
-
-Here, ``phi`` is a dictionary where ``phi[q]`` holds a list of
-the derivatives of order ``q`` of the basis functions at the
-an evaluation point; ``r`` and ``s`` are indices for the corresponding
-entries in the element matrix and vector, and ``x`` is the global
-coordinate value corresponding to the current evaluation point.
-
-Given a mesh represented by ``vertices``, ``cells``, and ``dof_map`` as
-explained before, we can write a pseudo Python code to list all
-the steps in the computational algorithm for finite element solution
-of a differential equation.
-
-.. code-block:: python
-
-        <Declare global matrix and rhs: A, b>
+.. math::
         
-        for e in range(len(cells)):
+        -\int_{\partial\Omega_N} gv{\, \mathrm{d}s}{\thinspace .}
         
-            # Compute element matrix and vector
-            n = len(dof_map[e])  # no of dofs in this element
-            h = vertices[cells[e][1]] - vertices[cells[e][1]]
-            <Declare element matrix and vector: A_e, b_e>
+
+The variational form is then
+
+.. math::
         
-            # Integrate over the reference cell
-            points, weights = <numerical integration rule>
-            for X, w in zip(points, weights):
-                phi = <basis functions and derivatives at X>
-                detJ = h/2
-                x = <affine mapping from X>
-                for r in range(n):
-                    for s in range(n):
-                        A_e[r,s] += integrand_lhs(phi, r, s, x)*detJ*w
-                    b_e[r] += integrand_rhs(phi, r, x)*detJ*w
+        \int_{\Omega} (\boldsymbol{v}\cdot\nabla u + \alpha u)v{\, \mathrm{d}x} =
+        -\int_{\Omega} a\nabla u\cdot\nabla v {\, \mathrm{d}x}
+        - \int_{\partial\Omega_N} g v{\, \mathrm{d}s}
+        + \int_{\Omega} fv {\, \mathrm{d}x}
+        {\thinspace .}
         
-            # Add boundary terms
-            for r in range(n):
-                for s in range(n):
-                    A_e[r,s] += boundary_lhs(phi, r, s, x)*detJ*w
-                b_e[r] += boundary_rhs(phi, r, x)*detJ*w
+
+Instead of using the integral signs we may use the inner product
+notation:
+
+.. math::
         
-            # Incorporate essential boundary conditions
-            for r in range(n):
-                global_dof = dof_map[e][r]
-                if global_dof in essbc_dofs:
-                    # dof r is subject to an essential condition
-                    value = essbc_docs[global_dof]
-                    # Symmetric modification
-                    b_e -= value*A_e[:,r]
-                    A_e[r,:] = 0
-                    A_e[:,r] = 0
-                    A_e[r,r] = 1
-                    b_e[r] = value
+        (\boldsymbol{v}\cdot\nabla u, v) + (\alpha u,v) =
+        - (a\nabla u,\nabla v) - (g,v)_{N} + (f,v)
+        {\thinspace .}
         
-            # Assemble
-            for r in range(n):
-                for s in range(n):
-                    A[dof_map[e][r], dof_map[e][r]] += A_e[r,s]
-                b[dof_map[e][r] += b_e[r]
+
+The subscript :math:`\,{}_N` in :math:`(g,v)_{N}` is a notation for a line or surface
+integral over :math:`\partial\Omega_N`.
+
+Inserting the :math:`u` expansion results in
+
+.. math::
         
-        <solve linear system>
+        \sum_{j\in{\mathcal{I}_s}} ((\boldsymbol{v}\cdot\nabla {\psi}_j, {\psi}_i) &+ (\alpha {\psi}_j ,{\psi}_i) + (a\nabla {\psi}_j,\nabla {\psi}_i))c_j = \\ 
+        & (g,{\psi}_i)_{N} + (f,{\psi}_i) -
+        (\boldsymbol{v}\cdot\nabla u_0, {\psi}_i) + (\alpha u_0 ,{\psi}_i) +
+        (a\nabla u_0,\nabla {\psi}_i)
+        {\thinspace .}
+        
+
+This is a linear system with matrix entries
+
+.. math::
+        
+        A_{i,j} = (\boldsymbol{v}\cdot\nabla {\psi}_j, {\psi}_i) + (\alpha {\psi}_j ,{\psi}_i) + (a\nabla {\psi}_j,\nabla {\psi}_i)
+        
+
+and right-hand side entries
+
+.. math::
+        
+        b_i = (g,{\psi}_i)_{N} + (f,{\psi}_i) -
+        (\boldsymbol{v}\cdot\nabla u_0, {\psi}_i) + (\alpha u_0 ,{\psi}_i) +
+        (a\nabla u_0,\nabla {\psi}_i),
+        
+
+for :math:`i,j\in{\mathcal{I}_s}`.
+
+In the finite element method, we usually express :math:`u_0` in terms of
+basis functions and restrict :math:`i` and :math:`j` to run over the degrees of
+freedom that are not prescribed as Dirichlet conditions.
+However, we can also keep all the :math:`c_j`, :math:`j\in{\mathcal{I}_s}`, as unknowns
+drop the :math:`u_0` in the expansion for :math:`u`, and incorporate all the
+known :math:`c_j` values in the linear system. This has been explained
+in detail in the 1D case.
+
+Transformation to a reference cell in 2D and 3D
+-----------------------------------------------
+
+We consider an integral of the type
+
+.. math::
+        
+        \int_{{\Omega}^{(e)}} a(\boldsymbol{x})\nabla{\varphi}_i\cdot\nabla{\varphi}_j{\, \mathrm{d}x},
+        
+
+where the :math:`{\varphi}_i` functions are finite element basis functions in
+2D or 3D, defined in the physical domain.
+Suppose we want to calculate this integral over a reference cell,
+denoted by :math:`\tilde\Omega^r`, in a coordinate system with coordinates
+:math:`\boldsymbol{X} = (X_0, X_1)` (2D) or :math:`\boldsymbol{X} = (X_0, X_1, X_2)` (3D).
+The mapping between a point :math:`\boldsymbol{X}` in the reference coordinate system  and
+the corresponding point :math:`\boldsymbol{x}` in the physical coordinate system is
+given by a vector relation :math:`\boldsymbol{x}(\boldsymbol{X})`.
+The corresponding Jacobian, :math:`J`, of this mapping has entries
+
+.. math::
+         J_{i,j}=\frac{\partial x_j}{\partial X_i}{\thinspace .} 
+
+The change of variables requires :math:`{\, \mathrm{d}x}` to be replaced by :math:`\det J{\, \mathrm{d}X}`.
+The derivatives in the :math:`\nabla` operator in the variational form are
+with respect to :math:`\boldsymbol{x}`, which we may denote by :math:`\nabla_{\boldsymbol{x}}`.
+The :math:`{\varphi}_i(\boldsymbol{x})` functions in the integral
+are replaced by local basis functions :math:`{\tilde{\varphi}}_r(\boldsymbol{X})` so
+the integral features :math:`\nabla_{\boldsymbol{x}}{\tilde{\varphi}}_r(\boldsymbol{X})`. We readily have
+:math:`\nabla_{\boldsymbol{X}}{\tilde{\varphi}}_r(\boldsymbol{X})` from formulas for the basis functions in
+the reference cell, but
+the desired quantity :math:`\nabla_{\boldsymbol{x}}{\tilde{\varphi}}_r(\boldsymbol{X})` requires some efforts
+to compute. All the details are provided below.
+
+Let :math:`i=q(e,r)` and consider two space dimensions. By the chain rule,
+
+.. math::
+        
+        \frac{\partial {\tilde{\varphi}}_r}{\partial X} =
+        \frac{\partial {\varphi}_i}{\partial X} =
+        \frac{\partial {\varphi}_i}{\partial x}\frac{\partial x}{\partial X} +
+        \frac{\partial {\varphi}_i}{\partial y}\frac{\partial y}{\partial X},
+        
+
+and
+
+.. math::
+        
+        \frac{\partial {\tilde{\varphi}}_r}{\partial Y} =
+        \frac{\partial {\varphi}_i}{\partial Y} =
+        \frac{\partial {\varphi}_i}{\partial x}\frac{\partial x}{\partial Y} +
+        \frac{\partial {\varphi}_i}{\partial y}\frac{\partial y}{\partial Y}
+        {\thinspace .}
+        
+
+We can write these two equations as a vector equation
+
+.. math::
+        
+        \left[\begin{array}{c}
+        \frac{\partial {\tilde{\varphi}}_r}{\partial X}\\ 
+        \frac{\partial {\tilde{\varphi}}_r}{\partial Y}
+        \end{array}\right]
+        =
+        \left[\begin{array}{cc}
+        \frac{\partial x}{\partial X} & \frac{\partial y}{\partial X}\\ 
+        \frac{\partial x}{\partial Y} & \frac{\partial y}{\partial Y}
+        \end{array}\right]
+        \left[\begin{array}{c}
+        \frac{\partial {\varphi}_i}{\partial x}\\ 
+        \frac{\partial {\varphi}_i}{\partial y}
+        \end{array}\right]
+        
+
+Identifying
+
+.. math::
+         \nabla_{\boldsymbol{X}}{\tilde{\varphi}}_r = \left[\begin{array}{c}
+        \frac{\partial {\tilde{\varphi}}_r}{\partial X}\\ 
+        \frac{\partial {\tilde{\varphi}}_r}{\partial Y}
+        \end{array}\right],
+        \quad
+        J =
+        \left[\begin{array}{cc}
+        \frac{\partial x}{\partial X} & \frac{\partial y}{\partial X}\\ 
+        \frac{\partial x}{\partial Y} & \frac{\partial y}{\partial Y}
+        \end{array}\right],
+        \quad
+        \nabla_{\boldsymbol{x}}{\varphi}_r =
+        \left[\begin{array}{c}
+        \frac{\partial {\varphi}_i}{\partial x}\\ 
+        \frac{\partial {\varphi}_i}{\partial y}
+        \end{array}\right],
+        
+
+we have the relation
+
+.. math::
+         \nabla_{\boldsymbol{X}}{\tilde{\varphi}}_r = J\cdot\nabla_{\boldsymbol{x}}{\varphi}_i,
+
+which we can solve with respect to :math:`\nabla_{\boldsymbol{x}}{\varphi}_i`:
+
+.. math::
+        
+        \nabla_{\boldsymbol{x}}{\varphi}_i = J^{-1}\cdot\nabla_{\boldsymbol{X}}{\tilde{\varphi}}_r{\thinspace .}
+        
+
+On the reference cell, :math:`{\varphi}_i(\boldsymbol{x}) = {\tilde{\varphi}}_r(\boldsymbol{X})`, so
+
+.. math::
+        
+        \nabla_{\boldsymbol{x}}{\tilde{\varphi}}_r(\boldsymbol{X}) = J^{-1}(\boldsymbol{X})\cdot\nabla_{\boldsymbol{X}}{\tilde{\varphi}}_r(\boldsymbol{X}){\thinspace .}
+        
+
+This means that we have the following transformation of the
+integral in the physical domain to its counterpart over the reference cell:
+
+.. math::
+        
+        \int_{\Omega}^{(e)} a(\boldsymbol{x})\nabla_{\boldsymbol{x}}{\varphi}_i\cdot\nabla_{\boldsymbol{x}}{\varphi}_j{\, \mathrm{d}x}
+        \int_{\tilde\Omega^r} a(\boldsymbol{x}(\boldsymbol{X}))(J^{-1}\cdot\nabla_{\boldsymbol{X}}{\tilde{\varphi}}_r)\cdot
+        (J^{-1}\cdot\nabla{\tilde{\varphi}}_s)\det J{\, \mathrm{d}X}
+        
+
+Numerical integration
+---------------------
+
+Integrals are normally computed by numerical integration rules.
+For multi-dimensional cells, various families of rules exist.
+All of them are similar to what is shown in 1D:
+:math:`\int f {\, \mathrm{d}x}\approx \sum_jw_if(\boldsymbol{x}_j)`, where :math:`w_j` are weights and
+:math:`\boldsymbol{x}_j` are corresponding points.
+
+The file `numint.py <http://tinyurl.com/nm5587k/fem/numint.py>`__ contains the functions
+``quadrature_for_triangles(n)`` and ``quadrature_for_tetrahedra(n)``,
+which returns lists of points and weights corresponding to integration
+rules with ``n`` points over the reference triangle
+with vertices :math:`(0,0)`, :math:`(1,0)`, :math:`(0,1)`, and the reference tetrahedron
+with vertices :math:`(0,0,0)`, :math:`(1,0,0)`, :math:`(0,1,0)`, :math:`(0,0,1)`,
+respectively. For example, the first two rules for integration over
+a triangle have 1 and 3 points:
+
+.. code-block:: ipy
+
+        >>> import numint
+        >>> x, w = numint.quadrature_for_triangles(num_points=1)
+        >>> x
+        [(0.3333333333333333, 0.3333333333333333)]
+        >>> w
+        [0.5]
+        >>> x, w = numint.quadrature_for_triangles(num_points=3)
+        >>> x
+        [(0.16666666666666666, 0.16666666666666666),
+         (0.66666666666666666, 0.16666666666666666),
+         (0.16666666666666666, 0.66666666666666666)]
+        >>> w
+        [0.16666666666666666, 0.16666666666666666, 0.16666666666666666]
+
+Rules with 1, 3, 4, and 7 points over the triangle will exactly integrate
+polynomials of degree 1, 2, 3, and 4, respectively.
+In 3D, rules with 1, 4, 5, and 11 points over the tetrahedron will
+exactly integrate polynomials of degree 1, 2, 3, and 4, respectively.
+
+Convenient formulas for P1 elements in 2D
+-----------------------------------------
+
+We shall now provide some formulas for piecewise linear :math:`{\varphi}_i` functions
+and their integrals *in the physical coordinate system*.
+These formulas make it convenient to compute with P1 elements without
+the need to work in the reference coordinate system and deal with mappings
+and Jacobians.
+A lot of computational and algorithmic details are hidden by this approach.
+
+Let :math:`\Omega^{(e)}` be cell number :math:`e`, and let the three vertices
+have global vertex numbers :math:`I`, :math:`J`, and :math:`K`.
+The corresponding coordinates are
+:math:`(x_{I},y_{I})`, :math:`(x_{J},y_{J})`, and :math:`(x_{K},y_{K})`.
+The basis function :math:`{\varphi}_I` over :math:`\Omega^{(e)}` have the explicit
+formula
+
+.. _Eq:fem:approx:fe:2D:phi:I:
+
+.. math::
+   :label: fem:approx:fe:2D:phi:I
+        
+        {\varphi}_I (x,y) = \frac{1}{2}\Delta \left( \alpha_I + \beta_Ix
+        + \gamma_Iy\right),
+        
+        
+
+where
+
+.. _Eq:fem:approx:fe:2D:phi:alpha:I:
+
+.. math::
+   :label: fem:approx:fe:2D:phi:alpha:I
+        
+        \alpha_I = x_{J}y_{K} - x_{K}y_{J},
+        
+        
+
+.. _Eq:fem:approx:fe:2D:phi:beta:I:
+
+.. math::
+   :label: fem:approx:fe:2D:phi:beta:I
+          
+        \beta_I = y_{J} - y_{K},
+        
+        
+
+.. _Eq:fem:approx:fe:2D:phi:gamma:I:
+
+.. math::
+   :label: fem:approx:fe:2D:phi:gamma:I
+          
+        \gamma_I = x_{K} - x_{J},
+        
+        
+
+.. math::
+          
+        2\Delta = \det\left(\begin{array}{rrr}
+        1  x_{I}  y_{I} 
+        
+
+.. math::
+          
+        1  x_{J}  y_{J} 
+        
+
+.. _Eq:fem:approx:fe:2D:phi:Delta:
+
+.. math::
+   :label: fem:approx:fe:2D:phi:Delta
+          
+        1  x_{K}  y_{K} \end{array}\right)
+        {\thinspace .}
+        
+        
+
+The quantity :math:`\Delta` is the area of the cell.
+
+The following formula is often convenient when computing element matrices
+and vectors:
+
+.. _Eq:fem:approx:fe:2D:phi:integral:
+
+.. math::
+   :label: fem:approx:fe:2D:phi:integral
+        
+        \int_{\Omega^{(e)}} {\varphi}_I^{p}{\varphi}_J^{q}{\varphi}_K^{r} dx dy =
+        {p!q!r!\over (p+q+r+2)!}2\Delta
+        
+        {\thinspace .}
+        
+
+(Note that the :math:`q` in this formula is not to be mixed with the :math:`q(e,r)`
+mapping of degrees of freedom.)
+
+As an example, the element matrix entry
+:math:`\int_{\Omega^{(e)}} {\varphi}_I{\varphi}_J{\, \mathrm{d}x}`
+can be computed by setting
+:math:`p=q=1` and :math:`r=0`, when :math:`I\neq J`, yielding :math:`\Delta/12`, and
+:math:`p=2` and :math:`q=r=0`, when :math:`I=J`, resulting in :math:`\Delta/6`.
+We collect these numbers in a local element matrix:
+
+.. math::
+        
+        \frac{\Delta}{12}
+        \left[\begin{array}{ccc}
+        2 & 1 & 1\\ 
+        1 & 2 & 1\\ 
+        1 & 1 & 2
+        \end{array}\right]
+        
+
+The common element matrix entry :math:`\int_{\Omega^{(e)}} \nabla{\varphi}_I\cdot\nabla{\varphi}_J{\, \mathrm{d}x}`, arising from a Laplace term :math:`\nabla^2u`, can also easily be
+computed by the formulas above. We have
+
+.. math::
+         \nabla{\varphi}_I\cdot\nabla{\varphi}_J =
+        \frac{\Delta^2}{4}(\beta_I\beta_J + \gamma_I\gamma_J) = \hbox{const},
+
+so that the element matrix entry becomes
+:math:`\frac{1}{4}\Delta^3(\beta_I\beta_J + \gamma_I\gamma_J)`.
+
+From an implementational point of view, one will work with local vertex
+numbers :math:`r=0,1,2`, parameterize the coefficients in the basis
+functions by :math:`r`, and look up vertex coordinates through :math:`q(e,r)`.
+
+Similar formulas exist for integration of P1 elements in 3D.
 

@@ -1,83 +1,452 @@
 .. !split
 
-Summary
-=======
+Exercises
+=========
 
- * When approximating :math:`f` by :math:`u = \sum_j c_j{\varphi}_j`, the least squares
-   method and the Galerkin/projection method give the same result.
-   The interpolation/collocation method is simpler and yields different
-   (mostly inferior) results.
+.. examples on model4 with 1, x, x^2 etc. Show that N=2 recovers
 
- * Fourier series expansion can be viewed as a least squares or Galerkin
-   approximation procedure with sine and cosine functions.
+.. the exact solution
 
- * Basis functions should optimally be orthogonal or almost orthogonal,
-   because this gives little round-off errors when solving the linear
-   system, and the coefficient matrix becomes diagonal or sparse.
+.. heat conduction in the ground with radioactivity, need good  model, not
 
- * Finite element basis functions are *piecewise* polynomials, normally
-   with discontinuous derivatives at the cell boundaries. The basis
-   functions overlap very little, leading to stable numerics and sparse
-   matrices.
+.. just the old one
 
- * To use the finite element method for differential equations, we use
-   the Galerkin method or the method of weighted residuals
-   to arrive at a variational form. Technically, the differential equation
-   is multiplied by a test function and integrated over the domain.
-   Second-order derivatives are integrated by parts to allow for typical finite
-   element basis functions that have discontinuous derivatives.
+.. string with load
 
- * The least squares method is not much used for finite element solution
-   of differential equations of second order, because
-   it then involves second-order derivatives which cause trouble for
-   basis functions with discontinuous derivatives.
+.. hanging cable, see ideas/5620 articles about that (nonlinear)
 
- * We have worked with two common finite element terminologies and
-   associated data structures
-   (both are much used, especially the first one, while the other is more
-   general):
+.. --- begin exercise ---
 
-    1. *elements*, *nodes*, and *mapping between local and global
-       node numbers*
+.. _fem:deq:exer:BVP1D:class:
 
-    2. an extended element concept consisting of *cell*, *vertices*,
-       *degrees of freedom*, *local basis functions*,
-       *geometry mapping*, and *mapping between
-       local and global degrees of freedom*
+Exercise 1: Refactor functions into a more general class
+--------------------------------------------------------
 
- * The meaning of the word "element" is multi-fold: the geometry of a finite
-   element (also known as a cell), the geometry and its basis functions,
-   or all information listed under point 2 above.
+The section :ref:`fem:deq:1D:models:simple` displays three functions
+for computing the analytical solution of some simple
+model problems. There is quite some repetitive code, suggesting
+that the functions can benefit from being refactored into a
+class where the user can define the :math:`f(x)`, :math:`a(x)`, and the boundary
+conditions in particular methods in subclasses. Demonstrate how
+the new class can be used to solve the three particular
+problems in the section :ref:`fem:deq:1D:models:simple`.
 
- * One normally computes integrals in the finite element method element
-   by element (cell by cell), either in a local reference coordinate
-   system or directly in the physical domain.
+In the method that computes the solution, check that the solution
+found fulfills the differential equation and the boundary conditions.
+Filename: ``uxx_f_sympy_class``.
 
- * The advantage of working in the reference coordinate system is that
-   the mathematical expressions for the basis functions depend on the
-   element type only, not the geometry of that element in the physical
-   domain.  The disadvantage is that a mapping must be used, and
-   derivatives must be transformed from reference to physical
-   coordinates.
+.. --- end exercise ---
 
- * Element contributions to the global linear system are collected in
-   an element matrix and vector, which must be assembled into the
-   global system using the degree of freedom mapping (``dof_map``) or
-   the node numbering mapping (``elements``), depending on which terminology
-   that is used.
+.. --- begin exercise ---
 
- * Dirichlet conditions, involving prescribed values of :math:`u` at the
-   boundary, are implemented either via a boundary function that take
-   on the right Dirichlet values, while the basis functions vanish at
-   such boundaries. In the finite element method, one has a general
-   expression for the boundary function, but one can also incorporate
-   Dirichlet conditions in the element matrix and vector or in the
-   global matrix system.
+.. _fem:deq:exer:tension:cable:
 
- * Neumann conditions, involving prescribed values of the derivative
-   (or flux) of :math:`u`, are incorporated in boundary terms arising from
-   integrating terms with second-order derivatives by part.
-   Forgetting to account for the boundary terms implies the
-   condition :math:`\partial u/\partial n=0` at parts of the boundary where
-   no Dirichlet condition is set.
+Exercise 2: Compute the deflection of a cable with sine functions
+-----------------------------------------------------------------
+
+A hanging cable of length :math:`L`
+with significant tension :math:`T` has a downward deflection :math:`w(x)`
+governed by
+
+Solve
+
+.. math::
+        
+        T w''(x) = \ell(x),
+        
+
+when :math:`\ell(x)` the vertical load per unit length.
+The cable is fixed at :math:`x=0` and :math:`x=L` so the boundary conditions become
+:math:`w(0)=w(L)=0`.
+
+If we assume a constant load :math:`\ell(x)=\hbox{const}`,
+the solution is expected to be symmetric around :math:`x=L/2`. For a function
+:math:`w(x)` that is symmetric around some point :math:`x_0`, it means that
+:math:`w(x_0-h) = w(x_0+h)`, and then :math:`w'(x_0)=\lim_{h\rightarrow 0}(w(x_0+h)-
+w(x_0-h))/(2h)=0`. We can therefore halve the domain and
+seek :math:`w(x)` in :math:`[0,L/2]` with boundary conditions :math:`w(0)=0` and
+:math:`w'(L/2)=0`.
+
+The problem can be scaled by introducing a dimensionless coordinate
+(also called :math:`x`) in :math:`[0,1]` and a dimensionless vertical
+deflection :math:`u(x)`.
+The differential equation problem for :math:`u(x)` becomes
+
+.. math::
+        
+        u'' = 1,\quad x\in (0,1),\quad u(0)=0,\ u'(1)=0{\thinspace .}
+        
+
+.. This basis function was wrong! Do this exercise, show that the
+
+.. basis is orthogonal.
+
+A possible function space is spanned by :math:`{\psi}_i=\sin ((2i+1)\pi x/2)`,
+:math:`i=0,\ldots,N`.
+Use a Galerkin and a least squares method to find the coefficients
+:math:`c_j` in :math:`u(x)=\sum_j c_j{\psi}_j`. Find how fast the coefficients
+decrease in magnitude by looking at :math:`c_j/c_{j-1}`.
+Find the error in the maximum deflection at :math:`x=1` when only one
+basis function is used (:math:`N=0`).
+
+What happens if we choose basis functions
+:math:`{\psi}_i=\sin ((i+1)\pi x)`? These basis functions are appropriate
+if we do not utilize symmetry and solve the original problem on :math:`[0,L]`.
+A scaled version of this problem reads
+
+.. math::
+         u''=1,\quad x\in(0,1),\quad u(0)=u(1)=0{\thinspace .}
+
+Carry out the computations with :math:`N=0` and demonstrate that the
+maximum deflection :math:`u(1/2)` is the same in the problem utilizing
+symmetry and the problem covering the whole cable.
+Filename: ``cable_sin``.
+
+.. BIG point: use polynomials, without integration by parts we cannot
+
+.. handle the boundary condition.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _fem:deq:exer:intg:parts:
+
+Exercise 3: Check integration by parts
+--------------------------------------
+
+Consider the Galerkin method for the problem involving :math:`u`
+in :ref:`fem:deq:exer:tension:cable`.
+Show that the formulas for :math:`c_j` are independent of whether we perform
+integration by parts or not.
+Filename: ``cable_integr_by_parts``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _fem:deq:exer:intg:parts:
+
+Exercise 4: Compute the deflection of a cable with 2 P1 elements
+----------------------------------------------------------------
+
+Solve the problem for :math:`u` in :ref:`fem:deq:exer:tension:cable`
+using two P1 linear elements.
+Filename: ``cable_2P1``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _fem:deq:exer:intg:parts:
+
+Exercise 5: Compute the deflection of a cable with 1 P2 element
+---------------------------------------------------------------
+
+Solve the problem for :math:`u` in :ref:`fem:deq:exer:tension:cable`
+using one P2 element with quadratic basis functions.
+Filename: ``cable_1P2``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _fem:deq:exer:intg:parts:
+
+Exercise 6: Compute the deflection of a cable with a step load
+--------------------------------------------------------------
+
+We consider the deflection of a tension cable as described in
+:ref:`fem:deq:exer:tension:cable`. Now the load is
+
+.. math::
+         \ell (x) =\left\lbrace\begin{array}{ll}
+        \ell_1, & x <L/2,\\ 
+        \ell_2, & x \geq L/2
+        \end{array}\right.\quad x\in [0,L]
+        {\thinspace .}
+        
+
+This load is not symmetric
+with respect to the midpoint :math:`x=L/2` so the solution loses its symmetry
+and we must solve the scaled problem
+
+.. math::
+         u'' =\left\lbrace\begin{array}{ll}
+        1, & x <1/2,\\ 
+        0, & x \geq 1/2
+        \end{array}\right.
+        \quad x\in (0,1),\quad u(0)=0,\ u(1)=0
+        {\thinspace .} 
+
+**a)**
+Use :math:`{\psi}_i = \sin((i+1)\pi x)`, :math:`i=0,\ldots,N` and the Galerkin method
+without integration by parts. Derive a formula
+for :math:`c_j` in the solution expansion :math:`u=\sum_j c_j{\psi}_j`.
+Plot how fast the coefficients :math:`c_j` tend to zero (on a log scale).
+
+**b)**
+Solve the problem with P1 finite elements.
+Plot the solution for :math:`N_e=2,4,8` elements.
+
+Filename: ``cable_discont_load``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _fem:deq:exer:Aub:essbc:equiv:
+
+Exercise 7: Show equivalence between linear systems
+---------------------------------------------------
+
+Incorporation of Dirichlet conditions at :math:`x=0` and :math:`x=L`
+in a finite element mesh on :math:`\Omega=[0,L]` can either be done by
+introducing an expansion :math:`u(x)=U_0{\varphi}_0 + U_{N_n-1}{\varphi}_{N_n-1} +
+\sum_{j=0}^{N} c_j{\varphi}_{\nu(j)}`,
+with :math:`N=N_n-3` and considering :math:`u` values at the
+inner nodes as unknowns, *or*
+one can assemble the matrix system with :math:`u(x)=\sum_{j=0}^{N=N_n-1}
+c_j{\varphi}_j` and afterwards replace the rows corresponding to known
+:math:`c_j` values by the boundary conditions.
+Show that the two approaches are equivalent.
+
+.. Start with the system N=N_n-1 and eliminate c_0 and c_N and show that
+
+.. the resulting system is equal to the other
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _fem:deq:exer:1D:mesh:nonuniform:
+
+Exercise 8: Compute with a non-uniform mesh
+-------------------------------------------
+
+Derive the linear system for the problem :math:`-u''=2` on :math:`[0,1]`,
+with :math:`u(0)=0` and :math:`u(1)=1`, using P1 elements and a *non-uniform*
+mesh. The vertices have coordinates :math:`x_{0}=0 < x_{1} <\cdots <
+x_{N_n-1}=1`,
+and the length of cell number :math:`e` is :math:`h_e = x_{e+1} -x_{e}`.
+
+It is of interest to compare the discrete equations for the finite element
+method in a non-uniform mesh with the corresponding discrete equations
+arising from a finite difference method. Go through the
+derivation of
+the finite difference formula :math:`u''(x_i) \approx [D_x D_x u]_i` and
+modify it to find a natural discretization of :math:`u''(x_i)` on a non-uniform
+mesh.
+Filename: ``nonuniform_P1``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _fem:deq:exer:1D:gen:problem1:
+
+Problem 9: Solve a 1D finite element problem by hand
+----------------------------------------------------
+
+The following scaled 1D problem is a very simple, yet relevant, model
+for convective transport in fluids:
+
+.. math::
+        
+        u' = \epsilon u'' ,\quad u(0)=0,\ u(1)=1,\ x\in [0,1]
+        {\thinspace .}
+        
+
+**a)**
+Find the analytical solution to this problem.
+(Introduce :math:`w=u'`, solve the first-order differential equation for :math:`w(x)`,
+and integrate once more.)
+
+**b)**
+Derive the variational form of this problem.
+
+**c)**
+Introduce a finite element mesh with uniform partitioning.
+Use P1 elements and compute the element matrix and vector for
+a general element.
+
+**d)**
+Incorporate the boundary conditions and
+assemble the element contributions.
+
+**e)**
+Identify the resulting linear system as a finite difference discretization
+of the differential equation using
+
+.. math::
+         [D_{2x}u = \epsilon D_xD_x u]_i {\thinspace .}  
+
+**f)**
+Compute the numerical solution and plot it together with the exact solution
+for a mesh with 20 elements and
+:math:`\epsilon=10, 1, 0.1, 0.01`.
+
+.. Could have shooting method as a project
+
+Filename: ``convdiff1D_P1``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _fem:deq:exer:1D:Poisson:polar:
+
+Exercise 10: Compare finite elements and differences for a radially symmetric Poisson equation
+----------------------------------------------------------------------------------------------
+
+We consider the Poisson problem in a disk with radius :math:`R` with
+Dirichlet conditions at the boundary.
+Given that the solution is radially symmetric and hence dependent only on
+the radial coordinate (:math:`r=\sqrt{x^2+y^2}`), we can reduce the problem
+to a 1D Poisson equation
+
+.. _Eq:fem:deq:exer:1D:Poisson:polar:eq:
+
+.. math::
+   :label: fem:deq:exer:1D:Poisson:polar:eq
+        
+        -\frac{1}{r}\frac{d}{dr}\left( r\frac{du}{dr}\right) = f(r),\quad r\in (0,R),\ 
+        u'(0)=0,\ u(R)=U_R
+        {\thinspace .}
+        
+        
+
+**a)**
+Derive a variational form of :eq:`fem:deq:exer:1D:Poisson:polar:eq`
+by integrating over the whole disk, or posed equivalently: use
+a weighting function :math:`2\pi r v(r)` and integrate :math:`r` from :math:`0` to :math:`R`.
+
+**b)**
+Use a uniform mesh partition with P1 elements and show what the
+resulting set of equations becomes. Integrate the matrix entries
+exact by hand, but use a Trapezoidal rule to integrate the :math:`f` term.
+
+**c)**
+Explain that an intuitive
+finite difference method applied to :eq:`fem:deq:exer:1D:Poisson:polar:eq`
+gives
+
+.. math::
+        
+        \frac{1}{r_i}\frac{1}{h^2}\left( r_{i+\frac{1}{2}}(u_{i+1}-u_i) -
+        r_{i-\frac{1}{2}}(u_{i}-u_{i-1})\right) = f_i,\quad i=rh
+        {\thinspace .}
+        
+
+For :math:`i=0` the factor :math:`1/r_i` seemingly becomes problematic. One must always
+have :math:`u'(0)=0`, because of the radial symmetry, which implies
+:math:`u_{-1}=u_1`, if we allow introduction of a fictitious value :math:`u_{-1}`.
+Using this :math:`u_{-1}` in the difference equation for :math:`i=0` gives
+
+.. math::
+        
+        &\frac{1}{r_0}\frac{1}{h^2}\left( r_{\frac{1}{2}}(u_{1}-u_0) -
+        r_{-\frac{1}{2}}(u_{0}-u_{1})\right) = \\ 
+        & \qquad
+        \frac{1}{r_0}\frac{1}{2h^2}\left( (r_0 + r_1)(u_{1}-u_0) -
+        (r_{-1} + r_0)(u_{0}-u_{1})\right) \approx
+        2(u_1-u_0),
+        
+
+if we use :math:`r_{-1}+r_1\approx 2r_0`.
+
+Set up the complete set of equations for the finite difference method
+and compare to the finite element method in case a Trapezoidal rule
+is used to integrate the :math:`f` term in the latter method.
+
+Filename: ``radial_Poisson1D_P1``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _fem:deq:exer:1D:gen:problem2:
+
+Exercise 11: Compute with variable coefficients and P1 elements by hand
+-----------------------------------------------------------------------
+
+Consider the problem
+
+.. _Eq:fem:deq:1D:model4:
+
+.. math::
+   :label: fem:deq:1D:model4
+        
+        -\frac{d}{dx}\left( a(x)\frac{du}{dx}\right) + \gamma u = f(x),
+        \quad x\in\Omega=[0,L],\quad u(0)={\alpha},\ u'(L)=\beta{\thinspace .}
+        
+        
+
+We choose :math:`a(x)=1+x^2`. Then
+
+.. math::
+         u(x) = {\alpha} + \beta(1+L^2)\tan^{-1}(x),
+        
+
+is an exact solution if :math:`f(x) = \gamma u`.
+
+Derive a variational formulation and compute general expressions for the
+element matrix and vector in an arbitrary element, using P1 elements
+and a uniform partitioning of :math:`[0,L]`. The right-hand side
+integral is challenging and can be computed by a numerical integration
+rule. The Trapezoidal rule (:ref:`fem:approx:fe:numint1:trapez`)
+gives particularly simple expressions.
+Filename: ``atan1D_P1``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _fem:deq:exer:2D:torsion:xy:sin:
+
+Exercise 12: Solve a 2D Poisson equation using polynomials and sines
+--------------------------------------------------------------------
+
+The classical problem of applying a torque to the ends of a rod
+can be modeled by a Poisson equation defined in the cross section :math:`\Omega`:
+
+.. math::
+         -\nabla^2 u = 2,\quad (x,y)\in\Omega,
+
+with :math:`u=0` on :math:`\partial\Omega`. Exactly the same problem arises for
+the deflection of a membrane with shape :math:`\Omega` under a constant load.
+
+For a circular cross section one can readily
+find an analytical solution. For a rectangular cross section the analytical
+approach ends up with a sine series. The idea in this exercise is to
+use a single basis function to obtain an approximate answer.
+
+We assume for simplicity that the cross section is the unit square:
+:math:`\Omega = [0,1]\times [0,1]`.
+
+**a)**
+We consider the basis
+:math:`{\psi}_{p,q}(x,y) = \sin((p+1)\pi x)\sin (q\pi y)`, :math:`p,q=0,\ldots,n`.
+These basis functions fulfill the Dirichlet condition.
+Use a Galerkin method and :math:`n=0`.
+
+**b)**
+The basis function involving sine functions are orthogonal.
+Use this property in the Galerkin method
+to derive the coefficients :math:`c_{p,q}` in a
+formula :math:`u=\sum_p\sum_q c_{p,q}{\psi}_{p,q}(x,y)`.
+
+**c)**
+Another possible basis is
+:math:`{\psi}_i(x,y) = (x(1-x)y(1-y))^{i+1}`, :math:`i=0,\ldots,N`.
+Use the Galerkin method to compute the solution for :math:`N=0`.
+Which choice of a single basis function is best,
+:math:`u\sim x(1-x)y(1-y)` or :math:`u\sim \sin(\pi x)\sin(\pi y)`?
+In order to answer the question,
+it is necessary to search the web or the literature for an accurate
+estimate of the maximum :math:`u` value at :math:`x=y=1/2`.
+
+Filename: ``torsion_sin_xy``.
+
+.. --- end exercise ---
 

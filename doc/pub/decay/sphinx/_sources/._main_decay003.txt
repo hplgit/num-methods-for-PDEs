@@ -5,31 +5,100 @@ Exercises  (1)
 
 .. --- begin exercise ---
 
-.. _decay:exer:dudt:
+.. _decay:exer:meshfunc:
 
-Exercise 1: Differentiate a function
-------------------------------------
+Exercise 1: Define a mesh function and visualize it
+---------------------------------------------------
 
-Given a discrete mesh function :math:`u^n` as an arrays ``u`` with
-:math:`u^n` values at mesh points :math:`t_n=n\Delta t`, write a function
-``differentiate(u, dt)`` that returns the discrete derivative :math:`d^n` of the
-mesh function :math:`u^n`. The parameter ``dt`` reflects the
-mesh spacing :math:`\Delta t`.
-The discrete derivative can be based on
-centered differences:
+**a)**
+Write a function ``mesh_function(f, t)`` that returns an array with
+mesh point values :math:`f(t_0),\ldots,f(t_{N_t})`, where ``f`` is a Python
+function implementing a mathematical function ``f(t)`` and :math:`t_0,\ldots,t_{N_t}`
+are mesh points stored in the array ``t``. Use a loop over the mesh
+points and compute one mesh function value at the time.
+
+**b)**
+Use ``mesh_function`` to compute the mesh function corresponding to
 
 .. math::
-         d^n = \frac{u^{n+1}-u^{n-1}}{2\Delta t},\quad n=1,\ldots,N_t-1{\thinspace .}
+        
+        f(t) = \left\lbrace
+        \begin{array}{ll}
+        e^{-t},& 0\leq t\leq 3,\\ 
+        e^{-3t}, & 3 < t\leq 4
+        \end{array}\right.
+        
+
+Choose a mesh :math:`t_n=n\Delta t` with :math:`\Delta t=0.1`.
+Plot the mesh function.
+
+Filename: ``mesh_function``.
+
+.. Closing remarks for this Exercise
+
+Remarks
+~~~~~~~
+
+In the section :ref:`decay:computing:error` we show how easy it is to
+compute a mesh function by array arithmetics (or array computing).
+Using this technique, one could simply implement ``mesh_function(f,t)``
+as ``return f(t)``. However, ``f(t)`` will not work if there are
+if tests involving ``t`` inside ``f`` as is the case in b). Typically,
+``if t < 3`` must have ``t < 3`` as a boolean expression, but if ``t`` is
+array, ``t < 3``, is an *array of boolean values*, which is not legal
+as a boolean expression in an if test.
+Computing one element
+at a time as suggested in a) is a way of out of this problem.
+
+We also remark that the function in b) is the solution of :math:`u^{\prime}=-au`,
+:math:`u(0)=1`, for :math:`t\in [0,4]`, where :math:`a=1` for :math:`t\in [0,3]` and :math:`a=3` for
+:math:`t\in [3,4]`.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
+.. _decay:exer:dudt:
+
+Exercise 2: Differentiate a function
+------------------------------------
+
+.. index:: array arithmetics
+
+.. index:: array computing
+
+.. index:: vectorization
+
+Given a mesh function :math:`u^n` as an array ``u`` with :math:`u^n` values at mesh
+points :math:`t_n=n\Delta t`, the discrete derivative can be based on
+centered differences:
+
+.. _Eq:decay:exer:dudt:D2t:
+
+.. math::
+   :label: decay:exer:dudt:D2t
+        
+        d^n = [D_{2t}u]^n =
+        \frac{u^{n+1}-u^{n-1}}{2\Delta t},\quad n=1,\ldots,N_t-1{\thinspace .}
+        
+        
 
 At the end points we use forward and backward differences:
 
 .. math::
-         d^0 = \frac{u^{1}-u^{0}}{\Delta t},
+         d^0 = [D_t^+u]^n = \frac{u^{1}-u^{0}}{\Delta t},
 
 and
 
 .. math::
-         d^{N_t} = \frac{u^{N_t}-u^{N_t-1}}{\Delta t}{\thinspace .}
+         d^{N_t} = [D_t^-u]^n = \frac{u^{N_t}-u^{N_t-1}}{\Delta t}{\thinspace .}
+
+**a)**
+Write a function
+``differentiate(u, dt)`` that returns the discrete derivative :math:`d^n` of the
+mesh function :math:`u^n`. The parameter ``dt`` reflects the
+mesh spacing :math:`\Delta t`. Write a corresponding test function
+``test_differentiate()`` for verifying the implementation.
 
 .. --- begin hint in exercise ---
 
@@ -39,7 +108,42 @@ exact for quadratic polynomials. Use this property to verify the program.
 
 .. --- end hint in exercise ---
 
-Filename: ``differentiate.py``.
+**b)**
+A standard implementation of the formula :eq:`decay:exer:dudt:D2t` is to
+have a loop over :math:`i`. For large :math:`N_t`, such loop may run slowly in
+Python. A technique for speeding up the computations, called vectorization
+or array computing,
+replaces the loop by array operations. To see how this can be done in
+the present mathematical problem, we
+define two arrays
+
+.. math::
+        
+        u^+ &= (u^2,u^3,\ldots,u^{N_t}),
+        u^- &= (u^0,u^1,\ldots,u^{N_t-2}){\thinspace .}
+        
+
+The formula :eq:`decay:exer:dudt:D2t` can now be expressed as
+
+.. math::
+         (d^1,d^2,\ldots,d^{N_t-1}) = \frac{1}{2\Delta t}(u^+ - u^-){\thinspace .}
+
+The corresponding Python code reads
+
+.. code-block:: python
+
+        d[1:-1] = (u[2:] - u[0:-2])/(2*dt)
+        # or
+        d[1:N_t] = (u[2:N_t+1] - u[0:N_t-1])/(2*dt)
+
+Recall that an array slice ``u[1:-1]`` contains the elements in ``u`` starting
+with index 1 and going all indices up to, but not including, the last one
+(``-1``).
+
+Use the ideas above to implement a vectorized version of the
+``differentiate`` function without loops.
+
+Filename: ``differentiate``.
 
 .. --- end exercise ---
 
@@ -47,7 +151,7 @@ Filename: ``differentiate.py``.
 
 .. _decay:exer:intdiv:
 
-Exercise 2: Experiment with integer division
+Exercise 3: Experiment with integer division
 --------------------------------------------
 
 Explain what happens in the following computations, where
@@ -72,7 +176,7 @@ Filename: ``pyproblems.txt``.
 
 .. _decay:exer:decay1err:
 
-Exercise 3: Experiment with wrong computations
+Exercise 4: Experiment with wrong computations
 ----------------------------------------------
 
 Consider the ``solver`` function in the `decay_v1.py <http://tinyurl.com/nm5587k/decay/decay_v1.py>`__ file
@@ -96,7 +200,7 @@ Print out the result of all intermediate computations and use
 Examine the intermediate calculations and explain
 why ``u`` is wrong and why we compute up to :math:`t=6` only even though we
 specified :math:`T=7`.
-Filename: ``decay_v1_err.py``.
+Filename: ``decay_v1_err``.
 
 .. --- end exercise ---
 
@@ -104,7 +208,7 @@ Filename: ``decay_v1_err.py``.
 
 .. _decay:exer:plot:error:
 
-Exercise 4: Plot the error function
+Exercise 5: Plot the error function
 -----------------------------------
 
 Solve the problem :math:`u'=-au`, :math:`u(0)=I`, using the Forward Euler, Backward
@@ -112,7 +216,7 @@ Euler, and Crank-Nicolson schemes. For each scheme, plot the error mesh
 function :math:`e^n = {u_{\small\mbox{e}}}(t_n)-u^n` for :math:`\Delta t`, :math:`\frac{1}{4}\Delta t`, and
 :math:`\frac{1}{8}\Delta t`, where :math:`{u_{\small\mbox{e}}}` is the exact solution of the ODE and
 :math:`u^n` is the numerical solution at mesh point :math:`t_n`.
-Filename: ``decay_plot_error.py``.
+Filename: ``decay_plot_error``.
 
 .. --- end exercise ---
 
@@ -120,7 +224,7 @@ Filename: ``decay_plot_error.py``.
 
 .. _decay:exer:inexact:output:
 
-Exercise 5: Change formatting of numbers and debug
+Exercise 6: Change formatting of numbers and debug
 --------------------------------------------------
 
 The `decay_memsave.py <http://tinyurl.com/nm5587k/decay/decay_memsave.py>`__ program
@@ -159,8 +263,12 @@ running the modified program
         Terminal> python decay_memsave_v2.py --T 10 --theta 1 \ 
                   --dt 0.2 --makeplot
 
-leads to ``Bug in the implementation!``. Why?
-Filename: ``decay_memsave_v2.py``.
+leads to printing of the message ``Bug in the implementation!`` in the
+terminal window. Why?
+
+.. removed !bans ... !eans environment (because of the command-line option --without_answers)
+
+Filename: ``decay_memsave_v2``.
 
 .. --- end exercise ---
 

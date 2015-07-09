@@ -25,7 +25,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/javascript" src="_static/sidebar.js"></script>
 
         <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
@@ -81,12 +81,11 @@
             
   <div class="section" id="finite-difference-methods">
 <span id="decay-basics"></span><h1>Finite difference methods<a class="headerlink" href="#finite-difference-methods" title="Permalink to this headline">¶</a></h1>
-<div class="admonition-goal admonition">
-<p class="first admonition-title">Goal</p>
+<div class="admonition-contents-of-this-document admonition">
+<p class="first admonition-title">Contents of this document</p>
 <p class="last">We explain the basic ideas of finite difference methods
-using a simple ordinary differential equation <span class="math">\(u^{\prime}=-au\)</span> as
-primary example.
-Emphasis is put on the reasoning when discretizing the problem and
+primarily via the simple ordinary differential equation <span class="math">\(u^{\prime}=-au\)</span>.
+Emphasis is put on the reasoning behind problem discretizing and
 introduction of key concepts such as mesh, mesh function,
 finite difference approximations, averaging in a mesh,
 derivation of algorithms, and discrete operator notation.</p>
@@ -96,33 +95,46 @@ derivation of algorithms, and discrete operator notation.</p>
 <span class="target" id="index-0"></span><p id="index-1">Our model problem is perhaps the simplest ordinary differential
 equation (ODE):</p>
 <div class="math">
-\[u^{\prime}(t) = -au(t),\]</div>
-<p>Here, <span class="math">\(a&gt;0\)</span> is a constant and <span class="math">\(u^{\prime}(t)\)</span> means differentiation with
-respect to time <span class="math">\(t\)</span>. This type of equation arises in a number of
+\[u^{\prime}(t) = -au(t){\thinspace .}\]</div>
+<p>Here, <span class="math">\(u(t)\)</span> is a scalar function of time <span class="math">\(t\)</span>,
+<span class="math">\(a\)</span> is a constant, and <span class="math">\(u^{\prime}(t)\)</span> means differentiation with
+respect to <span class="math">\(t\)</span>. This type of equation arises in a number of
 widely different phenomena where some quantity <span class="math">\(u\)</span> undergoes
 exponential reduction. Examples include radioactive decay, population
 decay, investment decay, cooling of an object, pressure decay in the
 atmosphere, and retarded motion in fluids (for some of these models,
-<span class="math">\(a\)</span> can be negative as well), see the section <a class="reference internal" href="._main_decay006.html#decay-app"><em>Applications of exponential decay models</em></a> for details
+<span class="math">\(a\)</span> can be negative as well), see the section <a class="reference internal" href="._main_decay006.html#decay-app"><span>Applications of exponential decay models</span></a> for details
 and motivation.  We have chosen this particular ODE not only because
 its applications are relevant, but even more because studying
-numerical solution methods for this simple ODE gives important insight
-that can be reused in much more complicated settings, in particular
+numerical solution methods for this particular ODE gives important insight
+that can be reused in far more complicated settings, in particular
 when solving diffusion-type partial differential equations.</p>
-<p>The analytical solution of the ODE is found by the method of
+<div class="section" id="the-exact-solution">
+<h3>The exact solution<a class="headerlink" href="#the-exact-solution" title="Permalink to this headline">¶</a></h3>
+<p>Although our interest is in <em>approximate</em> numerical solutions of <span class="math">\(u^{\prime}=-au\)</span>, it is convenient to know the exact analytical solution of the problem so
+we can compute the error in numerical approximation.
+The analytical solution of this ODE is found by
 separation of variables, which results in</p>
 <div class="math">
 \[u(t) = Ce^{-at},\]</div>
 <p>for any arbitrary constant <span class="math">\(C\)</span>.
-To formulate a mathematical problem for which there
-is a unique solution, we need a condition to fix the value of <span class="math">\(C\)</span>.
+To obtain a unique solution, we need a condition to fix the value of <span class="math">\(C\)</span>.
 This condition is known as the <em>initial condition</em> and stated as
-<span class="math">\(u(0)=I\)</span>. That is, we know the
-value <span class="math">\(I\)</span> of <span class="math">\(u\)</span> when the process starts at <span class="math">\(t=0\)</span>. The exact solution
-is then <span class="math">\(u(t)=Ie^{-at}\)</span>.</p>
-<p>We seek the solution <span class="math">\(u(t)\)</span> of the ODE for <span class="math">\(t\in (0,T]\)</span>. The point <span class="math">\(t=0\)</span> is not
-included since we know <span class="math">\(u\)</span> here and assume that the equation governs
-<span class="math">\(u\)</span> for <span class="math">\(t&gt;0\)</span>. The complete ODE problem then reads: find <span class="math">\(u(t)\)</span>
+<span class="math">\(u(0)=I\)</span>. That is, we know that the value of <span class="math">\(u\)</span> is <span class="math">\(I\)</span> when the process
+starts at <span class="math">\(t=0\)</span>. With this knowledge, the exact solution becomes
+<span class="math">\(u(t)=Ie^{-at}\)</span>. The initial condition is also crucial for numerical
+methods: without it, we can never start the numerical algorithms!</p>
+</div>
+<div class="section" id="complete-problem-formulation">
+<h3>Complete problem formulation<a class="headerlink" href="#complete-problem-formulation" title="Permalink to this headline">¶</a></h3>
+<p>The ODE needs an initial condition, and we must also specify a
+time interval for the solution: <span class="math">\(t\in (0,T]\)</span>.
+The point <span class="math">\(t=0\)</span> is not
+included since we know that <span class="math">\(u(0)=I\)</span> and assume that the equation governs
+<span class="math">\(u\)</span> for <span class="math">\(t&gt;0\)</span>.
+Let us now summarize the information that is required to
+state the complete problem formulation:
+find <span class="math">\(u(t)\)</span>
 such that</p>
 <div class="math" id="equation-decay:problem">
 <span id="eq-decay-problem"></span><span class="eqno">(1)</span>\[     u^{\prime} = -au,\ t\in (0,T], \quad u(0)=I{\thinspace .}\]</div>
@@ -131,7 +143,11 @@ varies continuously from <span class="math">\(0\)</span> to <span class="math">\
 <span class="math">\(u(t)\)</span>. There are hence infinitely many values of <span class="math">\(t\)</span> and <span class="math">\(u(t)\)</span>.
 The purpose of a numerical method is to formulate a corresponding
 <em>discrete</em> problem whose solution is characterized by a finite number of values,
-which can be computed in a finite number of steps on a computer.</p>
+which can be computed in a finite number of steps on a computer.
+Typically, we choose a finite set of time values <span class="math">\(t_0,t_1,\ldots,t_{N_t}\)</span>,
+and create algorithms that generate the corresponding <span class="math">\(u\)</span> values
+<span class="math">\(u_0,u_1,\ldots,u_{N_t}\)</span>.</p>
+</div>
 </div>
 <div class="section" id="the-forward-euler-scheme">
 <span id="decay-schemes-fe"></span><h2>The Forward Euler scheme<a class="headerlink" href="#the-forward-euler-scheme" title="Permalink to this headline">¶</a></h2>
@@ -139,7 +155,7 @@ which can be computed in a finite number of steps on a computer.</p>
 consists of the following four steps:</p>
 <ol class="arabic simple">
 <li>discretizing the domain,</li>
-<li>fulfilling the equation at discrete time points,</li>
+<li>requiring fulfillment of the equation at discrete time points,</li>
 <li>replacing derivatives by finite differences,</li>
 <li>formulating a recursive algorithm.</li>
 </ol>
@@ -153,39 +169,42 @@ consists of the following four steps:</p>
 or <em>grid</em>. Often the mesh points will be uniformly spaced in
 the domain <span class="math">\([0,T]\)</span>, which means that the spacing <span class="math">\(t_{n+1}-t_n\)</span> is
 the same for all <span class="math">\(n\)</span>. This spacing is often denoted by <span class="math">\(\Delta t\)</span>,
-in this case <span class="math">\(t_n=n\Delta t\)</span>.</p>
-<p id="index-4">We seek the solution <span class="math">\(u\)</span> at the mesh points:
-<span class="math">\(u(t_n)\)</span>, <span class="math">\(n=1,2,\ldots,N_t\)</span>. Note that <span class="math">\(u^0\)</span> is already known as <span class="math">\(I\)</span>.
+which means that <span class="math">\(t_n=n\Delta t\)</span>.</p>
+<p id="index-4">We want the solution <span class="math">\(u\)</span> at the mesh points:
+<span class="math">\(u(t_n)\)</span>, <span class="math">\(n=0,1,\ldots,N_t\)</span>.
 A notational short-form for <span class="math">\(u(t_n)\)</span>,
 which will be used extensively, is <span class="math">\(u^{n}\)</span>. More precisely, we let
 <span class="math">\(u^n\)</span> be the <em>numerical approximation</em> to the exact solution <span class="math">\(u(t_n)\)</span>
-at <span class="math">\(t=t_n\)</span>. The numerical approximation is a <em>mesh function</em>,
-here defined only at the mesh points.
-When we need to clearly distinguish between the numerical
-and the exact solution, we often place a subscript e on the exact
-solution, as in <span class="math">\({u_{\small\mbox{e}}}(t_n)\)</span>. Figure <a class="reference internal" href="#decay-fdu-e"><em>Time mesh with discrete solution values</em></a> shows the
-<span class="math">\(t_n\)</span> and <span class="math">\(u_n\)</span> points for <span class="math">\(n=0,1,\ldots,N_t=7\)</span> as well as <span class="math">\({u_{\small\mbox{e}}}(t)\)</span>
-as the dashed line. The goal of a numerical method for ODEs is
-to compute the mesh function by solving a finite set of
-<em>algebraic equations</em> derived from the original ODE problem.</p>
-<div class="figure" id="decay-fdu-e">
-<a class="reference internal image-reference" href="_images/fdm_u_ue.png"><img alt="_images/fdm_u_ue.png" src="_images/fdm_u_ue.png" style="width: 600px;" /></a>
-<p class="caption"><em>Time mesh with discrete solution values</em></p>
+at <span class="math">\(t=t_n\)</span>.</p>
+<p>When we need to clearly distinguish between the numerical and exact solution,
+we often place a subscript e on the exact solution, as in <span class="math">\({u_{\small\mbox{e}}}(t_n)\)</span>.
+Figure <a class="reference internal" href="#decay-fdu-e"><span>Time mesh with discrete solution values at points and a dashed line indicating the true solution</span></a> shows the <span class="math">\(t_n\)</span> and <span class="math">\(u^n\)</span> points for <span class="math">\(n=0,1,\ldots,N_t=7\)</span> as well as <span class="math">\({u_{\small\mbox{e}}}(t)\)</span> as the dashed line.</p>
+<div class="figure" id="id1">
+<span id="decay-fdu-e"></span><a class="reference internal image-reference" href="_images/fdm_u_ue.png"><img alt="_images/fdm_u_ue.png" src="_images/fdm_u_ue.png" style="width: 600px;" /></a>
+<p class="caption"><span class="caption-text"><em>Time mesh with discrete solution values at points and a dashed line indicating the true solution</em></span></p>
 </div>
-<p>Since finite difference methods produce solutions at the mesh
-points only, it is an open question what the solution is between
-the mesh points. One can use methods for interpolation to
-compute the value of <span class="math">\(u\)</span> between mesh points. The simplest
-(and most widely used) interpolation method is to assume that
-<span class="math">\(u\)</span> varies linearly between the mesh points, see
-Figure <a class="reference internal" href="#decay-fdu-ei"><em>Linear interpolation between the discrete solution values (dashed curve is exact solution)</em></a>. Given <span class="math">\(u^{n}\)</span>
-and <span class="math">\(u^{n+1}\)</span>, the value of <span class="math">\(u\)</span> at some <span class="math">\(t\in [t_{n}, t_{n+1}]\)</span>
-is by linear interpolation</p>
+<p>We say that the numerical approximation, i.e.,
+the collection of <span class="math">\(u^n\)</span> values for <span class="math">\(n=0,\ldots,N_t\)</span>,
+constitutes a <em>mesh function</em>.
+A &#8220;normal&#8221; continuous function is a curve defined for all real <span class="math">\(t\)</span>
+values in <span class="math">\([0,T]\)</span>, but a mesh function is only defined at discrete
+points in time. If you want to compute the mesh function <em>between</em> the
+mesh points, where it is not defined, an <em>interpolation method</em> must be
+used. Usually, linear interpolation, i.e., drawing a straight line between
+the mesh function values, see Figure <a class="reference internal" href="#decay-fdu-e"><span>Time mesh with discrete solution values at points and a dashed line indicating the true solution</span></a>, suffices.
+To compute the solution for some <span class="math">\(t\in [t_n, t_{n+1}]\)</span>, we use the
+linear interpolation formula</p>
 <div class="math">
 \[u(t) \approx u^n + \frac{u^{n+1}-u^n}{t_{n+1}-t_n}(t - t_n){\thinspace .}\]</div>
-<div class="figure" id="decay-fdu-ei">
-<a class="reference internal image-reference" href="_images/fdm_u_ui.png"><img alt="_images/fdm_u_ui.png" src="_images/fdm_u_ui.png" style="width: 600px;" /></a>
-<p class="caption"><em>Linear interpolation between the discrete solution values (dashed curve is exact solution)</em></p>
+<div class="figure" id="id2">
+<span id="decay-fdu-ei"></span><a class="reference internal image-reference" href="_images/fdm_u_uei.png"><img alt="_images/fdm_u_uei.png" src="_images/fdm_u_uei.png" style="width: 600px;" /></a>
+<p class="caption"><span class="caption-text"><em>Linear interpolation between the discrete solution values (dashed curve is exact solution)</em></span></p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The goal of a numerical solution method for ODEs is
+to compute the mesh function by solving a finite set of
+<em>algebraic equations</em> derived from the original ODE problem.</p>
 </div>
 </div>
 <div class="section" id="step-2-fulfilling-the-equation-at-discrete-time-points">
@@ -195,36 +214,48 @@ number of points. Now we relax that requirement and require that
 the ODE is fulfilled at a finite set of discrete points in time.
 The mesh points <span class="math">\(t_0,t_1,\ldots,t_{N_t}\)</span> are a natural
 (but not the only) choice of points.
-The original ODE is then reduced to  the following <span class="math">\(N_t\)</span> equations:</p>
+The original ODE is then reduced to  the following equations:</p>
 <div class="math" id="equation-decay:step2">
-<span id="eq-decay-step2"></span><span class="eqno">(2)</span>\[     u^{\prime}(t_n) = -au(t_n),\quad n=0,\ldots,N_t{\thinspace .}\]</div>
+<span id="eq-decay-step2"></span><span class="eqno">(2)</span>\[     u^{\prime}(t_n) = -au(t_n),\quad n=0,\ldots,N_t,\quad u(0)=I{\thinspace .}\]</div>
+<p>Even though the original ODE is not stated to be valid at <span class="math">\(t=0\)</span>, it
+is valid as close to <span class="math">\(t=0\)</span> as we like, and it turns out that it
+is useful for construction of numerical methods to have
+<a href="#equation-decay:step2">(2)</a> valid for <span class="math">\(n=0\)</span>. The next two steps show that we
+need <a href="#equation-decay:step2">(2)</a> for <span class="math">\(n=0\)</span>.</p>
 </div>
 <div class="section" id="step-3-replacing-derivatives-by-finite-differences">
 <span id="index-5"></span><h3>Step 3: Replacing derivatives by finite differences<a class="headerlink" href="#step-3-replacing-derivatives-by-finite-differences" title="Permalink to this headline">¶</a></h3>
 <p>The next and most essential step of the method is to replace the
 derivative <span class="math">\(u^{\prime}\)</span> by a finite difference approximation. Let us first
-try a one-sided difference approximation (see Figure <a class="reference internal" href="#decay-sketch-fe"><em>Illustration of a forward difference</em></a>),</p>
+try a <em>forward</em> difference approximation (see Figure <a class="reference internal" href="#decay-sketch-fe"><span>Illustration of a forward difference</span></a>),</p>
 <span class="target" id="index-6"></span><div class="math" id="equation-decay:FEdiff">
 <span id="eq-decay-fediff"></span><span id="index-7"></span><span class="eqno">(3)</span>\[     u^{\prime}(t_n) \approx \frac{u^{n+1}-u^{n}}{t_{n+1}-t_n}{\thinspace .}\]</div>
-<p>Inserting this approximation in <a href="#equation-decay:step2">(2)</a> results in</p>
+<p>The name forward relates to the fact that we use a value forward in
+time, <span class="math">\(u^{n+1}\)</span>, together with the value <span class="math">\(u^n\)</span> at the point <span class="math">\(t_n\)</span>, where
+we seek the derivative, to approximate <span class="math">\(u^{\prime}(t_n)\)</span>.
+Inserting this approximation in <a href="#equation-decay:step2">(2)</a> results in</p>
 <div class="math" id="equation-decay:step3">
 <span id="eq-decay-step3"></span><span class="eqno">(4)</span>\[     \frac{u^{n+1}-u^{n}}{t_{n+1}-t_n} = -au^{n},\quad n=0,1,\ldots,N_t-1{\thinspace .}\]</div>
-<p>Later it will be absolutely clear that if we want to compute the solution
+<p>Note that if we want to compute the solution
 up to time level <span class="math">\(N_t\)</span>,
 we only need <a href="#equation-decay:step2">(2)</a> to hold for <span class="math">\(n=0,\ldots,N_t-1\)</span> since
 <a href="#equation-decay:step3">(4)</a> for <span class="math">\(n=N_t-1\)</span> creates an equation for the final
 value <span class="math">\(u^{N_t}\)</span>.</p>
+<p>Also note that we use the approximation symbol <span class="math">\(\approx\)</span> in <a href="#equation-decay:FEdiff">(3)</a>,
+but not in <a href="#equation-decay:step3">(4)</a>. Instead, we view <a href="#equation-decay:step3">(4)</a> as
+an equation that is not mathematically equivalent to <a href="#equation-decay:FEdiff">(3)</a>,
+but represents an approximation to the equation <a href="#equation-decay:FEdiff">(3)</a>.</p>
 <p>Equation <a href="#equation-decay:step3">(4)</a>
 is the discrete counterpart to the original ODE problem
-<a href="#equation-decay:problem">(1)</a>, and often referred to as <em>finite difference scheme</em>
+<a href="#equation-decay:problem">(1)</a>, and often referred to as a <em>finite difference scheme</em>
 or more generally as the <em>discrete equations</em> of the problem.
 The fundamental feature of these equations is that they are <em>algebraic</em>
 and can hence be straightforwardly solved to produce the mesh function, i.e.,
-the values of <span class="math">\(u\)</span> at
-the mesh points (<span class="math">\(u^n\)</span>, <span class="math">\(n=1,2,\ldots,N_t\)</span>).</p>
-<div class="figure" id="decay-sketch-fe">
-<a class="reference internal image-reference" href="_images/fd_forward.png"><img alt="_images/fd_forward.png" src="_images/fd_forward.png" style="width: 400px;" /></a>
-<p class="caption"><em>Illustration of a forward difference</em></p>
+the approximate values of <span class="math">\(u\)</span> at
+the mesh points: <span class="math">\(u^n\)</span>, <span class="math">\(n=1,2,\ldots,N_t\)</span>.</p>
+<div class="figure" id="id3">
+<span id="decay-sketch-fe"></span><a class="reference internal image-reference" href="_images/fd_forward.png"><img alt="_images/fd_forward.png" src="_images/fd_forward.png" style="width: 400px;" /></a>
+<p class="caption"><span class="caption-text"><em>Illustration of a forward difference</em></span></p>
 </div>
 <span class="target" id="index-8"></span><span class="target" id="index-9"></span><span class="target" id="index-10"></span><span class="target" id="index-11"></span></div>
 <div class="section" id="step-4-formulating-a-recursive-algorithm">
@@ -243,10 +274,38 @@ the unknown <span class="math">\(u^{n+1}\)</span>:</p>
 for our model problem. From a mathematical point of view,
 equations of the form <a href="#equation-decay:FE">(5)</a> are known as
 <em>difference equations</em> since they express how differences in
-<span class="math">\(u\)</span>, like <span class="math">\(u^{n+1}-u^n\)</span>, evolve with <span class="math">\(n\)</span>.
+the dependent variable, here <span class="math">\(u\)</span>, evolve with <span class="math">\(n\)</span>. In our case,
+the differences in <span class="math">\(u\)</span> are given by <span class="math">\(u^{n+1}-u^n = -a(t_{n+1}-t_n)u^n\)</span>.
 The finite difference method can be viewed as a method for turning
-a differential equation into a difference equation.</p>
-<p>Computation with <a href="#equation-decay:FE">(5)</a> is straightforward:</p>
+a differential equation into an algebraic difference equation that
+can be easily solved by repeated use of a formula like <a href="#equation-decay:FE">(5)</a>.</p>
+</div>
+<div class="section" id="interpretation">
+<h3>Interpretation<a class="headerlink" href="#interpretation" title="Permalink to this headline">¶</a></h3>
+<p>There is a very intuitive interpretation of the FE scheme, illustrated
+in the sketch below. We have computed some point values
+on the solution curve (small red disks), and the question is how we reason
+about the next point. Since we know <span class="math">\(u\)</span> and <span class="math">\(t\)</span> at the most recently
+computed point, the differential equation gives us the <em>slope</em> of
+the solution curve: <span class="math">\(u'=-au\)</span>. We can draw this slope as a red line
+and continue the solution curve along that slope. As soon as we have
+chosen the next point on this line, we have a new <span class="math">\(t\)</span> and <span class="math">\(u\)</span> value and
+compute a new slope and continue the process.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+</div>
+<div class="figure">
+<a class="reference internal image-reference" href="_images/FE_idea.png"><img alt="_images/FE_idea.png" src="_images/FE_idea.png" style="width: 600px;" /></a>
+</div>
+<div class="line-block">
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+</div>
+</div>
+<div class="section" id="computing-with-the-recursive-formula">
+<h3>Computing with the recursive formula<a class="headerlink" href="#computing-with-the-recursive-formula" title="Permalink to this headline">¶</a></h3>
+<p>Mathematical computation with <a href="#equation-decay:FE">(5)</a> is straightforward:</p>
 <div class="math">
 \[\begin{split}u_0 &amp;= I,\\
 u_1 &amp; = u^0 - a(t_{1} -t_0)u^0 = I(1-a(t_1-t_0)),\\
@@ -254,9 +313,9 @@ u_2 &amp; = u^1 - a(t_{2} -t_1)u^1 = I(1-a(t_1-t_0))(1 - a(t_2-t_1)),\\
 u^3 &amp;= u^2 - a(t_{3} -t_2)u^2 = I(1-a(t_1-t_0))(1 - a(t_2-t_1))(1 - a(t_3-t_2)),\end{split}\]</div>
 <p>and so on until we reach <span class="math">\(u^{N_t}\)</span>.
 Very often, <span class="math">\(t_{n+1}-t_n\)</span> is constant for all <span class="math">\(n\)</span>, so we can introduce
-the common symbol <span class="math">\(\Delta t\)</span> for the time step:
+the common symbol
 <span class="math">\(\Delta t = t_{n+1}-t_n\)</span>, <span class="math">\(n=0,1,\ldots,N_t-1\)</span>.
-Using a constant time step <span class="math">\(\Delta t\)</span> in the above calculations gives</p>
+Using a constant mesh spacing <span class="math">\(\Delta t\)</span> in the above calculations gives</p>
 <div class="math">
 \[\begin{split}u_0 &amp;= I,\\
 u_1 &amp; = I(1-a\Delta t),\\
@@ -282,54 +341,77 @@ Another alternative is</p>
 <div class="math" id="equation-decay:BEdiff">
 <span id="eq-decay-bediff"></span><span class="eqno">(6)</span>\[     u^{\prime}(t_n) \approx \frac{u^{n}-u^{n-1}}{t_{n}-t_{n-1}}{\thinspace .}\]</div>
 <p>Since this difference is based on going backward in time (<span class="math">\(t_{n-1}\)</span>)
-for information, it is known as the Backward Euler difference.
-Figure <a class="reference internal" href="#decay-sketch-be"><em>Illustration of a backward difference</em></a> explains the idea.</p>
-<div class="figure" id="decay-sketch-be">
-<a class="reference internal image-reference" href="_images/fd_backward.png"><img alt="_images/fd_backward.png" src="_images/fd_backward.png" style="width: 400px;" /></a>
-<p class="caption"><em>Illustration of a backward difference</em></p>
+for information, it is known as a <em>backward</em> difference, also called
+Backward Euler difference.
+Figure <a class="reference internal" href="#decay-sketch-be"><span>Illustration of a backward difference</span></a> explains the idea.</p>
+<div class="figure" id="id4">
+<span id="decay-sketch-be"></span><a class="reference internal image-reference" href="_images/fd_backward.png"><img alt="_images/fd_backward.png" src="_images/fd_backward.png" style="width: 400px;" /></a>
+<p class="caption"><span class="caption-text"><em>Illustration of a backward difference</em></span></p>
 </div>
 <span class="target" id="index-15"></span><p id="index-16">Inserting <a href="#equation-decay:BEdiff">(6)</a> in <a href="#equation-decay:step2">(2)</a> yields
 the Backward Euler (BE) scheme:</p>
 <div class="math" id="equation-decay:BE0">
-<span id="eq-decay-be0"></span><span class="eqno">(7)</span>\[     \frac{u^{n}-u^{n-1}}{t_{n}-t_{n-1}} = -a u^n{\thinspace .}\]</div>
-<p>We assume, as explained under step 4 in the section <a class="reference internal" href="#decay-schemes-fe"><em>The Forward Euler scheme</em></a>,
+<span id="eq-decay-be0"></span><span class="eqno">(7)</span>\[     \frac{u^{n}-u^{n-1}}{t_{n}-t_{n-1}} = -a u^n,\quad n=1,\ldots,N_t{\thinspace .}\]</div>
+<p>We assume, as explained under step 4 in the section <a class="reference internal" href="#decay-schemes-fe"><span>The Forward Euler scheme</span></a>,
 that we have computed <span class="math">\(u^0, u^1, \ldots, u^{n-1}\)</span> such that
-<a href="#equation-decay:BE0">(7)</a> can be used to compute <span class="math">\(u^n\)</span>.
-For direct similarity with the Forward Euler scheme <a href="#equation-decay:FE">(5)</a>
+<a href="#equation-decay:BE0">(7)</a> can be used to compute <span class="math">\(u^n\)</span>. Note that
+<a href="#equation-decay:BE0">(7)</a> needs <span class="math">\(n\)</span> to start at 1 (then it involves <span class="math">\(u^0\)</span>, but
+no <span class="math">\(u^{-1}\)</span>) and end at <span class="math">\(N_t\)</span>.</p>
+<p>For direct similarity with the formula for the
+Forward Euler scheme <a href="#equation-decay:FE">(5)</a>
 we replace <span class="math">\(n\)</span> by <span class="math">\(n+1\)</span> in <a href="#equation-decay:BE0">(7)</a> and solve for the
 unknown value <span class="math">\(u^{n+1}\)</span>:</p>
 <div class="math" id="equation-decay:BE">
-<span id="eq-decay-be"></span><span class="eqno">(8)</span>\[     u^{n+1} = \frac{1}{1+ a(t_{n+1}-t_n)} u^n{\thinspace .}\]</div>
+<span id="eq-decay-be"></span><span class="eqno">(8)</span>\[     u^{n+1} = \frac{1}{1+ a(t_{n+1}-t_n)} u^n,\quad n=0,\ldots,N_t-1{\thinspace .}\]</div>
 </div>
 <div class="section" id="the-crank-nicolson-scheme">
 <span id="decay-schemes-cn"></span><h2>The Crank-Nicolson scheme<a class="headerlink" href="#the-crank-nicolson-scheme" title="Permalink to this headline">¶</a></h2>
-<span class="target" id="index-17"></span><span class="target" id="index-18"></span><p id="index-19">The finite difference approximations used to derive the schemes
-<a href="#equation-decay:FE">(5)</a> and <a href="#equation-decay:BE">(8)</a> are both one-sided differences,
+<span class="target" id="index-17"></span><span class="target" id="index-18"></span><p id="index-19">The finite difference approximations
+<a href="#equation-decay:FEdiff">(3)</a> and <a href="#equation-decay:BEdiff">(6)</a> used to derive the schemes
+<a href="#equation-decay:FE">(5)</a> and <a href="#equation-decay:BE">(8)</a>, respectively,
+are both one-sided differences, i.e.,
+we collect information either forward or backward in time when approximating
+the derivative at a point. Such one-sided differences are
 known to be less accurate than central (or midpoint)
-differences. We shall now construct
-a central difference at <span class="math">\(t_{n+\frac{1}{2}}=\frac{1}{2} (t_n + t_{n+1})\)</span>, or
-<span class="math">\(t_{n+\frac{1}{2}}=(n+\frac{1}{2})\Delta t\)</span> if the mesh spacing is uniform in time.
+differences, where we use information both forward and backward in
+time. A natural next step is therefore to construct
+a central difference approximation that will yield a more accurate
+numerical solution.</p>
+<p>The central difference approximation to the derivative is sought at the
+point <span class="math">\(t_{n+\frac{1}{2}}=\frac{1}{2} (t_n + t_{n+1})\)</span> (or
+<span class="math">\(t_{n+\frac{1}{2}}=(n+\frac{1}{2})\Delta t\)</span> if the mesh spacing is uniform in time).
 The approximation reads</p>
 <div class="math" id="equation-decay:CNdiff">
 <span id="eq-decay-cndiff"></span><span class="eqno">(9)</span>\[     u^{\prime}(t_{n+\frac{1}{2}}) \approx \frac{u^{n+1}-u^n}{t_{n+1}-t_n}{\thinspace .}\]</div>
-<p>Note that the fraction on the right-hand side is the same as for the
+<p>Figure <a class="reference internal" href="#decay-sketch-cn"><span>Illustration of a centered difference</span></a> sketches the geometric interpretation of
+such a centered difference.
+Note that the fraction on the right-hand side is the same as for the
 Forward Euler approximation <a href="#equation-decay:FEdiff">(3)</a> and
 the Backward Euler approximation <a href="#equation-decay:BEdiff">(6)</a> (with
 <span class="math">\(n\)</span> replaced by <span class="math">\(n+1\)</span>). The accuracy of this fraction as an approximation
 to the derivative of <span class="math">\(u\)</span> depends on <em>where</em> we seek the derivative:
-in the center of the interval <span class="math">\([t_{n},t_{n+1}]\)</span> or at the end points.</p>
+in the center of the interval <span class="math">\([t_{n},t_{n+1}]\)</span> or at the end points.
+We shall later see that it is more accurate at the center point.</p>
+<div class="figure" id="id5">
+<span id="decay-sketch-cn"></span><a class="reference internal image-reference" href="_images/fd_centered_CN.png"><img alt="_images/fd_centered_CN.png" src="_images/fd_centered_CN.png" style="width: 400px;" /></a>
+<p class="caption"><span class="caption-text"><em>Illustration of a centered difference</em></span></p>
+</div>
 <p>With the formula <a href="#equation-decay:CNdiff">(9)</a>, where <span class="math">\(u^{\prime}\)</span> is evaluated at
 <span class="math">\(t_{n+\frac{1}{2}}\)</span>, it is natural to demand the
 ODE to be fulfilled at the time points <em>between</em> the mesh points:</p>
 <div class="math" id="equation-decay:step2m">
 <span id="eq-decay-step2m"></span><span class="eqno">(10)</span>\[     u^{\prime}(t_{n+\frac{1}{2}}) = -au(t_{n+\frac{1}{2}}),\quad n=0,
      \ldots,N_t-1{\thinspace .}\]</div>
-<p>Using <a href="#equation-decay:CNdiff">(9)</a> in <a href="#equation-decay:step2m">(10)</a> results in</p>
+<p>Using <a href="#equation-decay:CNdiff">(9)</a> in <a href="#equation-decay:step2m">(10)</a> results in
+the approximate discrete equation</p>
 <div class="math" id="equation-decay:CN0">
-<span id="eq-decay-cn0"></span><span class="eqno">(11)</span>\[     \frac{u^{n+1}-u^n}{t_{n+1}-t_n} = -au^{n+\frac{1}{2}},\]</div>
-<p>where <span class="math">\(u^{n+\frac{1}{2}}\)</span> is a short form for <span class="math">\(u(t_{n+\frac{1}{2}})\)</span>.
-The problem is that we aim to compute <span class="math">\(u^n\)</span> for integer <span class="math">\(n\)</span>, implying that
-<span class="math">\(u^{n+\frac{1}{2}}\)</span> is not a quantity computed by our method. It must
+<span id="eq-decay-cn0"></span><span class="eqno">(11)</span>\[     \frac{u^{n+1}-u^n}{t_{n+1}-t_n} = -au^{n+\frac{1}{2}},\quad n=0,\ldots,N_t-1,\]</div>
+<p>where <span class="math">\(u^{n+\frac{1}{2}}\)</span> is a short form for the numerical approximation
+to <span class="math">\(u(t_{n+\frac{1}{2}})\)</span>.</p>
+<p>There is a fundamental problem with the right-hand side of
+<a href="#equation-decay:CN0">(11)</a>: we aim to compute <span class="math">\(u^n\)</span> for integer <span class="math">\(n\)</span>, which means
+that <span class="math">\(u^{n+\frac{1}{2}}\)</span> is not a quantity computed by our method. The
+quantity must
 therefore be
 expressed by the quantities that we actually produce, i.e.,
 the numerical solution at the
@@ -337,21 +419,27 @@ mesh points. One possibility is to approximate <span class="math">\(u^{n+\frac{1
 as an arithmetic mean of the <span class="math">\(u\)</span> values at the neighboring mesh points:</p>
 <div class="math" id="equation-decay:uhalfavg">
 <span id="eq-decay-uhalfavg"></span><span id="index-20"></span><span class="eqno">(12)</span>\[     u^{n+\frac{1}{2}} \approx \frac{1}{2} (u^n + u^{n+1}){\thinspace .}\]</div>
-<p>Using <a href="#equation-decay:uhalfavg">(12)</a> in <a href="#equation-decay:CN0">(11)</a> results in</p>
+<p>Using <a href="#equation-decay:uhalfavg">(12)</a> in <a href="#equation-decay:CN0">(11)</a> results in a new
+approximate discrete equation</p>
 <div class="math" id="equation-decay:CN1">
 <span id="eq-decay-cn1"></span><span class="eqno">(13)</span>\[     \frac{u^{n+1}-u^n}{t_{n+1}-t_n} = -a\frac{1}{2} (u^n + u^{n+1}){\thinspace .}\]</div>
-<p>Figure <a class="reference internal" href="#decay-sketch-cn"><em>Illustration of a centered difference</em></a> sketches the geometric interpretation of
-such a centered difference.</p>
-<div class="figure" id="decay-sketch-cn">
-<a class="reference internal image-reference" href="_images/fd_centered_CN.png"><img alt="_images/fd_centered_CN.png" src="_images/fd_centered_CN.png" style="width: 400px;" /></a>
-<p class="caption"><em>Illustration of a centered difference</em></p>
-</div>
-<p>We assume that <span class="math">\(u^n\)</span> is already computed so that <span class="math">\(u^{n+1}\)</span> is the
+<p>There are three approximation steps leading to this formula:
+1) the ODE is only valid at discrete points (between the mesh points),
+2) the derivative is approximated by a finite difference, and 3) the
+value of <span class="math">\(u\)</span> between mesh points is approximated by an arithmetic mean
+value. Despite one more approximation than for the Backward and Forward
+Euler schemes, the use of a centered difference leads to a more
+accurate method.</p>
+<p>To formulate a recursive algorithm,
+we assume that <span class="math">\(u^n\)</span> is already computed so that <span class="math">\(u^{n+1}\)</span> is the
 unknown, which we can solve for:</p>
 <div class="math" id="equation-decay:CN">
 <span id="eq-decay-cn"></span><span class="eqno">(14)</span>\[     u^{n+1} = \frac{1-\frac{1}{2} a(t_{n+1}-t_n)}{1 + \frac{1}{2} a(t_{n+1}-t_n)}u^n{\thinspace .}\]</div>
 <p>The finite difference scheme <a href="#equation-decay:CN">(14)</a> is often called
-the Crank-Nicolson (CN) scheme or a midpoint or centered scheme.</p>
+the Crank-Nicolson (CN) scheme or a midpoint or centered scheme.
+Note that <a href="#equation-decay:CN">(14)</a> as well as <a href="#equation-decay:FE">(5)</a> and <a href="#equation-decay:BE">(8)</a>
+apply whether the spacing in the time mesh, <span class="math">\(t_{n+1}-t_n\)</span>, depends on <span class="math">\(n\)</span>
+or is constant.</p>
 </div>
 <div class="section" id="the-unifying-rule">
 <span id="decay-schemes-theta"></span><h2>The unifying <span class="math">\(\theta\)</span>-rule<a class="headerlink" href="#the-unifying-rule" title="Permalink to this headline">¶</a></h2>
@@ -365,9 +453,14 @@ formulated as one scheme with a varying parameter <span class="math">\(\theta\)<
 <li><span class="math">\(\theta =0\)</span> gives the Forward Euler scheme</li>
 <li><span class="math">\(\theta =1\)</span> gives the Backward Euler scheme, and</li>
 <li><span class="math">\(\theta =\frac{1}{2}\)</span> gives the Crank-Nicolson scheme.</li>
-<li>We may alternatively choose any other value of <span class="math">\(\theta\)</span> in <span class="math">\([0,1]\)</span>.</li>
 </ul>
 </div></blockquote>
+<p>We shall later, in the section <a class="reference internal" href="._main_decay004.html#decay-analysis"><span>Analysis of finite difference equations</span></a>, learn the pros and cons
+of the three alternatives.
+One may alternatively choose any other value of <span class="math">\(\theta\)</span> in <span class="math">\([0,1]\)</span>, but
+this is not so common since the accuracy and stability of
+the scheme do not improve compared
+to the values <span class="math">\(\theta=0,1,\frac{1}{2}\)</span>.</p>
 <p>As before, <span class="math">\(u^n\)</span> is considered known and <span class="math">\(u^{n+1}\)</span> unknown, so
 we solve for the latter:</p>
 <div class="math" id="equation-decay:th">
@@ -379,7 +472,7 @@ the &#8220;theta-rule&#8221;.</p>
 <p>We start with replacing <span class="math">\(u^{\prime}\)</span> by the fraction</p>
 <div class="math">
 \[\frac{u^{n+1}-u^{n}}{t_{n+1}-t_n},\]</div>
-<p>in the Forward Euler, Backward Euler,
+<p class="last">in the Forward Euler, Backward Euler,
 and Crank-Nicolson schemes. Then we observe that
 the difference between the methods concerns which point this
 fraction approximates the derivative. Or in other words, at which point we
@@ -389,117 +482,128 @@ end points or the midpoint of <span class="math">\([t_n,t_{n+1}]\)</span>. Howev
 The difficulty
 is that evaluating the right-hand side <span class="math">\(-au\)</span> at an arbitrary point
 faces the same problem as in
-the section <a class="reference internal" href="#decay-schemes-cn"><em>The Crank-Nicolson scheme</em></a>: the point value must be expressed
+the section <a class="reference internal" href="#decay-schemes-cn"><span>The Crank-Nicolson scheme</span></a>: the point value must be expressed
 by the discrete <span class="math">\(u\)</span> quantities that we compute by the scheme, i.e.,
 <span class="math">\(u^n\)</span> and <span class="math">\(u^{n+1}\)</span>. Following the averaging idea from
-the section <a class="reference internal" href="#decay-schemes-cn"><em>The Crank-Nicolson scheme</em></a>,
+the section <a class="reference internal" href="#decay-schemes-cn"><span>The Crank-Nicolson scheme</span></a>,
 the value of <span class="math">\(u\)</span> at an arbitrary point <span class="math">\(\tilde t\)</span> can be
 calculated as a <em>weighted average</em>, which generalizes the arithmetic mean
 <span class="math">\(\frac{1}{2} u^n + {\frac{1}{2}}u^{n+1}\)</span>.
-If we express <span class="math">\(\tilde t\)</span> as a weighted average</p>
-<div class="math">
-\[t_{n+\theta} = \theta t_{n+1} + (1-\theta) t_{n},\]</div>
-<p class="last">where <span class="math">\(\theta\in [0,1]\)</span> is the weighting factor, we can write</p>
+The weighted average reads</p>
 </div>
-<div class="math" id="equation-decay:thetaavg">
-<span id="eq-decay-thetaavg"></span><span class="eqno">(17)</span>\[        u(\tilde t) = u(\theta t_{n+1} + (1-\theta) t_{n}) \approx
-        \theta u^{n+1} + (1-\theta) u^{n}{\thinspace .}\]\[We can now let the ODE hold at the point
+<div class="math" id="equation-decay:thetaavg_u">
+<span id="eq-decay-thetaavg-u"></span><span class="eqno">(17)</span>\[        u(\tilde t) \approx \theta u^{n+1} + (1-\theta) u^{n},\]\[where  \( \theta\in [0,1] \)  is a weighting factor.
+We can also express  \( \tilde t \)  as a similar weighted average\]\[.. _Eq:decay:thetaavg_t:\]</div>
+<div class="math" id="equation-decay:thetaavg_t">
+<span class="eqno">(18)</span>\[        \tilde t \approx \theta t_{n+1} + (1-\theta) t_{n}{\thinspace .}\]\[Let now the ODE hold at the point
  \( \tilde t\in [t_n,t_{n+1}] \) , approximate  \( u^{\prime} \)  by the fraction
  \( (u^{n+1}-u^{n})/(t_{n+1}-t_n) \) , and approximate the right-hand
-side  \( -au \)  by the weighted average :eq:`decay:thetaavg`.
+side  \( -au \)  by the weighted average :eq:`decay:thetaavg_u`.
 The result is :eq:`decay:th0`.\]</div>
 </div>
 <div class="section" id="constant-time-step">
 <h2>Constant time step<a class="headerlink" href="#constant-time-step" title="Permalink to this headline">¶</a></h2>
 <p>All schemes up to now have been formulated for a general non-uniform
-mesh in time: <span class="math">\(t_0,t_1,\ldots,t_{N_t}\)</span>. Non-uniform meshes are highly relevant
+mesh in time: <span class="math">\(t_0 &lt; t_1 &lt; \cdots &lt; t_{N_t}\)</span>.
+Non-uniform meshes are highly relevant
 since one can use many points in regions where <span class="math">\(u\)</span> varies rapidly, and
-save points in regions where <span class="math">\(u\)</span> is slowly varying. This is the key idea
-of <em>adaptive</em> methods where the spacing of the mesh points
-are determined as the computations proceed.</p>
-<p>However, a uniformly distributed set of mesh points is very common and
-sufficient for many applications. It therefore makes sense to
+fewer points in regions where <span class="math">\(u\)</span> is slowly varying. This idea saves
+the total number of points and therefore makes it faster to compute the mesh
+function <span class="math">\(u^n\)</span>. Non-uniform meshes are used together with
+<em>adaptive</em> methods that are able to adjust the time mesh during
+the computations (the section <a class="reference internal" href="._main_decay005.html#decay-fd2-adaptiverk"><span>Example: Adaptive Runge-Kutta methods</span></a> applies
+adaptive methods).</p>
+<p id="index-24">However, a uniformly distributed set of mesh points is not only
+convenient, but also
+sufficient for many applications. Therefore, it is a very common
+choice. We shall
 present the finite difference schemes for a uniform point distribution
 <span class="math">\(t_n=n\Delta t\)</span>, where <span class="math">\(\Delta t\)</span> is the constant spacing between
 the mesh points, also referred to as the <em>time step</em>.
-The resulting formulas look simpler and are perhaps more
+The resulting formulas look simpler and are more
 well known.</p>
 <div class="admonition-summary-of-schemes-for-constant-time-step admonition">
 <p class="first last admonition-title">Summary of schemes for constant time step</p>
 </div>
 <div class="math" id="equation-decay:FE:u">
-<span id="eq-decay-fe-u"></span><span class="eqno">(18)</span>\[        u^{n+1} = (1 - a\Delta t )u^n  \quad (\hbox{FE})\]\[.. _Eq:decay:BE:u:\]</div>
+<span id="eq-decay-fe-u"></span><span class="eqno">(19)</span>\[        u^{n+1} = (1 - a\Delta t )u^n  \quad (\hbox{FE})\]\[.. _Eq:decay:BE:u:\]</div>
 <div class="math" id="equation-decay:BE:u">
-<span class="eqno">(19)</span>\[        u^{n+1} = \frac{1}{1+ a\Delta t} u^n  \quad (\hbox{BE})\]\[.. _Eq:decay:CN:u:\]</div>
+<span class="eqno">(20)</span>\[        u^{n+1} = \frac{1}{1+ a\Delta t} u^n  \quad (\hbox{BE})\]\[.. _Eq:decay:CN:u:\]</div>
 <div class="math" id="equation-decay:CN:u">
-<span class="eqno">(20)</span>\[        u^{n+1} = \frac{1-\frac{1}{2} a\Delta t}{1 + \frac{1}{2} a\Delta t} u^n \quad (\hbox{CN})\]\[.. _Eq:decay:th:u:\]</div>
+<span class="eqno">(21)</span>\[        u^{n+1} = \frac{1-\frac{1}{2} a\Delta t}{1 + \frac{1}{2} a\Delta t} u^n \quad (\hbox{CN})\]\[.. _Eq:decay:th:u:\]</div>
 <div class="math" id="equation-decay:th:u">
-<span class="eqno">(21)</span>\[        u^{n+1} = \frac{1 - (1-\theta) a\Delta t}{1 + \theta a\Delta t}u^n \quad (\theta-\hbox{rule})\]</div>
-<p>Not surprisingly, we present these three alternative schemes
-because they have different pros and cons, both for the simple ODE
-in question (which can easily be solved as accurately as desired), and for
-more advanced differential equation problems.</p>
-<div class="admonition-test-the-understanding admonition">
-<p class="first admonition-title">Test the understanding</p>
-<p class="last">At this point it can be good training to apply the explained
-finite difference discretization techniques to a slightly
-different equation. <a class="reference internal" href="._main_decay006.html#decay-app-exer-cooling-schemes"><em>Exercise 15: Derive schemes for Newton&#8217;s law of cooling</em></a>
-is therefore highly recommended to check that the key concepts
-are understood.</p>
+<span class="eqno">(22)</span>\[        u^{n+1} = \frac{1 - (1-\theta) a\Delta t}{1 + \theta a\Delta t}u^n \quad (\theta-\hbox{rule})\]</div>
+<p>It is not accidental that we focus on presenting the Forward Euler, Backward
+Euler, and Crank-Nicolson schemes. They complement each other with their
+different pros and cons, thus providing a useful collection of
+solution methods for many differential equation problems.
+The unifying notation of the <span class="math">\(\theta\)</span>-rule makes it convenient to
+work with all three methods through just one formula.</p>
+<div class="admonition-test-your-understanding admonition">
+<p class="first admonition-title">Test your understanding</p>
+<p class="last">To check that key concepts are really understood, the reader is
+encouraged to apply the explained finite difference techniques
+to a slightly different equation. For this purpose, we recommend
+you do <a class="reference internal" href="._main_decay006.html#decay-app-exer-cooling-schemes"><span>Exercise 16: Derive schemes for Newton&#8217;s law of cooling</span></a> now!</p>
 </div>
 </div>
 <div class="section" id="mathematical-derivation-of-finite-difference-formulas">
 <span id="decay-fd-taylor"></span><h2>Mathematical derivation of finite difference formulas<a class="headerlink" href="#mathematical-derivation-of-finite-difference-formulas" title="Permalink to this headline">¶</a></h2>
 <p>The finite difference formulas for approximating the first derivative
 of a function have so far been somewhat justified through graphical
-illustrations in Figures <a class="reference internal" href="#decay-sketch-fe"><em>Illustration of a forward difference</em></a>, <a class="reference internal" href="#decay-sketch-be"><em>Illustration of a backward difference</em></a>,
-and <a class="reference internal" href="#decay-sketch-cn"><em>Illustration of a centered difference</em></a>. The task is to approximate the derivative
+illustrations in Figures <a class="reference internal" href="#decay-sketch-fe"><span>Illustration of a forward difference</span></a>, <a class="reference internal" href="#decay-sketch-be"><span>Illustration of a backward difference</span></a>,
+and <a class="reference internal" href="#decay-sketch-cn"><span>Illustration of a centered difference</span></a>. The task is to approximate the derivative
 at a point of a curve using only two function values. By drawing
 a straight line through the points, we have some approximation to
 the tangent of the curve and use the slope of this line as
 an approximation to the derivative. The slope can be computed by
 inspecting the figures.</p>
-<p>However, we can also derive the finite difference formulas by
-pure mathematics too. The key tool for this approach is Taylor series,
+<p>However, we can alternatively derive the finite difference formulas by
+pure mathematics. The key tool for this approach is Taylor series,
 or more precisely, approximation of functions by lower-order
-Taylor polynomials. Given a function <span class="math">\(f(x)\)</span> with &#8220;enough derivatives&#8221;,
+Taylor polynomials. Given a function <span class="math">\(f(x)\)</span> that is sufficiently
+smooth (i.e., <span class="math">\(f(x)\)</span> has &#8220;enough derivatives&#8221;),
 a Taylor polynomial of degree <span class="math">\(m\)</span> can be used to approximate the
 value of the function <span class="math">\(f(x)\)</span> if we know the values of <span class="math">\(f\)</span> and its
-first <span class="math">\(m\)</span> derivatives at some point <span class="math">\(x=a\)</span>. The formula for the
+first <span class="math">\(m\)</span> derivatives at some other point <span class="math">\(x=a\)</span>. The formula for the
 Taylor polynomial reads</p>
 <div class="math">
-\[f(x) \approx f(a) + f'(a)(x-a) + \frac{1}{2}f''(a)(x-a)^2 +
-\frac{1}{6}f'''(a)(x-a)^3\cdots +
-\frac{1}{m!}\frac{f^{(m)}}{x^m}(a)(x-a)^m{\thinspace .}\]</div>
+\[f(x)  \approx f(a) + f'(a)(x-a) + \frac{1}{2}f''(a)(x-a)^2 +
+\frac{1}{6}f'''(a)(x-a)^3 + \cdots \nonumber\]</div>
+<div class="math">
+\[\quad + \frac{1}{m!}\frac{df^{(m)}}{dx^m}(a)(x-a)^m{\thinspace .}\]</div>
 <p>For a function of time, <span class="math">\(f(t)\)</span>, related to a mesh with spacing <span class="math">\(\Delta t\)</span>,
 we often need the Taylor polynomial approximation at <span class="math">\(f(t_n\pm\Delta t)\)</span>
 given <span class="math">\(f\)</span> and its derivatives at <span class="math">\(t=t_n\)</span>. Replacing <span class="math">\(x\)</span> by <span class="math">\(t_n+\Delta t\)</span> and
 <span class="math">\(a\)</span> by <span class="math">\(t_n\)</span> gives</p>
+<div class="math">
+\[f(t_n+\Delta t)  \approx f(t_n) + f'(t_n)\Delta t + \frac{1}{2}f''(t_n)
+\Delta t^2 +
+\frac{1}{6}f'''(t_n)\Delta t^3 + \cdots\nonumber\]</div>
 <div class="math" id="equation-decay:taylor:FE1">
-<span id="eq-decay-taylor-fe1"></span><span class="eqno">(22)</span>\[     f(t_n+\Delta t) \approx f(t_n) + f'(t_n)\Delta t + \frac{1}{2}f''(t_n)
-     \Delta t^2 +
-     \frac{1}{6}f'''(t_n)\Delta t^3\cdots +
-     \frac{1}{m!}\frac{f^{(m)}}{x^m}(t_n)\Delta t^m{\thinspace .}\]</div>
+<span id="eq-decay-taylor-fe1"></span><span class="eqno">(23)</span>\[     \quad + \frac{1}{m!}\frac{df^{(m)}}{dx^m}(t_n)\Delta t^m{\thinspace .}\]</div>
 <div class="section" id="the-forward-difference">
 <h3>The forward difference<a class="headerlink" href="#the-forward-difference" title="Permalink to this headline">¶</a></h3>
-<p>We can use <a href="#equation-decay:taylor:FE1">(22)</a> to find an approximation for
+<p>We can use <a href="#equation-decay:taylor:FE1">(23)</a> to find an approximation for
 <span class="math">\(f'(t_n)\)</span> simply by solving with respect to this quantity:</p>
+<div class="math">
+\[f'(t_n)  \approx  \frac{f(t_n+\Delta t) - f(t_n)}{\Delta t}
+- \frac{1}{2}f''(t_n)\Delta t -
+\frac{1}{6}f'''(t_n)\Delta t^2 + \cdots\nonumber\]</div>
 <div class="math" id="equation-decay:taylor:FE2">
-<span id="id1"></span><span class="eqno">(23)</span>\[     f'(t_n) \approx \frac{f(t_n+\Delta t) - f(t_n)}{\Delta t}
-     - \frac{1}{2}f''(t_n)\Delta t -
-     \frac{1}{6}f'''(t_n)\Delta t^2\cdots -
-     \frac{1}{m!}\frac{f^{(m)}}{x^m}(t_n)\Delta t^{m-1}{\thinspace .}\]</div>
+<span id="eq-decay-taylor-fe2"></span><span class="eqno">(24)</span>\[     \quad - \frac{1}{m!}\frac{df^{(m)}}{dx^m}(t_n)\Delta t^{m-1}{\thinspace .}\]</div>
 <p>By letting <span class="math">\(m\rightarrow\infty\)</span>, this formula is exact, but that is not
 so much of practical value. A more interesting observation is that
 all the power terms in <span class="math">\(\Delta t\)</span> vanish as <span class="math">\(\Delta t\rightarrow 0\)</span>, i.e.,
 the formula</p>
 <div class="math" id="equation-decay:taylor:FE3">
-<span id="eq-decay-taylor-fe3"></span><span class="eqno">(24)</span>\[     f'(t_n) \approx \frac{f(t_n+\Delta t) - f(t_n)}{\Delta t}\]</div>
+<span id="eq-decay-taylor-fe3"></span><span class="eqno">(25)</span>\[     f'(t_n) \approx \frac{f(t_n+\Delta t) - f(t_n)}{\Delta t}\]</div>
 <p>is exact in the limit <span class="math">\(\Delta t\rightarrow 0\)</span>.</p>
-<p>The interesting feature of <a href="#equation-decay:taylor:FE2">(26)</a> is that we have
-a measure of the error in the formula <a href="#equation-decay:taylor:FE3">(24)</a>: the
+<p>The interesting feature of <a href="#equation-decay:taylor:FE2">(24)</a> is that we have
+a measure of the error in the formula <a href="#equation-decay:taylor:FE3">(25)</a>: the
 error is given by the extra terms on the right-hand side of
-<a href="#equation-decay:taylor:FE2">(26)</a>. We assume that <span class="math">\(\Delta t\)</span> is a small quantity.
+<a href="#equation-decay:taylor:FE2">(24)</a>. We assume that <span class="math">\(\Delta t\)</span> is a small quantity
+(<span class="math">\(\Delta t\ll 1\)</span>).
 Then <span class="math">\(\Delta t^2\ll\Delta t\)</span>, <span class="math">\(\Delta t^3\ll \Delta t^2\)</span>, and so on,
 which means that the first term is the dominating term. This first
 term reads <span class="math">\(-\frac{1}{2}f''(t_n)\Delta t\)</span> and can be taken as a
@@ -509,17 +613,19 @@ measure of the error in the Forward Euler formula.</p>
 <h3>The backward difference<a class="headerlink" href="#the-backward-difference" title="Permalink to this headline">¶</a></h3>
 <p>To derive the backward difference, we use the Taylor polynomial
 approximation at <span class="math">\(f(t_n-\Delta t)\)</span>:</p>
+<div class="math">
+\[f(t_n-\Delta t) \approx f(t_n) - f'(t_n)\Delta t + \frac{1}{2}f''(t_n)
+\Delta t^2 -
+\frac{1}{6}f'''(t_n)\Delta t^3+ \cdots\nonumber\]</div>
 <div class="math" id="equation-decay:taylor:BE1">
-<span id="eq-decay-taylor-be1"></span><span class="eqno">(25)</span>\[     f(t_n-\Delta t) \approx f(t_n) - f'(t_n)\Delta t + \frac{1}{2}f''(t_n)
-     \Delta t^2 -
-     \frac{1}{6}f'''(t_n)\Delta t^3\cdots +
-     \frac{1}{m!}\frac{f^{(m)}}{x^m}(t_n)\Delta t^m{\thinspace .}\]</div>
+<span id="eq-decay-taylor-be1"></span><span class="eqno">(26)</span>\[     \quad + \frac{1}{m!}\frac{df^{(m)}}{dx^m}(t_n)\Delta t^m{\thinspace .}\]</div>
 <p>Solving with respect to <span class="math">\(f'(t_n)\)</span> gives</p>
-<div class="math" id="equation-decay:taylor:FE2">
-<span id="id3"></span><span class="eqno">(26)</span>\[     f'(t_n) \approx \frac{f(t_n) - f(t_n-\Delta t)}{\Delta t}
-     + \frac{1}{2}f''(t_n)\Delta t -
-     \frac{1}{6}f'''(t_n)\Delta t^2\cdots -
-     \frac{1}{m!}\frac{f^{(m)}}{x^m}(t_n)\Delta t^{m-1}{\thinspace .}\]</div>
+<div class="math">
+\[f'(t_n) \approx \frac{f(t_n) - f(t_n-\Delta t)}{\Delta t}
++ \frac{1}{2}f''(t_n)\Delta t -
+\frac{1}{6}f'''(t_n)\Delta t^2+ \cdots\nonumber\]</div>
+<div class="math" id="equation-decay:taylor:BE2">
+<span id="eq-decay-taylor-be2"></span><span class="eqno">(27)</span>\[     \quad - \frac{1}{m!}\frac{df^{(m)}}{dx^m}(t_n)\Delta t^{m-1}{\thinspace .}\]</div>
 <p>The term <span class="math">\(\frac{1}{2}f''(t_n)\Delta t\)</span> can be taken as a simple measure of
 the approximation error since it will dominate over the other terms
 as <span class="math">\(\Delta t\rightarrow 0\)</span>.</p>
@@ -532,21 +638,23 @@ approximations to <span class="math">\(f(t_n)\)</span> and <span class="math">\(
 <div class="math">
 \[f(t_n) \approx f(t_n+\frac{1}{2}\Delta t) -
 f'(t_n+\frac{1}{2}\Delta t)\frac{1}{2}\Delta t +
-f''(t_n+\frac{1}{2}\Delta t)(\frac{1}{2}\Delta t)^2 -
-f'''(t_n+\frac{1}{2}\Delta t)(\frac{1}{2}\Delta t)^3 + \cdots\]</div>
+f''(t_n+\frac{1}{2}\Delta t)(\frac{1}{2}\Delta t)^2 -\nonumber\]</div>
+<div class="math">
+\[\quad f'''(t_n+\frac{1}{2}\Delta t)(\frac{1}{2}\Delta t)^3 + \cdots\]</div>
 <div class="math">
 \[f(t_{n+1})  \approx f(t_n+\frac{1}{2}\Delta t) +
 f'(t_n+\frac{1}{2}\Delta t)\frac{1}{2}\Delta t +
-f''(t_n+\frac{1}{2}\Delta t)(\frac{1}{2}\Delta t)^2 +
-f'''(t_n+\frac{1}{2}\Delta t)(\frac{1}{2}\Delta t)^3 + \cdots\]</div>
+f''(t_n+\frac{1}{2}\Delta t)(\frac{1}{2}\Delta t)^2 +\nonumber\]</div>
+<div class="math">
+\[\quad f'''(t_n+\frac{1}{2}\Delta t)(\frac{1}{2}\Delta t)^3 + \cdots\]</div>
 <p>Subtracting the first from the second gives</p>
 <div class="math" id="equation-decay:taylor:CN2">
-<span id="eq-decay-taylor-cn2"></span><span class="eqno">(27)</span>\[     f(t_{n+1}) - f(t_n) = f'(t_n+\frac{1}{2}\Delta t)\Delta t
+<span id="eq-decay-taylor-cn2"></span><span class="eqno">(28)</span>\[     f(t_{n+1}) - f(t_n) = f'(t_n+\frac{1}{2}\Delta t)\Delta t
      + 2f'''(t_n+\frac{1}{2}\Delta t)(\frac{1}{2}\Delta t)^3 + \cdots\]</div>
 <p>Solving with respect to <span class="math">\(f'(t_n+\frac{1}{2}\Delta t)\)</span> results
 in</p>
 <div class="math" id="equation-decay:taylor:CN3">
-<span id="eq-decay-taylor-cn3"></span><span class="eqno">(28)</span>\[     f'(t_n+\frac{1}{2}\Delta t) \approx \frac{f(t_{n+1}) - f(t_n)}{\Delta t}
+<span id="eq-decay-taylor-cn3"></span><span class="eqno">(29)</span>\[     f'(t_n+\frac{1}{2}\Delta t) \approx \frac{f(t_{n+1}) - f(t_n)}{\Delta t}
      - \frac{1}{4}f'''(t_n+\frac{1}{2}\Delta t)\Delta t^2 + c
      \cdots\]</div>
 <p>This time the error measure goes like <span class="math">\(\frac{1}{4}f'''\Delta t^2\)</span>, i.e.,
@@ -554,89 +662,92 @@ it is proportional to <span class="math">\(\Delta t^2\)</span> and not only <spa
 that the error goes faster to zero as <span class="math">\(\Delta t\)</span> is reduced.
 This means that the centered difference formula</p>
 <div class="math" id="equation-decay:taylor:CN4">
-<span id="eq-decay-taylor-cn4"></span><span class="eqno">(29)</span>\[     f'(t_n+\frac{1}{2}\Delta t) \approx \frac{f(t_{n+1}) - f(t_n)}{\Delta t}\]</div>
+<span id="eq-decay-taylor-cn4"></span><span class="eqno">(30)</span>\[     f'(t_n+\frac{1}{2}\Delta t) \approx \frac{f(t_{n+1}) - f(t_n)}{\Delta t}\]</div>
 <p>is more accurate than the forward and backward differences for small
 <span class="math">\(\Delta t\)</span>.</p>
 </div>
 </div>
 <div class="section" id="compact-operator-notation-for-finite-differences">
 <span id="decay-fd-op"></span><h2>Compact operator notation for finite differences<a class="headerlink" href="#compact-operator-notation-for-finite-differences" title="Permalink to this headline">¶</a></h2>
-<span class="target" id="index-24"></span><p id="index-25">Finite difference formulas can be tedious to write and read,
+<span class="target" id="index-25"></span><p id="index-26">Finite difference formulas can be tedious to write and read,
 especially for differential equations with many terms and many
-derivatives. To save space and help the reader of the scheme to quickly
-see the nature of the difference approximations, we introduce a
-compact notation. A forward difference approximation is denoted
-by the <span class="math">\(D_t^+\)</span> operator:</p>
+derivatives. To save space and help the reader spot
+the nature of the difference approximations, we introduce a
+compact notation. For a function <span class="math">\(u(t)\)</span>,
+a forward difference approximation is denoted
+by the <span class="math">\(D_t^+\)</span> operator and written as</p>
 <div class="math" id="equation-fd:D:f">
-<span id="eq-fd-d-f"></span><span class="eqno">(30)</span>\[     [D_t^+u]^n = \frac{u^{n+1} - u^{n}}{\Delta t}
-     \approx \frac{d}{dt} u(t_n)
+<span id="eq-fd-d-f"></span><span class="eqno">(31)</span>\[     [D_t^+u]^n = \frac{u^{n+1} - u^{n}}{\Delta t}
+     \ \left( \approx \frac{d}{dt} u(t_n)\right)
      {\thinspace .}\]</div>
 <p>The notation consists of an operator that approximates
 differentiation with respect to an independent variable, here <span class="math">\(t\)</span>.
-The operator is built of the symbol <span class="math">\(D\)</span>, with the variable as subscript
+The operator is built of the symbol <span class="math">\(D\)</span>, with the
+independent variable as subscript
 and a superscript denoting the type of difference. The superscript <span class="math">\(\,{}^+\)</span>
 indicates a forward difference.
 We place square brackets around the operator and the function it operates
 on and specify the mesh point, where the operator is acting, by
-a superscript.</p>
+a superscript after the closing bracket.</p>
 <p>The corresponding operator notation for a centered difference and
 a backward difference reads</p>
 <div class="math" id="equation-fd:D:c">
-<span id="eq-fd-d-c"></span><span class="eqno">(31)</span>\[     [D_tu]^n = \frac{u^{n+\frac{1}{2}} - u^{n-\frac{1}{2}}}{\Delta t}
+<span id="eq-fd-d-c"></span><span class="eqno">(32)</span>\[     [D_tu]^n = \frac{u^{n+\frac{1}{2}} - u^{n-\frac{1}{2}}}{\Delta t}
      \approx \frac{d}{dt} u(t_n),\]</div>
 <p>and</p>
 <div class="math" id="equation-fd:D:b">
-<span id="eq-fd-d-b"></span><span class="eqno">(32)</span>\[     [D_t^-u]^n = \frac{u^{n} - u^{n-1}}{\Delta t}
+<span id="eq-fd-d-b"></span><span class="eqno">(33)</span>\[     [D_t^-u]^n = \frac{u^{n} - u^{n-1}}{\Delta t}
      \approx \frac{d}{dt} u(t_n)
      {\thinspace .}\]</div>
 <p>Note that the superscript <span class="math">\(\,{}^-\)</span> denotes the backward
 difference, while no superscript implies a central difference.</p>
 <p>An averaging operator is also convenient to have:</p>
 <div class="math" id="equation-fd:mean:a">
-<span id="eq-fd-mean-a"></span><span class="eqno">(33)</span>\[     [\overline{u}^{t}]^n = \frac{1}{2} (u^{n-\frac{1}{2}} + u^{n+\frac{1}{2}} )
+<span id="eq-fd-mean-a"></span><span class="eqno">(34)</span>\[     [\overline{u}^{t}]^n = \frac{1}{2} (u^{n-\frac{1}{2}} + u^{n+\frac{1}{2}} )
      \approx u(t_n)\]</div>
 <p>The superscript <span class="math">\(t\)</span> indicates that the average is taken along the time
 coordinate. The common average <span class="math">\((u^n + u^{n+1})/2\)</span> can now be
 expressed as <span class="math">\([\overline{u}^{t}]^{n+\frac{1}{2}}\)</span>. (When also spatial coordinates
 enter the problem, we need the explicit specification of the coordinate
 after the bar.)</p>
-<p>The Backward Euler finite difference approximation to <span class="math">\(u^{\prime}=-au\)</span> can be written
-as follows utilizing the compact notation:</p>
+<p>With our compact notation, the Backward Euler finite difference approximation to <span class="math">\(u^{\prime}=-au\)</span> can be written
+as</p>
 <div class="math">
 \[[D_t^-u]^n = -au^n {\thinspace .}\]</div>
 <p>In difference equations we often place the square brackets around
 the whole equation, to indicate at which mesh point the equation applies,
-since each term is supposed to be approximated at the same point:</p>
+since each term must be approximated at the same point:</p>
 <div class="math">
 \[[D_t^- u  = -au]^n {\thinspace .}\]</div>
-<p>The Forward Euler scheme takes the form</p>
+<p>Similarly, the Forward Euler scheme takes the form</p>
 <div class="math">
 \[[D_t^+ u  = -au]^n,\]</div>
 <p>while the Crank-Nicolson scheme is written as</p>
 <div class="math" id="equation-fd:compact:ex:CN">
-<span id="eq-fd-compact-ex-cn"></span><span class="eqno">(34)</span>\[     [D_t u = -a\overline{u}^t]^{n+\frac{1}{2}}{\thinspace .}\]</div>
+<span id="eq-fd-compact-ex-cn"></span><span class="eqno">(35)</span>\[     [D_t u = -a\overline{u}^t]^{n+\frac{1}{2}}{\thinspace .}\]</div>
 <div class="admonition-question admonition">
 <p class="first admonition-title">Question</p>
-<p class="last">Apply <a href="#equation-fd:D:c">(31)</a> and <a href="#equation-fd:mean:a">(33)</a> and write out the
-expressions to see that <a href="#equation-fd:compact:ex:CN">(34)</a> is indeed the
-Crank-Nicolson scheme.</p>
+<p class="last">By use of <a href="#equation-fd:D:c">(32)</a> and <a href="#equation-fd:mean:a">(34)</a>, are you able to
+write out the expressions in <a href="#equation-fd:compact:ex:CN">(35)</a> to verify that
+it is indeed the Crank-Nicolson scheme?</p>
 </div>
-<p>The <span class="math">\(\theta\)</span>-rule can be specified by</p>
+<p>The <span class="math">\(\theta\)</span>-rule can be specified in operator notation by</p>
 <div class="math" id="equation-decay:fd1:op:theta">
-<span id="eq-decay-fd1-op-theta"></span><span class="eqno">(35)</span>\[     [\bar D_t u = -a\overline{u}^{t,\theta}]^{n+\theta},\]</div>
-<p>if we define a new time difference</p>
+<span id="eq-decay-fd1-op-theta"></span><span class="eqno">(36)</span>\[     [\bar D_t u = -a\overline{u}^{t,\theta}]^{n+\theta},{\thinspace .}\]</div>
+<p>We define a new time difference</p>
 <div class="math" id="equation-decay:fd1:Du:theta">
-<span id="eq-decay-fd1-du-theta"></span><span class="eqno">(36)</span>\[     \lbrack\bar D_t u\rbrack^{n+\theta} = \frac{u^{n+1}-u^n}{t^{n+1}-t^n},\]</div>
-<p>and a <em>weighted averaging operator</em></p>
+<span id="eq-decay-fd1-du-theta"></span><span class="eqno">(37)</span>\[     \lbrack\bar D_t u\rbrack^{n+\theta} = \frac{u^{n+1}-u^n}{t^{n+1}-t^n},\]</div>
+<p>to be applied at the time point <span class="math">\(t_{n+\theta}\approx\theta t_n + (1-\theta)t_{n+1}\)</span>. This weighted average gives rise to the
+<em>weighted averaging operator</em></p>
 <div class="math" id="equation-decay:fd1:wmean:a">
-<span id="eq-decay-fd1-wmean-a"></span><span class="eqno">(37)</span>\[     \lbrack\overline{u}^{t,\theta}\rbrack^{n+\theta} = (1-\theta)u^{n} + \theta u^{n+1}
+<span id="eq-decay-fd1-wmean-a"></span><span class="eqno">(38)</span>\[     \lbrack\overline{u}^{t,\theta}\rbrack^{n+\theta} = (1-\theta)u^{n} + \theta u^{n+1}
      \approx u(t_{n+\theta}),\]</div>
-<p>where <span class="math">\(\theta\in [0,1]\)</span>. Note that for <span class="math">\(\theta =\frac{1}{2}\)</span> we recover
+<p>where <span class="math">\(\theta\in [0,1]\)</span> as usual. Note that for <span class="math">\(\theta =\frac{1}{2}\)</span> we recover
 the standard centered difference and the standard arithmetic mean.
-The idea in <a href="#equation-decay:fd1:op:theta">(35)</a> is to sample the equation at
-<span class="math">\(t_{n+\theta}\)</span>, use a skew difference at that
-point <span class="math">\([\bar D_t u]^{n+\theta}\)</span>, and a skew mean value.
-An alternative notation is</p>
+The idea in <a href="#equation-decay:fd1:op:theta">(36)</a> is to sample the equation at
+<span class="math">\(t_{n+\theta}\)</span>, use a non-symmetric difference at that
+point <span class="math">\([\bar D_t u]^{n+\theta}\)</span>, and a weighted (non-symmetric) mean value.</p>
+<p>An alternative and perhaps clearer notation is</p>
 <div class="math">
 \[[D_t u]^{n+\frac{1}{2}} = \theta [-au]^{n+1} + (1-\theta)[-au]^{n}{\thinspace .}\]</div>
 <p>Looking at the various examples above and comparing them with the
@@ -662,12 +773,18 @@ equation.</p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Finite difference methods</a><ul>
-<li><a class="reference internal" href="#a-basic-model-for-exponential-decay">A basic model for exponential decay</a></li>
+<li><a class="reference internal" href="#a-basic-model-for-exponential-decay">A basic model for exponential decay</a><ul>
+<li><a class="reference internal" href="#the-exact-solution">The exact solution</a></li>
+<li><a class="reference internal" href="#complete-problem-formulation">Complete problem formulation</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#the-forward-euler-scheme">The Forward Euler scheme</a><ul>
 <li><a class="reference internal" href="#step-1-discretizing-the-domain">Step 1: Discretizing the domain</a></li>
 <li><a class="reference internal" href="#step-2-fulfilling-the-equation-at-discrete-time-points">Step 2: Fulfilling the equation at discrete time points</a></li>
 <li><a class="reference internal" href="#step-3-replacing-derivatives-by-finite-differences">Step 3: Replacing derivatives by finite differences</a></li>
 <li><a class="reference internal" href="#step-4-formulating-a-recursive-algorithm">Step 4: Formulating a recursive algorithm</a></li>
+<li><a class="reference internal" href="#interpretation">Interpretation</a></li>
+<li><a class="reference internal" href="#computing-with-the-recursive-formula">Computing with the recursive formula</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#the-backward-euler-scheme">The Backward Euler scheme</a></li>

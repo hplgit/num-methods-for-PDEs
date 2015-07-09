@@ -25,7 +25,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/javascript" src="_static/sidebar.js"></script>
 
         <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
@@ -83,7 +83,7 @@
 <span id="decay-impl1"></span><h1>Implementation  (1)<a class="headerlink" href="#implementation-1" title="Permalink to this headline">¶</a></h1>
 <div class="admonition-goal admonition">
 <p class="first admonition-title">Goal</p>
-<p>We want make a computer program for solving</p>
+<p>We want to make a computer program for solving</p>
 <div class="math">
 \[u^{\prime}(t) = -au(t),\quad t\in (0,T], \quad u(0)=I,\]</div>
 <p class="last">by finite difference methods. The program should also display
@@ -111,7 +111,7 @@ compute <span class="math">\(u^1, u^2,\ldots,u^{N_t}\)</span>, where <span class
 <p><strong>Computer Language: Python.</strong>
 Any programming language can be used to generate the <span class="math">\(u^{n+1}\)</span> values from
 the formula above. However, in this document we shall mainly make use of
-Python of several reasons:</p>
+Python. There several good reasons for this choice:</p>
 <blockquote>
 <div><ul class="simple">
 <li>Python has a very clean, readable syntax (often known as
@@ -119,30 +119,32 @@ Python of several reasons:</p>
 <li>Python code is very similar to MATLAB code (and MATLAB has a
 particularly widespread use for scientific computing).</li>
 <li>Python is a full-fledged, very powerful programming language.</li>
-<li>Python is similar to, but much simpler to work with and
-results in more reliable code than C++.</li>
+<li>Python is similar to C++, but is much simpler to work with and
+results in more reliable code.</li>
 <li>Python has a rich set of modules for scientific computing, and its
 popularity in scientific computing is rapidly growing.</li>
 <li>Python was made for being combined with compiled languages
-(C, C++, Fortran) to reuse existing numerical software and to
-reach high computational performance of new implementations.</li>
-<li>Python has extensive support for administrative task
+(C, C++, Fortran), so that existing numerical software can be reused,
+and thereby easing high computational performance with new implementations.</li>
+<li>Python has extensive support for administrative tasks
 needed when doing large-scale computational investigations.</li>
 <li>Python has extensive support for graphics (visualization,
 user interfaces, web applications).</li>
-<li>FEniCS, a very powerful tool for solving PDEs by
-the finite element method, is most human-efficient to operate
-from Python.</li>
 </ul>
 </div></blockquote>
 <p>Learning Python is easy. Many newcomers to the language will probably
 learn enough from the forthcoming examples to perform their own computer
 experiments. The examples start with simple Python code and gradually
-make use of more powerful constructs as we proceed. As long as it is
-not inconvenient for the problem at hand, our Python code is made as
+make use of more powerful constructs as we proceed. Unless it is
+inconvenient for the problem at hand, our Python code is made as
 close as possible to MATLAB code for easy transition between the two
 languages.</p>
-<p>Readers who feel the Python examples are too hard to follow will probably
+<p>The coming programming examples assumes familiarity with
+variables, for loops, lists, arrays,
+functions, positional arguments, and keyword (named) arguments.
+A background in basic MATLAB programming is often enough to understand
+Python examples.
+Readers who feel the Python examples are too hard to follow will
 benefit from reading a tutorial, e.g.,</p>
 <blockquote>
 <div><ul class="simple">
@@ -152,11 +154,11 @@ benefit from reading a tutorial, e.g.,</p>
 <li><a class="reference external" href="http://en.wikibooks.org/wiki/A_Beginner's_Python_Tutorial">A Beginner&#8217;s Python Tutorial</a></li>
 </ul>
 </div></blockquote>
-<p>The author also has a comprehensive book <a class="reference internal" href="._main_decay008.html#ref1" id="id1">[Ref1]</a> that teaches
+<p>The author also has a comprehensive book <a class="reference internal" href="._main_decay008.html#ref01" id="id1">[Ref01]</a> that teaches
 scientific programming with Python from the ground up.</p>
 <div class="section" id="making-a-solver-function">
 <span id="decay-py1"></span><h2>Making a solver function<a class="headerlink" href="#making-a-solver-function" title="Permalink to this headline">¶</a></h2>
-<p>We choose to have an array <tt class="docutils literal"><span class="pre">u</span></tt> for storing the <span class="math">\(u^n\)</span> values, <span class="math">\(n=0,1,\ldots,N_t\)</span>.
+<p>We choose to have an array <code class="docutils literal"><span class="pre">u</span></code> for storing the <span class="math">\(u^n\)</span> values, <span class="math">\(n=0,1,\ldots,N_t\)</span>.
 The algorithmic steps are</p>
 <blockquote>
 <div><ol class="arabic simple">
@@ -165,12 +167,19 @@ The algorithmic steps are</p>
 the <span class="math">\(\theta\)</span>-rule formula</li>
 </ol>
 </div></blockquote>
+<p>An implementation of a numerical algorithm is often referred to as
+a <em>solver</em>. We shall now make a solver for our model problem and
+realize the solver as a Python function. The function must take
+the input data <span class="math">\(I\)</span>, <span class="math">\(a\)</span>, <span class="math">\(T\)</span>, <span class="math">\(\Delta t\)</span>, and <span class="math">\(\theta\)</span> of the problem
+as arguments and return the solution as arrays <code class="docutils literal"><span class="pre">u</span></code> and <code class="docutils literal"><span class="pre">t</span></code> for
+<span class="math">\(u^n\)</span> and <span class="math">\(t^n\)</span>, <span class="math">\(n=0,\ldots,N_t\)</span>. The solver function used as</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>One can now easily plot <code class="docutils literal"><span class="pre">u</span></code> versus <code class="docutils literal"><span class="pre">t</span></code> to visualize the solution.</p>
 <div class="section" id="function-for-computing-the-numerical-solution">
 <h3>Function for computing the numerical solution<a class="headerlink" href="#function-for-computing-the-numerical-solution" title="Permalink to this headline">¶</a></h3>
-<p>The following Python function takes the input data of the problem
-(<span class="math">\(I\)</span>, <span class="math">\(a\)</span>, <span class="math">\(T\)</span>, <span class="math">\(\Delta t\)</span>, <span class="math">\(\theta\)</span>) as arguments and returns two arrays with
-the solution <span class="math">\(u^0,\ldots,u^{N_t}\)</span> and the mesh points <span class="math">\(t_0,\ldots,t_{N_t}\)</span>,
-respectively:</p>
+<p>The function <code class="docutils literal"><span class="pre">solver</span></code> may look as follows in Python:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
@@ -186,56 +195,52 @@ respectively:</p>
     <span class="k">return</span> <span class="n">u</span><span class="p">,</span> <span class="n">t</span>
 </pre></div>
 </div>
-<p>The <tt class="docutils literal"><span class="pre">numpy</span></tt> library contains a lot of functions for array computing. Most
+<p>The <code class="docutils literal"><span class="pre">numpy</span></code> library contains a lot of functions for array computing. Most
 of the function names are similar to what is found
 in the alternative scientific computing language MATLAB. Here
 we make use of</p>
 <blockquote>
 <div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">zeros(Nt+1)</span></tt> for creating an array of a size <tt class="docutils literal"><span class="pre">Nt+1</span></tt>
+<li><code class="docutils literal"><span class="pre">zeros(Nt+1)</span></code> for creating an array of size <code class="docutils literal"><span class="pre">Nt+1</span></code>
 and initializing the elements to zero</li>
-<li><tt class="docutils literal"><span class="pre">linspace(0,</span> <span class="pre">T,</span> <span class="pre">Nt+1)</span></tt> for creating an array with <tt class="docutils literal"><span class="pre">Nt+1</span></tt>
-coordinates uniformly distributed between <tt class="docutils literal"><span class="pre">0</span></tt> and <tt class="docutils literal"><span class="pre">T</span></tt></li>
+<li><code class="docutils literal"><span class="pre">linspace(0,</span> <span class="pre">T,</span> <span class="pre">Nt+1)</span></code> for creating an array with <code class="docutils literal"><span class="pre">Nt+1</span></code>
+coordinates uniformly distributed between <code class="docutils literal"><span class="pre">0</span></code> and <code class="docutils literal"><span class="pre">T</span></code></li>
 </ul>
 </div></blockquote>
-<p>The <tt class="docutils literal"><span class="pre">for</span></tt> loop deserves a comment, especially for newcomers to Python.
-The construction <tt class="docutils literal"><span class="pre">range(0,</span> <span class="pre">Nt,</span> <span class="pre">s)</span></tt> generates all integers from <tt class="docutils literal"><span class="pre">0</span></tt> to <tt class="docutils literal"><span class="pre">Nt</span></tt>
-in steps of <tt class="docutils literal"><span class="pre">s</span></tt>, <em>but not including</em> <tt class="docutils literal"><span class="pre">Nt</span></tt>. Omitting <tt class="docutils literal"><span class="pre">s</span></tt> means <tt class="docutils literal"><span class="pre">s=1</span></tt>.
-For example, <tt class="docutils literal"><span class="pre">range(0,</span> <span class="pre">6,</span> <span class="pre">3)</span></tt>
-gives <tt class="docutils literal"><span class="pre">0</span></tt> and <tt class="docutils literal"><span class="pre">3</span></tt>, while <tt class="docutils literal"><span class="pre">range(0,</span> <span class="pre">Nt)</span></tt> generates <tt class="docutils literal"><span class="pre">0</span></tt>, <tt class="docutils literal"><span class="pre">1</span></tt>, ..., <tt class="docutils literal"><span class="pre">Nt-1</span></tt>.
-Our loop implies the following assignments to <tt class="docutils literal"><span class="pre">u[n+1]</span></tt>: <tt class="docutils literal"><span class="pre">u[1]</span></tt>, <tt class="docutils literal"><span class="pre">u[2]</span></tt>, ...,
-<tt class="docutils literal"><span class="pre">u[Nt]</span></tt>, which is what we want since <tt class="docutils literal"><span class="pre">u</span></tt> has length <tt class="docutils literal"><span class="pre">Nt+1</span></tt>.
-The first index in Python arrays or lists is <em>always</em> <tt class="docutils literal"><span class="pre">0</span></tt> and the
-last is then <tt class="docutils literal"><span class="pre">len(u)-1</span></tt>. The length of an array <tt class="docutils literal"><span class="pre">u</span></tt> is obtained by
-<tt class="docutils literal"><span class="pre">len(u)</span></tt> or <tt class="docutils literal"><span class="pre">u.size</span></tt>.</p>
-<p>To compute with the <tt class="docutils literal"><span class="pre">solver</span></tt> function, we need to <em>call</em> it. Here
-is a sample call:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-</pre></div>
-</div>
+<p>The <code class="docutils literal"><span class="pre">for</span></code> loop deserves a comment, especially for newcomers to Python.
+The construction <code class="docutils literal"><span class="pre">range(0,</span> <span class="pre">Nt,</span> <span class="pre">s)</span></code> generates all integers from <code class="docutils literal"><span class="pre">0</span></code> to <code class="docutils literal"><span class="pre">Nt</span></code>
+in steps of <code class="docutils literal"><span class="pre">s</span></code>, <em>but not including</em> <code class="docutils literal"><span class="pre">Nt</span></code>. Omitting <code class="docutils literal"><span class="pre">s</span></code> means <code class="docutils literal"><span class="pre">s=1</span></code>.
+For example, <code class="docutils literal"><span class="pre">range(0,</span> <span class="pre">6,</span> <span class="pre">3)</span></code>
+gives <code class="docutils literal"><span class="pre">0</span></code> and <code class="docutils literal"><span class="pre">3</span></code>, while <code class="docutils literal"><span class="pre">range(0,</span> <span class="pre">6)</span></code> generates
+the list <code class="docutils literal"><span class="pre">[0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">4,</span> <span class="pre">5]</span></code>.
+Our loop implies the following assignments to <code class="docutils literal"><span class="pre">u[n+1]</span></code>: <code class="docutils literal"><span class="pre">u[1]</span></code>, <code class="docutils literal"><span class="pre">u[2]</span></code>, ...,
+<code class="docutils literal"><span class="pre">u[Nt]</span></code>, which is what we want since <code class="docutils literal"><span class="pre">u</span></code> has length <code class="docutils literal"><span class="pre">Nt+1</span></code>.
+The first index in Python arrays or lists is <em>always</em> <code class="docutils literal"><span class="pre">0</span></code> and the
+last is then <code class="docutils literal"><span class="pre">len(u)-1</span></code> (the length of an array <code class="docutils literal"><span class="pre">u</span></code> is obtained by
+<code class="docutils literal"><span class="pre">len(u)</span></code> or <code class="docutils literal"><span class="pre">u.size</span></code>).</p>
 </div>
 <div class="section" id="integer-division">
 <h3>Integer division<a class="headerlink" href="#integer-division" title="Permalink to this headline">¶</a></h3>
-<p>The shown implementation of the <tt class="docutils literal"><span class="pre">solver</span></tt> may face problems and
-wrong results if <tt class="docutils literal"><span class="pre">T</span></tt>, <tt class="docutils literal"><span class="pre">a</span></tt>, <tt class="docutils literal"><span class="pre">dt</span></tt>, and <tt class="docutils literal"><span class="pre">theta</span></tt> are given as integers,
-see <a class="reference internal" href="._main_decay003.html#decay-exer-intdiv"><em>Exercise 2: Experiment with integer division</em></a> and <a class="reference internal" href="._main_decay003.html#decay-exer-decay1err"><em>Exercise 3: Experiment with wrong computations</em></a>.
-The problem is related to <em>integer division</em> in Python (as well as
-in Fortran, C, C++, and many other computer languages): <tt class="docutils literal"><span class="pre">1/2</span></tt> becomes <tt class="docutils literal"><span class="pre">0</span></tt>,
-while <tt class="docutils literal"><span class="pre">1.0/2</span></tt>, <tt class="docutils literal"><span class="pre">1/2.0</span></tt>, or <tt class="docutils literal"><span class="pre">1.0/2.0</span></tt> all become <tt class="docutils literal"><span class="pre">0.5</span></tt>. It is enough
+<p>The shown implementation of the <code class="docutils literal"><span class="pre">solver</span></code> may face problems and
+wrong results if <code class="docutils literal"><span class="pre">T</span></code>, <code class="docutils literal"><span class="pre">a</span></code>, <code class="docutils literal"><span class="pre">dt</span></code>, and <code class="docutils literal"><span class="pre">theta</span></code> are given as integers
+(see <a class="reference internal" href="._main_decay003.html#decay-exer-intdiv"><span>Exercise 3: Experiment with integer division</span></a> and <a class="reference internal" href="._main_decay003.html#decay-exer-decay1err"><span>Exercise 4: Experiment with wrong computations</span></a>).
+The problem is related to <em>integer division</em> in Python (as
+in Fortran, C, C++, and many other computer languages!): <code class="docutils literal"><span class="pre">1/2</span></code> becomes <code class="docutils literal"><span class="pre">0</span></code>,
+while <code class="docutils literal"><span class="pre">1.0/2</span></code>, <code class="docutils literal"><span class="pre">1/2.0</span></code>, or <code class="docutils literal"><span class="pre">1.0/2.0</span></code> all become <code class="docutils literal"><span class="pre">0.5</span></code>. So, it is enough
 that at least the nominator or the denominator is a real number
-(i.e., a <tt class="docutils literal"><span class="pre">float</span></tt> object)
-to ensure correct mathematical division. Inserting
-a conversion <tt class="docutils literal"><span class="pre">dt</span> <span class="pre">=</span> <span class="pre">float(dt)</span></tt>
-guarantees that <tt class="docutils literal"><span class="pre">dt</span></tt> is
-<tt class="docutils literal"><span class="pre">float</span></tt> and avoids problems in <a class="reference internal" href="._main_decay003.html#decay-exer-decay1err"><em>Exercise 3: Experiment with wrong computations</em></a>.</p>
+(i.e., a <code class="docutils literal"><span class="pre">float</span></code> object)
+to ensure a correct mathematical division. Inserting
+a conversion <code class="docutils literal"><span class="pre">dt</span> <span class="pre">=</span> <span class="pre">float(dt)</span></code>
+guarantees that <code class="docutils literal"><span class="pre">dt</span></code> is
+<code class="docutils literal"><span class="pre">float</span></code>.</p>
 <p>Another problem with computing <span class="math">\(N_t=T/\Delta t\)</span> is that we should
-round <span class="math">\(N_t\)</span> to the nearest integer. With <tt class="docutils literal"><span class="pre">Nt</span> <span class="pre">=</span> <span class="pre">int(T/dt)</span></tt> the <tt class="docutils literal"><span class="pre">int</span></tt>
-operation picks the largest integer smaller than <tt class="docutils literal"><span class="pre">T/dt</span></tt>. Correct
+round <span class="math">\(N_t\)</span> to the nearest integer. With <code class="docutils literal"><span class="pre">Nt</span> <span class="pre">=</span> <span class="pre">int(T/dt)</span></code> the <code class="docutils literal"><span class="pre">int</span></code>
+operation picks the largest integer smaller than <code class="docutils literal"><span class="pre">T/dt</span></code>. Correct
 mathematical rounding as known from school is obtained by</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">Nt</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="n">dt</span><span class="p">))</span>
 </pre></div>
 </div>
-<p>The complete version of our improved, safer <tt class="docutils literal"><span class="pre">solver</span></tt> function then becomes</p>
+<p>The complete version of our improved, safer <code class="docutils literal"><span class="pre">solver</span></code> function then becomes</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
@@ -255,8 +260,8 @@ mathematical rounding as known from school is obtained by</p>
 </div>
 <div class="section" id="doc-strings">
 <h3>Doc strings<a class="headerlink" href="#doc-strings" title="Permalink to this headline">¶</a></h3>
-<p id="index-2">Right below the header line in the <tt class="docutils literal"><span class="pre">solver</span></tt> function there is a
-Python string enclosed in triple double quotes <tt class="docutils literal"><span class="pre">&quot;&quot;&quot;</span></tt>.
+<p id="index-2">Right below the header line in the <code class="docutils literal"><span class="pre">solver</span></code> function there is a
+Python string enclosed in triple double quotes <code class="docutils literal"><span class="pre">&quot;&quot;&quot;</span></code>.
 The purpose of this string object is to document what the function
 does and what the arguments are. In this case the necessary
 documentation do not span more than one line, but with triple double
@@ -282,25 +287,27 @@ quoted strings the text may span several lines:</p>
 a function are called <em>doc strings</em>. There are tools that can automatically
 produce nicely formatted documentation by extracting the definition of
 functions and the contents of doc strings.</p>
-<p>It is strongly recommended to equip any function whose purpose
-is not obvious with a doc string. Nevertheless, the forthcoming
+<p>It is strongly recommended to equip any function with a doc string,
+unless the purpose of the function
+is not obvious. Nevertheless, the forthcoming
 text deviates from this rule if the function is explained in the text.</p>
 </div>
-<div class="section" id="formatting-of-numbers">
-<h3>Formatting of numbers<a class="headerlink" href="#formatting-of-numbers" title="Permalink to this headline">¶</a></h3>
-<p>Having computed the discrete solution <tt class="docutils literal"><span class="pre">u</span></tt>, it is natural to look at
+<div class="section" id="formatting-numbers">
+<h3>Formatting numbers<a class="headerlink" href="#formatting-numbers" title="Permalink to this headline">¶</a></h3>
+<p>Having computed the discrete solution <code class="docutils literal"><span class="pre">u</span></code>, it is natural to look at
 the numbers:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="c"># Write out a table of t and u values:</span>
 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)):</span>
     <span class="k">print</span> <span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>This compact <tt class="docutils literal"><span class="pre">print</span></tt> statement gives unfortunately quite ugly output
-because the <tt class="docutils literal"><span class="pre">t</span></tt> and <tt class="docutils literal"><span class="pre">u</span></tt> values are not aligned in nicely formatted columns.
-To fix this problem, we recommend to use the <em>printf format</em>, supported most
+<p>This compact <code class="docutils literal"><span class="pre">print</span></code> statement unfortunately gives less readable output
+because the <code class="docutils literal"><span class="pre">t</span></code> and <code class="docutils literal"><span class="pre">u</span></code> values are not aligned in nicely formatted columns.
+To fix this problem, we recommend to use the <em>printf format</em>, supported in most
 programming languages inherited from C. Another choice is
-Python&#8217;s recent <em>format string syntax</em>.</p>
-<p id="index-3">Writing <tt class="docutils literal"><span class="pre">t[i]</span></tt> and <tt class="docutils literal"><span class="pre">u[i]</span></tt> in two nicely formatted columns is done like
+Python&#8217;s recent <em>format string syntax</em>. Both kind of syntax is illustrated
+below.</p>
+<p id="index-3">Writing <code class="docutils literal"><span class="pre">t[i]</span></code> and <code class="docutils literal"><span class="pre">u[i]</span></code> in two nicely formatted columns is done like
 this with the printf format:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">print</span> <span class="s">&#39;t=</span><span class="si">%6.3f</span><span class="s"> u=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
 </pre></div>
@@ -308,10 +315,11 @@ this with the printf format:</p>
 <p>The percentage signs signify &#8220;slots&#8221; in the text where the variables
 listed at the end of the statement are inserted. For each &#8220;slot&#8221; one
 must specify a format for how the variable is going to appear in the
-string: <tt class="docutils literal"><span class="pre">s</span></tt> for pure text, <tt class="docutils literal"><span class="pre">d</span></tt> for an integer, <tt class="docutils literal"><span class="pre">g</span></tt> for a real number
-written as compactly as possible, <tt class="docutils literal"><span class="pre">9.3E</span></tt> for scientific notation with
-three decimals in a field of width 9 characters (e.g., <tt class="docutils literal"><span class="pre">-1.351E-2</span></tt>),
-or <tt class="docutils literal"><span class="pre">.2f</span></tt> for standard decimal notation with two decimals
+string: <code class="docutils literal"><span class="pre">f</span></code> for float (with 6 decimals),
+<code class="docutils literal"><span class="pre">s</span></code> for pure text, <code class="docutils literal"><span class="pre">d</span></code> for an integer, <code class="docutils literal"><span class="pre">g</span></code> for a real number
+written as compactly as possible, <code class="docutils literal"><span class="pre">9.3E</span></code> for scientific notation with
+three decimals in a field of width 9 characters (e.g., <code class="docutils literal"><span class="pre">-1.351E-2</span></code>),
+or <code class="docutils literal"><span class="pre">.2f</span></code> for standard decimal notation with two decimals
 formatted with minimum width. The printf syntax provides a quick way
 of formatting tabular output of numbers with full control of the
 layout.</p>
@@ -320,7 +328,7 @@ layout.</p>
 </pre></div>
 </div>
 <p>As seen, this format allows logical names in the &#8220;slots&#8221; where
-<tt class="docutils literal"><span class="pre">t[i]</span></tt> and <tt class="docutils literal"><span class="pre">u[i]</span></tt> are to be inserted. The &#8220;slots&#8221; are surrounded
+<code class="docutils literal"><span class="pre">t[i]</span></code> and <code class="docutils literal"><span class="pre">u[i]</span></code> are to be inserted. The &#8220;slots&#8221; are surrounded
 by curly braces, and the logical name is followed by a colon and
 then the printf-like specification of how to format real numbers,
 integers, or strings.</p>
@@ -328,22 +336,22 @@ integers, or strings.</p>
 <div class="section" id="running-the-program">
 <h3>Running the program<a class="headerlink" href="#running-the-program" title="Permalink to this headline">¶</a></h3>
 <p>The function and main program shown above must be placed in a file,
-say with name <a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay_v1.py">decay_v1.py</a> (<tt class="docutils literal"><span class="pre">v1</span></tt> for 1st version of this program).  Make sure you
+say with name <a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay_v1.py">decay_v1.py</a> (<code class="docutils literal"><span class="pre">v1</span></code> for 1st version of this program).  Make sure you
 write the code with a suitable text editor (Gedit, Emacs, Vim,
 Notepad++, or similar).  The program is run by executing the file this
 way:</p>
 <div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python decay_v1.py
 </pre></div>
 </div>
-<p>The text <tt class="docutils literal"><span class="pre">Terminal&gt;</span></tt> just indicates a prompt in a
-Unix/Linux or DOS terminal window. After this prompt, which will look
-different in your terminal window, depending on the terminal application
-and how it is set up, commands like <tt class="docutils literal"><span class="pre">python</span> <span class="pre">decay_v1.py</span></tt> can be issued.
+<p>The text <code class="docutils literal"><span class="pre">Terminal&gt;</span></code> just indicates a prompt in a
+Unix/Linux or DOS terminal window. After this prompt, which may look
+different in your terminal window (depending on the terminal application
+and how it is set up), commands like <code class="docutils literal"><span class="pre">python</span> <span class="pre">decay_v1.py</span></code> can be issued.
 These commands are interpreted by the operating system.</p>
 <p>We strongly recommend to run Python programs within the IPython shell.
-First start IPython by typing <tt class="docutils literal"><span class="pre">ipython</span></tt> in the terminal window.
-Inside the IPython shell, our program <tt class="docutils literal"><span class="pre">decay_v1.py</span></tt> is run by the command
-<tt class="docutils literal"><span class="pre">run</span> <span class="pre">decay_v1.py</span></tt>:</p>
+First start IPython by typing <code class="docutils literal"><span class="pre">ipython</span></code> in the terminal window.
+Inside the IPython shell, our program <code class="docutils literal"><span class="pre">decay_v1.py</span></code> is run by the command
+<code class="docutils literal"><span class="pre">run</span> <span class="pre">decay_v1.py</span></code>:</p>
 <div class="highlight-text"><div class="highlight"><pre>Terminal&gt; ipython
 
 In [1]: run decay_v1.py
@@ -363,17 +371,17 @@ In [2]:
 </pre></div>
 </div>
 <p>The advantage of running programs in IPython are many: previous commands
-are easily recalled with the up arrow, <tt class="docutils literal"><span class="pre">%pdb</span></tt> turns on debugging so that
+are easily recalled with the up arrow, <code class="docutils literal"><span class="pre">%pdb</span></code> turns on a debugger so that
 variables can be examined if the program
-aborts due to an exception, output of commands are stored in variables,
-programs and statements can be profiled,
+aborts (due to a Python exception), output of commands are stored in variables,
+the computing time spent on a set of statements can be measured,
 any operating system command can be executed, modules can be loaded
 automatically and other customizations can be performed when starting
 IPython &#8211; to mention a few of the most
 useful features.</p>
 <p>Although running programs in IPython is strongly recommended, most
 execution examples in the forthcoming text use the standard
-Python shell with prompt <tt class="docutils literal"><span class="pre">&gt;&gt;&gt;</span></tt> and run programs through
+Python shell with prompt <code class="docutils literal"><span class="pre">&gt;&gt;&gt;</span></code> and run programs through
 a typesetting like</p>
 <div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python programname
 </pre></div>
@@ -384,16 +392,16 @@ than showing sessions with IPython syntax.</p>
 <span class="target" id="index-5"></span></div>
 <div class="section" id="plotting-the-solution">
 <span id="index-6"></span><h3>Plotting the solution<a class="headerlink" href="#plotting-the-solution" title="Permalink to this headline">¶</a></h3>
-<p>Having the <tt class="docutils literal"><span class="pre">t</span></tt> and <tt class="docutils literal"><span class="pre">u</span></tt> arrays, the approximate solution <tt class="docutils literal"><span class="pre">u</span></tt> is visualized
-by the intuitive command <tt class="docutils literal"><span class="pre">plot(t,</span> <span class="pre">u)</span></tt>:</p>
+<p>Having the <code class="docutils literal"><span class="pre">t</span></code> and <code class="docutils literal"><span class="pre">u</span></code> arrays, the approximate solution <code class="docutils literal"><span class="pre">u</span></code> is visualized
+by the intuitive command <code class="docutils literal"><span class="pre">plot(t,</span> <span class="pre">u)</span></code>:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
 <span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>It will be illustrative to also plot <span class="math">\({u_{\small\mbox{e}}}(t)\)</span> for comparison. We first
-need to make a function for computing the analytical solution <span class="math">\({u_{\small\mbox{e}}}(t)=Ie^{-at}\)</span>
-of the model problem:</p>
+<p>It will be illustrative to also plot the exact solution
+<span class="math">\({u_{\small\mbox{e}}}(t)=Ie^{-at}\)</span> for comparison. We first
+need to make a Python function for computing the exact solution:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">exact_solution</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">I</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
 </pre></div>
@@ -403,8 +411,8 @@ of the model problem:</p>
 <span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">u_e</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>However, this is not exactly what we want: the <tt class="docutils literal"><span class="pre">plot</span></tt> function draws
-straight lines between the discrete points <tt class="docutils literal"><span class="pre">(t[n],</span> <span class="pre">u_e[n])</span></tt> while
+<p>However, this is not exactly what we want: the <code class="docutils literal"><span class="pre">plot</span></code> function draws
+straight lines between the discrete points <code class="docutils literal"><span class="pre">(t[n],</span> <span class="pre">u_e[n])</span></code> while
 <span class="math">\({u_{\small\mbox{e}}}(t)\)</span> varies as an exponential function between the mesh points.
 The technique for showing the &#8220;exact&#8221; variation of <span class="math">\({u_{\small\mbox{e}}}(t)\)</span> between
 the mesh points is to introduce a very fine mesh for <span class="math">\({u_{\small\mbox{e}}}(t)\)</span>:</p>
@@ -418,9 +426,9 @@ the mesh points is to introduce a very fine mesh for <span class="math">\({u_{\s
 </pre></div>
 </div>
 <p>With more than one curve in the plot we need to associate each curve
-with a legend. We also want appropriate names on the axis, a title,
+with a legend. We also want appropriate names on the axes, a title,
 and a file containing the plot as an image for inclusion in reports.
-The Matplotlib package (<tt class="docutils literal"><span class="pre">matplotlib.pyplot</span></tt>) contains functions for
+The Matplotlib package (<code class="docutils literal"><span class="pre">matplotlib.pyplot</span></code>) contains functions for
 this purpose. The names of the functions are similar to the plotting
 functions known from MATLAB.  A complete function for creating
 the comparison plot becomes</p>
@@ -445,18 +453,18 @@ the comparison plot becomes</p>
 <span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Note that <tt class="docutils literal"><span class="pre">savefig</span></tt> here creates a PNG file whose name reflects the
+<p>Note that <code class="docutils literal"><span class="pre">savefig</span></code> here creates a PNG file whose name includes the
 values of <span class="math">\(\theta\)</span> and <span class="math">\(\Delta t\)</span> so that we can easily distinguish
 files from different runs with <span class="math">\(\theta\)</span> and <span class="math">\(\Delta t\)</span>.</p>
 <p>The complete code is found in the file
 <a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay_v2.py">decay_v2.py</a>. The resulting plot
-is shown in Figure <a class="reference internal" href="#decay-fig-v2"><em>Comparison of numerical and exact solution</em></a>. As seen, there is quite some
+is shown in Figure <a class="reference internal" href="#decay-fig-v2"><span>Comparison of numerical and exact solution</span></a>. As seen, there is quite some
 discrepancy between the exact and the numerical solution.
 Fortunately, the numerical solution approaches the exact one as
 <span class="math">\(\Delta t\)</span> is reduced.</p>
-<div class="figure" id="decay-fig-v2">
-<a class="reference internal image-reference" href="_images/decay_v2.png"><img alt="_images/decay_v2.png" src="_images/decay_v2.png" style="width: 500px;" /></a>
-<p class="caption"><em>Comparison of numerical and exact solution</em></p>
+<div class="figure" id="id7">
+<span id="decay-fig-v2"></span><a class="reference internal image-reference" href="_images/decay_v2.png"><img alt="_images/decay_v2.png" src="_images/decay_v2.png" style="width: 500px;" /></a>
+<p class="caption"><span class="caption-text"><em>Comparison of numerical and exact solution</em></span></p>
 </div>
 </div>
 </div>
@@ -464,28 +472,44 @@ Fortunately, the numerical solution approaches the exact one as
 <h2>Verifying the implementation<a class="headerlink" href="#verifying-the-implementation" title="Permalink to this headline">¶</a></h2>
 <p>It is easy to make mistakes while deriving and implementing numerical
 algorithms, so we should never believe in the solution before it has
-been thoroughly verified.  The most obvious idea to verify the
+been thoroughly verified.  The most obvious idea for verification
+of the
 computations is to compare the numerical solution with the exact
-solution, when that exists, but there will always be a discrepancy
+solution, when that exists. However, note that there will always
+be a discrepancy
 between these two solutions because of the numerical
-approximations. The challenging question is whether we have the
+approximations. We cannot precisely quantify the approximation
+errors. The challenging question is therefore whether we have the
 mathematically correct discrepancy or if we have another, maybe small,
-discrepancy due to both an approximation error and an error in the
-implementation. When looking at Figure <a class="reference internal" href="#decay-fig-v2"><em>Comparison of numerical and exact solution</em></a>, it is
-impossible to judge whether the program is correct or not.</p>
-<p>The purpose of <em>verifying</em> a program is to bring evidence for the
-property that there are no errors in the implementation. To avoid
-mixing unavoidable approximation errors and undesired implementation
-errors, we should try to make tests where we have some exact
+discrepancy due to both an approximation error <em>and</em> an error in the
+implementation. It is thus
+impossible to judge whether the program is correct or not by
+just looking at the graphs in Figure <a class="reference internal" href="#decay-fig-v2"><span>Comparison of numerical and exact solution</span></a>.</p>
+<div class="admonition-verification-and-validation admonition">
+<p class="first admonition-title">Verification and validation</p>
+<p class="last">The purpose of <em>verifying</em> a program is to bring evidence for the
+property that there are no errors in the implementation. A related
+term, <em>validate</em> (and <em>validation</em>),
+addresses the question if the ODE model is a good
+representation of the phenomena we want to simulate. To remember the
+difference between verification and validation, verification is
+about <em>solving the equations right</em>, while validation is about <em>solving
+the right equations</em>. We must always perform a verification before
+it is meaningful to believe in the computations and perform validation
+(which compares the program results with physical experiments or observations).</p>
+</div>
+<p>To avoid
+mixing the unavoidable numerical approximation errors and the
+undesired implementation errors, we should try to make tests where
+we have some exact
 computation of the discrete solution or at least parts of it.
 Examples will show how this can be done.</p>
 <div class="section" id="running-a-few-algorithmic-steps-by-hand">
 <h3>Running a few algorithmic steps by hand<a class="headerlink" href="#running-a-few-algorithmic-steps-by-hand" title="Permalink to this headline">¶</a></h3>
-<p>The simplest approach to produce a correct non-trivial
-reference solution for the discrete
-solution <span class="math">\(u\)</span> of finite difference equations is to compute a few
-steps of the algorithm by hand. Then we can compare the hand
-calculations with numbers produced by the program.</p>
+<p>The simplest approach to produce a correct non-trivial reference
+solution for the discrete solution <span class="math">\(u\)</span>, is to compute a few steps of
+the algorithm by hand. Then we can compare the hand calculations with
+numbers produced by the program.</p>
 <p>A straightforward approach is to use a calculator and
 compute <span class="math">\(u^1\)</span>, <span class="math">\(u^2\)</span>, and <span class="math">\(u^3\)</span>. With <span class="math">\(I=0.1\)</span>, <span class="math">\(\theta=0.8\)</span>,
 and <span class="math">\(\Delta t =0.8\)</span> we get</p>
@@ -496,7 +520,7 @@ and <span class="math">\(\Delta t =0.8\)</span> we get</p>
 u^2 &amp;= Au^1= 0.00889504462912,\\
 u^3 &amp;=Au^2= 0.00265290804728\end{split}\]</div>
 <p>Comparison of these manual calculations with the result of the
-<tt class="docutils literal"><span class="pre">solver</span></tt> function is carried out in the function</p>
+<code class="docutils literal"><span class="pre">solver</span></code> function is carried out in the function</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_solver_three_steps</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Compare three steps with known manual computations.&quot;&quot;&quot;</span>
     <span class="n">theta</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">;</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="n">I</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">;</span> <span class="n">dt</span> <span class="o">=</span> <span class="mf">0.8</span>
@@ -514,17 +538,21 @@ u^3 &amp;=Au^2= 0.00265290804728\end{split}\]</div>
     <span class="k">assert</span> <span class="n">success</span>
 </pre></div>
 </div>
-<p>The <tt class="docutils literal"><span class="pre">test_solver_three_steps</span></tt> function follows widely used conventions
+<p>The <code class="docutils literal"><span class="pre">test_solver_three_steps</span></code> function follows widely used conventions
 for <em>unit testing</em>. By following such conventions we can at a later
-stage easily execute a big test suite for our software. The
-conventions are three-fold:</p>
+stage easily execute a big test suite for our software. That is, after
+a small modification is made to the program, we can by typing just
+a short command, run through a large number of tests to check that the
+modifications do not break any computations.
+The conventions boil down to three rules:</p>
 <blockquote>
 <div><ul class="simple">
-<li>The test function starts with <tt class="docutils literal"><span class="pre">test_</span></tt> and takes no arguments.</li>
-<li>The test ends up in a boolean expression that is <tt class="docutils literal"><span class="pre">True</span></tt> if
-the test passed and <tt class="docutils literal"><span class="pre">False</span></tt> if it failed.</li>
-<li>The function runs <tt class="docutils literal"><span class="pre">assert</span></tt> on the boolean expression, resulting
-in program abortion (due to an <tt class="docutils literal"><span class="pre">AssertionError</span></tt> exception) if
+<li>The test function name must start with <code class="docutils literal"><span class="pre">test_</span></code> and the function
+cannot take any arguments.</li>
+<li>The test must end up in a boolean expression that is <code class="docutils literal"><span class="pre">True</span></code> if
+the test was passed and <code class="docutils literal"><span class="pre">False</span></code> if it failed.</li>
+<li>The function must run <code class="docutils literal"><span class="pre">assert</span></code> on the boolean expression, resulting
+in program abortion (due to an <code class="docutils literal"><span class="pre">AssertionError</span></code> exception) if
 the test failed.</li>
 </ul>
 </div></blockquote>
@@ -535,7 +563,7 @@ solving the real problem:</p>
 <span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>(Rather than calling <tt class="docutils literal"><span class="pre">test_*()</span></tt> functions explicitly, one will
+<p>(Rather than calling <code class="docutils literal"><span class="pre">test_*()</span></code> functions explicitly, one will
 normally ask a testing framework like nose
 or pytest to find and run such functions.)
 The complete program including the verification above is
@@ -544,51 +572,53 @@ found in the file <a class="reference external" href="http://tinyurl.com/nm5587k
 </div>
 <div class="section" id="computing-the-numerical-error-as-a-mesh-function">
 <span id="decay-computing-error"></span><h2>Computing the numerical error as a mesh function<a class="headerlink" href="#computing-the-numerical-error-as-a-mesh-function" title="Permalink to this headline">¶</a></h2>
-<p>Now that we have some evidence for a correct implementation, we are in a
-position to compare the computed <span class="math">\(u^n\)</span> values in the <tt class="docutils literal"><span class="pre">u</span></tt> array with
+<p>Now that we have some evidence for a correct implementation, we are in
+position to compare the computed <span class="math">\(u^n\)</span> values in the <code class="docutils literal"><span class="pre">u</span></code> array with
 the exact <span class="math">\(u\)</span> values at the mesh points, in order to study the error
 in the numerical solution.</p>
 <p id="index-7">A natural way to compare the exact and discrete solutions is to
-calculate their difference as a mesh function:</p>
+calculate their difference as a mesh function for the error:</p>
 <div class="math">
 \[e^n = {u_{\small\mbox{e}}}(t_n) - u^n,\quad n=0,1,\ldots,N_t {\thinspace .}\]</div>
-<p>We may view <span class="math">\({u_{\small\mbox{e}}}^n = {u_{\small\mbox{e}}}(t_n)\)</span> as the representation of <span class="math">\({u_{\small\mbox{e}}}(t)\)</span>
-as a mesh function rather than a continuous function defined for all
-<span class="math">\(t\in [0,T]\)</span> (<span class="math">\({u_{\small\mbox{e}}}^n\)</span> is often called the <em>representative</em> of
-<span class="math">\({u_{\small\mbox{e}}}\)</span> on the mesh). Then, <span class="math">\(e^n = {u_{\small\mbox{e}}}^n - u^n\)</span> is clearly
-the difference of two mesh functions. This interpretation of <span class="math">\(e^n\)</span>
-is natural when programming.</p>
+<p>We may view the mesh function
+<span class="math">\({u_{\small\mbox{e}}}^n = {u_{\small\mbox{e}}}(t_n)\)</span> as a representation of the continuous function <span class="math">\({u_{\small\mbox{e}}}(t)\)</span>
+defined for all <span class="math">\(t\in [0,T]\)</span>. In fact,
+<span class="math">\({u_{\small\mbox{e}}}^n\)</span> is often called the <em>representative</em> of
+<span class="math">\({u_{\small\mbox{e}}}\)</span> on the mesh. Then, <span class="math">\(e^n = {u_{\small\mbox{e}}}^n - u^n\)</span> is clearly
+the difference of two mesh functions.</p>
 <p>The error mesh function <span class="math">\(e^n\)</span> can be computed by</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">u</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>  <span class="c"># Numerical sol.</span>
 <span class="n">u_e</span> <span class="o">=</span> <span class="n">exact_solution</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>      <span class="c"># Representative of exact sol.</span>
 <span class="n">e</span> <span class="o">=</span> <span class="n">u_e</span> <span class="o">-</span> <span class="n">u</span>
 </pre></div>
 </div>
-<p>Note that the mesh functions <tt class="docutils literal"><span class="pre">u</span></tt> and <tt class="docutils literal"><span class="pre">u_e</span></tt> are represented by arrays
-and associated with the points in the array <tt class="docutils literal"><span class="pre">t</span></tt>.</p>
-<span class="target" id="index-8"></span><div class="admonition-array-arithmetics admonition" id="index-9">
+<p>Note that the mesh functions <code class="docutils literal"><span class="pre">u</span></code> and <code class="docutils literal"><span class="pre">u_e</span></code> are represented by arrays
+and associated with the points in the array <code class="docutils literal"><span class="pre">t</span></code>.</p>
+<span class="target" id="index-8"></span><span class="target" id="index-9"></span><div class="admonition-array-arithmetics admonition" id="index-10">
 <p class="first admonition-title">Array arithmetics</p>
 <p>The last statements</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">u_e</span> <span class="o">=</span> <span class="n">exact_solution</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
 <span class="n">e</span> <span class="o">=</span> <span class="n">u_e</span> <span class="o">-</span> <span class="n">u</span>
 </pre></div>
 </div>
-<p class="last">are primary examples of array arithmetics: <tt class="docutils literal"><span class="pre">t</span></tt> is an
-array of mesh points that we pass to <tt class="docutils literal"><span class="pre">exact_solution</span></tt>. This function
-evaluates <tt class="docutils literal"><span class="pre">-a*t</span></tt>, which is a scalar times an array, meaning that
+<p>demonstrate some standard examples of array arithmetics: <code class="docutils literal"><span class="pre">t</span></code> is an
+array of mesh points that we pass to <code class="docutils literal"><span class="pre">exact_solution</span></code>. This function
+evaluates <code class="docutils literal"><span class="pre">-a*t</span></code>, which is a scalar times an array, meaning that
 the scalar is multiplied with each array element.
-The result is an array, let us call it <tt class="docutils literal"><span class="pre">tmp1</span></tt>. Then
-<tt class="docutils literal"><span class="pre">exp(tmp1)</span></tt> means applying the exponential function to each element in
-<tt class="docutils literal"><span class="pre">tmp</span></tt>, resulting an array, say <tt class="docutils literal"><span class="pre">tmp2</span></tt>. Finally, <tt class="docutils literal"><span class="pre">I*tmp2</span></tt> is computed
-(scalar times array) and <tt class="docutils literal"><span class="pre">u_e</span></tt> refers to this array returned from
-<tt class="docutils literal"><span class="pre">exact_solution</span></tt>. The expression <tt class="docutils literal"><span class="pre">u_e</span> <span class="pre">-</span> <span class="pre">u</span></tt> is the difference between
-two arrays, resulting in a new array referred to by <tt class="docutils literal"><span class="pre">e</span></tt>.</p>
+The result is an array, let us call it <code class="docutils literal"><span class="pre">tmp1</span></code>. Then
+<code class="docutils literal"><span class="pre">exp(tmp1)</span></code> means applying the exponential function to each element in
+<code class="docutils literal"><span class="pre">tmp1</span></code>, giving an array, say <code class="docutils literal"><span class="pre">tmp2</span></code>. Finally, <code class="docutils literal"><span class="pre">I*tmp2</span></code> is computed
+(scalar times array) and <code class="docutils literal"><span class="pre">u_e</span></code> refers to this array returned from
+<code class="docutils literal"><span class="pre">exact_solution</span></code>. The expression <code class="docutils literal"><span class="pre">u_e</span> <span class="pre">-</span> <span class="pre">u</span></code> is the difference between
+two arrays, resulting in a new array referred to by <code class="docutils literal"><span class="pre">e</span></code>.</p>
+<p class="last">Replacement of array element computations inside a loop by array
+arithmetics is known as <em>vectorization</em>.</p>
 </div>
 </div>
-<div class="section" id="computing-the-norm-of-the-numerical-error">
-<span id="decay-computing-error-norm"></span><h2>Computing the norm of the numerical error<a class="headerlink" href="#computing-the-norm-of-the-numerical-error" title="Permalink to this headline">¶</a></h2>
-<span class="target" id="index-10"></span><p id="index-11">Instead of working with the error <span class="math">\(e^n\)</span> on the entire mesh, we
-often want one number expressing the size of the error.
+<div class="section" id="computing-the-norm-of-the-error-mesh-function">
+<span id="decay-computing-error-norm"></span><h2>Computing the norm of the error mesh function<a class="headerlink" href="#computing-the-norm-of-the-error-mesh-function" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="index-11"></span><p id="index-12">Instead of working with the error <span class="math">\(e^n\)</span> on the entire mesh, we
+often want a single number expressing the size of the error.
 This is obtained by taking the norm of the error function.</p>
 <p>Let us first define norms of a function <span class="math">\(f(t)\)</span>
 defined for all <span class="math">\(t\in [0,T]\)</span>.
@@ -603,14 +633,20 @@ Three common norms are</p>
 has nice mathematical properties and
 is the most popular norm. It is a generalization
 of the well-known Eucledian norm of vectors to functions.
-The <span class="math">\(L^\infty\)</span> is also called the max norm or the supremum norm.
-In fact, there is a whole family of norms,</p>
+The <span class="math">\(L^1\)</span> norm looks simpler and more intuitive, but has less
+nice mathematical properties compared to the two other norms, so
+it is much less used in computations.
+The <span class="math">\(L^\infty\)</span> is also called the max norm or the supremum norm
+and is widely used. It focuses on a single point with the largest
+value of <span class="math">\(|f|\)</span>, while the other norms measure average behavior of
+the function.</p>
+<p>In fact, there is a whole family of norms,</p>
 <div class="math">
 \[||f||_{L^p} = \left(\int_0^T f(t)^pdt\right)^{1/p},\]</div>
 <p>with <span class="math">\(p\)</span> real. In particular,
 <span class="math">\(p=1\)</span> corresponds to the <span class="math">\(L^1\)</span> norm above while <span class="math">\(p=\infty\)</span> is the
 <span class="math">\(L^\infty\)</span> norm.</p>
-<span class="target" id="index-12"></span><span class="target" id="index-13"></span><p id="index-14">Numerical computations involving mesh functions need corresponding norms.
+<span class="target" id="index-13"></span><span class="target" id="index-14"></span><p id="index-15">Numerical computations involving mesh functions need corresponding norms.
 Given a set of function values, <span class="math">\(f^n\)</span>, and some associated mesh points, <span class="math">\(t_n\)</span>,
 a numerical integration rule can be used to calculate the <span class="math">\(L^2\)</span> and
 <span class="math">\(L^1\)</span> norms defined above. Imagining that the mesh function is extended
@@ -626,29 +662,34 @@ convenience of having a simpler formula, is</p>
 <div class="math">
 \[||f^n||_{\ell^2} = \left(\Delta t\sum_{n=0}^{N_t} (f^n)^2\right)^{1/2} {\thinspace .}\]</div>
 <p>This is called the discrete <span class="math">\(L^2\)</span> norm and denoted by <span class="math">\(\ell^2\)</span>.
-The error in <span class="math">\(||f||_{\ell^2}^2\)</span> compared with the Trapezoidal
-integration formula
-is <span class="math">\(\Delta t((f^0)^2 + (f^{N_t})^2)/2\)</span>, which means perturbed weights
-at the end points of the mesh function, and the error goes to zero as
-<span class="math">\(\Delta t\rightarrow 0\)</span>. As long as we are consistent and
+If <span class="math">\(||f||_{\ell^2}^2\)</span> (i.e., the square of the norm) is used
+instead of the Trapezoidal integration formula,
+the error
+is <span class="math">\(\Delta t((f^0)^2 + (f^{N_t})^2)/2\)</span>. This means that the
+weights at the end points of the mesh function are perturbed,
+but as <span class="math">\(\Delta t\rightarrow 0\)</span>, the error from this perturbation goes
+to zero. As long as we are consistent and
 stick to one kind of integration
 rule for the norm of a mesh function, the details and accuracy of this
-rule is not of concern.</p>
+rule is of no concern.</p>
 <p>The three discrete norms for a mesh function <span class="math">\(f^n\)</span>, corresponding to
 the <span class="math">\(L^2\)</span>, <span class="math">\(L^1\)</span>, and <span class="math">\(L^\infty\)</span> norms of <span class="math">\(f(t)\)</span> defined above, are
 defined by</p>
 <div class="math" id="equation-decay:norms:l2">
-<span id="id2"></span><span class="eqno">(4)</span>\[     ||f^n||_{\ell^2}  \left( \Delta t\sum_{n=0}^{N_t} (f^n)^2\right)^{1/2},\]</div>
+<span id="id2"></span><span class="eqno">(4)</span>\[     ||f^n||_{\ell^2} = \left( \Delta t\sum_{n=0}^{N_t} (f^n)^2\right)^{1/2},\]</div>
 <div class="math" id="equation-decay:norms:l1">
-<span id="id3"></span><span class="eqno">(5)</span>\[     ||f^n||_{\ell^1}  \Delta t\sum_{n=0}^{N_t} |f^n|\]</div>
+<span id="id3"></span><span class="eqno">(5)</span>\[     ||f^n||_{\ell^1} = \Delta t\sum_{n=0}^{N_t} |f^n|\]</div>
 <div class="math" id="equation-decay:norms:linf">
-<span id="id4"></span><span class="eqno">(6)</span>\[     ||f^n||_{\ell^\infty}  \max_{0\leq n\leq N_t}|f^n|{\thinspace .}\]</div>
+<span id="id4"></span><span class="eqno">(6)</span>\[     ||f^n||_{\ell^\infty} = \max_{0\leq n\leq N_t}|f^n|{\thinspace .}\]</div>
 <p>Note that the <span class="math">\(L^2\)</span>, <span class="math">\(L^1\)</span>, <span class="math">\(\ell^2\)</span>, and <span class="math">\(\ell^1\)</span> norms depend on the
 length of the interval of interest (think of <span class="math">\(f=1\)</span>, then the
 norms are proportional to <span class="math">\(\sqrt{T}\)</span> or <span class="math">\(T\)</span>). In some applications it
 is convenient to think of a mesh function as just a vector of function
-values and neglect the information of the mesh points. Then we can
-replace <span class="math">\(\Delta t\)</span> by <span class="math">\(T/N_t\)</span> and drop <span class="math">\(T\)</span>. Moreover, it is convenient
+values without any relation to the interval <span class="math">\([0,T]\)</span>.
+Then one can replace <span class="math">\(\Delta t\)</span> by <span class="math">\(T/N_t\)</span> and simply drop <span class="math">\(T\)</span> (which
+is just a common scaling factor in the norm,
+independent of the vector of function
+values). Moreover, people prefer
 to divide by the total length of the vector, <span class="math">\(N_t+1\)</span>, instead of <span class="math">\(N_t\)</span>.
 This reasoning gives rise to the <em>vector norms</em> for a vector
 <span class="math">\(f=(f_0,\ldots,f_{N})\)</span>:</p>
@@ -666,7 +707,7 @@ norm <a href="#equation-decay:norms:l2">(4)</a> or the max norm <span class="mat
 <a href="#equation-decay:norms:vl2">(7)</a>-<a href="#equation-decay:norms:vlinf">(9)</a> are also much used
 in numerical computations, so it is important to know the different
 norms and the relations between them.</p>
-<p id="index-15">A single number that expresses the size of the numerical error
+<p id="index-16">A single number that expresses the size of the numerical error
 will be taken as <span class="math">\(||e^n||_{\ell^2}\)</span> and called <span class="math">\(E\)</span>:</p>
 <div class="math" id="equation-decay:E">
 <span id="eq-decay-e"></span><span class="eqno">(10)</span>\[     E = \sqrt{\Delta t\sum_{n=0}^{N_t} (e^n)^2}\]</div>
@@ -674,12 +715,12 @@ will be taken as <span class="math">\(||e^n||_{\ell^2}\)</span> and called <span
 <div class="highlight-python"><div class="highlight"><pre><span class="n">E</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">dt</span><span class="o">*</span><span class="nb">sum</span><span class="p">(</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
 </pre></div>
 </div>
-<p>The <tt class="docutils literal"><span class="pre">sum</span></tt> function comes from <tt class="docutils literal"><span class="pre">numpy</span></tt> and computes the sum of the elements
-of an array. Also the <tt class="docutils literal"><span class="pre">sqrt</span></tt> function is from <tt class="docutils literal"><span class="pre">numpy</span></tt> and computes the
+<p>The <code class="docutils literal"><span class="pre">sum</span></code> function comes from <code class="docutils literal"><span class="pre">numpy</span></code> and computes the sum of the elements
+of an array. Also the <code class="docutils literal"><span class="pre">sqrt</span></code> function is from <code class="docutils literal"><span class="pre">numpy</span></code> and computes the
 square root of each element in the array argument.</p>
 <div class="section" id="scalar-computing">
-<span id="index-16"></span><h3>Scalar computing<a class="headerlink" href="#scalar-computing" title="Permalink to this headline">¶</a></h3>
-<p>Instead of doing array computing <tt class="docutils literal"><span class="pre">sqrt(dt*sum(e**2))</span></tt> we can compute with
+<span id="index-17"></span><h3>Scalar computing<a class="headerlink" href="#scalar-computing" title="Permalink to this headline">¶</a></h3>
+<p>Instead of doing array computing <code class="docutils literal"><span class="pre">sqrt(dt*sum(e**2))</span></code> we can compute with
 one element at a time:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>     <span class="c"># length of u array (alt: u.size)</span>
 <span class="n">u_e</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
@@ -703,11 +744,11 @@ can achieve with array computing.</p>
 </div>
 <div class="section" id="experiments-with-computing-and-plotting">
 <h2>Experiments with computing and plotting<a class="headerlink" href="#experiments-with-computing-and-plotting" title="Permalink to this headline">¶</a></h2>
-<p>Let us wrap up the computation of the error measure and all the
-plotting statements for comparing the exact and numerical
-solution in a new function <tt class="docutils literal"><span class="pre">explore</span></tt>. This function
-can be called for various <span class="math">\(\theta\)</span> and <span class="math">\(\Delta t\)</span> values
-to see how the error varies with the method and the mesh resolution:</p>
+<p>Let us write down a new function that wraps up the computation and all
+the plotting statements used for comparing the exact and numerical
+solutions. This function can be called with various <span class="math">\(\theta\)</span> and
+<span class="math">\(\Delta t\)</span> values to see how the error depends on the method and mesh
+resolution.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">explore</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">makeplot</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Run a case with the solver, compute error measure,</span>
@@ -734,67 +775,85 @@ to see how the error varies with the method and the mesh resolution:</p>
     <span class="k">return</span> <span class="n">E</span>
 </pre></div>
 </div>
-<p>The <tt class="docutils literal"><span class="pre">figure()</span></tt> call is key: without it, a new <tt class="docutils literal"><span class="pre">plot</span></tt> command will
+<p>The <code class="docutils literal"><span class="pre">figure()</span></code> call is key: without it, a new <code class="docutils literal"><span class="pre">plot</span></code> command will
 draw the new pair of curves in the same plot window, while we want
 the different pairs to appear in separate windows and files.
-Calling <tt class="docutils literal"><span class="pre">figure()</span></tt> ensures this.</p>
-<p>Filenames with the method name (FE, BE, or CN) rather than the
-<span class="math">\(\theta\)</span> value embedded in the name, can easily be created with
-the aid of a little Python dictionary for mapping <span class="math">\(\theta\)</span> to
-method acronyms:</p>
+Calling <code class="docutils literal"><span class="pre">figure()</span></code> ensures this.</p>
+<p>Instead of including the <span class="math">\(\theta\)</span> value in the filename to implicitly
+inform about the applied method, the code utilizes a little Python
+dictionary that maps each relevant <span class="math">\(\theta\)</span> value to a corresponding
+acronym for the method name (FE, BE, or CN):</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">theta2name</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s">&#39;FE&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s">&#39;BE&#39;</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">:</span> <span class="s">&#39;CN&#39;</span><span class="p">}</span>
 <span class="n">savefig</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">_</span><span class="si">%g</span><span class="s">.png&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">theta2name</span><span class="p">[</span><span class="n">theta</span><span class="p">],</span> <span class="n">dt</span><span class="p">))</span>
 </pre></div>
 </div>
-<span class="target" id="index-17"></span><span class="target" id="index-18"></span><span class="target" id="index-19"></span><p id="index-20">The <tt class="docutils literal"><span class="pre">explore</span></tt> function stores the plot in two different image file formats:
-PNG and PDF. The PNG format is aimed
-at being included in HTML files and the PDF format in LaTeX documents
-(more precisely, in pdfLaTeX documents).
+<span class="target" id="index-18"></span><span class="target" id="index-19"></span><span class="target" id="index-20"></span><p id="index-21">The <code class="docutils literal"><span class="pre">explore</span></code> function stores the plot in two different image file formats:
+PNG and PDF. The PNG format is suitable for
+being included in HTML documents, while the PDF format provides
+higher quality for LaTeX (i.e., pdfLaTeX) documents.
 Frequently used viewers for these
-image files on Unix systems are <tt class="docutils literal"><span class="pre">gv</span></tt> (comes with Ghostscript)
+image files on Unix systems are <code class="docutils literal"><span class="pre">gv</span></code> (comes with Ghostscript)
 for the PDF format and
-<tt class="docutils literal"><span class="pre">display</span></tt> (from the ImageMagick) suite for PNG files:</p>
+<code class="docutils literal"><span class="pre">display</span></code> (from the ImageMagick software suite) for PNG files:</p>
 <div class="highlight-text"><div class="highlight"><pre>Terminal&gt; gv BE_0.5.pdf
 Terminal&gt; display BE_0.5.png
 </pre></div>
 </div>
-<p>A main program may run a loop over the three methods (<span class="math">\(\theta\)</span> values)
-and call <tt class="docutils literal"><span class="pre">explore</span></tt> to compute errors and make plots:</p>
+<p>A main program may run a loop over the three methods (given by
+their corresponding <span class="math">\(\theta\)</span> values)
+and call <code class="docutils literal"><span class="pre">explore</span></code> to compute errors and make plots:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt_values</span><span class="p">,</span> <span class="n">theta_values</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">)):</span>
+    <span class="k">print</span> <span class="s">&#39;theta   dt       error&#39;</span>  <span class="c"># Column headings in table</span>
     <span class="k">for</span> <span class="n">theta</span> <span class="ow">in</span> <span class="n">theta_values</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">dt</span> <span class="ow">in</span> <span class="n">dt_values</span><span class="p">:</span>
             <span class="n">E</span> <span class="o">=</span> <span class="n">explore</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">makeplot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-            <span class="k">print</span> <span class="s">&#39;</span><span class="si">%3.1f</span><span class="s"> </span><span class="si">%6.2f</span><span class="s">: </span><span class="si">%12.3E</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">E</span><span class="p">)</span>
+            <span class="k">print</span> <span class="s">&#39;</span><span class="si">%4.1f</span><span class="s"> </span><span class="si">%6.2f</span><span class="s">: </span><span class="si">%12.3E</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">E</span><span class="p">)</span>
+
+<span class="n">main</span><span class="p">(</span><span class="n">I</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">dt_values</span><span class="o">=</span><span class="p">[</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>The complete code containing the functions above
-resides in the file <a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay_plot_mpl.py">decay_plot_mpl.py</a>.
+<p>The file <a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay_plot_mpl.py">decay_plot_mpl.py</a>
+contains the complete code with the functions above.
 Running this program results in</p>
 <div class="highlight-text"><div class="highlight"><pre>Terminal&gt; python decay_plot_mpl.py
-0.0   0.40:    2.105E-01
-0.0   0.04:    1.449E-02
-0.5   0.40:    3.362E-02
-0.5   0.04:    1.887E-04
-1.0   0.40:    1.030E-01
-1.0   0.04:    1.382E-02
+theta   dt       error
+ 0.0   0.40:    2.105E-01
+ 0.0   0.04:    1.449E-02
+ 0.5   0.40:    3.362E-02
+ 0.5   0.04:    1.887E-04
+ 1.0   0.40:    1.030E-01
+ 1.0   0.04:    1.382E-02
 </pre></div>
 </div>
 <p>We observe that reducing <span class="math">\(\Delta t\)</span> by a factor of 10 increases the
-accuracy for all three methods (<span class="math">\(\theta\)</span> values). We also see that
+accuracy for all three methods. We also see that
 the combination of <span class="math">\(\theta=0.5\)</span> and a small time step <span class="math">\(\Delta t =0.04\)</span>
 gives a much more accurate solution, and that <span class="math">\(\theta=0\)</span> and <span class="math">\(\theta=1\)</span>
 with <span class="math">\(\Delta t = 0.4\)</span> result in the least accurate solutions.</p>
-<p>Figure <a class="reference internal" href="#decay-fig-fe1"><em>The Forward Euler scheme for two values of the time step</em></a> demonstrates that the numerical solution for
+<p>Figure <a class="reference internal" href="#decay-fig-fe1"><span>The Forward Euler scheme for two values of the time step</span></a> demonstrates that the numerical solution
+produced by the Forward Euler method with
 <span class="math">\(\Delta t=0.4\)</span> clearly lies below the exact curve, but that the
 accuracy improves considerably by reducing the time step by a factor
 of 10.</p>
-<div class="figure" id="decay-fig-fe1">
-<a class="reference internal image-reference" href="_images/FE1.png"><img alt="_images/FE1.png" src="_images/FE1.png" style="width: 600px;" /></a>
-<p class="caption"><em>The Forward Euler scheme for two values of the time step</em></p>
+<div class="figure" id="id8">
+<span id="decay-fig-fe1"></span><a class="reference internal image-reference" href="_images/FE1.png"><img alt="_images/FE1.png" src="_images/FE1.png" style="width: 600px;" /></a>
+<p class="caption"><span class="caption-text"><em>The Forward Euler scheme for two values of the time step</em></span></p>
 </div>
-<span class="target" id="index-21"></span><div class="section" id="combining-plot-files">
-<span id="index-22"></span><h3>Combining plot files<a class="headerlink" href="#combining-plot-files" title="Permalink to this headline">¶</a></h3>
-<p>Mounting two PNG files, as done in the figure, is easily done by the
+<p>The behavior of the two other schemes is shown in Figures <a class="reference internal" href="#decay-fig-be1"><span>The Backward Euler scheme for two values of the time step</span></a>
+and <a class="reference internal" href="#decay-fig-cn1"><span>The Crank-Nicolson scheme for two values of the time step</span></a>. Crank-Nicolson is obviously the most accurate
+scheme from this visual point of view.</p>
+<div class="figure" id="id9">
+<span id="decay-fig-be1"></span><a class="reference internal image-reference" href="_images/BE1.png"><img alt="_images/BE1.png" src="_images/BE1.png" style="width: 600px;" /></a>
+<p class="caption"><span class="caption-text"><em>The Backward Euler scheme for two values of the time step</em></span></p>
+</div>
+<div class="figure" id="id10">
+<span id="decay-fig-cn1"></span><a class="reference internal image-reference" href="_images/CN1.png"><img alt="_images/CN1.png" src="_images/CN1.png" style="width: 600px;" /></a>
+<p class="caption"><span class="caption-text"><em>The Crank-Nicolson scheme for two values of the time step</em></span></p>
+</div>
+<span class="target" id="index-22"></span><div class="section" id="combining-plot-files">
+<span id="index-23"></span><h3>Combining plot files<a class="headerlink" href="#combining-plot-files" title="Permalink to this headline">¶</a></h3>
+<p>Mounting two PNG files beside each other, as done in Figures
+<a class="reference internal" href="#decay-fig-fe1"><span>The Forward Euler scheme for two values of the time step</span></a>-<a class="reference internal" href="#decay-fig-cn1"><span>The Crank-Nicolson scheme for two values of the time step</span></a>, is easily carried out by the
 <a class="reference external" href="http://www.imagemagick.org/script/montage.php">montage</a> program
 from the ImageMagick suite:</p>
 <div class="highlight-text"><div class="highlight"><pre>Terminal&gt; montage -background white -geometry 100% -tile 2x1 \
@@ -802,36 +861,25 @@ from the ImageMagick suite:</p>
 Terminal&gt; convert -trim FE1.png FE1.png
 </pre></div>
 </div>
-<p>The <tt class="docutils literal"><span class="pre">-geometry</span></tt> argument is used to specify the size of the image, and here
-we preserve the individual sizes of the images. The <tt class="docutils literal"><span class="pre">-tile</span> <span class="pre">HxV</span></tt> option
-specifies <tt class="docutils literal"><span class="pre">H</span></tt> images in the horizontal direction and <tt class="docutils literal"><span class="pre">V</span></tt> images in
+<p>The <code class="docutils literal"><span class="pre">-geometry</span></code> argument is used to specify the size of the image. Here,
+we preserve the individual sizes of the images. The <code class="docutils literal"><span class="pre">-tile</span> <span class="pre">HxV</span></code> option
+specifies <code class="docutils literal"><span class="pre">H</span></code> images in the horizontal direction and <code class="docutils literal"><span class="pre">V</span></code> images in
 the vertical direction. A series of image files to be combined are then listed,
-with the name of the resulting combined image, here <tt class="docutils literal"><span class="pre">FE1.png</span></tt> at the end.
-The <tt class="docutils literal"><span class="pre">convert</span> <span class="pre">-trim</span></tt> command removes surrounding white areas in the figure
+with the name of the resulting combined image, here <code class="docutils literal"><span class="pre">FE1.png</span></code> at the end.
+The <code class="docutils literal"><span class="pre">convert</span> <span class="pre">-trim</span></code> command removes surrounding white areas in the figure
 (an operation usually known as <em>cropping</em> in image manipulation programs).</p>
-<span class="target" id="index-23"></span><span class="target" id="index-24"></span><p id="index-25">For LaTeX reports it is not recommended to use <tt class="docutils literal"><span class="pre">montage</span></tt> and PNG files
+<span class="target" id="index-24"></span><span class="target" id="index-25"></span><p id="index-26">For LaTeX reports it is not recommended to use <code class="docutils literal"><span class="pre">montage</span></code> and PNG files
 as the result has too low resolution. Instead, plots should be made
-in the PDF format and combined using the <tt class="docutils literal"><span class="pre">pdftk</span></tt>, <tt class="docutils literal"><span class="pre">pdfnup</span></tt>, and <tt class="docutils literal"><span class="pre">pdfcrop</span></tt> tools
+in the PDF format and combined using the <code class="docutils literal"><span class="pre">pdftk</span></code>, <code class="docutils literal"><span class="pre">pdfnup</span></code>, and <code class="docutils literal"><span class="pre">pdfcrop</span></code> tools
 (on Linux/Unix):</p>
 <div class="highlight-text"><div class="highlight"><pre>Terminal&gt; pdftk FE_0.4.png FE_0.04.png output tmp.pdf
 Terminal&gt; pdfnup --nup 2x1 --outfile tmp.pdf tmp.pdf
 Terminal&gt; pdfcrop tmp.pdf FE1.png  # output in FE1.png
 </pre></div>
 </div>
-<p>Here, <tt class="docutils literal"><span class="pre">pdftk</span></tt> combines images into a multi-page PDF file, <tt class="docutils literal"><span class="pre">pdfnup</span></tt>
+<p>Here, <code class="docutils literal"><span class="pre">pdftk</span></code> combines images into a multi-page PDF file, <code class="docutils literal"><span class="pre">pdfnup</span></code>
 combines the images in individual pages to a table of images (pages),
-and <tt class="docutils literal"><span class="pre">pdfcrop</span></tt> removes white margins in the resulting combined image file.</p>
-<p>The behavior of the two other schemes is shown in Figures <a class="reference internal" href="#decay-fig-be1"><em>The Backward Euler scheme for two values of the time step</em></a>
-and <a class="reference internal" href="#decay-fig-cn1"><em>The Crank-Nicolson scheme for two values of the time step</em></a>. Crank-Nicolson is obviously the most accurate
-scheme from this visual point of view.</p>
-<div class="figure" id="decay-fig-be1">
-<a class="reference internal image-reference" href="_images/BE1.png"><img alt="_images/BE1.png" src="_images/BE1.png" style="width: 600px;" /></a>
-<p class="caption"><em>The Backward Euler scheme for two values of the time step</em></p>
-</div>
-<div class="figure" id="decay-fig-cn1">
-<a class="reference internal image-reference" href="_images/CN1.png"><img alt="_images/CN1.png" src="_images/CN1.png" style="width: 600px;" /></a>
-<p class="caption"><em>The Crank-Nicolson scheme for two values of the time step</em></p>
-</div>
+and <code class="docutils literal"><span class="pre">pdfcrop</span></code> removes white margins in the resulting combined image file.</p>
 </div>
 <div class="section" id="plotting-with-scitools">
 <h3>Plotting with SciTools<a class="headerlink" href="#plotting-with-scitools" title="Permalink to this headline">¶</a></h3>
@@ -845,8 +893,8 @@ statement, which reads</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">scitools.std</span> <span class="kn">import</span> <span class="o">*</span>
 </pre></div>
 </div>
-<p>This statement performs a <tt class="docutils literal"><span class="pre">from</span> <span class="pre">numpy</span> <span class="pre">import</span> <span class="pre">*</span></tt> as well as an import
-of the most common pieces of the Easyviz (<tt class="docutils literal"><span class="pre">scitools.easyviz</span></tt>) package,
+<p>This statement performs a <code class="docutils literal"><span class="pre">from</span> <span class="pre">numpy</span> <span class="pre">import</span> <span class="pre">*</span></code> as well as an import
+of the most common pieces of the Easyviz (<code class="docutils literal"><span class="pre">scitools.easyviz</span></code>) package,
 along with some additional numerical functionality.</p>
 <p>With Easyviz one can
 merge several plotting commands into a single one
@@ -868,7 +916,8 @@ contains such a demo.</p>
 Terminal&gt; python decay_plot_st.py --SCITOOLS_easyviz_backend grace
 </pre></div>
 </div>
-<p>The backend used for creating plots (and numerous other options)
+<p>The actual tool used for creating plots (called <em>backend</em>)
+and numerous other options
 can be permanently set in SciTool&#8217;s configuration file.</p>
 <p>All the Gnuplot windows are launched without any need to kill one before
 the next one pops up (as is the case with Matplotlib) and one can
@@ -876,58 +925,63 @@ press the key &#8216;q&#8217; anywhere in a plot window to kill it.
 Another advantage of Gnuplot is the automatic choice of sensible
 and distinguishable line types in black-and-white PDF and PostScript
 files.</p>
-<p>Regarding functionality for annotating plots with title, labels on the
-axis, legends, etc., we refer to the documentation of Matplotlib and
-SciTools for more detailed information on the syntax. The hope is that
+<p>For more detailed information on syntax and plotting capabilities,
+we refer to the Matplotlib <a class="reference internal" href="._main_decay008.html#ref02" id="id5">[Ref02]</a>
+and SciTools <a class="reference internal" href="._main_decay008.html#ref03" id="id6">[Ref03]</a> documentation.
+The hope is that
 the programming syntax explained so far suffices for understanding the
-code and learning more from a combination of the forthcoming examples
-and other resources such as books and web pages.</p>
-<div class="admonition-test-the-understanding admonition">
-<p class="first admonition-title">Test the understanding</p>
-<p class="last"><a class="reference internal" href="._main_decay006.html#decay-app-exer-cooling-py"><em>Exercise 16: Implement schemes for Newton&#8217;s law of cooling</em></a> asks you to implement
+basic plotting functionality and being able to look up
+the cited technical documentation.</p>
+<div class="admonition-test-your-understanding admonition">
+<p class="first admonition-title">Test your understanding</p>
+<p class="last"><a class="reference internal" href="._main_decay006.html#decay-app-exer-cooling-py"><span>Exercise 17: Implement schemes for Newton&#8217;s law of cooling</span></a> asks you to implement
 a solver for a problem that is slightly different from the
-one above. You may use the <tt class="docutils literal"><span class="pre">solver</span></tt> and <tt class="docutils literal"><span class="pre">explore</span></tt> functions
+one above. You may use the <code class="docutils literal"><span class="pre">solver</span></code> and <code class="docutils literal"><span class="pre">explore</span></code> functions
 explained above as a starting point. Apply the new solver
-to <a class="reference internal" href="._main_decay006.html#decay-app-exer-cooling-murder"><em>Exercise 17: Find time of murder from body temperature</em></a>.</p>
+to solve <a class="reference internal" href="._main_decay006.html#decay-app-exer-cooling-murder"><span>Exercise 18: Find time of murder from body temperature</span></a>.</p>
 </div>
 </div>
 </div>
 <div class="section" id="memory-saving-implementation">
 <h2>Memory-saving implementation<a class="headerlink" href="#memory-saving-implementation" title="Permalink to this headline">¶</a></h2>
 <p>The computer memory requirements of our implementations so far
-consists mainly of the <tt class="docutils literal"><span class="pre">u</span></tt> and <tt class="docutils literal"><span class="pre">t</span></tt> arrays, both of length <span class="math">\(N_t+1\)</span>,
-plus some other temporary arrays that Python needs for intermediate
-results if we do array arithmetics in our program (e.g., <tt class="docutils literal"><span class="pre">I*exp(-a*t)</span></tt>
-needs to store <tt class="docutils literal"><span class="pre">a*t</span></tt> before <tt class="docutils literal"><span class="pre">-</span></tt> can be applied to it and then <tt class="docutils literal"><span class="pre">exp</span></tt>).
+consist mainly of the <code class="docutils literal"><span class="pre">u</span></code> and <code class="docutils literal"><span class="pre">t</span></code> arrays, both of length <span class="math">\(N_t+1\)</span>.
+Also, for the programs that involve array arithmetics, Python needs
+memory space for storing temporary arrays. For example, computing
+<code class="docutils literal"><span class="pre">I*exp(-a*t)</span></code> requires storing the intermediate result <code class="docutils literal"><span class="pre">a*t</span></code> before
+the preceding minus sign can be applied. The resulting array is
+temporarily stored and provided as input to the <code class="docutils literal"><span class="pre">exp</span></code> function.
 Regardless of how we implement simple ODE problems, storage
-requirements are very modest and put not restriction on how we choose
-our data structures and algorithms.  Nevertheless, when the methods
-for ODEs used here are applied to three-dimensional partial
-differential equation (PDE) problems, memory storage requirements
+requirements are very modest and put no restrictions on how we choose
+our data structures and algorithms.  Nevertheless, when the presented methods
+are applied to three-dimensional PDE problems, memory storage requirements
 suddenly become a challenging issue.</p>
-<p>The PDE counterpart to our model problem <span class="math">\(u'=-a\)</span> is a diffusion
+<p>Let us briefly elaborate on how large the storage requirements can
+quickly be in three-dimensional problems.
+The PDE counterpart to our model problem <span class="math">\(u'=-a\)</span> is a diffusion
 equation <span class="math">\(u_t = a\nabla^2 u\)</span> posed on a space-time domain. The
 discrete representation of this domain may in 3D be a spatial mesh of
-<span class="math">\(M^3\)</span> points and a time mesh of <span class="math">\(N_t\)</span> points. A typical desired value
-for <span class="math">\(M\)</span> is 100 in many applications, or even <span class="math">\(1000\)</span>.  Storing all the
-computed <span class="math">\(u\)</span> values, like we have done in the programs so far, demands
-storage of some arrays of size <span class="math">\(M^3N_t\)</span>, giving a factor of <span class="math">\(M^3\)</span>
-larger storage demands compared to our ODE programs. Each real number
-in the array for <span class="math">\(u\)</span> requires 8 bytes (b) of storage. With <span class="math">\(M=100\)</span> and
+<span class="math">\(M^3\)</span> points and a time mesh of <span class="math">\(N_t\)</span> points.
+In many applications, it is quite typical that <span class="math">\(M\)</span> is at least 100,
+or even 1000.  Storing all the
+computed <span class="math">\(u\)</span> values, like we have done in the programs so far, would demand
+storing arrays of size up to <span class="math">\(M^3N_t\)</span>. This would give a factor of <span class="math">\(M^3\)</span>
+larger storage demands compared to what was required by our ODE programs. Each real number
+in the <code class="docutils literal"><span class="pre">u</span></code> array requires 8 bytes (b) of storage. With <span class="math">\(M=100\)</span> and
 <span class="math">\(N_t=1000\)</span>, there is a storage demand of <span class="math">\((10^3)^3\cdot 1000\cdot 8 =
 8\)</span> Gb for the solution array.  Fortunately, we can usually get rid of
 the <span class="math">\(N_t\)</span> factor, resulting in 8 Mb of storage.  Below we explain how
-this is done, and the technique is almost always applied in
-implementations of PDE problems.</p>
+this is done (the technique is almost always applied in
+implementations of PDE problems).</p>
 <p>Let us critically evaluate how much we really need to store in the
-computer&#8217;s memory in our implementation of the <span class="math">\(\theta\)</span> method. To
+computer&#8217;s memory for our implementation of the <span class="math">\(\theta\)</span> method. To
 compute a new <span class="math">\(u^{n+1}\)</span>, all we need is <span class="math">\(u^n\)</span>. This implies that the
-previous <span class="math">\(u^{n-1},u^{n-2},\dots,u^0\)</span> values do not need to be stored
-in an array, although this is convenient for plotting and data
-analysis in the program.  Instead of the <tt class="docutils literal"><span class="pre">u</span></tt> array we can work with
-two variables for real numbers, <tt class="docutils literal"><span class="pre">u</span></tt> and <tt class="docutils literal"><span class="pre">u_1</span></tt>, representing <span class="math">\(u^{n+1}\)</span>
+previous <span class="math">\(u^{n-1},u^{n-2},\dots,u^0\)</span> values do not need to be stored,
+although this is convenient for plotting and data
+analysis in the program.  Instead of the <code class="docutils literal"><span class="pre">u</span></code> array we can work with
+two variables for real numbers, <code class="docutils literal"><span class="pre">u</span></code> and <code class="docutils literal"><span class="pre">u_1</span></code>, representing <span class="math">\(u^{n+1}\)</span>
 and <span class="math">\(u^n\)</span> in the algorithm, respectively.  At each time level, we
-update <tt class="docutils literal"><span class="pre">u</span></tt> from <tt class="docutils literal"><span class="pre">u_1</span></tt> and then set <tt class="docutils literal"><span class="pre">u_1</span> <span class="pre">=</span> <span class="pre">u</span></tt> so that the computed
+update <code class="docutils literal"><span class="pre">u</span></code> from <code class="docutils literal"><span class="pre">u_1</span></code> and then set <code class="docutils literal"><span class="pre">u_1</span> <span class="pre">=</span> <span class="pre">u</span></code>, so that the computed
 <span class="math">\(u^{n+1}\)</span> value becomes the &#8220;previous&#8221; value <span class="math">\(u^n\)</span> at the next time
 level. The downside is that we cannot plot the solution after the
 simulation is done since only the last two numbers are available.  The
@@ -962,8 +1016,8 @@ recent values of the unknown:</p>
     <span class="k">return</span> <span class="n">u</span><span class="p">,</span> <span class="n">t</span>
 </pre></div>
 </div>
-<p>This code snippet serves as a quick introduction to file writing in Python.
-Reading the data in the file into arrays <tt class="docutils literal"><span class="pre">t</span></tt> and <tt class="docutils literal"><span class="pre">u</span></tt> are done by the
+<p>This code snippet also serves as a quick introduction to file writing in Python.
+Reading the data in the file into arrays <code class="docutils literal"><span class="pre">t</span></code> and <code class="docutils literal"><span class="pre">u</span></code> are done by the
 function</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">read_file</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&#39;sol.dat&#39;</span><span class="p">):</span>
     <span class="n">infile</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
@@ -979,11 +1033,11 @@ function</p>
 </pre></div>
 </div>
 <p>This type of file with numbers in rows and columns is very common, and
-<tt class="docutils literal"><span class="pre">numpy</span></tt> has a function <tt class="docutils literal"><span class="pre">loadtxt</span></tt> which loads such tabular data into a
-two-dimensional array, say with name <tt class="docutils literal"><span class="pre">data</span></tt>. The number in row <tt class="docutils literal"><span class="pre">i</span></tt> and
-column <tt class="docutils literal"><span class="pre">j</span></tt> is then <tt class="docutils literal"><span class="pre">data[i,j]</span></tt>.  The whole column number <tt class="docutils literal"><span class="pre">j</span></tt> can be
-extracted by <tt class="docutils literal"><span class="pre">data[:,j]</span></tt>.  A version of <tt class="docutils literal"><span class="pre">read_file</span></tt> using <tt class="docutils literal"><span class="pre">np.loadtxt</span></tt>
-reads</p>
+<code class="docutils literal"><span class="pre">numpy</span></code> has a function <code class="docutils literal"><span class="pre">loadtxt</span></code> which loads such tabular data into a
+two-dimensional array named by the user. Say the name is <code class="docutils literal"><span class="pre">data</span></code>, the
+number in row <code class="docutils literal"><span class="pre">i</span></code> and column <code class="docutils literal"><span class="pre">j</span></code> is then <code class="docutils literal"><span class="pre">data[i,j]</span></code>.  The whole
+column number <code class="docutils literal"><span class="pre">j</span></code> can be extracted by <code class="docutils literal"><span class="pre">data[:,j]</span></code>.  A version of
+<code class="docutils literal"><span class="pre">read_file</span></code> using <code class="docutils literal"><span class="pre">np.loadtxt</span></code> reads</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">read_file_numpy</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&#39;sol.dat&#39;</span><span class="p">):</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
     <span class="n">t</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
@@ -991,9 +1045,9 @@ reads</p>
     <span class="k">return</span> <span class="n">t</span><span class="p">,</span> <span class="n">u</span>
 </pre></div>
 </div>
-<p>The present counterpart to the <tt class="docutils literal"><span class="pre">explore</span></tt> function from
+<p>The present counterpart to the <code class="docutils literal"><span class="pre">explore</span></code> function from
 <a class="reference external" href="http://tinyurl.com/nm5587k/decay/decay_plot_mpl.py">decay_plot_mpl.py</a> must run
-<tt class="docutils literal"><span class="pre">solver_memsave</span></tt> and then load data from file before we can compute
+<code class="docutils literal"><span class="pre">solver_memsave</span></code> and then load data from file before we can compute
 the error measure and make the plot:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">explore</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">makeplot</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
     <span class="n">filename</span> <span class="o">=</span> <span class="s">&#39;u.dat&#39;</span>
@@ -1009,8 +1063,8 @@ the error measure and make the plot:</p>
 </pre></div>
 </div>
 <p>Apart from the internal implementation, where <span class="math">\(u^n\)</span> values are
-stored in a file rather than in an array, <tt class="docutils literal"><span class="pre">decay_memsave.py</span></tt>
-file works exactly as the <tt class="docutils literal"><span class="pre">decay_plot_mpl.py</span></tt> file.</p>
+stored in a file rather than in an array, <code class="docutils literal"><span class="pre">decay_memsave.py</span></code>
+file works exactly as the <code class="docutils literal"><span class="pre">decay_plot_mpl.py</span></code> file.</p>
 </div>
 </div>
 
@@ -1032,7 +1086,7 @@ file works exactly as the <tt class="docutils literal"><span class="pre">decay_p
 <li><a class="reference internal" href="#function-for-computing-the-numerical-solution">Function for computing the numerical solution</a></li>
 <li><a class="reference internal" href="#integer-division">Integer division</a></li>
 <li><a class="reference internal" href="#doc-strings">Doc strings</a></li>
-<li><a class="reference internal" href="#formatting-of-numbers">Formatting of numbers</a></li>
+<li><a class="reference internal" href="#formatting-numbers">Formatting numbers</a></li>
 <li><a class="reference internal" href="#running-the-program">Running the program</a></li>
 <li><a class="reference internal" href="#plotting-the-solution">Plotting the solution</a></li>
 </ul>
@@ -1042,7 +1096,7 @@ file works exactly as the <tt class="docutils literal"><span class="pre">decay_p
 </ul>
 </li>
 <li><a class="reference internal" href="#computing-the-numerical-error-as-a-mesh-function">Computing the numerical error as a mesh function</a></li>
-<li><a class="reference internal" href="#computing-the-norm-of-the-numerical-error">Computing the norm of the numerical error</a><ul>
+<li><a class="reference internal" href="#computing-the-norm-of-the-error-mesh-function">Computing the norm of the error mesh function</a><ul>
 <li><a class="reference internal" href="#scalar-computing">Scalar computing</a></li>
 </ul>
 </li>

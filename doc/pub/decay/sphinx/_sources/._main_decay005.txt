@@ -59,7 +59,7 @@ Alternatively, we can use an average for the product :math:`au`:
         
 
 The :math:`\theta`-rule unifies the three mentioned schemes. One version is to
-have :math:`a` evaluated at :math:`t_{n+\theta}`,
+have :math:`a` evaluated at the weighted time point :math:`(1-\theta)t_n + \theta t_{n+1}`,
 
 .. math::
         
@@ -132,9 +132,6 @@ A further extension of the model ODE is to include a source term :math:`b(t)`:
         
         
 
-Schemes
-~~~~~~~
-
 The time point where we sample the ODE determines where :math:`b(t)` is
 evaluated. For the Crank-Nicolson scheme and the :math:`\theta`-rule we
 have a choice of whether to evaluate :math:`a(t)` and :math:`b(t)` at the
@@ -185,8 +182,8 @@ Deriving the :math:`\theta`-rule formula
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Writing out the :math:`\theta`-rule in :eq:`decay:problem:ab:theta:avg:all:op`,
-using :ref:`(2.36) <Eq:decay:fd1:Du:theta>`
-and :ref:`(2.37) <Eq:decay:fd1:wmean:a>`, we get
+using :ref:`(2.37) <Eq:decay:fd1:Du:theta>`
+and :ref:`(2.38) <Eq:decay:fd1:wmean:a>`, we get
 
 .. _Eq:decay:problem:ab:theta:avg:all:
 
@@ -209,8 +206,8 @@ We solve for :math:`u^{n+1}`:
         {\thinspace .}
         
 
-The Python code
-~~~~~~~~~~~~~~~
+Python code
+~~~~~~~~~~~
 
 Here is a suitable implementation of :eq:`decay:problem:ab:theta:avg:all`
 where :math:`a(t)` and :math:`b(t)` are given as
@@ -255,8 +252,11 @@ be Python functions of time ``t``, say
 
 Here, ``a(t)`` has three parameters ``a0``, ``tp``, and ``k``,
 which must be global variables.
-A better implementation is to represent ``a`` by a class where the
-parameters are attributes and a *special method* ``__call__`` evaluates :math:`a(t)`:
+
+A better implementation, which avoids global variables,
+is to represent ``a`` by a class where the
+parameters are attributes and where a *special method* ``__call__``
+evaluates :math:`a(t)`:
 
 .. code-block:: python
 
@@ -278,11 +278,11 @@ The *lambda function* construction in Python is then convenient. For example,
 
         a = lambda t: a_0 if t < tp else k*a_0
 
-is equivalent to the ``def a(t):`` definition above. In general,
+is equivalent to the ``def a(t)`` definition above. In general,
 
 .. code-block:: python
 
-        f = lambda arg1, arg2, ...: expressin
+        f = lambda arg1, arg2, ...: expression
 
 is equivalent to
 
@@ -298,7 +298,9 @@ solve :math:`u^{\prime}=-u+1`, :math:`u(0)=2`:
 
         u, t = solver(2, lambda t: 1, lambda t: 1, T, dt, theta)
 
-A lambda function can appear anywhere where a variable can appear.
+Whether to use a plain function, a class, or a lambda function depends
+on the programmer's taste. Lazy programmers prefer the lambda construct, while
+very safe programmers go for the class solution.
 
 .. _decay:verify:trivial:
 
@@ -373,18 +375,19 @@ solutions*, often abbreviated MMS.
 One common choice of solution is a linear function in the independent
 variable(s). The rationale behind such a simple variation is that
 almost any relevant numerical solution method for differential
-equation problems is able to reproduce the linear function exactly to
+equation problems is able to reproduce a linear function exactly to
 machine precision (if :math:`u` is about unity in size; precision is lost if
-:math:`u` take on large values, see :ref:`decay:fd2:exer:precision`).
+:math:`u` takes on large values, see :ref:`decay:fd2:exer:precision`).
 The linear solution also makes some stronger demands to the
 numerical method and the implementation than the constant solution
 used in the section :ref:`decay:verify:trivial`, at least in more
-complicated applications. However, the constant solution is often
+complicated applications. Still, the constant solution is often
 ideal for initial debugging before proceeding with a linear solution.
 
 We choose a linear solution :math:`u(t) = ct + d`. From the initial condition it
 follows that :math:`d=I`.
-Inserting this :math:`u` in the ODE results in
+Inserting this :math:`u` in the left-hand side of :eq:`decay:problem:ab`, i.e.,
+the ODE, we get
 
 .. math::
          c = -a(t)u + b(t) {\thinspace .}  
@@ -396,7 +399,7 @@ Any function :math:`u=ct+I` is then a correct solution if we choose
 
 With this :math:`b(t)` there are no restrictions on :math:`a(t)` and :math:`c`.
 
-Let prove that such a linear solution obeys the numerical
+Let us prove that such a linear solution obeys the numerical
 schemes. To this end, we must check that :math:`u^n = ca(t_n)(ct_n+I)`
 fulfills the discrete equations. For these calculations, and
 later calculations involving linear solutions inserted in
@@ -552,7 +555,9 @@ and :math:`\Delta t_{i} < \Delta t_{i-1}` (i.e., decreasing cell size).
         
         
 
-for :math:`i=1,\ldots,m-1`.
+for :math:`i=1,\ldots,m-1`. Note that we have introduced a subindex :math:`i-1`
+on :math:`r` in :eq:`decay:conv:rate` because :math:`r` estimated from
+a pair of experiments must be expected to change with :math:`i`.
 
 The disadvantage of method 1 is that :eq:`decay:E:dt` might not be valid
 for the coarsest meshes (largest :math:`\Delta t` values). Fitting a line
@@ -571,7 +576,7 @@ Implementation  (2)
 Suppose we have some function ``error(dt, ...)`` that can compute the numerical
 error in our mathematical model. To compute
 :math:`r_0, r_1, \ldots, r_{m-2}`
-from :eq:`decay:E:dt` we just wrap a loop over :math:`\Delta t` values
+from :eq:`decay:E:dt`, we just wrap a loop over :math:`\Delta t` values
 (``dt_values``) around
 the ``error`` function:
 
@@ -609,8 +614,8 @@ various theoretical considerations for :math:`r`.
 
    The strong practical application of computing convergence rates is for
    verification: wrong convergence rates point to errors in the code, and
-   correct convergence rates brings evidence that the implementation is
-   correct. Experience shows that bugs in the code easily destroy the
+   correct convergence rates bring strong support for a correct implementation.
+   Experience shows that bugs in the code easily destroy the
    expected convergence rate.
 
 
@@ -619,7 +624,7 @@ various theoretical considerations for :math:`r`.
 Extension to systems of ODEs
 ----------------------------
 
-Many ODE models involves more than one unknown function and more
+Many ODE models involve more than one unknown function and more
 than one equation. Here is an example of two unknown functions :math:`u(t)`
 and :math:`v(t)`:
 
@@ -634,8 +639,8 @@ and :math:`v(t)`:
         
 
 for constants :math:`a,b,c,d`.
-Applying the Forward Euler method to each equation results in simple
-updating formula
+Applying the Forward Euler method to each equation results in a simple
+updating formula:
 
 .. math::
         
@@ -649,7 +654,7 @@ updating formula
         
 
 On the other hand, the Crank-Nicolson or Backward Euler schemes result in a
-:math:`2\times 2` linear system for the new unknowns. The latter schemes gives
+:math:`2\times 2` linear system for the new unknowns. The latter scheme becomes
 
 .. math::
         
@@ -675,17 +680,22 @@ in
         
 
 which is a system of two coupled, linear, algebraic equations in two
-unknowns.
+unknowns. These equations can be solved by hand (using standard
+techniques for two algebraic equations with two unknowns :math:`x` and :math:`y`),
+resulting in explicit formulas for :math:`u^{n+1}` and :math:`v^{n+1}` that can be
+directly implemented. For systems of ODEs with many equations and unknowns, one
+will express the coupled equations at each time level in matrix form
+and call software for numerical solution of linear systems of equations.
 
 General first-order ODEs
 ========================
 
 We now turn the attention to general, nonlinear ODEs and systems of
 such ODEs.  Our focus is on numerical methods that can be readily
-reused for time-discretization PDEs, and diffusion PDEs in particular.
+reused for time-discretization of PDEs, and diffusion PDEs in particular.
 The methods are just briefly listed, and we refer to the rich literature
 for more detailed descriptions and analysis - the books
-[Ref2]_ [Ref3]_ [Ref4]_ [Ref5]_ are all excellent resources on numerical methods for ODEs.
+[Ref05]_ [Ref06]_ [Ref07]_ [Ref08]_ are all excellent resources on numerical methods for ODEs.
 We also demonstrate the Odespy Python interface to a range
 of different software for general first-order ODE systems.
 
@@ -734,8 +744,6 @@ a first-order system.
 
 Next we list some well-known methods for :math:`u^{\prime}=f(u,t)`, valid both for
 a single ODE (scalar :math:`u`) and systems of ODEs (vector :math:`u`).
-The choice of methods is inspired by the kind of schemes that are
-popular also for time discretization of partial differential equations.
 
 The :math:`\theta`-rule
 -----------------------
@@ -847,7 +855,7 @@ in operator notation. Solving for :math:`u^{n+1}` gives
 .. math::
    :label: decay:fd2:leapfrog
         
-        u^{n+1} = u^{n-1} + \Delta t f(u^n, t_n)
+        u^{n+1} = u^{n-1} + 2\Delta t f(u^n, t_n)
         {\thinspace .}
         
         
@@ -994,7 +1002,7 @@ The following method is known as the 2nd-order Adams-Bashforth scheme:
 
 The scheme is explicit and requires another one-step scheme to compute
 :math:`u^1` (the Forward Euler scheme or Heun's method, for instance).
-As the name implies, the scheme is of order :math:`\Delta t^2`.
+As the name implies, the error behaves like :math:`\Delta t^2`.
 
 .. index::
    single: Adams-Bashforth scheme, 3rd order
@@ -1018,7 +1026,7 @@ some method for computing :math:`u^1` and :math:`u^2`.
 
 More general, higher-order Adams-Bashforth schemes (also called
 *explicit Adams methods*) compute :math:`u^{n+1}` as a linear combination
-of :math:`f` at :math:`k` previous time steps:
+of :math:`f` at :math:`k+1` previous time steps:
 
 .. math::
          u^{n+1} = u^n + \sum_{j=0}^k \beta_jf(u^{n-j},t_{n-j}),
@@ -1039,7 +1047,7 @@ The perhaps most widely used method to solve ODEs is the 4th-order
 Runge-Kutta method, often called RK4.
 Its derivation is a nice illustration of common
 numerical approximation strategies, so let us go through the
-steps in detail.
+steps in detail to learn about algorithmic development.
 
 The starting point is to integrate the ODE
 :math:`u^{\prime}=f(u,t)` from :math:`t_n` to :math:`t_{n+1}`:
@@ -1061,7 +1069,7 @@ The integral can be approximated by the famous
 The problem now is that we do not know :math:`f^{n+\frac{1}{2}}=f(u^{n+\frac{1}{2}},t_{n+\frac{1}{2}})`
 and :math:`f^{n+1}=(u^{n+1},t_{n+1})` as we know only :math:`u^n` and hence :math:`f^n`.
 The idea is to use various approximations for :math:`f^{n+\frac{1}{2}}` and
-:math:`f^{n+1}` based on using well-known schemes for the ODE in the
+:math:`f^{n+1}` based on well-known schemes for the ODE in the
 intervals :math:`[t_n,t_{n+\frac{1}{2}}]` and :math:`[t_n, t_{n+1}]`.
 We split the integral approximation into four terms:
 
@@ -1072,7 +1080,7 @@ We split the integral approximation into four terms:
 
 where :math:`\hat{f}^{n+\frac{1}{2}}`, :math:`\tilde{f}^{n+\frac{1}{2}}`, and :math:`\bar{f}^{n+1}`
 are approximations to :math:`f^{n+\frac{1}{2}}` and
-:math:`f^{n+1}` that can be based on already computed quantities.
+:math:`f^{n+1}`, respectively, that can be based on already computed quantities.
 For :math:`\hat{f}^{n+\frac{1}{2}}` we can apply
 an approximation to :math:`u^{n+\frac{1}{2}}` using the Forward Euler
 method with step :math:`\frac{1}{2}\Delta t`:
@@ -1143,18 +1151,18 @@ next section explains.
 The Odespy software
 -------------------
 
-A wide range of the methods and software exist for solving :eq:`decay:ode:general`.
-Many of methods are accessible through a unified Python interface offered
-by the `Odespy <https://github.com/hplgit/odespy>`__ [Ref6]_ package.
+A wide range of methods and software exist for solving :eq:`decay:ode:general`.
+Many of the methods are accessible through a unified Python interface offered
+by the `Odespy <https://github.com/hplgit/odespy>`__ [Ref09]_ package.
 Odespy features simple Python implementations of the most fundamental
 schemes as well as Python interfaces to several famous packages for
 solving ODEs: `ODEPACK <https://computation.llnl.gov/casc/odepack/odepack_home.html>`__, `Vode <https://computation.llnl.gov/casc/odepack/odepack_home.html>`__,
-`rkc.f <http://www.netlib.org/ode/rkc.f>`__, `rkf45.f <http://www.netlib.org/ode/rkf45.f>`__, `Radau5 <http://www.unige.ch/~hairer/software.html>`__, as well
+`rkc.f <http://www.netlib.org/ode/rkc.f>`__, `rkf45.f <http://www.netlib.org/ode/rkf45.f>`__, as well
 as the ODE solvers in `SciPy <http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.ode.html>`__, `SymPy <http://docs.sympy.org/dev/modules/mpmath/calculus/odes.html>`__, and `odelab <http://olivierverdier.github.com/odelab/>`__.
 
 The usage of Odespy follows this setup for the ODE :math:`u^{\prime}=-au`,
 :math:`u(0)=I`, :math:`t\in (0,T]`, here solved
-by the famous 4th-order Runge-Kutta method, using :math:`\Delta t=1`
+by the famous 4th-order Runge-Kutta method with :math:`\Delta t=1`
 and :math:`N_t=6` steps:
 
 .. code-block:: python
@@ -1184,14 +1192,15 @@ Odespy:
  * The BDF methods and the Adam-Bashforth methods:
    ``Vode``, ``Lsode``, ``Lsoda``, ``lsoda_scipy``
 
- * The Leapfrog scheme: ``Leapfrog`` and ``LeapfrogFiltered``
+ * The Leapfrog schemes: ``Leapfrog`` and ``LeapfrogFiltered``
 
 Example: Runge-Kutta methods
 ----------------------------
 
-Since all solvers have the same interface in Odespy, modulo different set of
-parameters to the solvers' constructors, one can easily make a list of
-solver objects and run a loop for comparing (a lot of) solvers. The
+Since all solvers have the same interface in Odespy, except for a
+potentially different set of
+parameters in the solvers' constructors, one can easily make a list of
+solver objects and run a loop for comparing a lot of solvers. The
 code below, found in complete form in `decay_odespy.py <http://tinyurl.com/nm5587k/decay/decay_odespy.py>`__,
 compares the famous Runge-Kutta methods of orders 2, 3, and 4
 with the exact solution of the decay equation
@@ -1245,7 +1254,7 @@ Figure :ref:`decay:odespy:fig1` shows the results.
         plt.title('Time step: %g' % dt)
         plt.show()
 
-With the ``odespy.BackwardEuler`` method we either have to tell that
+With the ``odespy.BackwardEuler`` method we must either tell that
 the problem is linear and provide the Jacobian of :math:`f(u,t)`, i.e.,
 :math:`\partial f/\partial u`, as the ``jac`` argument, or we have to assume
 that :math:`f` is nonlinear, but then specify Newton's method as solver
@@ -1258,8 +1267,7 @@ Picard iteration, but that leads to divergence in the present problem.
 .. admonition:: Visualization tip
 
    We use Matplotlib for
-   plotting here, but importing ``scitools.std`` as ``plt`` instead
-   also works. Plain use of Matplotlib as done here results in
+   plotting here, but one could alternatively import ``scitools.std`` as ``plt`` instead. Plain use of Matplotlib as done here results in
    curves with different colors, which may be hard to distinguish on
    black-and-white paper. Using ``scitools.std``, curves are
    automatically given colors *and* markers, thus making curves easy
@@ -1276,7 +1284,7 @@ Picard iteration, but that leads to divergence in the present problem.
    
    Also note the that the legends
    are based on the class names of the solvers, and in Python the name of
-   a the class type (as a string) of an object ``obj`` is obtained by
+   the class type (as a string) of an object ``obj`` is obtained by
    ``obj.__class__.__name__``.
 
 
@@ -1300,7 +1308,7 @@ higher order scheme is superior for smaller :math:`\Delta t`. This is a
 typical trend also for most schemes for ordinary and partial
 differential equations.
 
-The 3rd-order Runge-Kutta method (``RK3``) has also artifacts in form
+The 3rd-order Runge-Kutta method (``RK3``) also has artifacts in the form
 of oscillatory behavior for the larger :math:`\Delta t` values, much
 like that of the Crank-Nicolson scheme. For finer :math:`\Delta t`,
 the 3rd-order Runge-Kutta method converges quickly to the exact
@@ -1344,7 +1352,7 @@ Example: Adaptive Runge-Kutta methods
 
 .. index:: adaptive time stepping
 
-Odespy offers solution methods that can adapt the size of :math:`\Delta t`
+Odespy also offers solution methods that can adapt the size of :math:`\Delta t`
 with time to match a desired accuracy in the solution. Intuitively,
 small time steps will be chosen in areas where the solution is changing
 rapidly, while larger time steps can be used where the solution
@@ -1422,7 +1430,7 @@ Exercises  (3)
 
 .. _decay:fd2:exer:precision:
 
-Exercise 8: Experiment with precision in tests and the size of :math:`u`
+Exercise 9: Experiment with precision in tests and the size of :math:`u`
 ------------------------------------------------------------------------
 
 It is claimed in the section :ref:`decay:MMS` that most numerical methods will
@@ -1433,7 +1441,7 @@ Vary the parameter ``c`` from very small, via ``c=1`` to many larger values,
 and print out the maximum difference between the numerical solution
 and the exact solution. What is the relevant value of the tolerance
 in the float comparison in each case?
-Filename: ``test_precision.py``.
+Filename: ``test_precision``.
 
 .. --- end exercise ---
 
@@ -1441,8 +1449,8 @@ Filename: ``test_precision.py``.
 
 .. _decay:fd2:exer:bw2:
 
-Exercise 9: Implement the 2-step backward scheme
-------------------------------------------------
+Exercise 10: Implement the 2-step backward scheme
+-------------------------------------------------
 
 Implement the 2-step backward method :eq:`decay:fd2:bw:2step` for the
 model :math:`u^{\prime}(t) = -a(t)u(t) + b(t)`, :math:`u(0)=I`.  Allow the first step to
@@ -1452,11 +1460,11 @@ that the exact solution is linear in :math:`t` (see the section :ref:`decay:MMS`
 solution of the discrete equations.
 
 Compute convergence rates (see the section :ref:`decay:convergence:rate`) in
-a test case :math:`a=\hbox{const}` and :math:`b=0`, where we easily have an exact
+a test case using :math:`a=\hbox{const}` and :math:`b=0`, where we easily have an exact
 solution, and determine if the choice of a first-order scheme
 (Backward Euler) for the first step has any impact on the overall
 accuracy of this scheme. The expected error goes like :math:`{\mathcal{O}(\Delta t^2)}`.
-Filename: ``decay_backward2step.py``.
+Filename: ``decay_backward2step``.
 
 .. --- end exercise ---
 
@@ -1464,7 +1472,7 @@ Filename: ``decay_backward2step.py``.
 
 .. _decay:fd2:exer:AB2:
 
-Exercise 10: Implement the 2nd-order Adams-Bashforth scheme
+Exercise 11: Implement the 2nd-order Adams-Bashforth scheme
 -----------------------------------------------------------
 
 Implement the 2nd-order Adams-Bashforth method :eq:`decay:fd2:AB2`
@@ -1474,7 +1482,7 @@ scheme is explicit. Verify the implementation using an exact
 solution that is linear in time.
 Analyze the scheme by searching for solutions :math:`u^n=A^n` when :math:`a=\hbox{const}`
 and :math:`b=0`. Compare this second-order secheme to the Crank-Nicolson scheme.
-Filename: ``decay_AdamsBashforth2.py``.
+Filename: ``decay_AdamsBashforth2``.
 
 .. --- end exercise ---
 
@@ -1482,7 +1490,7 @@ Filename: ``decay_AdamsBashforth2.py``.
 
 .. _decay:fd2:exer:AB3:
 
-Exercise 11: Implement the 3rd-order Adams-Bashforth scheme
+Exercise 12: Implement the 3rd-order Adams-Bashforth scheme
 -----------------------------------------------------------
 
 Implement the 3rd-order Adams-Bashforth method :eq:`decay:fd2:AB3`
@@ -1491,7 +1499,7 @@ Since the scheme is explicit, allow it to be started by two steps with
 the Forward Euler method.  Investigate experimentally the case where
 :math:`b=0` and :math:`a` is a constant: Can we have oscillatory solutions for
 large :math:`\Delta t`?
-Filename: ``decay_AdamsBashforth3.py``.
+Filename: ``decay_AdamsBashforth3``.
 
 .. --- end exercise ---
 
@@ -1499,7 +1507,7 @@ Filename: ``decay_AdamsBashforth3.py``.
 
 .. _decay:exer:RK2:Taylor:analysis:
 
-Exercise 12: Analyze explicit 2nd-order methods
+Exercise 13: Analyze explicit 2nd-order methods
 -----------------------------------------------
 
 Show that the schemes :eq:`decay:fd2:RK2:s2` and
@@ -1509,7 +1517,7 @@ Show that the schemes :eq:`decay:fd2:RK2:s2` and
 Find :math:`A` and derive stability criteria. Can the scheme produce
 oscillatory solutions of :math:`u^{\prime}=-au`? Plot the numerical and exact
 amplification factor.
-Filename: ``decay_RK2_Taylor2.py``.
+Filename: ``decay_RK2_Taylor2``.
 
 .. --- end exercise ---
 
@@ -1517,7 +1525,7 @@ Filename: ``decay_RK2_Taylor2.py``.
 
 .. _decay:fd2:exer:leapfrog1:
 
-Problem 13: Implement and investigate the Leapfrog scheme
+Problem 14: Implement and investigate the Leapfrog scheme
 ---------------------------------------------------------
 
 A Leapfrog scheme
@@ -1553,27 +1561,27 @@ checks if ``u`` fulfills the discrete equations:
 
 .. code-block:: python
 
-        import sympy as sp
+        import sympy as sym
         
         def analyze(u):
-            t, dt, a = sp.symbols('t dt a')
+            t, dt, a = sym.symbols('t dt a')
         
             print 'Analyzing u_e(t)=%s' % u(t)
             print 'u(0)=%s' % u(t).subs(t, 0)
         
             # Fit source term to the given u(t)
-            b = sp.diff(u(t), t) + a*u(t)
-            b = sp.simplify(b)
+            b = sym.diff(u(t), t) + a*u(t)
+            b = sym.simplify(b)
             print 'Source term b:', b
         
             # Residual in discrete equations; Forward Euler step
             R_step1 = (u(t+dt) - u(t))/dt + a*u(t) - b
-            R_step1 = sp.simplify(R_step1)
+            R_step1 = sym.simplify(R_step1)
             print 'Residual Forward Euler step:', R_step1
         
             # Residual in discrete equations; Leapfrog steps
             R = (u(t+dt) - u(t-dt))/(2*dt) + a*u(t) - b
-            R = sp.simplify(R)
+            R = sym.simplify(R)
             print 'Residual Leapfrog steps:', R
         
         def u_e(t):
@@ -1622,7 +1630,7 @@ instabilities of the Leapfrog scheme :eq:`decay:fd2:leapfrog`:
    The polynomial for :math:`A` has two roots, :math:`A_1` and :math:`A_2`. Let
    :math:`u^n` be a linear combination :math:`u^n=C_1A_1^n + C_2A_2^n`.
 
-3. Show that one of the roots is the explanation of the instability.
+3. Show that one of the roots is the reason for instability.
 
 4. Compare :math:`A` with the exact expression, using a Taylor series approximation.
 
@@ -1637,7 +1645,7 @@ u^{n+1})`, where :math:`\gamma` can be taken as 0.6.  Implement the filtered
 Leapfrog scheme and check that it can handle tests where the original
 Leapfrog scheme is unstable.
 
-Filenames: ``decay_leapfrog.py``, ``decay_leapfrog.pdf``.
+Filename: ``decay_leapfrog``.
 
 .. --- end exercise ---
 
@@ -1645,7 +1653,7 @@ Filenames: ``decay_leapfrog.py``, ``decay_leapfrog.pdf``.
 
 .. _decay:fd2:exer:uni:
 
-Problem 14: Make a unified implementation of many schemes
+Problem 15: Make a unified implementation of many schemes
 ---------------------------------------------------------
 
 Consider the linear ODE problem :math:`u^{\prime}(t)=-a(t)u(t) + b(t)`, :math:`u(0)=I`.
@@ -1676,7 +1684,7 @@ to specify the list :math:`c_0,\ldots,c_m` for a particular method, and
 implement subclasses for all the mentioned schemes.
 Verify the implementation by testing with a linear solution, which should
 be exactly reproduced by all methods.
-Filename: ``decay_schemes_oo.py``.
+Filename: ``decay_schemes_unified``.
 
 .. --- end exercise ---
 

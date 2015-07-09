@@ -8,7 +8,7 @@ Implementation  (1)
 
 .. admonition:: Goal
 
-   We want make a computer program for solving
+   We want to make a computer program for solving
    
    .. math::
            
@@ -53,7 +53,7 @@ compute :math:`u^1, u^2,\ldots,u^{N_t}`, where :math:`t_{N_t}=N_t\Delta t`, and
 **Computer Language: Python.**
 Any programming language can be used to generate the :math:`u^{n+1}` values from
 the formula above. However, in this document we shall mainly make use of
-Python of several reasons:
+Python. There several good reasons for this choice:
 
   * Python has a very clean, readable syntax (often known as
     "executable pseudo-code").
@@ -63,35 +63,36 @@ Python of several reasons:
 
   * Python is a full-fledged, very powerful programming language.
 
-  * Python is similar to, but much simpler to work with and
-    results in more reliable code than C++.
+  * Python is similar to C++, but is much simpler to work with and
+    results in more reliable code.
 
   * Python has a rich set of modules for scientific computing, and its
     popularity in scientific computing is rapidly growing.
 
   * Python was made for being combined with compiled languages
-    (C, C++, Fortran) to reuse existing numerical software and to
-    reach high computational performance of new implementations.
+    (C, C++, Fortran), so that existing numerical software can be reused,
+    and thereby easing high computational performance with new implementations.
 
-  * Python has extensive support for administrative task
+  * Python has extensive support for administrative tasks
     needed when doing large-scale computational investigations.
 
   * Python has extensive support for graphics (visualization,
     user interfaces, web applications).
 
-  * FEniCS, a very powerful tool for solving PDEs by
-    the finite element method, is most human-efficient to operate
-    from Python.
-
 Learning Python is easy. Many newcomers to the language will probably
 learn enough from the forthcoming examples to perform their own computer
 experiments. The examples start with simple Python code and gradually
-make use of more powerful constructs as we proceed. As long as it is
-not inconvenient for the problem at hand, our Python code is made as
+make use of more powerful constructs as we proceed. Unless it is
+inconvenient for the problem at hand, our Python code is made as
 close as possible to MATLAB code for easy transition between the two
 languages.
 
-Readers who feel the Python examples are too hard to follow will probably
+The coming programming examples assumes familiarity with
+variables, for loops, lists, arrays,
+functions, positional arguments, and keyword (named) arguments.
+A background in basic MATLAB programming is often enough to understand
+Python examples.
+Readers who feel the Python examples are too hard to follow will
 benefit from reading a tutorial, e.g.,
 
   * `The Official Python Tutorial <http://docs.python.org/2/tutorial/>`__
@@ -102,7 +103,7 @@ benefit from reading a tutorial, e.g.,
 
   * `A Beginner's Python Tutorial <http://en.wikibooks.org/wiki/A_Beginner's_Python_Tutorial>`__
 
-The author also has a comprehensive book [Ref1]_ that teaches
+The author also has a comprehensive book [Ref01]_ that teaches
 scientific programming with Python from the ground up.
 
 .. bumpy list of refs?
@@ -120,13 +121,23 @@ The algorithmic steps are
  2. for :math:`t=t_n`, :math:`n=1,2,\ldots,N_t`: compute :math:`u_n` using
     the :math:`\theta`-rule formula
 
+An implementation of a numerical algorithm is often referred to as
+a *solver*. We shall now make a solver for our model problem and
+realize the solver as a Python function. The function must take
+the input data :math:`I`, :math:`a`, :math:`T`, :math:`\Delta t`, and :math:`\theta` of the problem
+as arguments and return the solution as arrays ``u`` and ``t`` for
+:math:`u^n` and :math:`t^n`, :math:`n=0,\ldots,N_t`. The solver function used as
+
+.. code-block:: python
+
+        u, t = solver(I, a, T, dt, theta)
+
+One can now easily plot ``u`` versus ``t`` to visualize the solution.
+
 Function for computing the numerical solution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following Python function takes the input data of the problem
-(:math:`I`, :math:`a`, :math:`T`, :math:`\Delta t`, :math:`\theta`) as arguments and returns two arrays with
-the solution :math:`u^0,\ldots,u^{N_t}` and the mesh points :math:`t_0,\ldots,t_{N_t}`,
-respectively:
+The function ``solver`` may look as follows in Python:
 
 .. code-block:: python
 
@@ -149,7 +160,7 @@ of the function names are similar to what is found
 in the alternative scientific computing language MATLAB. Here
 we make use of
 
- * ``zeros(Nt+1)`` for creating an array of a size ``Nt+1``
+ * ``zeros(Nt+1)`` for creating an array of size ``Nt+1``
    and initializing the elements to zero
 
  * ``linspace(0, T, Nt+1)`` for creating an array with ``Nt+1``
@@ -159,35 +170,29 @@ The ``for`` loop deserves a comment, especially for newcomers to Python.
 The construction ``range(0, Nt, s)`` generates all integers from ``0`` to ``Nt``
 in steps of ``s``, *but not including* ``Nt``. Omitting ``s`` means ``s=1``.
 For example, ``range(0, 6, 3)``
-gives ``0`` and ``3``, while ``range(0, Nt)`` generates ``0``, ``1``, ..., ``Nt-1``.
+gives ``0`` and ``3``, while ``range(0, 6)`` generates
+the list ``[0, 1, 2, 3, 4, 5]``.
 Our loop implies the following assignments to ``u[n+1]``: ``u[1]``, ``u[2]``, ...,
 ``u[Nt]``, which is what we want since ``u`` has length ``Nt+1``.
 The first index in Python arrays or lists is *always* ``0`` and the
-last is then ``len(u)-1``. The length of an array ``u`` is obtained by
-``len(u)`` or ``u.size``.
-
-To compute with the ``solver`` function, we need to *call* it. Here
-is a sample call:
-
-.. code-block:: python
-
-        u, t = solver(I=1, a=2, T=8, dt=0.8, theta=1)
+last is then ``len(u)-1`` (the length of an array ``u`` is obtained by
+``len(u)`` or ``u.size``).
 
 Integer division
 ~~~~~~~~~~~~~~~~
 
 The shown implementation of the ``solver`` may face problems and
-wrong results if ``T``, ``a``, ``dt``, and ``theta`` are given as integers,
-see :ref:`decay:exer:intdiv` and :ref:`decay:exer:decay1err`.
-The problem is related to *integer division* in Python (as well as
-in Fortran, C, C++, and many other computer languages): ``1/2`` becomes ``0``,
-while ``1.0/2``, ``1/2.0``, or ``1.0/2.0`` all become ``0.5``. It is enough
+wrong results if ``T``, ``a``, ``dt``, and ``theta`` are given as integers
+(see :ref:`decay:exer:intdiv` and :ref:`decay:exer:decay1err`).
+The problem is related to *integer division* in Python (as
+in Fortran, C, C++, and many other computer languages!): ``1/2`` becomes ``0``,
+while ``1.0/2``, ``1/2.0``, or ``1.0/2.0`` all become ``0.5``. So, it is enough
 that at least the nominator or the denominator is a real number
 (i.e., a ``float`` object)
-to ensure correct mathematical division. Inserting
+to ensure a correct mathematical division. Inserting
 a conversion ``dt = float(dt)``
 guarantees that ``dt`` is
-``float`` and avoids problems in :ref:`decay:exer:decay1err`.
+``float``.
 
 Another problem with computing :math:`N_t=T/\Delta t` is that we should
 round :math:`N_t` to the nearest integer. With ``Nt = int(T/dt)`` the ``int``
@@ -252,12 +257,13 @@ a function are called *doc strings*. There are tools that can automatically
 produce nicely formatted documentation by extracting the definition of
 functions and the contents of doc strings.
 
-It is strongly recommended to equip any function whose purpose
-is not obvious with a doc string. Nevertheless, the forthcoming
+It is strongly recommended to equip any function with a doc string,
+unless the purpose of the function
+is not obvious. Nevertheless, the forthcoming
 text deviates from this rule if the function is explained in the text.
 
-Formatting of numbers
-~~~~~~~~~~~~~~~~~~~~~
+Formatting numbers
+~~~~~~~~~~~~~~~~~~
 
 Having computed the discrete solution ``u``, it is natural to look at
 the numbers:
@@ -268,11 +274,12 @@ the numbers:
         for i in range(len(t)):
             print t[i], u[i]
 
-This compact ``print`` statement gives unfortunately quite ugly output
+This compact ``print`` statement unfortunately gives less readable output
 because the ``t`` and ``u`` values are not aligned in nicely formatted columns.
-To fix this problem, we recommend to use the *printf format*, supported most
+To fix this problem, we recommend to use the *printf format*, supported in most
 programming languages inherited from C. Another choice is
-Python's recent *format string syntax*.
+Python's recent *format string syntax*. Both kind of syntax is illustrated
+below.
 
 .. index:: printf format
 
@@ -286,7 +293,8 @@ this with the printf format:
 The percentage signs signify "slots" in the text where the variables
 listed at the end of the statement are inserted. For each "slot" one
 must specify a format for how the variable is going to appear in the
-string: ``s`` for pure text, ``d`` for an integer, ``g`` for a real number
+string: ``f`` for float (with 6 decimals),
+``s`` for pure text, ``d`` for an integer, ``g`` for a real number
 written as compactly as possible, ``9.3E`` for scientific notation with
 three decimals in a field of width 9 characters (e.g., ``-1.351E-2``),
 or ``.2f`` for standard decimal notation with two decimals
@@ -322,9 +330,9 @@ way:
         Terminal> python decay_v1.py
 
 The text ``Terminal>`` just indicates a prompt in a
-Unix/Linux or DOS terminal window. After this prompt, which will look
-different in your terminal window, depending on the terminal application
-and how it is set up, commands like ``python decay_v1.py`` can be issued.
+Unix/Linux or DOS terminal window. After this prompt, which may look
+different in your terminal window (depending on the terminal application
+and how it is set up), commands like ``python decay_v1.py`` can be issued.
 These commands are interpreted by the operating system.
 
 We strongly recommend to run Python programs within the IPython shell.
@@ -352,10 +360,10 @@ Inside the IPython shell, our program ``decay_v1.py`` is run by the command
         In [2]:
 
 The advantage of running programs in IPython are many: previous commands
-are easily recalled with the up arrow, ``%pdb`` turns on debugging so that
+are easily recalled with the up arrow, ``%pdb`` turns on a debugger so that
 variables can be examined if the program
-aborts due to an exception, output of commands are stored in variables,
-programs and statements can be profiled,
+aborts (due to a Python exception), output of commands are stored in variables,
+the computing time spent on a set of statements can be measured,
 any operating system command can be executed, modules can be loaded
 automatically and other customizations can be performed when starting
 IPython -- to mention a few of the most
@@ -390,9 +398,9 @@ by the intuitive command ``plot(t, u)``:
         plot(t, u)
         show()
 
-It will be illustrative to also plot :math:`{u_{\small\mbox{e}}}(t)` for comparison. We first
-need to make a function for computing the analytical solution :math:`{u_{\small\mbox{e}}}(t)=Ie^{-at}`
-of the model problem:
+It will be illustrative to also plot the exact solution
+:math:`{u_{\small\mbox{e}}}(t)=Ie^{-at}` for comparison. We first
+need to make a Python function for computing the exact solution:
 
 .. code-block:: python
 
@@ -425,7 +433,7 @@ We can also plot the curves with different colors and styles, e.g.,
              t,   u,   'r--o')       # red dashes w/circles
 
 With more than one curve in the plot we need to associate each curve
-with a legend. We also want appropriate names on the axis, a title,
+with a legend. We also want appropriate names on the axes, a title,
 and a file containing the plot as an image for inclusion in reports.
 The Matplotlib package (``matplotlib.pyplot``) contains functions for
 this purpose. The names of the functions are similar to the plotting
@@ -454,7 +462,7 @@ the comparison plot becomes
         plot_numerical_and_exact(I=1, a=2, T=8, dt=0.8, theta=1)
         show()
 
-Note that ``savefig`` here creates a PNG file whose name reflects the
+Note that ``savefig`` here creates a PNG file whose name includes the
 values of :math:`\theta` and :math:`\Delta t` so that we can easily distinguish
 files from different runs with :math:`\theta` and :math:`\Delta t`.
 
@@ -477,31 +485,51 @@ Verifying the implementation
 
 It is easy to make mistakes while deriving and implementing numerical
 algorithms, so we should never believe in the solution before it has
-been thoroughly verified.  The most obvious idea to verify the
+been thoroughly verified.  The most obvious idea for verification
+of the
 computations is to compare the numerical solution with the exact
-solution, when that exists, but there will always be a discrepancy
+solution, when that exists. However, note that there will always
+be a discrepancy
 between these two solutions because of the numerical
-approximations. The challenging question is whether we have the
+approximations. We cannot precisely quantify the approximation
+errors. The challenging question is therefore whether we have the
 mathematically correct discrepancy or if we have another, maybe small,
-discrepancy due to both an approximation error and an error in the
-implementation. When looking at Figure :ref:`decay:fig:v2`, it is
-impossible to judge whether the program is correct or not.
+discrepancy due to both an approximation error *and* an error in the
+implementation. It is thus
+impossible to judge whether the program is correct or not by
+just looking at the graphs in Figure :ref:`decay:fig:v2`.
 
-The purpose of *verifying* a program is to bring evidence for the
-property that there are no errors in the implementation. To avoid
-mixing unavoidable approximation errors and undesired implementation
-errors, we should try to make tests where we have some exact
+
+.. admonition:: Verification and validation
+
+   The purpose of *verifying* a program is to bring evidence for the
+   property that there are no errors in the implementation. A related
+   term, *validate* (and *validation*),
+   addresses the question if the ODE model is a good
+   representation of the phenomena we want to simulate. To remember the
+   difference between verification and validation, verification is
+   about *solving the equations right*, while validation is about *solving
+   the right equations*. We must always perform a verification before
+   it is meaningful to believe in the computations and perform validation
+   (which compares the program results with physical experiments or observations).
+
+
+
+
+To avoid
+mixing the unavoidable numerical approximation errors and the
+undesired implementation errors, we should try to make tests where
+we have some exact
 computation of the discrete solution or at least parts of it.
 Examples will show how this can be done.
 
 Running a few algorithmic steps by hand
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The simplest approach to produce a correct non-trivial
-reference solution for the discrete
-solution :math:`u` of finite difference equations is to compute a few
-steps of the algorithm by hand. Then we can compare the hand
-calculations with numbers produced by the program.
+The simplest approach to produce a correct non-trivial reference
+solution for the discrete solution :math:`u`, is to compute a few steps of
+the algorithm by hand. Then we can compare the hand calculations with
+numbers produced by the program.
 
 A straightforward approach is to use a calculator and
 compute :math:`u^1`, :math:`u^2`, and :math:`u^3`. With :math:`I=0.1`, :math:`\theta=0.8`,
@@ -540,15 +568,19 @@ Comparison of these manual calculations with the result of the
 
 The ``test_solver_three_steps`` function follows widely used conventions
 for *unit testing*. By following such conventions we can at a later
-stage easily execute a big test suite for our software. The
-conventions are three-fold:
+stage easily execute a big test suite for our software. That is, after
+a small modification is made to the program, we can by typing just
+a short command, run through a large number of tests to check that the
+modifications do not break any computations.
+The conventions boil down to three rules:
 
- * The test function starts with ``test_`` and takes no arguments.
+ * The test function name must start with ``test_`` and the function
+   cannot take any arguments.
 
- * The test ends up in a boolean expression that is ``True`` if
-   the test passed and ``False`` if it failed.
+ * The test must end up in a boolean expression that is ``True`` if
+   the test was passed and ``False`` if it failed.
 
- * The function runs ``assert`` on the boolean expression, resulting
+ * The function must run ``assert`` on the boolean expression, resulting
    in program abortion (due to an ``AssertionError`` exception) if
    the test failed.
 
@@ -572,7 +604,7 @@ found in the file `decay_v3.py <http://tinyurl.com/nm5587k/decay/decay_v3.py>`__
 Computing the numerical error as a mesh function
 ------------------------------------------------
 
-Now that we have some evidence for a correct implementation, we are in a
+Now that we have some evidence for a correct implementation, we are in
 position to compare the computed :math:`u^n` values in the ``u`` array with
 the exact :math:`u` values at the mesh points, in order to study the error
 in the numerical solution.
@@ -580,19 +612,19 @@ in the numerical solution.
 .. index:: representative (mesh function)
 
 A natural way to compare the exact and discrete solutions is to
-calculate their difference as a mesh function:
+calculate their difference as a mesh function for the error:
 
 .. math::
         
         e^n = {u_{\small\mbox{e}}}(t_n) - u^n,\quad n=0,1,\ldots,N_t {\thinspace .}
         
 
-We may view :math:`{u_{\small\mbox{e}}}^n = {u_{\small\mbox{e}}}(t_n)` as the representation of :math:`{u_{\small\mbox{e}}}(t)`
-as a mesh function rather than a continuous function defined for all
-:math:`t\in [0,T]` (:math:`{u_{\small\mbox{e}}}^n` is often called the *representative* of
-:math:`{u_{\small\mbox{e}}}` on the mesh). Then, :math:`e^n = {u_{\small\mbox{e}}}^n - u^n` is clearly
-the difference of two mesh functions. This interpretation of :math:`e^n`
-is natural when programming.
+We may view the mesh function
+:math:`{u_{\small\mbox{e}}}^n = {u_{\small\mbox{e}}}(t_n)` as a representation of the continuous function :math:`{u_{\small\mbox{e}}}(t)`
+defined for all :math:`t\in [0,T]`. In fact,
+:math:`{u_{\small\mbox{e}}}^n` is often called the *representative* of
+:math:`{u_{\small\mbox{e}}}` on the mesh. Then, :math:`e^n = {u_{\small\mbox{e}}}^n - u^n` is clearly
+the difference of two mesh functions.
 
 The error mesh function :math:`e^n` can be computed by
 
@@ -609,6 +641,8 @@ and associated with the points in the array ``t``.
 
 .. index:: array computing
 
+.. index:: vectorization
+
 
 .. admonition:: Array arithmetics
 
@@ -619,24 +653,27 @@ and associated with the points in the array ``t``.
            u_e = exact_solution(t, I, a)
            e = u_e - u
    
-   are primary examples of array arithmetics: ``t`` is an
+   demonstrate some standard examples of array arithmetics: ``t`` is an
    array of mesh points that we pass to ``exact_solution``. This function
    evaluates ``-a*t``, which is a scalar times an array, meaning that
    the scalar is multiplied with each array element.
    The result is an array, let us call it ``tmp1``. Then
    ``exp(tmp1)`` means applying the exponential function to each element in
-   ``tmp``, resulting an array, say ``tmp2``. Finally, ``I*tmp2`` is computed
+   ``tmp1``, giving an array, say ``tmp2``. Finally, ``I*tmp2`` is computed
    (scalar times array) and ``u_e`` refers to this array returned from
    ``exact_solution``. The expression ``u_e - u`` is the difference between
    two arrays, resulting in a new array referred to by ``e``.
+   
+   Replacement of array element computations inside a loop by array
+   arithmetics is known as *vectorization*.
 
 
 
 
 .. _decay:computing:error:norm:
 
-Computing the norm of the numerical error
------------------------------------------
+Computing the norm of the error mesh function
+---------------------------------------------
 
 .. index:: continuous function norms
 
@@ -644,7 +681,7 @@ Computing the norm of the numerical error
    single: norm; continuous
 
 Instead of working with the error :math:`e^n` on the entire mesh, we
-often want one number expressing the size of the error.
+often want a single number expressing the size of the error.
 This is obtained by taking the norm of the error function.
 
 Let us first define norms of a function :math:`f(t)`
@@ -682,7 +719,14 @@ The :math:`L^2` norm :eq:`decay:norms:L2` ("L-two norm")
 has nice mathematical properties and
 is the most popular norm. It is a generalization
 of the well-known Eucledian norm of vectors to functions.
-The :math:`L^\infty` is also called the max norm or the supremum norm.
+The :math:`L^1` norm looks simpler and more intuitive, but has less
+nice mathematical properties compared to the two other norms, so
+it is much less used in computations.
+The :math:`L^\infty` is also called the max norm or the supremum norm
+and is widely used. It focuses on a single point with the largest
+value of :math:`|f|`, while the other norms measure average behavior of
+the function.
+
 In fact, there is a whole family of norms,
 
 .. math::
@@ -721,14 +765,16 @@ convenience of having a simpler formula, is
          ||f^n||_{\ell^2} = \left(\Delta t\sum_{n=0}^{N_t} (f^n)^2\right)^{1/2} {\thinspace .}
 
 This is called the discrete :math:`L^2` norm and denoted by :math:`\ell^2`.
-The error in :math:`||f||_{\ell^2}^2` compared with the Trapezoidal
-integration formula
-is :math:`\Delta t((f^0)^2 + (f^{N_t})^2)/2`, which means perturbed weights
-at the end points of the mesh function, and the error goes to zero as
-:math:`\Delta t\rightarrow 0`. As long as we are consistent and
+If :math:`||f||_{\ell^2}^2` (i.e., the square of the norm) is used
+instead of the Trapezoidal integration formula,
+the error
+is :math:`\Delta t((f^0)^2 + (f^{N_t})^2)/2`. This means that the
+weights at the end points of the mesh function are perturbed,
+but as :math:`\Delta t\rightarrow 0`, the error from this perturbation goes
+to zero. As long as we are consistent and
 stick to one kind of integration
 rule for the norm of a mesh function, the details and accuracy of this
-rule is not of concern.
+rule is of no concern.
 
 The three discrete norms for a mesh function :math:`f^n`, corresponding to
 the :math:`L^2`, :math:`L^1`, and :math:`L^\infty` norms of :math:`f(t)` defined above, are
@@ -739,7 +785,7 @@ defined by
 .. math::
    :label: decay:norms:l2
         
-        ||f^n||_{\ell^2}  \left( \Delta t\sum_{n=0}^{N_t} (f^n)^2\right)^{1/2},
+        ||f^n||_{\ell^2} = \left( \Delta t\sum_{n=0}^{N_t} (f^n)^2\right)^{1/2},
         
         
 
@@ -748,7 +794,7 @@ defined by
 .. math::
    :label: decay:norms:l1
           
-        ||f^n||_{\ell^1}  \Delta t\sum_{n=0}^{N_t} |f^n|
+        ||f^n||_{\ell^1} = \Delta t\sum_{n=0}^{N_t} |f^n|
         
         
 
@@ -757,7 +803,7 @@ defined by
 .. math::
    :label: decay:norms:linf
           
-        ||f^n||_{\ell^\infty}  \max_{0\leq n\leq N_t}|f^n|{\thinspace .}
+        ||f^n||_{\ell^\infty} = \max_{0\leq n\leq N_t}|f^n|{\thinspace .}
         
         
 
@@ -765,8 +811,11 @@ Note that the :math:`L^2`, :math:`L^1`, :math:`\ell^2`, and :math:`\ell^1` norms
 length of the interval of interest (think of :math:`f=1`, then the
 norms are proportional to :math:`\sqrt{T}` or :math:`T`). In some applications it
 is convenient to think of a mesh function as just a vector of function
-values and neglect the information of the mesh points. Then we can
-replace :math:`\Delta t` by :math:`T/N_t` and drop :math:`T`. Moreover, it is convenient
+values without any relation to the interval :math:`[0,T]`.
+Then one can replace :math:`\Delta t` by :math:`T/N_t` and simply drop :math:`T` (which
+is just a common scaling factor in the norm,
+independent of the vector of function
+values). Moreover, people prefer
 to divide by the total length of the vector, :math:`N_t+1`, instead of :math:`N_t`.
 This reasoning gives rise to the *vector norms* for a vector
 :math:`f=(f_0,\ldots,f_{N})`:
@@ -863,11 +912,11 @@ can achieve with array computing.
 Experiments with computing and plotting
 ---------------------------------------
 
-Let us wrap up the computation of the error measure and all the
-plotting statements for comparing the exact and numerical
-solution in a new function ``explore``. This function
-can be called for various :math:`\theta` and :math:`\Delta t` values
-to see how the error varies with the method and the mesh resolution:
+Let us write down a new function that wraps up the computation and all
+the plotting statements used for comparing the exact and numerical
+solutions. This function can be called with various :math:`\theta` and
+:math:`\Delta t` values to see how the error depends on the method and mesh
+resolution.
 
 .. code-block:: python
 
@@ -901,10 +950,10 @@ draw the new pair of curves in the same plot window, while we want
 the different pairs to appear in separate windows and files.
 Calling ``figure()`` ensures this.
 
-Filenames with the method name (FE, BE, or CN) rather than the
-:math:`\theta` value embedded in the name, can easily be created with
-the aid of a little Python dictionary for mapping :math:`\theta` to
-method acronyms:
+Instead of including the :math:`\theta` value in the filename to implicitly
+inform about the applied method, the code utilizes a little Python
+dictionary that maps each relevant :math:`\theta` value to a corresponding
+acronym for the method name (FE, BE, or CN):
 
 .. code-block:: python
 
@@ -920,51 +969,57 @@ method acronyms:
 .. index:: viewing graphics files
 
 The ``explore`` function stores the plot in two different image file formats:
-PNG and PDF. The PNG format is aimed
-at being included in HTML files and the PDF format in LaTeX documents
-(more precisely, in pdfLaTeX documents).
+PNG and PDF. The PNG format is suitable for
+being included in HTML documents, while the PDF format provides
+higher quality for LaTeX (i.e., pdfLaTeX) documents.
 Frequently used viewers for these
 image files on Unix systems are ``gv`` (comes with Ghostscript)
 for the PDF format and
-``display`` (from the ImageMagick) suite for PNG files:
+``display`` (from the ImageMagick software suite) for PNG files:
 
 .. code-block:: text
 
         Terminal> gv BE_0.5.pdf
         Terminal> display BE_0.5.png
 
-A main program may run a loop over the three methods (:math:`\theta` values)
+A main program may run a loop over the three methods (given by
+their corresponding :math:`\theta` values)
 and call ``explore`` to compute errors and make plots:
 
 .. code-block:: python
 
         def main(I, a, T, dt_values, theta_values=(0, 0.5, 1)):
+            print 'theta   dt       error'  # Column headings in table
             for theta in theta_values:
                 for dt in dt_values:
                     E = explore(I, a, T, dt, theta, makeplot=True)
-                    print '%3.1f %6.2f: %12.3E' % (theta, dt, E)
+                    print '%4.1f %6.2f: %12.3E' % (theta, dt, E)
+        
+        main(I=1, a=2, T=5, dt_values=[0.4, 0.04])
 
-The complete code containing the functions above
-resides in the file `decay_plot_mpl.py <http://tinyurl.com/nm5587k/decay/decay_plot_mpl.py>`__.
+The file `decay_plot_mpl.py <http://tinyurl.com/nm5587k/decay/decay_plot_mpl.py>`__
+contains the complete code with the functions above.
 Running this program results in
 
 .. code-block:: text
 
         Terminal> python decay_plot_mpl.py
-        0.0   0.40:    2.105E-01
-        0.0   0.04:    1.449E-02
-        0.5   0.40:    3.362E-02
-        0.5   0.04:    1.887E-04
-        1.0   0.40:    1.030E-01
-        1.0   0.04:    1.382E-02
+        theta   dt       error
+         0.0   0.40:    2.105E-01
+         0.0   0.04:    1.449E-02
+         0.5   0.40:    3.362E-02
+         0.5   0.04:    1.887E-04
+         1.0   0.40:    1.030E-01
+         1.0   0.04:    1.382E-02
 
 We observe that reducing :math:`\Delta t` by a factor of 10 increases the
-accuracy for all three methods (:math:`\theta` values). We also see that
+accuracy for all three methods. We also see that
 the combination of :math:`\theta=0.5` and a small time step :math:`\Delta t =0.04`
 gives a much more accurate solution, and that :math:`\theta=0` and :math:`\theta=1`
 with :math:`\Delta t = 0.4` result in the least accurate solutions.
 
-Figure :ref:`decay:fig:FE1` demonstrates that the numerical solution for
+Figure :ref:`decay:fig:FE1` demonstrates that the numerical solution
+produced by the Forward Euler method with
 :math:`\Delta t=0.4` clearly lies below the exact curve, but that the
 accuracy improves considerably by reducing the time step by a factor
 of 10.
@@ -976,6 +1031,24 @@ of 10.
 
    *The Forward Euler scheme for two values of the time step*
 
+The behavior of the two other schemes is shown in Figures :ref:`decay:fig:BE1`
+and :ref:`decay:fig:CN1`. Crank-Nicolson is obviously the most accurate
+scheme from this visual point of view.
+
+.. _decay:fig:BE1:
+
+.. figure:: BE1.png
+   :width: 600
+
+   *The Backward Euler scheme for two values of the time step*
+
+.. _decay:fig:CN1:
+
+.. figure:: CN1.png
+   :width: 600
+
+   *The Crank-Nicolson scheme for two values of the time step*
+
 .. index:: cropping images
 
 .. index:: montage program
@@ -983,7 +1056,8 @@ of 10.
 Combining plot files
 ~~~~~~~~~~~~~~~~~~~~
 
-Mounting two PNG files, as done in the figure, is easily done by the
+Mounting two PNG files beside each other, as done in Figures
+:ref:`decay:fig:FE1`-:ref:`decay:fig:CN1`, is easily carried out by the
 `montage <http://www.imagemagick.org/script/montage.php>`__ program
 from the ImageMagick suite:
 
@@ -993,7 +1067,7 @@ from the ImageMagick suite:
                   FE_0.4.png FE_0.04.png FE1.png
         Terminal> convert -trim FE1.png FE1.png
 
-The ``-geometry`` argument is used to specify the size of the image, and here
+The ``-geometry`` argument is used to specify the size of the image. Here,
 we preserve the individual sizes of the images. The ``-tile HxV`` option
 specifies ``H`` images in the horizontal direction and ``V`` images in
 the vertical direction. A series of image files to be combined are then listed,
@@ -1021,24 +1095,6 @@ in the PDF format and combined using the ``pdftk``, ``pdfnup``, and ``pdfcrop`` 
 Here, ``pdftk`` combines images into a multi-page PDF file, ``pdfnup``
 combines the images in individual pages to a table of images (pages),
 and ``pdfcrop`` removes white margins in the resulting combined image file.
-
-The behavior of the two other schemes is shown in Figures :ref:`decay:fig:BE1`
-and :ref:`decay:fig:CN1`. Crank-Nicolson is obviously the most accurate
-scheme from this visual point of view.
-
-.. _decay:fig:BE1:
-
-.. figure:: BE1.png
-   :width: 600
-
-   *The Backward Euler scheme for two values of the time step*
-
-.. _decay:fig:CN1:
-
-.. figure:: CN1.png
-   :width: 600
-
-   *The Crank-Nicolson scheme for two values of the time step*
 
 Plotting with SciTools
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1084,7 +1140,8 @@ By default, Easyviz employs Matplotlib for plotting, but `Gnuplot <http://www.gn
         Terminal> python decay_plot_st.py --SCITOOLS_easyviz_backend gnuplot
         Terminal> python decay_plot_st.py --SCITOOLS_easyviz_backend grace
 
-The backend used for creating plots (and numerous other options)
+The actual tool used for creating plots (called *backend*)
+and numerous other options
 can be permanently set in SciTool's configuration file.
 
 All the Gnuplot windows are launched without any need to kill one before
@@ -1094,21 +1151,22 @@ Another advantage of Gnuplot is the automatic choice of sensible
 and distinguishable line types in black-and-white PDF and PostScript
 files.
 
-Regarding functionality for annotating plots with title, labels on the
-axis, legends, etc., we refer to the documentation of Matplotlib and
-SciTools for more detailed information on the syntax. The hope is that
+For more detailed information on syntax and plotting capabilities,
+we refer to the Matplotlib [Ref02]_
+and SciTools [Ref03]_ documentation.
+The hope is that
 the programming syntax explained so far suffices for understanding the
-code and learning more from a combination of the forthcoming examples
-and other resources such as books and web pages.
+basic plotting functionality and being able to look up
+the cited technical documentation.
 
 
-.. admonition:: Test the understanding
+.. admonition:: Test your understanding
 
    :ref:`decay:app:exer:cooling:py` asks you to implement
    a solver for a problem that is slightly different from the
    one above. You may use the ``solver`` and ``explore`` functions
    explained above as a starting point. Apply the new solver
-   to :ref:`decay:app:exer:cooling:murder`.
+   to solve :ref:`decay:app:exer:cooling:murder`.
 
 
 
@@ -1117,31 +1175,35 @@ Memory-saving implementation
 ----------------------------
 
 The computer memory requirements of our implementations so far
-consists mainly of the ``u`` and ``t`` arrays, both of length :math:`N_t+1`,
-plus some other temporary arrays that Python needs for intermediate
-results if we do array arithmetics in our program (e.g., ``I*exp(-a*t)``
-needs to store ``a*t`` before ``-`` can be applied to it and then ``exp``).
+consist mainly of the ``u`` and ``t`` arrays, both of length :math:`N_t+1`.
+Also, for the programs that involve array arithmetics, Python needs
+memory space for storing temporary arrays. For example, computing
+``I*exp(-a*t)`` requires storing the intermediate result ``a*t`` before
+the preceding minus sign can be applied. The resulting array is
+temporarily stored and provided as input to the ``exp`` function.
 Regardless of how we implement simple ODE problems, storage
-requirements are very modest and put not restriction on how we choose
-our data structures and algorithms.  Nevertheless, when the methods
-for ODEs used here are applied to three-dimensional partial
-differential equation (PDE) problems, memory storage requirements
+requirements are very modest and put no restrictions on how we choose
+our data structures and algorithms.  Nevertheless, when the presented methods
+are applied to three-dimensional PDE problems, memory storage requirements
 suddenly become a challenging issue.
 
+Let us briefly elaborate on how large the storage requirements can
+quickly be in three-dimensional problems.
 The PDE counterpart to our model problem :math:`u'=-a` is a diffusion
 equation :math:`u_t = a\nabla^2 u` posed on a space-time domain. The
 discrete representation of this domain may in 3D be a spatial mesh of
-:math:`M^3` points and a time mesh of :math:`N_t` points. A typical desired value
-for :math:`M` is 100 in many applications, or even :math:`1000`.  Storing all the
-computed :math:`u` values, like we have done in the programs so far, demands
-storage of some arrays of size :math:`M^3N_t`, giving a factor of :math:`M^3`
-larger storage demands compared to our ODE programs. Each real number
-in the array for :math:`u` requires 8 bytes (b) of storage. With :math:`M=100` and
+:math:`M^3` points and a time mesh of :math:`N_t` points.
+In many applications, it is quite typical that :math:`M` is at least 100,
+or even 1000.  Storing all the
+computed :math:`u` values, like we have done in the programs so far, would demand
+storing arrays of size up to :math:`M^3N_t`. This would give a factor of :math:`M^3`
+larger storage demands compared to what was required by our ODE programs. Each real number
+in the ``u`` array requires 8 bytes (b) of storage. With :math:`M=100` and
 :math:`N_t=1000`, there is a storage demand of :math:`(10^3)^3\cdot 1000\cdot 8 =
 8` Gb for the solution array.  Fortunately, we can usually get rid of
 the :math:`N_t` factor, resulting in 8 Mb of storage.  Below we explain how
-this is done, and the technique is almost always applied in
-implementations of PDE problems.
+this is done (the technique is almost always applied in
+implementations of PDE problems).
 
 .. Fortunately, the methods we use to solve ODEs
 
@@ -1156,14 +1218,14 @@ implementations of PDE problems.
 .. memory requirements in scientific computing algorithms.
 
 Let us critically evaluate how much we really need to store in the
-computer's memory in our implementation of the :math:`\theta` method. To
+computer's memory for our implementation of the :math:`\theta` method. To
 compute a new :math:`u^{n+1}`, all we need is :math:`u^n`. This implies that the
-previous :math:`u^{n-1},u^{n-2},\dots,u^0` values do not need to be stored
-in an array, although this is convenient for plotting and data
+previous :math:`u^{n-1},u^{n-2},\dots,u^0` values do not need to be stored,
+although this is convenient for plotting and data
 analysis in the program.  Instead of the ``u`` array we can work with
 two variables for real numbers, ``u`` and ``u_1``, representing :math:`u^{n+1}`
 and :math:`u^n` in the algorithm, respectively.  At each time level, we
-update ``u`` from ``u_1`` and then set ``u_1 = u`` so that the computed
+update ``u`` from ``u_1`` and then set ``u_1 = u``, so that the computed
 :math:`u^{n+1}` value becomes the "previous" value :math:`u^n` at the next time
 level. The downside is that we cannot plot the solution after the
 simulation is done since only the last two numbers are available.  The
@@ -1202,7 +1264,7 @@ recent values of the unknown:
             outfile.close()
             return u, t
 
-This code snippet serves as a quick introduction to file writing in Python.
+This code snippet also serves as a quick introduction to file writing in Python.
 Reading the data in the file into arrays ``t`` and ``u`` are done by the
 function
 
@@ -1222,10 +1284,10 @@ function
 
 This type of file with numbers in rows and columns is very common, and
 ``numpy`` has a function ``loadtxt`` which loads such tabular data into a
-two-dimensional array, say with name ``data``. The number in row ``i`` and
-column ``j`` is then ``data[i,j]``.  The whole column number ``j`` can be
-extracted by ``data[:,j]``.  A version of ``read_file`` using ``np.loadtxt``
-reads
+two-dimensional array named by the user. Say the name is ``data``, the
+number in row ``i`` and column ``j`` is then ``data[i,j]``.  The whole
+column number ``j`` can be extracted by ``data[:,j]``.  A version of
+``read_file`` using ``np.loadtxt`` reads
 
 .. code-block:: python
 

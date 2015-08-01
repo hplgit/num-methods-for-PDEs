@@ -2,33 +2,54 @@
 
 .. _softeng1:prog:se:git:
 
-Packaging the software for other users
-======================================
+Sharing the software with other users
+=====================================
 
-As soon as you have some working software with a potential to be shared
+As soon as you have some working software that you intend to share
 with others, you should package your software in a standard way such
 that users can easily download your software, install it, improve it,
-and ask you to approve the improvements in new versions of the software.
+and ask you to approve their improvements in new versions of the software.
 During recent years, the software development community has established
-quite firm tools and rules for how this is done.
+quite firm tools and rules for how all this is done. The following
+subsections cover three steps in sharing software:
 
-Software directory tree
------------------------
+1. Organizing the software for public distribution.
+
+2. Uploading the software to a cloud service (here GitHub).
+
+3. Downloading and installing the software.
+
+Organizing the software directory tree
+--------------------------------------
 
 We start with organizing our software as a directory tree. Our
-software consists of one module file, ``decay.py``, and potentially
-unit tests in a separate file in a directory ``tests``.
+software consists of one module file, ``decay.py``, and possibly some
+unit tests in a separate file located in a directory ``tests``.
+
+The ``decay.py`` can be used as a module or as a program. For distribution
+to other users who install the program ``decay.py`` in system directories,
+we need to insert the following line at the top of the file:
+
+.. code-block:: python
+
+        #!/usr/bin/env python
+
+This line makes it possible to write just the filename and get the
+file executed by the ``python`` program (or more precisely, the first
+``python`` program found in the directories in the ``PATH`` environment
+variable).
 
 Distributing just a module file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Let us start out with the minimum solution: just the ``decay.py``
-file containing all test functions for all unit tests. The the software
-is just one file and all we need is a directory with this file.
-In addition, users will expect an installation script ``setup.py``
-and a ``README`` file telling what the software is about, email to the
-author, URL where the software can be downloaded, or other similar
-information.
+Let us start out with the minimum solution alternative: distributing
+just the ``decay.py`` file. Then the software is just one file and all
+we need is a directory with this file.  Users will also this directory
+to contain an installation script ``setup.py`` and a ``README`` file
+telling what the software is about, the author's email address, a URL
+for downloading the software, and other useful information.
+
+.. index:: setup.py
 
 The ``setup.py`` file can be as short as
 
@@ -42,26 +63,9 @@ The ``setup.py`` file can be as short as
               )
 
 The ``py_modules`` argument specifies a list of modules to be installed, while
-``scripts`` specifies programs to be run. The modules are typically
-installed in some ``lib`` directory on the computer system, e.g.,
-``/usr/local/lib/python2.7/dist-packages``, while executable programs go to
-``/usr/local/bin``. To install the ``decay.py`` in these two places, a user
-just runs
-
-.. code-block:: text
-
-        Terminal> sudo python setup.py install
-
-A user can easily install the software on her personal account if
-a system-wide installation is not desirable. We refer to the
-`installation documentation <https://docs.python.org/2/install/index.html#alternate-installation>`__ for the many arguments that can be given to ``setup.py``.
-
-The software package is in the case above a directory ``decay`` with three files
-
-.. code-block:: text
-
-        Terminal> ls decay
-        README   decay.py   setup.py
+``scripts`` specifies stand-alone programs. Our ``decay.py`` can be used
+either as a module or as an executable program, so we want users to
+have both possibilities.
 
 Distributing a package
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -69,42 +73,9 @@ Distributing a package
 If the software consists of more files than one or two modules, one
 should make a Python *package* out of it. In our case we make a
 package ``decay`` containing one module, also called ``decay``.
-A typical import for a user is then
-
-.. code-block:: text
-
-        import decay
-        u, t = decay.decay.solver(...)
 
 To make a package ``decay``, create a directory ``decay`` and an empty
 file in it with name ``__init__.py``.
-
-
-.. admonition:: Package import in ``__init__.py``
-
-   One can ease the use of the package by providing a somewhat simpler
-   import like
-   
-   .. code-block:: text
-   
-           import decay
-           u, t = decay.solver(...)
-           
-           # or
-           from decay import solver
-           u, t = solver(...)
-   
-   This is accomplished by putting an import statement in the ``__init__.py``
-   file, which is always run when doing the package import ``import decay``
-   or ``from decay import``. The ``__init__.py`` file reads
-   
-   .. code-block:: python
-   
-           from decay import *
-
-
-
-
 A ``setup.py`` script must now specify the directory name of the package
 and also an executable program (``scripts=``)
 in case we want to run ``decay.py`` as a stand-alone application:
@@ -127,23 +98,23 @@ We have also added some author and download information.
 The reader is referred to the `Distutils documentation <https://docs.python.org/2/distutils/setupscript.html>`__ for more information on how to
 write ``setup.py`` scripts.
 
+.. index:: Distutils
+
 
 .. admonition:: Remark about the executable file
 
-   The executable program, ``decay.py``, is above taken to be the complete module
-   file ``decay.py``. It would normally be preferred to instead write a very
-   short script essentially importing ``decay`` and
-   running the test block in ``decay.py``.
-   In this way, we distribute a module and a very short file, say ``decay-main.py``,
-   as executable program:
+   The executable program, ``decay.py``, is above taken to be the complete
+   module file ``decay.py``. It would normally be preferred to instead
+   write a very short script essentially importing ``decay`` and running
+   the test block in ``decay.py``.  In this way, we distribute a module and
+   a very short file, say ``decay-main.py``, as an executable program:
    
    .. code-block:: python
    
+           #!/usr/bin/env python
            import decay
-           decay.experiment_compare_dt(True)
-           decay.plt.show()
-   
-   (This import assumes an ``__init__.py`` file with ``from decay import *``.)
+           decay.decay.experiment_compare_dt(True)
+           decay.decay.plt.show()
 
 
 
@@ -170,6 +141,8 @@ The complete directory structure reads
 Publishing the software at GitHub
 ---------------------------------
 
+.. index:: GitHub
+
 The leading site today for publishing open source software projects is
 GitHub at `<http://github.com>`_, provided you want your software to
 be open to the world. With a paid GitHub account, you can have private
@@ -182,10 +155,11 @@ you can communicate with GitHub without being prompted for your password.
 All communication between your computer and GitHub goes via the version
 control system Git. This may at first sight look tedious, but
 this is the way professionals work with software today. With Git you
-have full control of the history of your files, "who did what when",
-and this technology is superior to simpler ones like Dropbox and Google Drive,
+have full control of the history of your files, i.e., "who did what when".
+The technology makes Git superior to simpler alternatives
+like Dropbox and Google Drive,
 especially when you collaborate with others.
-There is a reason why Git has been the standard of working with files,
+There is a reason why Git has gained the position it has,
 and there is no reason why you should not adopt this tool.
 
 To create a new project, click on *New repository* on the main page and
@@ -239,4 +213,102 @@ You are recommended to read `a quick intro <http://hplgit.github.io/teamods/bitg
 up and going with this style of
 professional work. And you should put all your writings and programming
 projects in repositories in the cloud!
+
+Downloading and installing the software
+---------------------------------------
+
+Users of your software go to the Git repo at ``github.com`` and
+clone the repository. One can use either SSH or HTTP for communication.
+Most users will use the latter, typically
+
+.. code-block:: text
+
+        Terminal> git clone https://github.com/username/projname.git
+
+The result is a directory ``projname`` with the files in the repo.
+
+Installing just a module file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The software package is in the case above a directory ``decay`` with three files
+
+.. code-block:: text
+
+        Terminal> ls decay
+        README   decay.py   setup.py
+
+To install the ``decay.py`` file, a user
+just runs ``setup.py``:
+
+.. code-block:: text
+
+        Terminal> sudo python setup.py install
+
+This command will install the software in system directories, so the user
+needs to run the command as ``root`` on Unix systems (therefore the command
+starts with ``sudo``).
+The user can now import the module by ``import decay`` and run
+the program by
+
+.. code-block:: text
+
+        Terminal> decay.py
+
+A user can easily install the software on her personal account if
+a system-wide installation is not desirable. We refer to the
+`installation documentation <https://docs.python.org/2/install/index.html#alternate-installation>`__ for the many arguments that can be given to ``setup.py``.
+Note that if the software is installed on a personal account, the
+``PATH`` and ``PYTHONPATH`` environment variables must contain the
+relevant directories.
+
+Our ``setup.py`` file specifies a module ``decay`` to be installed as well
+as a program ``decay.py``.  Modules are typically installed in some ``lib``
+directory on the computer system, e.g.,
+``/usr/local/lib/python2.7/dist-packages``, while executable programs go
+to ``/usr/local/bin``.
+
+.. index:: importing modules
+
+Installing a package
+~~~~~~~~~~~~~~~~~~~~
+
+When the software is organized as a Python package, the installation is
+done by running ``setup.py`` exactly as explained above, but the use of a module
+``decay`` in a package ``decay`` requires the following syntax:
+
+.. code-block:: text
+
+        import decay
+        u, t = decay.decay.solver(...)
+
+That is, the call goes like ``packagename.modulename.functionname``.
+
+
+.. admonition:: Package import in ``__init__.py``
+
+   One can ease the use of packages by providing a somewhat simpler
+   import like
+   
+   .. code-block:: text
+   
+           import decay
+           u, t = decay.solver(...)
+           
+           # or
+           from decay import solver
+           u, t = solver(...)
+   
+   This is accomplished by putting an import statement in the ``__init__.py``
+   file, which is always run when doing the package import ``import decay``
+   or ``from decay import``. The ``__init__.py`` file must now contain
+   
+   .. code-block:: python
+   
+           from decay import *
+   
+   Obviously, it is the package developer who decides on such an
+   ``__init__.py`` file or if it should just be empty.
+
+
+
 

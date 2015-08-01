@@ -8,12 +8,13 @@ check the
 correctness of the implementations.
 There exists
 well-established procedures and corresponding tools for automating
-the execution of such tests. One can in this way, with a one-line command,
-run large test sets and confirm that the software works (as far as the
+the execution of such tests. These tools allow large test sets to be
+run with a one-line command, making it easy to check of the
+still software works (as far as the
 tests tell!). Here we shall illustrate two important
 software testing techniques: *doctest* and *unit testing*.
 The first one is Python specific, while unit testing is the dominating
-test technique for computer software today.
+test technique in the software industry today.
 
 Doctests
 --------
@@ -31,7 +32,7 @@ on how to use the function.
 Interactive examples in the Python shell are most illustrative as
 we can see the output resulting from the statements and expressions.
 For example,
-we can in the ``solver`` function include an example on calling
+in the ``solver`` function, we can include an example on calling
 this function and printing the computed ``u`` and ``t`` arrays:
 
 .. code-block:: python
@@ -42,8 +43,8 @@ this function and printing the computed ``u`` and ``t`` arrays:
         
         
             >>> u, t = solver(I=0.8, a=1.2, T=1.5, dt=0.5, theta=0.5)
-            >>> for t_n, u_n in zip(t, u):
-            ...     print 't=%.1f, u=%.14f' % (t_n, u_n)
+            >>> for n in range(len(t)):
+            ...     print 't=%.1f, u=%.14f' % (t[n], u[n])
             t=0.0, u=0.80000000000000
             t=0.5, u=0.43076923076923
             t=1.0, u=0.23195266272189
@@ -82,14 +83,22 @@ as explained in the next section.
 
    No additional command-line argument is allowed when running doctests.
    If your program relies on command-line input, make sure the doctests
-   can be run *without* such input.
+   can be run *without* such input on the command line.
+   
+   However, you can simulate command-line input by filling ``sys.argv``
+   with values, e.g.,
+   
+   .. code-block:: python
+   
+           import sys; sys.argv = '--I 1.0 --a 5'.split()
 
 
 
 
 The execution command above will report any problem if a test fails.
-For example, changing the last digit ``8`` in the output of the doctest
-to ``7`` triggers a report:
+As an illustration, let us alter the ``u`` value at ``t=1.5`` in
+the output of the doctest by replacing the last digit ``8`` by ``7``.
+This edit triggers a report:
 
 .. code-block:: text
 
@@ -97,18 +106,18 @@ to ``7`` triggers a report:
         ********************************************************
         File "decay.py", line ...
         Failed example:
-            for t_n, u_n in zip(t, u):
-                print 't=%.1f, u=%.14f' % (t_n, u_n)
+            for n in range(len(t)):
+                print 't=%.1f, u=%.14f' % (t[n], u[n])
         Expected:
             t=0.0, u=0.80000000000000
             t=0.5, u=0.43076923076923
             t=1.0, u=0.23195266272189
-            t=1.5, u=0.12489758761947
+            t=1.5, u=0.12489758761948
         Got:
             t=0.0, u=0.80000000000000
             t=0.5, u=0.43076923076923
             t=1.0, u=0.23195266272189
-            t=1.5, u=0.12489758761948
+            t=1.5, u=0.12489758761947
 
 
 .. admonition:: Pay attention to the number of digits in doctest results
@@ -129,20 +138,6 @@ to ``7`` triggers a report:
 Doctests are highly encouraged as they do two things: 1) demonstrate
 how a function is used and 2) test that the function works.
 
-
-.. admonition:: Caution
-
-   Doctests requires careful coding if they use command-line input or
-   print results to the terminal window. Command-line input must
-   be simulated by filling ``sys.argv`` correctly, e.g.,
-   ``sys.argv = '--I 1.0 --a 5'.split``.
-   The output lines of print statements inside doctests
-   must be copied exactly as they
-   appear when running the statements in an interactive Python shell.
-
-
-
-
 Unit tests and test functions
 -----------------------------
 
@@ -158,14 +153,15 @@ Unit tests and test functions
 .. index::
    single: software testing; pytest
 
-The unit testing technique consists of identifying small units
-of code, say a function, and write one or more tests for
-each unit. One test should, ideally, not depend on the outcome of
+The unit testing technique consists of identifying smaller units
+of code and writing one or more tests for
+each unit. One unit can typically be a function.
+Each test should, ideally, not depend on the outcome of
 other tests. The recommended practice is actually to
 design and write the unit tests first and *then* implement the functions!
 
 In scientific computing it is not always obvious how to best perform
-unit testing. The units is naturally larger than in non-scientific
+unit testing. The units are naturally larger than in non-scientific
 software. Very often the solution procedure of a mathematical problem
 identifies a unit, such as our ``solver`` function.
 
@@ -179,15 +175,15 @@ Two Python test frameworks: nose and pytest
 
 Python offers two very easy-to-use software frameworks for implementing
 unit tests: nose and pytest. These work (almost) in the same way,
-but my recommendation is to go for pytest.
+but our recommendation is to go for pytest.
 
 Test function requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Each test can in these frameworks be realized as a *test function*
-that follows three rules:
+For a test to qualify as a *test function* in nose or pytest, three
+rules must be followed:
 
- 1. The name must start with ``test_``.
+ 1. The function name must start with ``test_``.
 
  2. Function arguments are not allowed.
 
@@ -201,7 +197,8 @@ We have the following function that we want to test:
         def double(n):
             return 2*n
 
-The corresponding test function may look like this:
+The corresponding test function could, in principle, have been written
+as
 
 .. code-block:: python
 
@@ -214,7 +211,7 @@ The corresponding test function may look like this:
                 raise AssertionError
 
 The last two lines, however, are never written like this in test functions.
-Instead, use Python's ``assert`` statement: ``assert success, msg``, where
+Instead, Python's ``assert`` statement is used: ``assert success, msg``, where
 ``success`` is a boolean variable, which is ``False`` if the test fails, and
 ``msg`` is *an optional* message string that is printed when the test fails.
 A better version of the test function is therefore
@@ -233,11 +230,15 @@ A better version of the test function is therefore
 Comparison of real numbers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In scientific computing we very often have to deal with real numbers and
-finite precision arithmetics (round-off errors)
-so the ``==`` operator is not suitable for checking that
-a test passes. Instead, we must be replace ``==`` by a comparison
-based on a tolerance. Here is a slightly different function that
+Because of the finite precision arithmetics on a computer, which gives
+rise to round-off errors, the ``==`` operator is not suitable for
+checking whether two real numbers are equal. Obviously, this principle
+also applies to tests in test functions.
+We must therefore replace ``a == b`` by a comparison
+based on a tolerance ``tol``: ``abs(a-b) < tol``. The next example illustrates
+the problem and its solution.
+
+Here is a slightly different function that
 we want to test:
 
 .. code-block:: python
@@ -253,14 +254,14 @@ We write a test function where the expected result is computed as
         def test_third():
             """Check that third(x) works for many x values."""
             for x in np.linspace(0, 1, 21):
-                expected = (1/3.)*x
+                expected = (1/3.0)*x
                 computed = third(x)
                 success = expected == computed
                 assert success
 
 This ``test_third`` function executes silently, i.e., no failure,
 until ``x`` becomes 0.15. Then round-off errors make the ``==`` comparison
-``False``. In fact, seven ``x`` values face this problem.
+``False``. In fact, seven of the ``x`` values above face this problem.
 The solution is to compare ``expected`` and ``computed``
 with a small tolerance:
 
@@ -275,17 +276,33 @@ with a small tolerance:
                 success = abs(expected - computed) < tol
                 assert success
 
-Real numbers should never be compared with the ``==`` operator, but always
-with the absolute value of the difference and a tolerance.
+
+.. admonition:: Always compare real numbers with a tolerance
+
+   Real numbers should never be compared with the ``==`` operator, but always
+   with the absolute value of the difference and a tolerance.
+   So, replace ``a == b``, if ``a`` and/or ``b`` is ``float``, by
+   
+   .. code-block:: python
+   
+           tol = 1E-14
+           abs(a - b) < tol
+   
+   The suitable size of ``tol`` depends on the size of ``a`` and ``b``
+   (see :ref:`softeng1:exer:tol`).
+
+
+
 
 Special assert functions from nose
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The nose test framework contains more tailored
+Test frameworks often contain more tailored
 *assert functions* that can be called instead of using the ``assert``
 statement. For example, comparing two objects within
 a tolerance, as in the present
-case, can be done by ``assert_almost_equal``:
+case, can be done by the ``assert_almost_equal`` from the nose
+framework:
 
 .. code-block:: python
 
@@ -301,8 +318,9 @@ case, can be done by ``assert_almost_equal``:
 
 Whether to use the plain ``assert`` statement with a comparison based on
 a tolerance or to use the ready-made function ``assert_almost_equal``
-depends on the programmer's preference. The pytest framework (which we
-recommend) sticks to the plain ``assert`` statement.
+depends on the programmer's preference. The examples used in the
+documentation of the pytest framework stick to the plain ``assert``
+statement.
 
 Locating test functions
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -310,9 +328,9 @@ Locating test functions
 Test functions can reside in a module together with the functions they
 are supposed to verify, or the test functions can be collected in
 separate files having names starting with ``test``. Actually,
-nose and pytest can automatically recursively run all test functions
+nose and pytest can recursively run all test functions
 in all ``test*.py``
-files in the current and all subdirectories!
+files in the current directory, as well as in all subdirectories!
 
 The `decay.py <http://tinyurl.com/nm5587k/softeng1/decay.py>`__ module file features
 test functions in the module, but we could equally well have made
@@ -330,10 +348,10 @@ To run all test functions in the file ``decay.py`` do
         Terminal> py.test -s -v decay.py
 
 The ``-s`` option ensures that output from the test functions is printed
-in the terminal window, and ``-v`` prints the outcome of each individual
+in the terminal window, while ``-v`` prints the outcome of each individual
 test function.
 
-Alternatively, if the test functions are in some separate
+Alternatively, if the test functions are located in some separate
 ``test*.py`` files,
 we can just write
 
@@ -360,7 +378,7 @@ Embedding doctests in a test function
 
 Doctests can also be executed from nose/pytest unit tests. Here
 is an example of a file `test_decay_doctest.py <http://tinyurl.com/nm5587k/softeng1/tests/test_decay_doctest.py>`__ where we in the test block run all the doctests
-in the imported module ``decay``, but we also include a test function that
+in the imported module ``decay``, but we also include a local test function that
 does the same:
 
 .. code-block:: python
@@ -380,7 +398,11 @@ does the same:
             # Run all functions with doctests in this module
             failure_count, test_count = doctest.testmod(m=decay)
 
-We can then run ``py.test`` or ``nosetests`` and trigger the doctest.
+Running this file as a program from the command line
+triggers the ``doctest.testmod`` call
+in the test block, while applying ``py.test`` or ``nosetests`` to the file triggers
+an import of the file and execution of the test function
+``test_decay_modue_with_doctest``.
 
 Installing nose and pytest
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -438,11 +460,11 @@ do not deviate with more than a small tolerance:
             success = diff < tol
             assert success
 
-An important topic to address in test functions is potentially
-problematic input to functions. For example, if :math:`a`, :math:`\Delta t`, and
-:math:`\theta` are integers, one may face problems with unintended integer
-division in the numerical solution algorithm for the present mathematical
-problem. We should therefore add a test to make sure our ``solver``
+Among important things to consider when constructing test functions
+is testing the effect of wrong input to the function being tested.
+In our ``solver`` function, for example, integer values of :math:`a`, :math:`\Delta t`, and
+:math:`\theta` may cause unintended integer
+division. We should therefore add a test to make sure our ``solver``
 function does not fall into this potential trap:
 
 .. code-block:: python
@@ -461,8 +483,9 @@ Test function for reading positional command-line arguments
 -----------------------------------------------------------
 
 The function ``read_command_line_positional`` extracts numbers from the
-command line. To test it, decide on a set of numbers, fill ``sys.argv``
-appropriately, and check that we get the expected numbers:
+command line. To test it, we must decide on a set of values for
+the input data, fill ``sys.argv``
+accordingly, and check that we get the expected values:
 
 .. code-block:: python
 
@@ -481,7 +504,7 @@ appropriately, and check that we get the expected numbers:
 
 Note that ``sys.argv[0]`` is always the program name and that we have to
 copy that string from the original ``sys.argv`` array to the new one we
-construct in the test function. (Actually, the test function destroys
+construct in the test function. (Actually, this test function destroys
 the original ``sys.argv`` that Python fetched from the command line.)
 
 Any numerical code writer should always be skeptical to the use of the exact
@@ -492,13 +515,14 @@ This string-number conversion does not involve any finite precision
 arithmetics effects so we
 can safely use ``==`` in tests. Note also that the last element in
 ``expected`` and ``computed`` is the list ``dt_values``, and ``==`` works
-for comparing two lists too.
+for comparing two lists as well.
 
 Test function for reading option-value pairs
 --------------------------------------------
 
-Testing the function ``read_command_line_argparse`` follows the
-set up for the similar function for positional command-line arguments.
+The function ``read_command_line_argparse`` can be verified with a
+test function that has the same setup as ``test_read_command_line_positional``
+above.
 However, the construction of the command line is a bit more complicated.
 We find it convenient to construct the line as a string and then
 split the line into words to get the desired list ``sys.argv``:
@@ -508,40 +532,63 @@ split the line into words to get the desired list ``sys.argv``:
         def test_read_command_line_argparse():
             I = 1.6;  a = 1.8;  T = 2.2;  theta = 0.5
             dt_values = [0.1, 0.2, 0.05]
-            # Expected return from read_command_line_positional
+            # Expected return from read_command_line_argparse
             expected = [I, a, T, theta, dt_values]
             # Construct corresponding sys.argv array
-            cml = '%s --a %s --I %s --T %s --scheme CN --dt ' % \ 
-                  (sys.argv[0], a, I, T)
-            cml = cml + ' '.join([str(dt) for dt in dt_values])
-            sys.argv = cml.split()
+            command_line = '%s --a %s --I %s --T %s --scheme CN --dt ' % \ 
+                           (sys.argv[0], a, I, T)
+            command_line += ' '.join([str(dt) for dt in dt_values])
+            sys.argv = command_line.split()
             computed = read_command_line_argparse()
             for expected_arg, computed_arg in zip(expected, computed):
                 assert expected_arg == computed_arg
+
+Recall that the Python function ``zip`` enables iteration over
+several lists, tuples, or arrays at the same time.
 
 
 .. admonition:: Let silent test functions speak up during development
 
    When you develop test functions in a module, it is common to use IPython
-   to reload the module and call the test function as it gets developed:
+   for interactive experimentation:
    
    .. code-block:: ipy
    
            In[1]: import decay
            
            In[2]: decay.test_read_command_line_argparse()
-           
-           In[3]: reload(decay)  # force new import
-           
-           In[2]: decay.test_read_command_line_argparse()  # test again
    
-   However, a working test function is completely silent! Many
+   Note that a working test function is completely silent! Many
    find it psychologically annoying to convince themselves that a
    completely silent function is doing the right things. It can therefore,
    during development of a test function, be convenient to insert
    print statements in the function to monitor that the function body
    is indeed executed. For example, one can print the expected and
-   computed values in the terminal window.
+   computed values in the terminal window:
+   
+   .. code-block:: python
+   
+           def test_read_command_line_argparse():
+               ...
+               for expected_arg, computed_arg in zip(expected, computed):
+                   print expected_arg, computed_arg
+                   assert expected_arg == computed_arg
+   
+   After performing this edit, we want to run the test again, but
+   in IPython the module must first be reloaded (reimported):
+   
+   .. code-block:: ipy
+   
+           In[3]: reload(decay)  # force new import
+           
+           In[2]: decay.test_read_command_line_argparse()
+           1.6 1.6
+           1.8 1.8
+           2.2 2.2
+           0.5 0.5
+           [0.1, 0.2, 0.05] [0.1, 0.2, 0.05]
+   
+   Now we clearly see the objects that are compared.
 
 
 
@@ -560,19 +607,22 @@ Classical class-based unit testing
 
 The test functions written for the nose and pytest frameworks are
 very straightforward and to the point, with no framework-required boilerplate
-code. We just write the statements we need to make the computations and
-comparisons and then apply the required ``assert``.
+code. We just write the statements we need to get the computations and
+comparisons done, before applying the required ``assert``.
 
 The classical way of implementing unit tests (which derives from the
 JUnit object-oriented tool in Java) leads to much more comprehensive
-implementations with much more boilerplate code.  Python comes with a
+implementations with a lot of boilerplate code.  Python comes with a
 built-in module ``unittest`` for doing this type of classical unit
-tests. Although I strongly recommend to use nose or pytest over
+tests. Although nose or pytest are much more convenient to use than
 ``unittest``, class-based unit testing in the style of ``unittest`` has a
-very strong position in computer science and is so widespread that
+very strong position in computer science and is so widespread in
+the software industry that
 even computational scientists should have an idea how such unit test
 code is written. A short demo of ``unittest`` is therefore included
-next.
+next. (Readers who are not familiar with object-oriented programming
+in Python may find the text hard to understand, but one can safely
+jump to the next section.)
 
 .. index:: unittest
 
@@ -617,8 +667,7 @@ exclusively use the wide range of built-in assert functions such
 as ``assertEqual``, ``assertNotEqual``, ``assertAlmostEqual``, to mention
 some of them.
 
-Translation of ``test_exact_discrete_solution``,
-``test_potential_integer_division``, and the other test functions in ``decay.py``
+Translation of the test functions from the previous sections
 to ``unittest`` means making a new file ``test_decay.py`` file with a
 test class ``TestDecay`` where the stand-alone functions for
 nose/pytest now become methods in this class.

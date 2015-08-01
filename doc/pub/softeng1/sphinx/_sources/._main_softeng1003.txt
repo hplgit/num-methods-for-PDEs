@@ -12,13 +12,13 @@ it becomes easier and safer to apply the code for scientific investigations and
 in particular to automate large-scale investigations by other programs
 (see the section :ref:`softeng1:experiments`).
 
-Reading input data can be done in many ways. We have to decide on a
+Reading input data can be done in many ways. We have to decide on
 the functionality of the user interface,
 i.e., how we want to operate the program
-when providing input, and then use appropriate tools to implement
-the user interface. There are four basic types of user interface,
-listed here with increasing complexity
-of the implementation:
+when providing input. Thereafter, we use appropriate tools to implement
+that particular user interface. There are four basic types of user interface,
+listed here according to implementational complexity, from lowest to
+highest:
 
 1. Questions and answers in the terminal window
 
@@ -28,20 +28,66 @@ of the implementation:
 
 4. Graphical user interfaces (GUIs)
 
+Personal preferences of user interfaces differ substantially, and it is
+difficult to present recommendations or pros and cons.
 Alternatives 2 and 4 are most popular and will be addressed next.
 The goal is to make it easy for the user to
 set physical and numerical parameters in
-our ``decay.py`` program.
+our ``decay.py`` program. We use  a little toy program, called
+``prog.py``, as introductory
+example:
+
+.. code-block:: python
+
+        delta = 0.5
+        p = 2
+        from math import exp
+        result = delta*exp(-p)
+        print result
+
+The essential content is that ``prog.py`` has two input parameters: ``delta``
+and ``p``. A user interface will replace the first two assignments to
+``delta`` and ``p``.
 
 Command-line arguments
 ----------------------
 
 The command-line arguments are all the words that appear on the
-command line after the program name. Running a program ``prog``
-as ``prog arg1 arg2`` means that there are two command-line arguments
+command line after the program name. Running a program ``prog.py``
+as ``python prog.py arg1 arg2`` means that there are two command-line arguments
 (separated by white space): ``arg1`` and ``arg2``.
-Python stores all the command-line arguments in
-the list ``sys.argv``, and there are, in principle, two ways of programming with
+Python stores all command-line arguments in
+a special list ``sys.argv``. (The name ``argv`` stems from the C language and
+stands for "argument values". In C there is also an integer variable
+called ``argc`` reflecting the number of arguments, or "argument counter".
+A lot of programming languages have adopted the variable name ``argv`` for
+the command-line arguments.)
+Here is an example on a
+program ``what_is_sys_argv.py`` that can show us what the command-line arguments
+are
+
+.. code-block:: python
+
+        import sys
+        print sys.argv
+
+A sample run goes like
+
+.. code-block:: text
+
+        Terminal> python what_is_sys_argv.py 5.0 'two words' -1E+4
+        ['what_is_sys_argv.py', '5.0', 'two words', '-1E+4']
+
+We make two observations:
+
+ * ``sys.argv[0]`` is the name of the program,
+   and the sublist ``sys.argv[1:]`` contains all the command-line arguments.
+
+ * Each command-line argument is available as a string. A conversion to
+   ``float`` is necessary if we want to compute with the numbers 5.0 and
+   :math:`10^4`.
+
+There are, in principle, two ways of programming with
 command-line arguments in Python:
 
  * **Positional arguments:** Decide upon a sequence of parameters
@@ -59,7 +105,7 @@ With positional command-line arguments we write
 
 .. code-block:: text
 
-        Terminal> python decay.py 2 0.5
+        Terminal> python prog.py 2 0.5
 
 and must know that the first argument ``2`` represents ``p`` and the
 next ``0.5`` is the value of ``delta``.
@@ -67,7 +113,7 @@ With option-value pairs we can run
 
 .. code-block:: text
 
-        Terminal> python decay.py --delta 0.5 --p 2
+        Terminal> python prog.py --delta 0.5 --p 2
 
 Now, both ``p`` and ``delta`` are supposed to have default values in the program,
 so we need to specify only the parameter that is to be changed from
@@ -75,40 +121,45 @@ its default value, e.g.,
 
 .. code-block:: text
 
-        Terminal> python decay.py --p 2         # p=2, default delta
-        Terminal> python decay.py --delta 0.7   # delta-0.7, default a
-        Terminal> python decay.py               # default a and delta
+        Terminal> python prog.py --p 2         # p=2, default delta
+        Terminal> python prog.py --delta 0.7   # delta-0.7, default a
+        Terminal> python prog.py               # default a and delta
 
-For our ``decay.py`` module file, we want include functionality such
-that we can read :math:`I`, :math:`a`, :math:`T`, :math:`\theta`, and a range of :math:`\Delta t`
-values from the command line.  A plot is then to be made, comparing
-the different numerical solutions for different :math:`\Delta t` values
-against the exact solution. The technical details of getting the
-command-line information into the program is covered in the next
-two sections.
-
-Positional command-line arguments
----------------------------------
-
-.. index:: list comprehension
-
-.. index:: sys.argv
-
-The simplest way of reading the input parameters is to
-decide on their sequence on the command line and just index
-the ``sys.argv`` list accordingly.
-Say the sequence is :math:`I`, :math:`a`, :math:`T`, :math:`\theta` followed by an
-arbitrary number of :math:`\Delta t` values. This code extract
-these *positional* command-line arguments:
+How do we extend the ``prog.py`` code for positional arguments
+and option-value pairs? Positional arguments require very simple
+code:
 
 .. code-block:: python
 
         import sys
-        I = float(sys.argv[1])
-        a = float(sys.argv[2])
-        T = float(sys.argv[3])
-        theta = float(sys.argv[4])
-        dt_values = [float(arg) for arg in sys.argv[5:]]
+        p = float(sys.argv[1])
+        delta = float(sys.argv[2])
+        
+        from math import exp
+        result = delta*exp(-p)
+        print result
+
+If the user forgets to supply two command-line arguments, Python will
+raise an ``IndexError`` exception and produce a long error message.
+To avoid that, we should use a ``try-except`` construction:
+
+.. code-block:: python
+
+        import sys
+        try:
+            p = float(sys.argv[1])
+            delta = float(sys.argv[2])
+        except IndexError:
+            print 'Usage: %s p delta' % sys.argv[0]
+            sys.exit(1)
+        
+        from math import exp
+        result = delta*exp(-p)
+        print result
+
+Using ``sys.exit(1)`` aborts the program. The value 1 (actually any
+value different from 0) notifies the operating system that the
+program failed.
 
 
 .. admonition:: Command-line arguments are strings
@@ -119,6 +170,88 @@ these *positional* command-line arguments:
 
 
 
+
+Option-value pairs requires more programming and is actually
+better explained in a more comprehensive example below.
+Minimal code for our ``prog.py`` program reads
+
+.. code-block:: python
+
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--p', default=1.0)
+        parser.add_argument('--delta', default=0.1)
+        
+        args = parser.parse_args()
+        p = args.p
+        delta = args.delta
+        
+        from math import exp
+        result = delta*exp(-p)
+        print result
+
+Because the default values of ``delta`` and ``p`` are float numbers,
+the ``args.delta`` and ``args.p`` variable are automatically of type ``float``.
+
+Our next task is to use these basic code constructs to equip our
+``decay.py`` module with command-line interfaces.
+
+Positional command-line arguments
+---------------------------------
+
+.. index:: list comprehension
+
+.. index:: sys.argv
+
+.. index:: command-line arguments
+
+For our ``decay.py`` module file, we want include functionality such
+that we can read :math:`I`, :math:`a`, :math:`T`, :math:`\theta`, and a range of :math:`\Delta t`
+values from the command line.  A plot is then to be made, comparing
+the different numerical solutions for different :math:`\Delta t` values
+against the exact solution. The technical details of getting the
+command-line information into the program is covered in the next
+two sections.
+
+The simplest way of reading the input parameters is to
+decide on their sequence on the command line and just index
+the ``sys.argv`` list accordingly.
+Say the sequence of input data for some functionality in
+``decay.py`` is :math:`I`, :math:`a`, :math:`T`, :math:`\theta` followed by an
+arbitrary number of :math:`\Delta t` values. This code extracts
+these *positional* command-line arguments:
+
+.. code-block:: python
+
+        def read_command_line_positional():
+            if len(sys.argv) < 6:
+                print 'Usage: %s I a T on/off BE/FE/CN dt1 dt2 dt3 ...' % \ 
+                      sys.argv[0]; sys.exit(1)  # abort
+        
+            I = float(sys.argv[1])
+            a = float(sys.argv[2])
+            T = float(sys.argv[3])
+            theta = float(sys.argv[4])
+            dt_values = [float(arg) for arg in sys.argv[5:]]
+        
+            return I, a, T, theta, dt_values
+
+Note that we may use a ``try-except`` construction instead of the if test.
+
+A run like
+
+.. code-block:: text
+
+        Terminal> python decay.py 1 0.5 4 0.5 1.5 0.75 0.1
+
+results in
+
+.. code-block:: python
+
+        sys.argv = ['decay.py', '1', '0.5', '4', '0.5', '1.5', '0.75', '0.1']
+
+and consequently the assignments ``I=1.0``, ``a=0.5``, ``T=4.0``, ``thet=0.5``,
+and ``dt_values = [1.5, 0.75, 0.1]``.
 
 Instead of specifying the :math:`\theta` value, we could be a bit more
 sophisticated and let the user write the name of the scheme:
@@ -135,6 +268,14 @@ for Crank-Nicolson. Then we must map this string to the proper
         else:
             print 'Invalid scheme name:', scheme; sys.exit(1)
 
+Now we can do
+
+.. code-block:: text
+
+        Terminal> python decay.py 1 0.5 4 CN 1.5 0.75 0.1
+
+and get `theta=0.5`in the code.
+
 Option-value pairs on the command line
 --------------------------------------
 
@@ -144,7 +285,7 @@ Option-value pairs on the command line
 
 .. index:: option-value pairs (command line)
 
-.. index:: command-line options and values
+.. index:: command-line arguments
 
 .. index:: reading the command line
 
@@ -218,7 +359,7 @@ A function for setting up all the options is handy:
             return parser
 
 Each command-line option is defined through the ``parser.add_argument``
-method. Alternative options, like the short ``--I`` and the more
+method [#class-method]_. Alternative options, like the short ``--I`` and the more
 explaining version ``--initial_condition`` can be defined. Other arguments
 are ``type`` for the Python object type, a default value, and a help
 string, which gets printed if the command-line argument ``-h`` or ``--help`` is
@@ -240,6 +381,12 @@ The structure of this output is
 
           --I metavar, --initial_condition metavar
                                 help-string
+
+.. [#class-method] We use the expression *method* here, because ``parser``
+   is a class variable and functions in classes are known as methods in Python
+   and many other languages.
+   Readers not familiar with class programming can just substitute
+   this use of *method* by *function*.
 
 Finally, the ``--dt`` option demonstrates how to allow for more than one
 value (separated by blanks) through the ``nargs='+'`` keyword argument.
@@ -285,7 +432,7 @@ the command line as positional arguments or option-value pairs:
                 legends.append('dt=%g' % dt)
             t_e = np.linspace(0, T, 1001)       # very fine mesh for u_e
             u_e = exact_solution(t_e, I, a)
-            plt.plot(t_e, u_e, '--')            # dashed line for u_e
+            plt.plot(t_e, u_e, '--')
             legends.append('exact')
             plt.legend(legends, loc='upper right')
             plt.title('theta=%g' % theta)
@@ -315,7 +462,7 @@ and a sequence of :math:`\theta` and plot the numerical against the
 exact solution for each pair of :math:`(\theta, \Delta t)`.
 The plots can be arranged as a table with the columns being scheme type
 (:math:`\theta` value) and the rows reflecting the discretization parameter
-(:math:`\Delta t` value). Figure :ref:`softeng1:fig:GUI` displays of the
+(:math:`\Delta t` value). Figure :ref:`softeng1:fig:GUI` displays what the
 graphical web interface may look like after results are computed
 (there are :math:`3\times 3` plots in the GUI, but only :math:`2\times 2` are
 visible in the figure).
@@ -391,8 +538,8 @@ relevant HTML code in the string ``html_text``. The function looks like
             plt.figure()
             t_e = np.linspace(0, T, 1001)    # fine mesh for u_e
             u_e = exact_solution(t_e, I, a)
-            plt.plot(t,   u,   'r--o')       # red dashes w/circles
-            plt.plot(t_e, u_e, 'b-')         # blue line for exact sol.
+            plt.plot(t,   u,   'r--o')
+            plt.plot(t_e, u_e, 'b-')
             plt.legend(['numerical', 'exact'])
             plt.xlabel('t')
             plt.ylabel('u')
@@ -407,7 +554,7 @@ Generating the user interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The web GUI is automatically generated by
-the following code, placed in a file `decay_GUI_generate.py <http://tinyurl.com/nm5587k/softeng1/decay_GUI_generate.py>`__
+the following code, placed in the file `decay_GUI_generate.py <http://tinyurl.com/nm5587k/softeng1/decay_GUI_generate.py>`__.
 
 .. code-block:: python
 

@@ -129,30 +129,31 @@ A centered scheme for quadratic damping
 ---------------------------------------
 
 When :math:`f(u^{\prime})=bu^{\prime}|u^{\prime}|`, we get a quadratic equation for :math:`u^{n+1}`
-in :eq:`vib:ode2:step3b`. This equation can straightforwardly
-be solved, but we can also avoid the nonlinearity by
-performing an approximation that is within
-other numerical errors that we have already committed by replacing
-derivatives with finite differences.
+in :eq:`vib:ode2:step3b`. This equation can be straightforwardly
+solved by the well-known formula for the roots of a quadratic equation.
+However, we can also avoid the nonlinearity by introducing
+an approximation with an error of order no higher than what we
+already have from replacing derivatives with finite differences.
 
 .. index:: geometric mean
 
 .. index::
    single: averaging; geometric
 
-The idea is to reconsider :eq:`vib:ode2` and only replace
-:math:`u^{\prime\prime}` by :math:`D_tD_tu`, giving
+We start with :eq:`vib:ode2` and only replace
+:math:`u^{\prime\prime}` by :math:`D_tD_tu`, resulting in
 
 .. _Eq:vib:ode2:quad:idea1:
 
 .. math::
    :label: vib:ode2:quad:idea1
         
-        [mD_tD_t u + bu^{\prime}|u^{\prime}| + s(u) = F]^n,
+        [mD_tD_t u + bu^{\prime}|u^{\prime}| + s(u) = F]^n{\thinspace .}
         
         
 
-Here, :math:`u^{\prime}|u^{\prime}|` is to be computed at time :math:`t_n`. We can introduce
+Here, :math:`u^{\prime}|u^{\prime}|` is to be computed at time :math:`t_n`. The idea
+is now to introduce
 a *geometric mean*, defined by
 
 .. math::
@@ -164,22 +165,23 @@ approximation :math:`u^{\prime\prime}\approx D_tD_tu`. With :math:`w=u^{\prime}`
 that
 
 .. math::
-         [u^{\prime}|u^{\prime}|]^n \approx u^{\prime}(t_n+\frac{1}{2})|u^{\prime}(t_n-\frac{1}{2})|{\thinspace .}
+         [u^{\prime}|u^{\prime}|]^n \approx u^{\prime}(t_{n+\frac{1}{2}})|u^{\prime}(t_{n-\frac{1}{2}})|{\thinspace .}
 
 The next step is to approximate
-:math:`u^{\prime}` at :math:`t_{n\pm 1/2}`, but here a centered difference can be used:
+:math:`u^{\prime}` at :math:`t_{n\pm 1/2}`, and fortunately a centered difference
+fits perfectly into the formulas since it involves :math:`u` values at
+the mesh points only. With the approximations
 
 .. _Eq:vib:ode2:quad:idea2:
 
 .. math::
    :label: vib:ode2:quad:idea2
         
-        u^{\prime}(t_{n+1/2})\approx [D_t u]^{n+\frac{1}{2}},\quad u^{\prime}(t_{n-1/2})\approx [D_t u]^{n-\frac{1}{2}}
-        {\thinspace .}
+        u^{\prime}(t_{n+1/2})\approx [D_t u]^{n+\frac{1}{2}},\quad u^{\prime}(t_{n-1/2})\approx [D_t u]^{n-\frac{1}{2}},
         
         
 
-We then get
+we get
 
 .. math::
         
@@ -202,9 +204,9 @@ The counterpart to :eq:`vib:ode2:step3b` is then
         
         
 
-which is linear in :math:`u^{n+1}`. Therefore, we can easily solve
-with respect to :math:`u^{n+1}` and achieve
-the explicit updating formula
+which is linear in the unknown :math:`u^{n+1}`. Therefore, we can easily solve
+:eq:`vib:ode2:step3b:quad`
+with respect to :math:`u^{n+1}` and achieve the explicit updating formula
 
 .. math::
         
@@ -254,29 +256,39 @@ special equation for the first time step:
 A forward-backward discretization of the quadratic damping term
 ---------------------------------------------------------------
 
-The previous section first proposed to discretize
-the quadratic damping term :math:`|u^{\prime}|u^{\prime}` using centered differences:
+The previous section first proposed to discretize the quadratic
+damping term :math:`|u^{\prime}|u^{\prime}` using centered differences:
 :math:`[|D_{2t}|D_{2t}u]^n`. As this gives rise to a nonlinearity in
 :math:`u^{n+1}`, it was instead proposed to use a geometric mean combined
-with centered differences.
-But there are other alternatives. To get rid of the nonlinearity
-in :math:`[|D_{2t}|D_{2t}u]^n`, one can think differently:
-apply a backward difference to :math:`|u^{\prime}|`, such that the term involves known
-values, and apply a forward difference to :math:`u^{\prime}` to make the term linear
-in the unknown :math:`u^{n+1}`. With mathematics,
+with centered differences.  But there are other alternatives. To get
+rid of the nonlinearity in :math:`[|D_{2t}|D_{2t}u]^n`, one can think
+differently: apply a backward difference to :math:`|u^{\prime}|`, such that
+the term involves known values, and apply a forward difference to
+:math:`u^{\prime}` to make the term linear in the unknown :math:`u^{n+1}`. With
+mathematics,
+
+.. _Eq:vib:ode2:nonlin:fbdiff:
 
 .. math::
-         [\beta |u^{\prime}|u^{\prime}]^n \approx \beta |[D_t^-u]^n|[D_t^+ u]^n =
-        \beta\left\vert\frac{u^-u^{n-1}}{\Delta t}\right\vert
+   :label: vib:ode2:nonlin:fbdiff
+        
+        [\beta |u^{\prime}|u^{\prime}]^n \approx \beta |[D_t^-u]^n|[D_t^+ u]^n =
+        \beta\left\vert\frac{u^n-u^{n-1}}{\Delta t}\right\vert
         \frac{u^{n+1}-u^n}{\Delta t}{\thinspace .}
+        
+        
 
 The forward and backward differences have both an error proportional
 to :math:`\Delta t` so one may think the discretization above leads to
 a first-order scheme.
 However, by looking at the formulas, we realize that the forward-backward
-differences result in exactly the same scheme as when we
-used a geometric mean and centered differences. Therefore, the forward-backward
-differences act in a symmetric way and actually produce a second-order
+differences in :eq:`vib:ode2:nonlin:fbdiff`
+result in exactly the same scheme as in
+:eq:`vib:ode2:step3b:quad` where we
+used a geometric mean and centered differences and committed errors
+of size :math:`{\mathcal{O}(\Delta t^2)}`. Therefore, the forward-backward
+differences in :eq:`vib:ode2:nonlin:fbdiff`
+act in a symmetric way and actually produce a second-order
 accurate discretization of the quadratic damping term.
 
 .. _vib:ode2:solver:
@@ -362,9 +374,10 @@ Inserted in the ODE, we get
 of a constant vanishes (in particular, :math:`[D_{2t}I]^n=0`,
 :math:`[D_tI]^n=0`, and :math:`[D_tD_t I]^n=0`), the constant solution also fulfills
 the discrete equations. The constant should therefore be reproduced
-to machine precision.
+to machine precision. The function ``test_constant`` in ``vib.py``
+implements this test.
 
-[**hpl 4**: Add verification tests for constant, linear, quadratic. Check how many bugs that are caught by these tests.]
+[**hpl 8**: Add verification tests for constant, linear, quadratic. Check how many bugs that are caught by these tests.]
 
 Linear solution
 ~~~~~~~~~~~~~~~
@@ -412,8 +425,8 @@ Visualization
 -------------
 
 The functions for visualizations differ significantly from
-those in the undamped case in the ``vib_undamped.py`` program because
-we in the present general case do not have an exact solution to
+those in the undamped case in the ``vib_undamped.py`` program because,
+in the present general case, we do not have an exact solution to
 include in the plots. Moreover, we have no good estimate of
 the periods of the oscillations as there will be one period
 determined by the system parameters, essentially the
@@ -422,7 +435,7 @@ and one period dictated by :math:`F(t)` in case the excitation is periodic.
 This is, however,
 nothing that the program can depend on or make use of.
 Therefore, the user has to specify :math:`T` and the window width
-in case of a plot that moves with the graph and shows
+to get a plot that moves with the graph and shows
 the most recent parts of it in long time simulations.
 
 The ``vib.py`` code
@@ -438,8 +451,8 @@ User interface
 
 .. index:: argparse (Python module)
 
-The ``main`` function has substantial changes from
-the ``vib_undamped.py`` code since we need to
+The ``main`` function is changed substantially from
+the ``vib_undamped.py`` code, since we need to
 specify the new data :math:`c`, :math:`s(u)`, and :math:`F(t)`.  In addition, we must
 set :math:`T` and the plot window width (instead of the number of periods we
 want to simulate as in ``vib_undamped.py``). To figure out whether we
@@ -594,9 +607,7 @@ The initial conditions are trivially set as
         u^0 = I{\thinspace .}
         
 
-[**hpl 5**: implement the method]
-
-[**hpl 6**: odespy for the generalized problem]
+[**hpl 9**: odespy for the generalized problem]
 
 Exercises and Problems
 ======================
@@ -716,7 +727,7 @@ is computed to correctly (too machine precision, but the
 round-off errors accumulate and increase with :math:`T`) by the ``solver``
 function.
 
-Filenames: ``vib_undamped_verify_mms.pdf``, ``vib_undamped_verify_mms.py``.
+Filename: ``vib_undamped_verify_mms``.
 
 .. --- end exercise ---
 
@@ -733,7 +744,7 @@ Define the phase error as time lag between the peak :math:`I`
 in the exact solution and the corresponding peak in the approximation
 after :math:`m` periods of oscillations. Show that this phase error
 is linear in :math:`m`.
-Filename: ``vib_phase_error_growth.pdf``.
+Filename: ``vib_phase_error_growth``.
 
 .. --- end exercise ---
 
@@ -751,7 +762,7 @@ in the ``solver`` function in ``vib_undamped.py`` by ``w*(1 -
 (1./24)*w**2*dt**2`` and test how this adjustment in the numerical
 algorithm improves the accuracy (use :math:`\Delta t =0.1` and simulate
 for 80 periods, with and without adjustment of :math:`\omega`).
-Filename: ``vib_adjust_w.py``.
+Filename: ``vib_adjust_w``.
 
 .. How does this go if
 
@@ -768,7 +779,7 @@ Adaptive methods for solving ODEs aim at adjusting :math:`\Delta t` such
 that the error is within a user-prescribed tolerance. Implement the
 equation :math:`u^{\prime\prime}+u=0` in the `Odespy <https://github.com/hplgit/odespy>`__
 software. Use the example `on adaptive
-schemes <http://tinyurl.com/opdfafk/pub/sphinx-decay/._main_decay007.html#example-adaptive-runge-kutta-methods>`__
+schemes <http://hplgit.github.io/decay-book/doc/pub/book/sphinx/._book006.html#example-adaptive-runge-kutta-methods>`__
 in [Ref1]_.  Run the scheme with a very low
 tolerance (say :math:`10^{-14}`) and for a long time, check the number of
 time points in the solver's mesh (``len(solver.t_all)``), and compare
@@ -777,7 +788,7 @@ method from the section :ref:`vib:ode1:fdm` with the same number of (equally
 spaced) mesh points. The question is whether it pays off to use an
 adaptive solver or if equally many points with a simple method gives
 about the same accuracy.
-Filename: ``vib_undamped_adaptive.py``.
+Filename: ``vib_undamped_adaptive``.
 
 .. --- end exercise ---
 
@@ -798,7 +809,7 @@ for :math:`u^1`:
 With :math:`u^{\prime\prime}=-\omega^2 u` and :math:`u^{\prime}(0)=0`, show that this method also leads to
 :ref:`(2.8) <Eq:vib:ode1:step4b>`. Generalize the condition on :math:`u^{\prime}(0)` to
 be :math:`u^{\prime}(0)=V` and compute :math:`u^1` in this case with both methods.
-Filename: ``vib_first_step.pdf``.
+Filename: ``vib_first_step``.
 
 .. --- end exercise ---
 
@@ -817,7 +828,7 @@ maxima and minima at every two grid points.  Find an expression for
 the frequency of this function, and use the result to find the largest
 relevant value of :math:`\omega\Delta t` when :math:`\omega` is the frequency
 of an oscillating function and :math:`\Delta t` is the mesh spacing.
-Filename: ``vib_largest_wdt.pdf``.
+Filename: ``vib_largest_wdt``.
 
 .. --- end exercise ---
 
@@ -853,7 +864,7 @@ for why :math:`p>\pi` does not make sense).
 The deviation of the curve from unity visualizes the error in the
 approximation. Also expand :math:`E` as a Taylor polynomial in :math:`p` up to
 fourth degree (use, e.g., ``sympy``).
-Filename: ``vib_plot_fd_exp_error.py``.
+Filename: ``vib_plot_fd_exp_error``.
 
 .. --- end exercise ---
 
@@ -876,7 +887,7 @@ Make a nose test in a file ``test_error_conv.py``, where code from
 ``test_convergence_rates`` functions are copied and modified to also
 incorporate computations of the error in energy and the convergence
 rate of this error. The expected rate is 2.
-Filename: ``test_error_conv.py``.
+Filename: ``test_error_conv``.
 
 .. --- end exercise ---
 
@@ -893,7 +904,7 @@ Solve the various subproblems and see how the results and problem
 settings change with the generalized ODE in case of linear or
 quadratic damping. By modifying the code from :ref:`vib:exer:undamped:verify:linquad`, ``sympy`` will do most
 of the work required to analyze the generalized problem.
-Filename: ``vib_verify_mms.py``.
+Filename: ``vib_verify_mms``.
 
 .. --- end exercise ---
 
@@ -908,7 +919,7 @@ Write a nose test function in a separate file
 that employs the exact discrete solution
 :ref:`(2.13) <Eq:vib:ode1:un:exact>` to verify the implementation of the
 ``solver`` function in the file ``vib_undamped.py``.
-Filename: ``test_vib_undamped_exact_discrete_sol.py``.
+Filename: ``test_vib_undamped_exact_discrete_sol``.
 
 .. --- end exercise ---
 
@@ -927,7 +938,7 @@ the various elements you need to write down the exact solution).
 Modify the ``convergence_rate`` function from the ``vib_undamped.py``
 program to perform experiments with the extended model.  Verify that
 the error is of order :math:`\Delta t^2`.
-Filename: ``vib_conv_rate.py``.
+Filename: ``vib_conv_rate``.
 
 .. --- end exercise ---
 
@@ -938,18 +949,16 @@ Filename: ``vib_conv_rate.py``.
 Exercise 12: Investigate the amplitude errors of many solvers
 -------------------------------------------------------------
 
-Use the program ``vib_undamped_odespy.py`` from the section :ref:`vib:undamped:1stODE`
-and the amplitude estimation from the ``amplitudes`` function
-in the ``vib_undamped.py`` file (see the section :ref:`vib:ode1:empirical`)
-to investigate how well famous methods for 1st-order ODEs
-can preserve the amplitude of :math:`u` in undamped oscillations.
-Test, for example, the 3rd- and 4th-order Runge-Kutta methods
-(``RK3``, ``RK4``), the Crank-Nicolson method (``CrankNicolson``),
+Use the program ``vib_undamped_odespy.py`` from the section :ref:`vib:model2x2:compare` and the amplitude estimation from the
+``amplitudes`` function in the ``vib_undamped.py`` file (see the section :ref:`vib:ode1:empirical`) to investigate how well famous methods for
+1st-order ODEs can preserve the amplitude of :math:`u` in undamped
+oscillations.  Test, for example, the 3rd- and 4th-order Runge-Kutta
+methods (``RK3``, ``RK4``), the Crank-Nicolson method (``CrankNicolson``),
 the 2nd- and 3rd-order Adams-Bashforth methods (``AdamsBashforth2``,
-``AdamsBashforth3``), and a 2nd-order Backwards scheme (``Backward2Step``).
-The relevant governing equations are listed in
-the section :ref:`vib:model2x2`.
-Filename: ``vib_amplitude_errors.py``.
+``AdamsBashforth3``), and a 2nd-order Backwards scheme
+(``Backward2Step``).  The relevant governing equations are listed in
+the beginning of the section :ref:`vib:model2x2`.
+Filename: ``vib_amplitude_errors``.
 
 .. --- end exercise ---
 
@@ -971,7 +980,7 @@ read one line at a time and
 plot the :math:`u` value using the line-by-line plotter in the
 ``visualize_front_ascii`` function - this technique makes it trivial
 to visualize very long time simulations).
-Filename: ``vib_memsave.py``.
+Filename: ``vib_memsave``.
 
 .. --- end exercise ---
 
@@ -992,7 +1001,7 @@ solution, and a class ``Visualizer`` to display the solution.
 
 **Hint.**
 Use the ideas and examples
-for an `ODE model <http://tinyurl.com/opdfafk/pub/sphinx-decay/main_decay.html#implementing-simple-problem-and-solver-classes>`__.
+for an `ODE model <http://hplgit.github.io/decay-book/doc/pub/book/sphinx/._book009.html#classes-for-problem-and-solution-method>`__ in [Ref1]_.
 More specifically, make a superclass ``Problem`` for holding the scalar
 physical parameters of a problem and let subclasses implement the
 :math:`s(u)` and :math:`F(t)` functions as methods.
@@ -1000,7 +1009,7 @@ Try to call up as much existing functionality in ``vib.py`` as possible.
 
 .. --- end hint in exercise ---
 
-Filename: ``vib_class.py``.
+Filename: ``vib_class``.
 
 .. --- end exercise ---
 
@@ -1015,7 +1024,7 @@ Show that the difference :math:`[D_t D_tu]^n` is equal to :math:`[D_t^+D_t^-u]^n
 and :math:`D_t^-D_t^+u]^n`. That is, instead of applying a centered difference
 twice one can alternatively apply a mixture forward and backward
 differences.
-Filename: ``vib_DtDt_fw_bw.pdf``.
+Filename: ``vib_DtDt_fw_bw``.
 
 .. --- end exercise ---
 
@@ -1045,16 +1054,828 @@ to compare the original approach with centered difference and the
 new idea launched in this exercise. Perform numerical experiments
 to investigate how much accuracy that is lost by using the backward
 differences.
-Filename: ``vib_gen_bwdamping.pdf``.
+Filename: ``vib_gen_bwdamping``.
 
 .. --- end exercise ---
 
 .. --- begin exercise ---
 
-.. _vib:exer:bouncing:ball:
+.. _vib:exer:EulerCromer:analysis:
 
-Exercise 17: Simulate a bouncing ball
+Exercise 17: Analysis of the Euler-Cromer scheme
+------------------------------------------------
+
+The Euler-Cromer scheme for the model problem
+:math:`u^{\prime\prime} + \omega^2 u =0`, :math:`u(0)=I`, :math:`u^{\prime}(0)=0`, is given in
+:ref:`(2.33) <Eq:vib:model2x2:EulerCromer:ueq1b>`-:ref:`(2.32) <Eq:vib:model2x2:EulerCromer:veq1b>`.
+Find the exact discrete solutions of this scheme and show that the solution
+for :math:`u^n` coincides with that found in the section :ref:`vib:ode1:analysis`.
+
+.. --- begin hint in exercise ---
+
+**Hint.**
+Use an "ansatz" :math:`u^n=I\exp{(i\tilde\omega\Delta t\,n)}` and
+:math:`v^n=qu^n`, where :math:`\tilde\omega` and :math:`q` are unknown parameters. The
+following formula is handy:
+
+.. math::
+         \boldsymbol{e}^{i\tilde\omega\Delta t} + e^{i\tilde\omega(-\Delta t)} - 2
+        = 2\left(\cosh(i\tilde\omega\Delta t) -1 \right)
+        =-4\sin^2(\frac{\tilde\omega\Delta t}{2}){\thinspace .}
+
+.. --- end hint in exercise ---
+
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
+
+.. mech systems: horizontal, vertical/hanging
+
+.. box with mu*M*g*v/|v| friction force, treat nonlinearity with geometric mean
+
+.. pendulum
+
+.. elastic pendulum
+
+.. bouncing ball (just move text from exercise)
+
+.. bumpy road
+
+.. moored ship
+
+.. electrical circuits, see ode2.p.tex
+
+.. 0D blood flow?
+
+.. waves: 1D blood flow
+
+.. general particle laws and velocity verlet, make exercises
+
+.. see `<http://en.wikipedia.org/wiki/Velocity_Verlet>`_
+
+.. --- end exercise ---
+
+.. _vib:app:
+
+Applications of vibration models
+================================
+
+The following text derives some of the most well-known physical problems
+that lead to
+second-order ODE models of the type addressed in this document.
+We consider ...
+
+.. _vib:app:mass_spring:
+
+Oscillating mass attached to a spring
 -------------------------------------
+
+.. _vib:app:mass_spring:fig:
+
+.. figure:: oscillator_spring.png
+   :width: 600
+
+   *Simple oscillating mass*
+
+The most fundamental mechanical vibration system is depicted in FIGURE
+:ref:`vib:app:mass_spring:fig`. A body with mass :math:`m` is attached to a
+spring and can move horizontally without friction (in the wheels). The
+position of the body is given by the vector :math:`\boldsymbol{r}(t) = u(t)\boldsymbol{i}`, where
+:math:`\boldsymbol{i}` is a unit vector in :math:`x` direction.
+There is
+only one force acting on the body: a spring force :math:`\boldsymbol{F}_s =-ku\boldsymbol{i}`, where
+:math:`k` is a constant. The point :math:`x=0`, where :math:`u=0`, must therefore
+correspond to the body's position
+where the spring is neither extended nor compressed, so the force
+vanishes.
+
+The basic physical principle that governs the motion of the body is
+Newton's second law of motion: :math:`\boldsymbol{F}=m\boldsymbol{a}`, where
+:math:`\boldsymbol{F}` is the sum of forces on the body, :math:`m` is its mass, and :math:`\boldsymbol{a}=\ddot\boldsymbol{r}`
+is the acceleration. We use the dot for differentiation time, which is
+usual in mechanics. Newton's second law simplifies here
+to :math:`-F_s\boldsymbol{i}=m\ddot u\boldsymbol{i}` , which translates to
+
+.. math::
+         -ku = m\ddot u{\thinspace .}
+
+Two initial conditions are needed: :math:`u(0)=I`, :math:`\dot u(0)=V`.
+The ODE problem is normally written as
+
+.. _Eq:vib:app:mass_spring:eqx:
+
+.. math::
+   :label: vib:app:mass_spring:eqx
+        
+        m\ddot u + ku = 0,\quad u(0)=I,\ \dot u(0)=V{\thinspace .}
+        
+        
+
+It is
+not uncommon to divide by :math:`m`
+and introduce the frequency :math:`\omega = \sqrt{k/m}`:
+
+.. _Eq:vib:app:mass_spring:equ:
+
+.. math::
+   :label: vib:app:mass_spring:equ
+        
+        \ddot u + \omega^2 u = 0,\quad u(0)=I,\  \dot u(0)=V{\thinspace .}
+        
+        
+
+This is the model problem in the first part of this chapter, with the
+small difference that we write the time derivative of :math:`u` with a dot
+above, while we used :math:`u^{\prime}` and :math:`u^{\prime\prime}` in previous
+parts of the document.
+
+.. index:: DOF (degree of freedom)
+
+Since only one scalar mathematical quantity, :math:`u(t)`, describes the
+complete motion, we say that the mechanical system has one degree of freedom
+(DOF).
+
+The typical physics of the system in Figure :ref:`vib:app:mass_spring:fig` can
+be described as follows.
+Initially, we displace the body to some position :math:`I`, say at rest
+(:math:`V=0`). After releasing the body, the spring, which is extended, will
+act with a force :math:`-kI\boldsymbol{i}` and pull the body to the left. This force
+causes an acceleration and therefore increased velocity. The body passes
+the point :math:`x=0`, where :math:`u=0`,
+and the spring will then be compressed and act with a
+force :math:`kx\boldsymbol{i}` against the motion and cause retardation. At some point,
+the motion stops and the velocity is zero, before the spring force
+:math:`kx\boldsymbol{i}` accelerates the body in positive direction. The result is that
+the body accelerates back and forth. As long as there are no friction
+forces to damp the motion, the oscillations will continue forever.
+
+.. _vib:app:mass_gen:
+
+General mechanical vibrating system
+-----------------------------------
+
+.. _vib:app:mass_gen:fig:
+
+.. figure:: oscillator_general.png
+   :width: 600
+
+   *General oscillating system*
+
+The mechanical system in Figure :ref:`vib:app:mass_spring:fig` can easily be
+extended to the more general system in Figure :ref:`vib:app:mass_gen:fig`,
+where the body is attached to a spring and a dashpot, and also subject
+to an environmental force :math:`F(t)\boldsymbol{i}`. The system has still only one
+degree of freedom since the body can only move back and forth parallel to
+the :math:`x` axis. The spring force was linear, :math:`\boldsymbol{F}_s=-ku\boldsymbol{i}`,
+in the section :ref:`vib:app:mass_spring`, but in more general cases it can
+depend nonlinearly on the position. We therefore set :math:`\boldsymbol{F}_s=s(u)\boldsymbol{i}`.
+The dashpot, which acts
+as a damper, results in a force :math:`\boldsymbol{F}_d` that depends on the body's
+velocity :math:`\dot u` and that always acts against the motion.
+The mathematical model of the force is written :math:`\boldsymbol{F}_d =f(\dot u)\boldsymbol{i}`.
+A positive :math:`\dot u` must result in a force acting in the positive :math:`x`
+direction.
+Finally, we have the external environmental force :math:`\boldsymbol{F}_e = F(t)\boldsymbol{i}`.
+
+Newton's second law of motion now involves three forces:
+
+.. math::
+         F(t)\boldsymbol{i} + f(\dot u)ii - s(u)\boldsymbol{i} = m\ddot u \boldsymbol{i}{\thinspace .}
+
+The common mathematical form of the ODE problem is
+
+.. _Eq:vib:app:mass_gen:equ:
+
+.. math::
+   :label: vib:app:mass_gen:equ
+        
+        m\ddot u + f(\dot u) + s(u) = F(t),\quad u(0)=I,\ \dot u(0)=V{\thinspace .}
+        
+        
+
+This is the generalized problem treated in the last part of the
+present chapter, but with prime denoting the derivative instead of the dot.
+
+The most common models for the spring and dashpot are linear: :math:`f(\dot u)
+=b\dot u` with a constant :math:`b\geq 0`, and :math:`s(u)=ku` for a constant :math:`k`.
+
+[**hpl 10**: Must mention resonance here. Can have an exercise.]
+
+[**hpl 11**: Should mention scaling of the full model.]
+
+.. _vib:app:mass_sliding:
+
+A sliding mass attached to a spring
+-----------------------------------
+
+Consider a variant of the oscillating body in the section :ref:`vib:app:mass_spring`
+and Figure :ref:`vib:app:mass_spring:fig`: the body rests on a flat
+surface, and there is sliding friction between the body and the surface.
+Figure :ref:`vib:app:masss_sliding:fig` depicts the problem.
+
+.. _vib:app:masss_sliding:fig:
+
+.. figure:: pendulum_problem.png
+   :width: 300
+
+   *Sketch of a body sliding on a surface*
+
+The body is attached to a spring with spring force :math:`-s(u)\boldsymbol{i}`.
+The friction force is proportional to the normal force on the surface,
+:math:`-mg\boldsymbol{j}`, and given by :math:`-f(\dot u)\boldsymbol{i}`, where
+
+.. math::
+         f(\dot u) = \left\lbrace\begin{array}{ll}
+        -\mu mg,& \dot u < 0,\\ 
+        \mu mg, & \dot u > 0,\\ 
+        0,      & \dot u=0
+        \end{array}\right.
+
+Here, :math:`\mu` is a friction coefficient. The equation of motion becomes
+
+.. _Eq:vib:app:masss_sliding:equ:
+
+.. math::
+   :label: vib:app:masss_sliding:equ
+        
+        m\ddot u + f(\dot u) + s(u) = 0,\quad u(0)=I,\ \dot u(0)=V{\thinspace .}
+        
+        
+
+.. _vib:app:washmach:
+
+A jumping washing machine
+-------------------------
+
+A washing machine is placed on four springs with efficient dampers.
+If the machine contains just a few clothes, the circular motion of
+the machine induces a sinusoidal external force and the machine will
+jump up and down if the frequency of the external force is close to
+the natural frequency of the machine and its spring-damper system.
+
+[**hpl 12**: Not finished. This is a good example on resonance.]
+
+.. _vib:app:pendulum:
+
+Motion of a pendulum
+--------------------
+
+A classical problem in mechanics is the motion of a pendulum. We first
+consider a `simple pendulum <https://en.wikipedia.org/wiki/Pendulum>`__:
+a small body of mass :math:`m` is attached to a massless wire and can oscillate back and forth
+in the gravity field. Figure :ref:`vib:app:pendulum:fig_problem` shows
+a sketch of the problem.
+
+.. _vib:app:pendulum:fig_problem:
+
+.. figure:: pendulum_problem.png
+   :width: 300
+
+   *Sketch of a simple pendulum*
+
+The motion is governed by Newton's 2nd law, so we need to find expressions
+for the forces and the acceleration. Three forces on the body are
+considered: an unknown force :math:`S` from the wire, the gravity force :math:`mg`,
+and an air resistance force, :math:`\frac{1}{2}C_D\varrho A |v|v`,
+hereafter called the drag force,
+directed against the velocity of the body. Here, :math:`C_D` is a drag coefficient,
+:math:`\varrho` is the density of air, :math:`A` is the cross section area of the body,
+and :math:`v` is the velocity.
+
+We introduce a coordinate system with polar coordinates and unit
+vectors :math:`{\boldsymbol{i}_r}` and :math:`\boldsymbol{i}_{\theta}` as shown in Figure :ref:`vib:app:pendulum:fig_forces`.
+The position of the center of mass of the body is
+
+.. math::
+         \boldsymbol{r}(t) = x_0\boldsymbol{i} + y_0\boldsymbol{j} + L{\boldsymbol{i}_r},
+
+where :math:`\boldsymbol{i}` and :math:`\boldsymbol{j}` are unit vectors in the corresponding Cartesian
+coordinate system in the :math:`x` and :math:`y` directions, respectively. We have
+that :math:`{\boldsymbol{i}_r} = \cos\theta\boldsymbol{i} +\sin\theta\boldsymbol{j}`.
+
+.. _vib:app:pendulum:fig_forces:
+
+.. figure:: pendulum_problem.png
+   :width: 400
+
+   *Forces acting on a simple pendulum*
+
+The forces are now expressed as follows.
+
+ * Wire force: :math:`-S{\boldsymbol{i}_r}`
+
+ * Gravity force: :math:`-mg\boldsymbol{j} = mg(-\sin\theta\boldsymbol{i}_{\theta} + \cos\theta{\boldsymbol{i}_r})`
+
+ * Drag force: :math:`-\frac{1}{2}C_D\varrho A |v|v\boldsymbol{i}_{\theta}`
+
+Since a positive velocity means movement in the direction of :math:`\boldsymbol{i}_{\theta}`,
+the drag force must be directed along :math:`-\boldsymbol{i}_{\theta}`.
+
+The velocity of the body is found from :math:`\boldsymbol{r}`:
+
+.. math::
+         \boldsymbol{v}(t) = \dot\boldsymbol{r} (t) = \frac{d}{d\theta}(x_0\boldsymbol{i} + y_0\boldsymbol{j} + L{\boldsymbol{i}_r})\frac{d\theta}{dt} = L\dot\theta\boldsymbol{i}_{\theta},
+
+since :math:`\frac{d}{d\theta}{\boldsymbol{i}_r} = \boldsymbol{i}_{\theta}`. It follows that :math:`v=|\boldsymbol{v}|=L\dot\theta`.
+The acceleration is
+
+.. math::
+         \boldsymbol{a}(t) = \dot\boldsymbol{v}(r) = \frac{d}{dt}(L\dot\theta\boldsymbol{i}_{\theta})
+        = L\ddot\theta\boldsymbol{i}_{\theta} + L\dot\theta\frac{d\boldsymbol{i}_{\theta}}{d\theta}\dot\theta =
+        = L\ddot\theta\boldsymbol{i}_{\theta} - L\dot\theta^2{\boldsymbol{i}_r},
+
+since :math:`\frac{d}{d\theta}\boldsymbol{i}_{\theta} = -{\boldsymbol{i}_r}`. It follows that :math:`v=L\dot\theta`.
+
+Newton's 2nd law of motion becomes
+
+.. math::
+         -S{\boldsymbol{i}_r} + mg(-\sin\theta\boldsymbol{i}_{\theta} + \cos\theta{\boldsymbol{i}_r}) -
+        \frac{1}{2}C_D\varrho AL^2|\dot\theta|\dot\theta\boldsymbol{i}_{\theta}
+        = mL\ddot\theta\dot\theta\boldsymbol{i}_{\theta} - L\dot\theta^2{\boldsymbol{i}_r},
+
+leading to two component equations
+
+.. _Eq:vib:app:pendulum:ir:
+
+.. math::
+   :label: vib:app:pendulum:ir
+        
+        -S + mg\cos\theta = -L\dot\theta^2,
+        
+        
+
+.. _Eq:vib:app:pendulum:ith:
+
+.. math::
+   :label: vib:app:pendulum:ith
+          
+        -mg\sin\theta - \frac{1}{2}C_D\varrho AL^2|\dot\theta|\dot\theta
+        = mL\ddot\theta{\thinspace .}
+        
+        
+
+From :eq:`vib:app:pendulum:ir` we get an expression for
+:math:`S=mg\cos\theta + L\dot\theta^2`, and from :eq:`vib:app:pendulum:ith`
+we get a differential equation for the angle :math:`\theta(t)`. This latter
+equation is ordered as
+
+.. _Eq:vib:app:pendulum:thetaeq:
+
+.. math::
+   :label: vib:app:pendulum:thetaeq
+        
+        mL\ddot\theta + + \frac{1}{2}C_D\varrho AL^2|\dot\theta|\dot\theta
+        + mg\sin\theta = 0{\thinspace .}
+        
+        
+
+Two initial conditions are needed: :math:`\theta=\Theta` and :math:`\dot\theta = \Omega`.
+
+Equation :eq:`vib:app:pendulum:thetaeq` fits the general model
+used in :eq:`vib:ode2` in the section :ref:`vib:model2` if we define
+:math:`u=\theta`, :math:`f(u^{\prime}) = \frac{1}{2}C_D\varrho AL|\dot\theta|\dot\theta`,
+:math:`s(u) = L^{-1}mg\sin u`, and :math:`F=0`.
+If the body is a sphere with radius :math:`R`, we can take :math:`C_D=0.4` and :math:`A=\pi R^2`.
+
+The motion of a compound or physical pendulum where the wire is a rod with
+mass, can be modeled very similarly. The governing equation is
+:math:`I\boldsymbol{a} = \boldsymbol{T}` where :math:`I` is the moment of inertia of the entire body about
+the point :math:`(x_0,y_0)`, and :math:`\boldsymbol{T}` is the sum of moments of the forces
+with respect to :math:`(x_0,y_0)`. The vector equation reads
+
+.. math::
+         \boldsymbol{r}\times(-S{\boldsymbol{i}_r} + mg(-\sin\theta\boldsymbol{i}_{\theta} + \cos\theta{\boldsymbol{i}_r}) -
+        \frac{1}{2}C_D\varrho AL^2|\dot\theta|\dot\theta\boldsymbol{i}_{\theta})
+        = I(L\ddot\theta\dot\theta\boldsymbol{i}_{\theta} - L\dot\theta^2{\boldsymbol{i}_r}){\thinspace .}
+
+The component equation in :math:`\boldsymbol{i}_{\theta}` direction gives the equation of motion
+for :math:`\theta(t)`:
+
+.. _Eq:vib:app:pendulum:thetaeq_physical:
+
+.. math::
+   :label: vib:app:pendulum:thetaeq_physical
+        
+        I\ddot\theta + \frac{1}{2}C_D\varrho AL^3|\dot\theta|\dot\theta
+        + mgL\sin\theta = 0{\thinspace .}
+        
+        
+
+.. _vib:app:pendulum_elastic:
+
+Motion of an elastic pendulum
+-----------------------------
+
+Consider a pendulum as in Figure :ref:`vib:app:pendulum:fig_problem`, but
+this time the wire is elastic. The length of the wire when it is not
+stretched is :math:`L_0`, while :math:`L(t)` is the stretched
+length at time :math:`t` during the motion.
+
+Stretching the elastic wire a distance :math:`\Delta L`
+gives rise to a spring force :math:`k\Delta L` in the opposite direction of the
+stretching. Let :math:`\boldsymbol{n}` be a unit normal vector along the wire
+from the point :math:`\boldsymbol{r}_0=(x_0,y_0)` and in the direction of :math:`\boldsymbol{i}_{\theta}`,
+see Figure :ref:`vib:app:pendulum:fig_forces` for definition of
+:math:`(x_0,y_0)` and :math:`\boldsymbol{i}_{\theta}`. Obviously, we have :math:`\boldsymbol{n}=\boldsymbol{i}_{\theta}`, but in
+this modeling of an elastic pendulum we do not need polar coordinates.
+Instead, it is more straightforward to develop the equation in
+Cartesian coordinates.
+
+A mathematical expression for :math:`\boldsymbol{n}` is
+
+.. math::
+         \boldsymbol{n} = \frac{\boldsymbol{r}-\boldsymbol{r}_0}{L(t)},
+
+where :math:`L(t)=||\boldsymbol{r}-\boldsymbol{r}_0||` is the current length of the elastic wire.
+The position vector :math:`\boldsymbol{r}` in Cartesian coordinates reads
+:math:`\boldsymbol{r}(t) = x(t)\boldsymbol{i} + y(t)\boldsymbol{j}`, where :math:`\boldsymbol{i}` and :math:`\boldsymbol{j}` are unit vectors
+in the :math:`x` and :math:`y` directions, respectively.
+It is convenient to introduce the Cartesian components :math:`n_x` and :math:`n_y`
+of the normal vector:
+
+.. math::
+         \boldsymbol{n} = \frac{\boldsymbol{r}-\boldsymbol{r}_0}{L(t)} = \frac{x(t)-x_0}{L(t)}\boldsymbol{i} + \frac{y(t)-y_0}{L(t)}\boldsymbol{j} = n_x\boldsymbol{i} + n_y\boldsymbol{j}{\thinspace .}
+
+The stretch :math:`\Delta L` in the wire is
+
+.. math::
+         \Delta t = L(t) - L_0{\thinspace .}
+
+The force in the wire is then :math:`-S\boldsymbol{n}=-k\Delta L\boldsymbol{n}`.
+
+The other forces are the gravity and the air resistance, just
+as in Figure :ref:`vib:app:pendulum:fig_forces`. The main difference
+is that we have a *model* for :math:`S` in terms of the motion (as soon as
+we have expressed :math:`\Delta L` by :math:`\boldsymbol{r}`). For simplicity, we drop
+the air resistance term (but :ref:`vib:exer:pendulum_elastic`
+asks you to include it).
+
+Newton's second law of motion applied to the body now results in
+
+.. _Eq:vib:app:pendulum_elastic:eq1:
+
+.. math::
+   :label: vib:app:pendulum_elastic:eq1
+        
+        m\ddot\boldsymbol{r} = -k(L-L_0)\boldsymbol{n} - mg\boldsymbol{j}
+        
+        
+
+The two components of
+:eq:`vib:app:pendulum_elastic:eq1` are
+
+.. math::
+        
+        \ddot x = -\frac{k}{m}(L-L_0)n_x,
+        
+
+.. _Eq:vib:app:pendulum_elastic:eq2a:
+
+.. math::
+   :label: vib:app:pendulum_elastic:eq2a
+          
+         
+        
+
+.. _Eq:vib:app:pendulum_elastic:eq2b:
+
+.. math::
+   :label: vib:app:pendulum_elastic:eq2b
+          
+        \ddot y = - \frac{k}{m}(L-L_0)n_y - g
+        {\thinspace .}
+        
+
+Remarks about an elastic vs a non-elastic pendulum
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Note that the derivation of the ODEs for an elastic pendulum is more
+straightforward than for a classical, non-elastic pendulum,
+since we avoid the details
+with polar coordinates, but instead work with Newton's second law
+directly in Cartesian coordinates. The reason why we can do this is that
+the elastic pendulum undergoes a general two-dimensional motion where
+all the forces are known or expressed as functions of :math:`x(t)` and :math:`y(t)`,
+such that we get two ordinary differential equations.
+The motion of the non-elastic pendulum, on the other hand, is constrained:
+the body has to move along a circular path, and the force :math:`S` in the
+wire is unknown.
+
+The non-elastic pendulum therefore leads to
+a *differential-algebraic* equation, i.e., ODEs for :math:`x(t)` and :math:`y(t)`
+combined with an extra constraint :math:`(x-x_0)^2 + (y-y_0)^2 = L^2`
+ensuring that the motion takes place along a circular path.
+The extra constraint (equation) is compensated by an extra unknown force
+:math:`-S\boldsymbol{n}`. Differential-algebraic equations are normally hard
+to solve, especially with pen and paper.
+Fortunately, for the non-elastic pendulum we can do a
+trick: in polar coordinates the unknown force :math:`S` appears only in the
+radial component of Newton's second law, while the unknown
+degree of freedom for describing the motion, the angle :math:`\theta(t)`,
+is completely governed by the asimuthal component. This allows us to
+decouple the unknowns :math:`S` and :math:`\theta`.
+
+Initial conditions
+~~~~~~~~~~~~~~~~~~
+
+What is the initial position of the body? We imagine that first the
+pendulum hangs in equilibrium in its vertical position, and then it is
+displaced an angle :math:`\Theta`. The equilibrium position is governed
+by the ODEs with the accelerations set to zero.
+The :math:`x` component leads to :math:`x(t)=x_0`, while the :math:`y` component gives
+
+.. math::
+         0 = - \frac{k}{m}(L-L_0)n_y - g = \frac{k}{m}(L(0)-L_0) - g\quad\Rightarrow\quad
+        L(0) = L_0 + mg/k,
+
+since :math:`n_y=-11` in this position. The corresponding :math:`y` value is then
+from :math:`n_y=-1`:
+
+.. math::
+         y(t) = y_0 - L(0) = y_0 - (L_0 + mg/k){\thinspace .}
+
+Let us now choose :math:`(x_0,y_0)` such that the body is at the origin
+in the equilibrium position:
+
+.. math::
+         x_0 =0,\quad y_0 = L_0 + mg/k{\thinspace .}
+
+Displacing the body an angle :math:`\Theta` to the right leads to the
+initial position
+
+.. math::
+         x(0)=(L_0+mg/k)\sin\Theta,\quad y(0)=(L_0+mg/k)(1-\cos\Theta){\thinspace .}
+
+The initial velocities can be set to zero: :math:`x'(0)=y'(0)=0`.
+
+The complete ODE problem
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+We can summarize all the equations as follows:
+
+.. math::
+        
+        \ddot x &= -\frac{k}{m}(L-L_0)n_x,
+        \\ 
+        \ddot y &= -\frac{k}{m}(L-L_0)n_y - g,
+        \\ 
+        L &= \sqrt{(x-x_0)^2 + (y-y_0)^2},
+        \\ 
+        n_x &= \frac{x-x_0}{L},
+        \\ 
+        n_y &= \frac{y-y_0}{L},
+        \\ 
+        x(0) &= (L_0+mg/k)\sin\Theta,
+        \\ 
+        x'(0) &= 0,
+        \\ 
+        y(0) & =(L_0+mg/k)(1-\cos\Theta),
+        \\ 
+        y'(0) &= 0{\thinspace .}
+        
+
+We insert :math:`n_x` and :math:`n_y`  in the ODEs:
+
+.. _Eq:vib:app:pendulum_elastic:x:
+
+.. math::
+   :label: vib:app:pendulum_elastic:x
+        
+        \ddot x = -\frac{k}{m}\left(1 -\frac{L_0}{L}\right)(x-x_0),
+        
+        
+
+.. _Eq:vib:app:pendulum_elastic:y:
+
+.. math::
+   :label: vib:app:pendulum_elastic:y
+          
+        \ddot y = -\frac{k}{m}\left(1 -\frac{L_0}{L}\right)(y-y_0) - g,
+        
+        
+
+.. _Eq:vib:app:pendulum_elastic:L:
+
+.. math::
+   :label: vib:app:pendulum_elastic:L
+          
+        L = \sqrt{(x-x_0)^2 + (y-y_0)^2},
+        
+        
+
+.. _Eq:vib:app:pendulum_elastic:x0:
+
+.. math::
+   :label: vib:app:pendulum_elastic:x0
+          
+        x(0) = (L_0+mg/k)\sin\Theta,
+        
+        
+
+.. _Eq:vib:app:pendulum_elastic:vx0:
+
+.. math::
+   :label: vib:app:pendulum_elastic:vx0
+          
+        x'(0) = 0,
+        
+        
+
+.. _Eq:vib:app:pendulum_elastic:y0:
+
+.. math::
+   :label: vib:app:pendulum_elastic:y0
+          
+        y(0)  =(L_0+mg/k)(1-\cos\Theta),
+        
+        
+
+.. _Eq:vib:app:pendulum_elastic:vy0:
+
+.. math::
+   :label: vib:app:pendulum_elastic:vy0
+          
+        y'(0) = 0{\thinspace .}
+        
+        
+
+Scaling
+~~~~~~~
+
+The elastic pendulum model can be used to study both an elastic pendulum
+and a classic, non-elastic pendulum. The latter problem is obtained
+by letting :math:`k\rightarrow\infty`. Unfortunately,
+a serious problem with the ODEs
+:eq:`vib:app:pendulum_elastic:x`-:eq:`vib:app:pendulum_elastic:y` is that for large :math:`k`, we have a very large factor :math:`k/m` multiplied by a
+very small number :math:`1-L_0/L`, since for large :math:`k`, :math:`L\approx L_0` (very
+small deformations of the wire). The product is subject to
+significant round-off errors for many relevant physical values of
+the parameters. To circumvent the problem, we introduce a scaling. This
+will also remove physical parameters from the problem such that we end
+up with only one dimensionless parameter,
+closely related to the elasticity of the wire. Simulations can then be
+done by setting just this dimensionless parameter.
+
+The characteristic length can be taken such that in equilibrium, the
+scaled length is unity, i.e., the characteristic length is :math:`L_0+mg/k`:
+
+.. math::
+         \bar x = \frac{x}{L_0+mg/k},\quad \bar y = \frac{y}{L_0+mg/k}{\thinspace .}
+
+We must then also work with the scaled length :math:`\bar L = L/(L_0+mg/k)`.
+
+Introducing :math:`\bar t=t/t_c`, where :math:`t_c` is a characteristic time we
+have to decide upon later, one gets
+
+.. math::
+        
+        \frac{d^2\bar x}{d\bar t^2} &=
+        -t_c^2\frac{k}{m}\left(1 -\frac{L_0}{L_0+mg/k}\frac{1}{\bar L}\right)\bar x,\\ 
+        \frac{d^2\bar y}{d\bar t^2} &=
+        -t_c^2\frac{k}{m}\left(1 -\frac{L_0}{L_0+mg/k}\frac{1}{\bar L}\right)(\bar y-1)
+        -t_c^2\frac{g}{L_0 + mg/k},\\ 
+        \bar L &= \sqrt{\bar x^2 + (\bar y-1)^2},\\ 
+        \bar x(0) &= \sin\Theta,\\ 
+        \bar x'(0) &= 0,\\ 
+        \bar y(0) & = 1 - \cos\Theta,\\ 
+        \bar y'(0) &= 0{\thinspace .}
+        
+
+For a non-elastic pendulum with small angles, we know that the
+frequency of the oscillations are :math:`\omega = \sqrt{L/g}`. It is therefore
+natural to choose a similar expression here, either the length in
+the equilibrium position,
+
+.. math::
+         t_c^2 = \frac{L_0+mg/k}{g}{\thinspace .}
+
+or simply the unstretched length,
+
+.. math::
+         t_c^2 = \frac{L_0}{g}{\thinspace .}
+
+These quantities are not very different (since the elastic model
+is valid only for quite small elongations), so we take the latter as it is
+the simplest one.
+
+The ODEs become
+
+.. math::
+        
+        \frac{d^2\bar x}{d\bar t^2} &=
+        -\frac{L_0k}{mg}\left(1 -\frac{L_0}{L_0+mg/k}\frac{1}{\bar L}\right)\bar x,\\ 
+        \frac{d^2\bar y}{d\bar t^2} &=
+        -\frac{L_0k}{mg}\left(1 -\frac{L_0}{L_0+mg/k}\frac{1}{\bar L}\right)(\bar y-1)
+        -\frac{L_0}{L_0 + mg/k},\\ 
+        \bar L &= \sqrt{\bar x^2 + (\bar y-1)^2}{\thinspace .}
+        
+
+We can now identify a dimensionless number
+
+.. math::
+         \beta = \frac{L_0}{L_0 + mg/k} = \frac{1}{1+\frac{mg}{L_0k}},
+
+which is the ratio of the unstretched length and the
+stretched length in equilibrium. The non-elastic pendulum will have
+:math:`\beta =1` (:math:`k\rightarrow\infty`).
+With :math:`\beta` the ODEs read
+
+.. _Eq:vib:app:pendulum_elastic:x:s:
+
+.. math::
+   :label: vib:app:pendulum_elastic:x:s
+        
+        \frac{d^2\bar x}{d\bar t^2} =
+        -\frac{\beta}{1-\beta}\left(1- \frac{\beta}{\bar L}\right)\bar x,
+        
+        
+
+.. _Eq:vib:app:pendulum_elastic:y:s:
+
+.. math::
+   :label: vib:app:pendulum_elastic:y:s
+          
+        \frac{d^2\bar y}{d\bar t^2} =
+        -\frac{\beta}{1-\beta}\left(1- \frac{\beta}{\bar L}\right)(\bar y-1)
+        -\beta,
+        
+        
+
+.. _Eq:vib:app:pendulum_elastic:L:s:
+
+.. math::
+   :label: vib:app:pendulum_elastic:L:s
+          
+        \bar L = \sqrt{\bar x^2 + (\bar y-1)^2},
+        
+        
+
+.. _Eq:vib:app:pendulum_elastic:x0:s:
+
+.. math::
+   :label: vib:app:pendulum_elastic:x0:s
+          
+        \bar x(0) = (1+\epsilon)\sin\Theta,
+        
+        
+
+.. _Eq:vib:app:pendulum_elastic:vx0:s:
+
+.. math::
+   :label: vib:app:pendulum_elastic:vx0:s
+          
+        \frac{d\bar x}{d\bar t}(0) = 0,
+        
+        
+
+.. _Eq:vib:app:pendulum_elastic:y0:s:
+
+.. math::
+   :label: vib:app:pendulum_elastic:y0:s
+          
+        \bar y(0) = 1 - (1+\epsilon)\cos\Theta,
+        
+        
+
+.. _Eq:vib:app:pendulum_elastic:vy0:s:
+
+.. math::
+   :label: vib:app:pendulum_elastic:vy0:s
+          
+        \frac{d\bar y}{d\bar t}(0) = 0,
+        
+        
+
+We have here added a parameter :math:`\epsilon`, which is an additional
+downward stretch of the wire at :math:`t=0`. This parameter makes it possible
+to do a desired test: vertical oscillations of the pendulum. Without
+:math:`\epsilon`, starting the motion from :math:`(0,0)` with zero velocity will
+result in :math:`x=y=0` for all times (also a good test!), but with
+an initial stretch so the body's position is :math:`(0,\epsilon)`, we
+will have oscillatory vertical motion with amplitude :math:`\epsilon` (see
+:ref:`vib:exer:pendulum_elastic`).
+
+Remark on the non-elastic limit
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We immediately see that as :math:`k\rightarrow\infty` (i.e., we obtain a non-elastic
+pendulum), :math:`\beta\rightarrow 1`, :math:`\bar L\rightarrow 1`, and we have
+very small values :math:`1-\beta\bar L^{-1}` divided by very small values
+:math:`1-\beta` in the ODEs. However, it turns out that we can set :math:`\beta`
+very close to one and obtain a path of the body that within the visual
+accuracy of a plot does not show any elastic oscillations.
+(Should the division of very small values become a problem, one can
+study the limit by L'Hospital's rule:
+
+.. math::
+         \lim_{\beta\rightarrow 1}\frac{1 - \beta \bar L^{-1}}{1-\beta}
+        = \frac{1}{\bar L},
+
+and use the limit :math:`\bar L^{-1}` in the ODEs for :math:`\beta` values very
+close to 1.)
+
+.. _vib:app:bouncing_ball:
+
+Bouncing ball
+-------------
 
 A bouncing ball is a body in free vertically fall until it impacts the
 ground. During the impact, some kinetic energy is lost, and a new
@@ -1074,10 +1895,10 @@ denoted by :math:`h` and :math:`v` is the velocity. The relations between :math:
 
 combined with Newton's second law gives the ODE model
 
-.. _Eq:vib:exer:bouncing:ball:h2eq:
+.. _Eq:vib:app:bouncing:ball:h2eq:
 
 .. math::
-   :label: vib:exer:bouncing:ball:h2eq
+   :label: vib:app:bouncing:ball:h2eq
         
         h^{\prime\prime}(t) = -g,
         
@@ -1085,19 +1906,19 @@ combined with Newton's second law gives the ODE model
 
 or expressed alternatively as a system of first-order equations:
 
-.. _Eq:vib:exer:bouncing:ball:veq:
+.. _Eq:vib:app:bouncing:ball:veq:
 
 .. math::
-   :label: vib:exer:bouncing:ball:veq
+   :label: vib:app:bouncing:ball:veq
         
         v'(t) = -g,
          
         
 
-.. _Eq:vib:exer:bouncing:ball:heq:
+.. _Eq:vib:app:bouncing:ball:heq:
 
 .. math::
-   :label: vib:exer:bouncing:ball:heq
+   :label: vib:app:bouncing:ball:heq
           
         h'(t) = v(t){\thinspace .}
         
@@ -1115,9 +1936,41 @@ we have two cases.
 2. The motion stops, recognized by a sufficiently small velocity
    (:math:`|v|<\epsilon_v`) close to the ground.
 
-Choose one of the models, :eq:`vib:exer:bouncing:ball:h2eq` or
-:eq:`vib:exer:bouncing:ball:veq`-:eq:`vib:exer:bouncing:ball:heq`,
-and simulate a bouncing ball. Plot :math:`h(t)`. Think about how to
+Electric circuits
+-----------------
+
+Although the term "mechanical vibrations" is used in the present
+document, we must mention that the same type of equations arise
+when modeling electric circuits.
+The current :math:`I(t)` in a
+circuit with an inductor with inductance :math:`L`, a capacitor with
+capacitance :math:`C`, and overall resistance :math:`R`, is governed by
+
+.. math::
+        
+        \ddot I + \frac{R}{L}\dot I + \frac{1}{LC}I = \dot V(t),
+        
+
+where :math:`V(t)` is the voltage source powering the circuit.
+This equation has the same form as the general model considered in
+Section ref:ref:`vib:model2` if we set :math:`u=I`, :math:`f(u^{\prime}=bu^{\prime}`
+and define :math:`b=R/L`, :math:`s(u) = L^{-1}C^{-1}u`, and :math:`F(t)=\dot V(t)`.
+
+Exercises
+=========
+
+.. --- begin exercise ---
+
+.. _vib:exer:bouncing:ball:
+
+Exercise 18: Simulate a bouncing ball
+-------------------------------------
+
+The section :ref:`vib:app:bouncing_ball` presents a model for a bouncing
+ball.
+Choose one of the two ODE formulation, :eq:`vib:app:bouncing:ball:h2eq` or
+:eq:`vib:app:bouncing:ball:veq`-:eq:`vib:app:bouncing:ball:heq`,
+and simulate the motion of a bouncing ball. Plot :math:`h(t)`. Think about how to
 plot :math:`v(t)`.
 
 .. --- begin hint in exercise ---
@@ -1130,221 +1983,180 @@ Two consecutive impacts imply that the motion has stopped.
 
 .. --- end hint in exercise ---
 
-Filename: ``bouncing_ball.py``.
+Filename: ``bouncing_ball``.
 
 .. --- end exercise ---
 
 .. --- begin exercise ---
 
-.. _vib:exer:elastic:pendulum:
+.. _vib:exer:pendulum_elastic:
 
-Exercise 18: Simulate an elastic pendulum
+Exercise 19: Simulate an elastic pendulum
 -----------------------------------------
 
-Consider an elastic pendulum fixed to the point :math:`\boldsymbol{r}_0=(0,L_0)`.
-The length of the pendulum wire when not stretched is :math:`L_0`.
-The wire is massless and always straight. At the end point
-:math:`\boldsymbol{r}`, we have a mass :math:`m`.
-Stretching the elastic wire a distance :math:`s`
-gives rise to a spring force :math:`ks` in the opposite direction of the
-stretching. Let :math:`\boldsymbol{n}` be a unit normal vector along the wire:
-
-.. math::
-         \boldsymbol{n} = \frac{\boldsymbol{r}-\boldsymbol{r}_0}{||\boldsymbol{r}-\boldsymbol{r}_0||}{\thinspace .}
-
-The stretch :math:`s` in the wire is the current length :math:`||\boldsymbol{r}-\boldsymbol{r}_0||`
-at some time :math:`t` minus the original length :math:`L_0`:
-
-.. math::
-         s = ||\boldsymbol{r}-\boldsymbol{r}_0|| - L_0{\thinspace .}
-
-The force in the wire is then :math:`\boldsymbol{F}_w=-ks\boldsymbol{n}`.
-Newton's second law of motion applied to the mass results in
-
-.. _Eq:vib:exer:elastic:pendulum:eq1:
-
-.. math::
-   :label: vib:exer:elastic:pendulum:eq1
-        
-        m\ddot{\boldsymbol{r}} = -ks\boldsymbol{n} - mg\boldsymbol{j},
-        
-        
-
-where :math:`\boldsymbol{j}` is a unit vector in the upward vertical direction.
-Let :math:`\boldsymbol{r}=(x,y)` and :math:`\boldsymbol{n}=(n_x,n_y)`. The two components of
-:eq:`vib:exer:elastic:pendulum:eq1` then becomes
-
-.. math::
-        
-        \ddot x = -m^{-1}ksn_x,
-        
-
-.. _Eq:vib:exer:elastic:pendulum:eq2a:
-
-.. math::
-   :label: vib:exer:elastic:pendulum:eq2a
-          
-         
-        
-
-.. _Eq:vib:exer:elastic:pendulum:eq2b:
-
-.. math::
-   :label: vib:exer:elastic:pendulum:eq2b
-          
-        \ddot y = - m^{-1}ksn_y - g
-        {\thinspace .}
-        
-
-The mass point :math:`(x,y)` will undergo a two-dimensional motion, but
-if the wire is stiff (large :math:`k`), the elastic pendulum will approach
-the classical one where the mass point moves along a circle.
-However, the elastic pendulum is modeled by a direct application of
-Newton's second law, because the force in the wire is known (as a
-function of the motion), while the classical pendulum involves
-constrained motion, which requires elimination of an unknown via
-the constraint (by invoking polar coordinates).
-
-In equilibrium, the mass hangs in the position :math:`(0,y_0)` determined by
-
-.. math::
-         0 = - m^{-1}ksn_y - g = m^{-1}k(y_0-L_0) - g\quad\Rightarrow\quad
-        y_0 = L_0 + mg/k = L{\thinspace .}
-
-We then displace the mass an angle :math:`\theta_0` to the right. The initial
-position :math:`(x(0),y(0))` then becomes
-
-.. math::
-         x(0)=L\sin\theta_0,\quad y(0)=L_0 - L\cos\theta_0{\thinspace .}
-
-The velocity is zero, :math:`x'(0)=y'(0)=0`.
+The section :ref:`vib:app:pendulum_elastic` describes a model for an elastic
+pendulum, resulting in a system of two ODEs. The purpose of this
+exercise is to implement the scaled model, test the software, and
+generalize the model.
 
 **a)**
-Write a code that can simulate such an elastic pendulum. Plot
-:math:`y` against :math:`x` in a plot with the same length scale on the
-axis such that we get a correct picture of the motion.
-Also plot the angle the pendulum: :math:`\theta = \tan^{-1}x/(L_0-y)`.
+Write a function ``simulate``
+that can simulate an elastic pendulum using the scaled model.
+The function should have the following arguments:
 
-A possible set of parameters is :math:`L_0=9.81` m, :math:`m=1` kg, :math:`theta_0=30`
-degrees.
+.. code-block:: python
+
+        def simulate(
+            beta=0.9,                 # dimensionless parameter
+            Theta=30,                 # initial angle in degrees
+            epsilon=0,                # initial stretch of wire
+            num_periods=6,            # simulate for num_periods
+            time_steps_per_period=60, # time step resolution
+            plot=True,                # make plots or not
+            ):
+
+To set the total simulation time and the time step, we
+use our knowledge of the scaled, classical, non-elastic pendulum:
+:math:`u^{\prime\prime} + u = 0`, with solution
+:math:`u = \Theta\cos \bar t`.
+The period of these oscillations is :math:`P=2\pi`
+and the frequency is unity. The time
+for simulation is taken as ``num_periods`` times :math:`P`. The time step
+is set as :math:`P` divided by ``time_steps_per_period``.
+
+The ``simulate`` function should return the arrays of
+:math:`x`, :math:`y`, :math:`\theta`, and :math:`t`, where :math:`\theta = \tan^{-1}(x/(1-y))` is
+the angular displacement of the elastic pendulum corresponding to the
+position :math:`(x,y)`.
+
+If ``plot`` is ``True``, make a plot of :math:`\bar y(\bar t)`
+versus :math:`\bar x(\bar t)`, i.e., the physical motion
+of the mass at :math:`(\bar x,\bar y)`. Use the equal aspect ratio on the axis
+such that we get a physically correct picture of the motion. Also
+make a plot of :math:`\theta(\bar t)`, where :math:`\theta` is measured in degrees.
+If :math:`\Theta < 10` degrees, add a plot that compares the solutions of
+the scaled, classical, non-elastic pendulum and the elastic pendulum
+(:math:`\theta(t)`).
+
+Although the mathematics here employs a bar over scaled quantities, the
+code should feature plain names ``x`` for :math:`\bar x`, ``y`` for :math:`\bar y`, and
+``t`` for :math:`\bar t` (rather than ``x_bar``, etc.). These variable names make
+the code easier to read and compare with the mathematics.
 
 .. --- begin hint in exercise ---
 
 **Hint 1.**
-The associated classical pendulum, for large :math:`k`, has an equation
-:math:`\ddot\theta + g/L_0\theta =0`. With :math:`g=L_0`, the period is :math:`2\pi`:
-:math:`\theta(t) = \theta_0\cos(t)`. One can compare in a plot the angle
-of the elastic solution (:math:`\theta = \tan^{-1}x/(L_0-y)`)
-with the solution of the classical pendulum problem.
+Equal aspect ratio is set by ``plt.gca().set_aspect('equal')`` in
+Matplotlib (``import matplotlib.pyplot as plt``)
+and by ``plot(..., daspect=[1,1,1], daspectmode='equal')``
+in SciTools (``import scitools.std as plt``).
 
 .. --- end hint in exercise ---
 
 .. --- begin hint in exercise ---
 
 **Hint 2.**
-The equation of motion is subject to round-off errors for large :math:`k`,
-because :math:`s` is then small such that :math:`ks` is a product of a large and
-a small number. Moreover, in this stiff case,
-:math:`m^{-1}ksn_y` is close to :math:`g` such that we
-also subtract two almost equal numbers in the force term in the
-equation. For the given parameters, :math:`k=150` is a large value and
-gives a solution close to the motion of a perfect classical pendulum.
-Much larger values gives unstable solutions.
-
-.. --- end hint in exercise ---
-
-**b)**
-Air resistance is a force :math:`\frac{1}{2}\varrho C_D A||bm{v}||\boldsymbol{v}`,
-where :math:`C_D` is a drag coefficient (0.2 for a sphere), :math:`\varrho`
-is the density of air (1.2 :math:`\hbox{kg }\,{\hbox{m}}^{-3}`), :math:`A` is the
-cross section area (:math:`A=\pi R^2` for a sphere, where :math:`R` is the radius),
-and :math:`\boldsymbol{v}` is the velocity: :math:`\boldsymbol{v} = \dot{\boldsymbol{r}}`.
-Include air resistance in the model and show plots comparing the
-motion with and without air resistance.
-
-Filename: ``elastic_pendulum.py``.
-
-.. --- end exercise ---
-
-.. --- begin exercise ---
-
-.. _vib:exer:EulerCromer:analysis:
-
-Exercise 19: Analysis of the Euler-Cromer scheme
-------------------------------------------------
-
-The Euler-Cromer scheme for the model problem
-:math:`u^{\prime\prime} + \omega^2 u =0`, :math:`u(0)=I`, :math:`u^{\prime}(0)=0`, is given in
-:ref:`(2.28) <Eq:vib:model2x2:EulerCromer:ueq1b>`-:ref:`(2.27) <Eq:vib:model2x2:EulerCromer:veq1b>`.
-Find the exact discrete solutions of this scheme and show that the solution
-for :math:`u^n` coincides with that found in the section :ref:`vib:ode1:analysis`.
-
-.. --- begin hint in exercise ---
-
-**Hint.**
-Use an "ansatz" :math:`u^n=I\exp{(i\tilde\omega\Delta t\,n)}` and
-:math:`v^=qu^n`, where :math:`\tilde\omega` and :math:`q` are unknown parameters. The formula
-
-.. math::
-         \exp{(i\tilde\omega(\Delta t))} + \exp{(i\tilde\omega(-\Delta t))} - 2
-        = 2\left(\cosh(i\tilde\omega\Delta t) -1 \right)
-        =-4\sin^2(\frac{\tilde\omega\Delta t}{2}),
-
-becomes handy.
+If you want to use Odespy to solve the equations, order the ODEs
+like :math:`\dot \bar x, \bar x, \dot\bar y,\bar y` such that the Euler-Cromer
+scheme can (also) be used (``odespy.EulerCromer``).
 
 .. --- end hint in exercise ---
 
 .. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
 
-.. jumping washing machine, pendulum, moored ship, look to Irgens
+**b)**
+Write a test function for testing that :math:`\Theta=0` and :math:`\epsilon=0`
+gives :math:`x=y=0` for all times.
 
-.. apps: planet around a star, box horizontal and vertical, bumpy,
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
 
-.. step to ensure dt^2 accuracy there.
+**c)**
+Write another test function for checking that the pure vertical
+motion of the elastic pendulum is correct.
+Start with simplifying the ODEs for pure vertical motion and show that
+:math:`\bar y(\bar t)` fulfills a vibration equation with
+frequency :math:`\sqrt{\beta/(1-\beta)}`. Set up the exact solution.
 
-.. odespy: ForwardBackward on a 2n system? Need special formula for first
+Write a test function that
+uses this special case to verify the ``simulate`` function. There will
+be numerical approximation errors present in the results from
+``simulate`` so you have to believe in correct results and set a
+(low) tolerance that corresponds to the computed maximum error.
+Use a small :math:`\Delta t` to obtain a small numerical approximation error.
 
-.. mu'' + f(x) + s() = F(t) via odespy RK4
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
 
-.. mu'' + bu' + s(u) = F(t) as exercise, pendulum
+**d)**
+Make a function ``demo(beta, Theta)`` for simulating an elastic pendulum with a
+given :math:`\beta` parameter and initial angle :math:`\Theta`. Use 600 time steps
+per period to get every accurate results, and simulate for 3 periods.
 
-.. make each platou act for a while to see the effect
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
 
-.. levels: 0.1, 0.75 1, 1.25, 2 of the resonance frequency,
+Filename: ``elastic_pendulum``.
 
-.. F = sin q t and q = piecewise constant in time with four
+.. --- end exercise ---
 
-.. compare for F = sin qt, demonstrate resonance by having
+.. --- begin exercise ---
 
-.. set up analytical solution for reference
+.. _vib:exer:pendulum_elastic_drag:
 
-.. mu'' + bu' + ku = F(t)
+Exercise 20: Simulate an elastic pendulum with air resistance
+-------------------------------------------------------------
+
+This is a continuation :ref:`vib:exer:pendulum_elastic_drag`.
+Air resistance on the body with mass :math:`m` can be modeled by the
+force :math:`-\frac{1}{2}\varrho C_D A|\boldsymbol{v}|\boldsymbol{v}`,
+where :math:`C_D` is a drag coefficient (0.2 for a sphere), :math:`\varrho`
+is the density of air (1.2 :math:`\hbox{kg }\,{\hbox{m}}^{-3}`), :math:`A` is the
+cross section area (:math:`A=\pi R^2` for a sphere, where :math:`R` is the radius),
+and :math:`\boldsymbol{v}` is the velocity of the body.
+Include air resistance in the original model, scale the model,
+write a function ``simulate_drag`` that is a copy of the ``simulate``
+function from :ref:`vib:exer:pendulum_elastic_drag`, but with the
+new ODEs included, and show plots of how air resistance
+influences the motion.
+
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
+
+Filename: ``elastic_pendulum_drag``.
+
+.. Closing remarks for this Exercise
+
+Remarks
+~~~~~~~
+
+Test functions are challenging to construct for the problem with
+air resistance. You can reuse the tests from
+:ref:`vib:exer:pendulum_elastic_drag` for ``simulate_drag``,
+but these tests does not verify the new terms arising from air
+resistance.
 
 .. in vb_odespy examples: add 20 RK4 1000 to show RK4 in the long run
 
-.. see `<http://en.wikipedia.org/wiki/Velocity_Verlet>`_
+.. mu'' + bu' + ku = F(t)
 
-.. general particle laws and velocity verlet, make exercises
+.. set up analytical solution for reference
 
-.. waves: 1D blood flow
+.. compare for F = sin qt, demonstrate resonance by having
 
-.. 0D blood flow?
+.. F = sin q t and q = piecewise constant in time with four
 
-.. electrical circuits, see ode2.p.tex
+.. levels: 0.1, 0.75 1, 1.25, 2 of the resonance frequency,
 
-.. moored ship
+.. make each platou act for a while to see the effect
 
-.. bumpy road
+.. mu'' + bu' + s(u) = F(t) as exercise, pendulum
 
-.. bouncing ball (just move text from exercise)
+.. mu'' + f(x) + s() = F(t) via odespy RK4
 
-.. elastic pendulum
+.. odespy: ForwardBackward on a 2n system? Need special formula for first
 
-.. pendulum
+.. step to ensure dt^2 accuracy there.
 
-.. box with mu*M*g*v/|v| friction force, treat nonlinearity with geometric mean
+.. apps: planet around a star, box horizontal and vertical, bumpy,
 
-.. mech systems: horizontal, vertical/hanging
+.. jumping washing machine, pendulum, moored ship, look to Irgens
 
 .. --- end exercise ---
 
@@ -1352,8 +2164,7 @@ References
 ==========
 
 .. [Ref1]
-   **H. P. Langtangen**. Introduction to Computing With Finite Difference Methods,
-   *Simula Research Laboratory and University of Oslo*,
-   `http://hplgit.github.com/INF5620/doc/notes/decay-sphinx/main_decay.html <http://hplgit.github.com/INF5620/doc/notes/decay-sphinx/main_decay.html>`_,
-   2013.
+   **H. P. Langtangen**. *Finite Difference Computing with Exponential Decay Models*,
+   2015,
+   `http://tinyurl.com/nclmcng/doc/pub/book <http://tinyurl.com/nclmcng/doc/pub/book>`_.
 

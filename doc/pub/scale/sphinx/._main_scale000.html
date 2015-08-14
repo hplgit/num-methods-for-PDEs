@@ -1,0 +1,247 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Scaling of differential equations</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/sidebar.js"></script>
+
+        <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
+        <script src="http://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+
+        <script>sagecell.makeSagecell({inputLocation: ".sage"});</script>
+
+        <style type="text/css">
+                .sagecell .CodeMirror-scroll {
+                        overflow-y: hidden;
+                        overflow-x: auto;
+                }
+                .sagecell .CodeMirror {
+                        height: auto;
+                }
+        </style>
+
+    
+    <link rel="top" title="Scaling of differential equations" href="index.html" />
+    <link rel="next" title="&lt;no title&gt;" href="._main_scale001.html" />
+    <link rel="prev" title="Scaling of differential equations" href="index.html" />
+ 
+  
+       <style type="text/css">
+         div.admonition {
+           background-color: whiteSmoke;
+           border: 1px solid #bababa;
+         }
+       </style>
+      </head>
+    
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="._main_scale001.html" title="&lt;no title&gt;"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Scaling of differential equations"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Scaling of differential equations</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="scaling-of-differential-equations">
+<h1>Scaling of differential equations<a class="headerlink" href="#scaling-of-differential-equations" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Authors:</th><td class="field-body">Hans Petter Langtangen</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Aug 14, 2015</td>
+</tr>
+</tbody>
+</table>
+<p>Finding proper values of physical parameters in mathematical models is
+often quite a challenge. While many has gotten away with using just
+the mathematical symbols when doing science and engineering with pen
+and paper, the modern world of numerical computing requires each
+physical parameter to have a numerical value, otherwise one cannot get
+started with the computations.  For example, in the simplest possible
+transient heat conduction simulation, a case relevant for a real
+physical material needs values for the heat capacity, the
+density, and the heat conduction coefficient of the material. In
+addition, relevant values must be chosen for initial and boundary
+temperatures as well as the size of the material.  With a
+dimensionless mathematical model, as explained in the section <a class="reference internal" href="._main_scale006.html#sec-scale-diffu"><span class="std std-ref">The diffusion equation</span></a>, <em>no physical quantities</em> need to be assigned
+(!). Not only is this a simplification of great convenience, as one
+simulation is valid for any type of material, but it also actually
+increases the understanding of the physical problem.</p>
+<p>Scaling of differential equations is basically a simple mathematical
+process, consisting of the chain rule for differentiation and some
+algebra.  The <em>choice of scales</em>, however, is a non-trivial topic,
+which may cause confusion among practitioners without extensive
+experience with scaling.  How to choose scales is unfortunately not
+well treated in the literature. Most of the times, authors just state scales
+without proper motivation. The choice of scales is highly
+problem-dependent and requires knowledge of the characteristic
+features of the solution or the physics of the problem.  The present
+document aims at explaining &#8220;all nuts and bolts&#8221; of the scaling
+technique, including choice of scales, the algebra, the
+interpretation of dimensionless parameters in scaled models,
+and how scaling
+impacts software for solving differential equations.</p>
+<p>Traditionally, scaling was mainly used to identify small parameters in
+mathematical models, such that perturbation methods based on series
+expansions in terms of the small parameters could be used as an
+approximate solution method for differential equations.  Nowadays, the
+greatest practical benefit of scaling is related to running numerical
+simulations, since scaling greatly simplifies the choice of values for
+the input data and makes the simulations results more widely
+applicable.  The number of parameters in scaled models may be much
+less than the number of physical parameters in the original model. The
+parameters in scaled models are also dimensionless and express
+<em>ratios</em> of physical effects rather than the levels of individual
+effects.  Setting meaningful values of a few dimensionless numbers is
+much easier than determining physically relevant values for the
+original physical parameters.</p>
+<p>Another great benefit of scaling is the physical insight that follows
+from dimensionless parameters. Since physical effects enter the
+problem through a few dimensionless groups, one can from these
+groups see how different effects compete in their
+impact on the solution. Ideally, a good physical understanding should
+provide the same insight, but it is not always easy to &#8220;think right&#8221;
+and realize how spatial and temporal scales interact with physical
+parameters.  This interaction becomes clear through the dimensionless
+numbers, and such numbers are therefore a great help, especially for
+students, in developing a correct physical understanding.</p>
+<p>Since we have a special focus on scaling related to numerical simulations,
+the document contains a lot of examples on how to program with
+dimensionless differential equation models. Most numerical models feature
+quantities with dimension, so we show in particular how to utilize such
+existing models to solve the equations in the associated scaled model.</p>
+<p>Scaling is not a universal mathematical technique as the details
+depend on the problem at hand. We therefore present scaling in a range
+of specific applications, starting with simple ODEs, progressing with
+basic PDEs, before attacking more
+complicated models, especially from fluid mechanics.</p>
+<p>The section <a class="reference internal" href="._main_scale002.html#scale-dimunit"><span class="std std-ref">Dimensions and units</span></a> discusses units and how to make programs
+that can automatically take care of unit conversion (the most frequent
+mathematical mistake in industry and science?).  The section <a class="reference internal" href="._main_scale003.html#sec-scale-decay"><span class="std std-ref">Exponential decay</span></a> introduces the mathematics of scaling and the
+thinking about scales in a simple ODE problems modeling exponential
+decay. The ideas are generalized to nonlinear ODEs and to systems of
+ODEs.  Another ODE example on mechanical vibrations is treated in
+the section <a class="reference internal" href="._main_scale004.html#sec-scale-vib"><span class="std std-ref">Vibration problems</span></a>, where we cover many different physical
+contexts and different choices of scales.  Scaling the standard, linear
+wave equation is the topic of the section <a class="reference internal" href="._main_scale005.html#sec-scale-wave"><span class="std std-ref">The wave equation</span></a>, with
+discussion of how boundary and initial conditions can influence the
+choice of scales.  Another PDE example, the diffusion equation,
+appears in the section <a class="reference internal" href="._main_scale006.html#sec-scale-diffu"><span class="std std-ref">The diffusion equation</span></a>. Here we progress from a
+simple linear diffusion equation in 1D to the impact on scales of an
+oscillating boundary condition and to nonlinear diffusion models.  The
+final sections are devoted to many famous
+PDEs arising from continuum models: elasticity, viscous fluid flow,
+thermal convection, etc.</p>
+<p>Especially experimental fluid mechanics is full of relations involving
+dimensionless numbers such as the Grashof number and the Prandtl
+number, but none of the textbooks the author has seen explain how
+these numbers actually relate to dimensionless forms of the governing
+equations. Consequently, this non-trivial topic is particularly
+highlighted in our fluid mechanics examples.</p>
+<p>To conclude, the purpose of this document is to demystify the
+technique and thinking about scaling differential equations and
+motivate for always bringing a differential equation model on
+dimensionless form before doing numerical simulations.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <center>
+            <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
+              <img class="logo" src="_static/cbc_logo.png" alt="Logo"/>
+            </a></p>
+            </center>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Scaling of differential equations</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="._main_scale001.html"
+                        title="next chapter">&lt;no title&gt;</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/._main_scale000.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="._main_scale001.html" title="&lt;no title&gt;"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Scaling of differential equations"
+             >previous</a> |</li>
+        <li><a href="index.html">Scaling of differential equations</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="wrapper">
+  <div class="footer">
+  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+  </div>
+</div>
+
+  </body>
+</html>

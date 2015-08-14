@@ -1,0 +1,2009 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Finite difference methods for wave motion">
+<meta name="keywords" content="waves on a string,wave equation 1D,wave equation 1D, finite difference method,mesh finite differences,stencil 1D wave equation,mesh function,wave equation 1D, implementation,callback function,nose test,pytest test,unit testing,software testing nose,software testing pytest,closure,vectorization,scalar code,vectorization,array computing,array slices,slice,lambda function (Python),Neumann conditions,Dirichlet conditions,homogeneous Neumann conditions,homogeneous Dirichlet conditions,boundary conditions Neumann,boundary conditions Dirichlet,stencil Neumann boundary,index set notation,geometric mean,arithmetic mean,harmonic average,averaging geometric,averaging arithmetic,averaging harmonic,radiation condition,open boundary condition,boundary condition open (radiation),periodic boundary conditions,boundary conditions periodic,wave equation 1D, analytical properties,Fourier series,Fourier transform,discrete Fourier transform,wave equation 1D, exact numerical solution,Courant number,stability criterion,wave equation 1D, stability,wave equation 2D, implementation,index set notation">
+
+<title>Finite difference methods for wave motion</title>
+
+<!-- Bootstrap style: bootswatch_journal -->
+<link href="http://netdna.bootstrapcdn.com/bootswatch/3.1.1/journal/bootstrap.min.css" rel="stylesheet">
+<!-- not necessary
+<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+-->
+
+<style type="text/css">
+/* Let inline verbatim have the same color as the surroundings */
+code { color: inherit; background-color: transparent; }
+</style>
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('Simulation of waves on a string',
+               1,
+               'wave:string',
+               'wave:string'),
+              ('Discretizing the domain',
+               2,
+               'wave:string:mesh',
+               'wave:string:mesh'),
+              ('Uniform meshes', 3, None, '___sec2'),
+              ('The discrete solution',
+               2,
+               'wave:string:numerical:sol',
+               'wave:string:numerical:sol'),
+              ('Fulfilling the equation at the mesh points',
+               2,
+               'wave:string:samplingPDE',
+               'wave:string:samplingPDE'),
+              ('Replacing derivatives by finite differences',
+               2,
+               'wave:string:fd',
+               'wave:string:fd'),
+              ('Algebraic version of the PDE', 3, None, '___sec6'),
+              ('Interpretation of the equation as a stencil',
+               3,
+               None,
+               '___sec7'),
+              ('Algebraic version of the initial conditions',
+               3,
+               None,
+               '___sec8'),
+              ('Formulating a recursive algorithm',
+               2,
+               'wave:string:alg',
+               'wave:string:alg'),
+              ('Sketch of an implementation',
+               2,
+               'wave:string:impl',
+               'wave:string:impl'),
+              ('Verification', 1, None, '___sec11'),
+              ('A slightly generalized model problem',
+               2,
+               'wave:pde2:fd',
+               'wave:pde2:fd'),
+              ('Using an analytical solution of physical significance',
+               2,
+               'wave:pde2:fd:standing:waves',
+               'wave:pde2:fd:standing:waves'),
+              ('Manufactured solution',
+               2,
+               'wave:pde2:fd:MMS',
+               'wave:pde2:fd:MMS'),
+              ('Constructing an exact solution of the discrete equations',
+               2,
+               'wave:pde2:fd:verify:quadratic',
+               'wave:pde2:fd:verify:quadratic'),
+              ('Implementation', 1, 'wave:pde1:impl', 'wave:pde1:impl'),
+              ('Callback function for user-specific actions',
+               2,
+               None,
+               '___sec17'),
+              ('The solver function',
+               2,
+               'wave:pde1:impl:solver',
+               'wave:pde1:impl:solver'),
+              ('Verification: exact quadratic solution',
+               2,
+               'wave:pde1:impl:verify:quadratic',
+               'wave:pde1:impl:verify:quadratic'),
+              ('Visualization: animating the solution',
+               2,
+               'wave:pde1:impl:animate',
+               'wave:pde1:impl:animate'),
+              ('Function for administering the simulation',
+               3,
+               None,
+               '___sec21'),
+              ('Dissection of the code', 3, None, '___sec22'),
+              ('Making movie files', 3, None, '___sec23'),
+              ('Skipping frames for animation speed', 3, None, '___sec24'),
+              ('Running a case',
+               2,
+               'wave:pde1:guitar:data',
+               'wave:pde1:guitar:data'),
+              ('Working with a scaled PDE model', 2, None, '___sec26'),
+              ('Vectorization',
+               1,
+               'wave:pde1:impl:vec',
+               'wave:pde1:impl:vec'),
+              ('Operations on slices of arrays',
+               2,
+               'wave:pde1:impl:vec:slices:basics',
+               'wave:pde1:impl:vec:slices:basics'),
+              ('Finite difference schemes expressed as slices',
+               2,
+               'wave:pde1:impl:vec:slices:fdm',
+               'wave:pde1:impl:vec:slices:fdm'),
+              ('Verification',
+               2,
+               'wave:pde1:impl:vec:verify:quadratic',
+               'wave:pde1:impl:vec:verify:quadratic'),
+              ('Efficiency measurements', 2, None, '___sec31'),
+              ('Solution 1', 3, None, '___sec32'),
+              ('Solution 2', 3, None, '___sec33'),
+              ('Efficiency experiments', 3, None, '___sec34'),
+              ('Remark on the updating of arrays',
+               2,
+               'wave:pde1:impl:ref:switch',
+               'wave:pde1:impl:ref:switch'),
+              ('Exercises', 1, None, '___sec36'),
+              ('Exercise 1: Simulate a standing wave',
+               2,
+               'wave:exer:standingwave',
+               'wave:exer:standingwave'),
+              ('Remarks', 3, None, '___sec38'),
+              ('Exercise 2: Add storage of solution in a user action function',
+               2,
+               'wave:exer:store:list',
+               'wave:exer:store:list'),
+              ('Exercise 3: Use a class for the user action function',
+               2,
+               'wave:exer:store:list:class',
+               'wave:exer:store:list:class'),
+              ('Exercise 4: Compare several Courant numbers in one movie',
+               2,
+               'wave:exer:multiple:C',
+               'wave:exer:multiple:C'),
+              ('Project 5: Calculus with 1D mesh functions',
+               2,
+               'wave:exer:mesh1D:calculus',
+               'wave:exer:mesh1D:calculus'),
+              ('Generalization: reflecting boundaries',
+               1,
+               'wave:pde2:Neumann',
+               'wave:pde2:Neumann'),
+              ('Neumann boundary condition',
+               2,
+               'wave:pde2:Neumann:bc',
+               'wave:pde2:Neumann:bc'),
+              ('Discretization of derivatives at the boundary',
+               2,
+               'wave:pde2:Neumann:discr',
+               'wave:pde2:Neumann:discr'),
+              ('Implementation of Neumann conditions',
+               2,
+               'wave:pde2:Neumann:impl',
+               'wave:pde2:Neumann:impl'),
+              ('Index set notation', 2, 'wave:indexset', 'wave:indexset'),
+              ('Verifying the implementation of Neumann conditions',
+               2,
+               'wave:pde1:verify',
+               'wave:pde1:verify'),
+              ('Alternative implementation via ghost cells',
+               2,
+               'wave:pde1:Neumann:ghost',
+               'wave:pde1:Neumann:ghost'),
+              ('Idea', 3, None, '___sec50'),
+              ('Implementation', 3, None, '___sec51'),
+              ('Generalization: variable wave velocity',
+               1,
+               'wave:pde2:var:c',
+               'wave:pde2:var:c'),
+              ('The model PDE with a variable coefficient',
+               2,
+               None,
+               '___sec53'),
+              ('Discretizing the variable coefficient',
+               2,
+               'wave:pde2:var:c:ideas',
+               'wave:pde2:var:c:ideas'),
+              ('Computing the coefficient between mesh points',
+               2,
+               'wave:pde2:var:c:means',
+               'wave:pde2:var:c:means'),
+              ('How a variable coefficient affects the stability',
+               2,
+               'wave:pde2:var:c:stability',
+               'wave:pde2:var:c:stability'),
+              ('Neumann condition and a variable coefficient',
+               2,
+               'wave:pde2:var:c:Neumann',
+               'wave:pde2:var:c:Neumann'),
+              ('Implementation of variable coefficients',
+               2,
+               'wave:pde2:var:c:impl',
+               'wave:pde2:var:c:impl'),
+              ('A more general PDE model with variable coefficients',
+               2,
+               None,
+               '___sec59'),
+              ('Generalization: damping', 2, None, '___sec60'),
+              ('Building a general 1D wave equation solver',
+               1,
+               'wave:pde2:software',
+               'wave:pde2:software'),
+              ('User action function as a class', 2, None, '___sec62'),
+              ('The code', 3, None, '___sec63'),
+              ('Dissection', 3, None, '___sec64'),
+              ('Pulse propagation in two media', 2, None, '___sec65'),
+              ('Exercises', 1, None, '___sec66'),
+              ('Exercise 6: Find the analytical solution to a damped wave equation',
+               2,
+               'wave:exer:standingwave:damped:uex',
+               'wave:exer:standingwave:damped:uex'),
+              ('Problem 7: Explore symmetry boundary conditions',
+               2,
+               'wave:exer:symmetry:bc',
+               'wave:exer:symmetry:bc'),
+              ('Exercise 8: Send pulse waves through a layered medium',
+               2,
+               'wave:app:exer:pulse1D',
+               'wave:app:exer:pulse1D'),
+              ('Exercise 9: Explain why numerical noise occurs',
+               2,
+               'wave:app:exer:pulse1D:analysis',
+               'wave:app:exer:pulse1D:analysis'),
+              ('Exercise 10: Investigate harmonic averaging in a 1D model',
+               2,
+               'wave:app:exer:pulse1D:harmonic',
+               'wave:app:exer:pulse1D:harmonic'),
+              ('Problem 11: Implement open boundary conditions',
+               2,
+               'wave:app:exer:radiationBC',
+               'wave:app:exer:radiationBC'),
+              ('Remarks', 3, None, '___sec73'),
+              ('Exercise 12: Implement periodic boundary conditions',
+               2,
+               'wave:exer:periodic',
+               'wave:exer:periodic'),
+              ('Exercise 13: Compare discretizations of a Neumann condition',
+               2,
+               None,
+               '___sec75'),
+              ('Exercise 14: Verification by a cubic polynomial in space',
+               2,
+               'wave:fd2:exer:verify:cubic',
+               'wave:fd2:exer:verify:cubic'),
+              ('Analysis of the difference equations',
+               1,
+               'wave:pde1:analysis',
+               'wave:pde1:analysis'),
+              ('Properties of the solution of the wave equation',
+               2,
+               'wave:pde1:properties',
+               'wave:pde1:properties'),
+              ('More precise definition of Fourier representations',
+               2,
+               'wave:pde1:Fourier',
+               'wave:pde1:Fourier'),
+              ('Stability', 2, 'wave:pde1:stability', 'wave:pde1:stability'),
+              ('Preliminary results', 3, None, '___sec81'),
+              ('Numerical wave propagation', 3, None, '___sec82'),
+              ('Numerical dispersion relation',
+               2,
+               'wave:pde1:num:dispersion',
+               'wave:pde1:num:dispersion'),
+              ('Extending the analysis to 2D and 3D',
+               2,
+               'wave:pde1:analysis:2D3D',
+               'wave:pde1:analysis:2D3D'),
+              ('Finite difference methods for 2D and 3D wave equations',
+               1,
+               'wave:2D3D',
+               'wave:2D3D'),
+              ('Multi-dimensional wave equations',
+               2,
+               'wave:2D3D:models',
+               'wave:2D3D:models'),
+              ('Mesh', 2, 'wave:2D3D:mesh', 'wave:2D3D:mesh'),
+              ('Discretization', 2, 'wave:2D3D:models', 'wave:2D3D:models'),
+              ('Discretizing the PDEs', 3, None, '___sec89'),
+              ('Handling boundary conditions where $u$ is known',
+               3,
+               None,
+               '___sec90'),
+              ('Discretizing the Neumann condition', 3, None, '___sec91'),
+              ('Implementation', 1, 'wave:2D3D:impl', 'wave:2D3D:impl'),
+              ('Scalar computations',
+               2,
+               'wave2D3D:impl:scalar',
+               'wave2D3D:impl:scalar'),
+              ('Domain and mesh', 3, None, '___sec94'),
+              ('Solution arrays', 3, None, '___sec95'),
+              ('Index sets', 3, None, '___sec96'),
+              ('Computing the solution', 3, None, '___sec97'),
+              ('Vectorized computations',
+               2,
+               'wave2D3D:impl:vectorized',
+               'wave2D3D:impl:vectorized'),
+              ('Verification',
+               2,
+               'wave2D3D:impl:verify',
+               'wave2D3D:impl:verify'),
+              ('Testing a quadratic solution', 3, None, '___sec100'),
+              ('Using classes to implement a simulator',
+               1,
+               None,
+               '___sec101'),
+              ('Exercises', 1, None, '___sec102'),
+              ('Exercise 15: Check that a solution fulfills the discrete model',
+               2,
+               'wave:exer:quadratic:2D',
+               'wave:exer:quadratic:2D'),
+              ('Project 16: Calculus with 2D mesh functions',
+               2,
+               'wave:exer:mesh3D:calculus',
+               'wave:exer:mesh3D:calculus'),
+              ('Exercise 17: Implement Neumann conditions in 2D',
+               2,
+               'wave:app:exer:wave2D:Neumann',
+               'wave:app:exer:wave2D:Neumann'),
+              ('Exercise 18: Test the efficiency of compiled loops in 3D',
+               2,
+               'wave:exer:3D:f77:cy:efficiency',
+               'wave:exer:3D:f77:cy:efficiency'),
+              ('Applications of wave equations', 1, 'wave:app', 'wave:app'),
+              ('Waves on a string', 2, 'wave:app:string', 'wave:app:string'),
+              ('Damping', 3, None, '___sec109'),
+              ('External forcing', 3, None, '___sec110'),
+              ('Modeling the tension via springs', 3, None, '___sec111'),
+              ('Waves on a membrane',
+               2,
+               'wave:app:membrane',
+               'wave:app:membrane'),
+              ('Elastic waves in a rod',
+               2,
+               'wave:app:elastic:rod',
+               'wave:app:elastic:rod'),
+              ('The acoustic model for seismic waves',
+               2,
+               'wave:app:acoustic:seismic',
+               'wave:app:acoustic:seismic'),
+              ('Anisotropy', 3, None, '___sec115'),
+              ('Sound waves in liquids and gases',
+               2,
+               'wave:app:sound',
+               'wave:app:sound'),
+              ('Spherical waves',
+               2,
+               'wave:app:spherical',
+               'wave:app:spherical'),
+              ('The linear shallow water equations',
+               2,
+               'wave:app:sw:2D',
+               'wave:app:sw:2D'),
+              ('Wind drag on the surface', 3, None, '___sec119'),
+              ('Bottom drag', 3, None, '___sec120'),
+              ("Effect of the Earth's rotation", 3, None, '___sec121'),
+              ('Waves in blood vessels',
+               2,
+               'wave:app:blood',
+               'wave:app:blood'),
+              ('Electromagnetic waves',
+               2,
+               'wave:app:light',
+               'wave:app:light'),
+              ('Exercises', 1, 'wave:app:exer', 'wave:app:exer'),
+              ('Exercise 19: Simulate waves on a non-homogeneous string',
+               2,
+               'wave:app:exer:string:discont',
+               'wave:app:exer:string:discont'),
+              ('Exercise 20: Simulate damped waves on a string',
+               2,
+               'wave:app:exer:string:damping',
+               'wave:app:exer:string:damping'),
+              ('Exercise 21: Simulate elastic waves in a rod',
+               2,
+               'wave:app:exer:rod',
+               'wave:app:exer:rod'),
+              ('Exercise 22: Simulate spherical waves',
+               2,
+               'wave:app:exer:spherical',
+               'wave:app:exer:spherical'),
+              ('Problem 23: Earthquake-generated tsunami over a subsea hill',
+               2,
+               'wave:app:exer:tsunami1D:hill',
+               'wave:app:exer:tsunami1D:hill'),
+              ('Problem 24: Earthquake-generated tsunami over a 3D hill',
+               2,
+               'wave:app:exer:tsunami2D:hill',
+               'wave:app:exer:tsunami2D:hill'),
+              ('Problem 25: Investigate Matplotlib for visualization',
+               2,
+               'wave:app:exer:tsunami:hill:viz:matplotlib',
+               'wave:app:exer:tsunami:hill:viz:matplotlib'),
+              ('Problem 26: Investigate visualization packages',
+               2,
+               'wave:app:exer:tsunami:hill:viz:packages',
+               'wave:app:exer:tsunami:hill:viz:packages'),
+              ('Problem 27: Implement loops in compiled languages',
+               2,
+               'wave:app:exer:tsunami2D:hill:compiled',
+               'wave:app:exer:tsunami2D:hill:compiled'),
+              ('Exercise 28: Simulate seismic waves in 2D',
+               2,
+               'wave:app:exer:seismic2D',
+               'wave:app:exer:seismic2D'),
+              ('Project 29: Model 3D acoustic waves in a room',
+               2,
+               'wave:app:exer:acoustics',
+               'wave:app:exer:acoustics'),
+              ('Project 30: Solve a 1D transport equation',
+               2,
+               'wave:app:exer:advec1D',
+               'wave:app:exer:advec1D'),
+              ('Problem 31: General analytical solution of a 1D damped wave equation',
+               2,
+               'wave:app:exer:anal:damped:wave1D',
+               'wave:app:exer:anal:damped:wave1D'),
+              ('Problem 32: General analytical solution of a 2D damped wave equation',
+               2,
+               'wave:app:exer:anal:damped:wave2D',
+               'wave:app:exer:anal:damped:wave2D'),
+              ('References', 1, None, '___sec139')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\halfi}{{1/2}}
+\newcommand{\tp}{\thinspace .}
+\newcommand{\uex}{{u_{\small\mbox{e}}}}
+\newcommand{\xpoint}{\boldsymbol{x}}
+\newcommand{\normalvec}{\boldsymbol{n}}
+\newcommand{\Oof}[1]{\mathcal{O}(#1)}
+\renewcommand{\u}{\boldsymbol{u}}
+\newcommand{\f}{\boldsymbol{f}}
+\newcommand{\stress}{\boldsymbol{\sigma}}
+\newcommand{\I}{\boldsymbol{I}}
+\newcommand{\T}{\boldsymbol{T}}
+\newcommand{\ii}{\boldsymbol{i}}
+\newcommand{\jj}{\boldsymbol{j}}
+\newcommand{\kk}{\boldsymbol{k}}
+\newcommand{\Ix}{\mathcal{I}_x}
+\newcommand{\Iy}{\mathcal{I}_y}
+\newcommand{\Iz}{\mathcal{I}_z}
+\newcommand{\It}{\mathcal{I}_t}
+\newcommand{\setb}[1]{#1^0}    % set begin
+\newcommand{\sete}[1]{#1^{-1}} % set end
+\newcommand{\setl}[1]{#1^-}
+\newcommand{\setr}[1]{#1^+}
+\newcommand{\seti}[1]{#1^i}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Integer}{\mathbb{Z}}
+$$
+
+
+
+
+    
+<!-- Bootstrap navigation bar -->
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="wave-sol.html">Finite difference methods for wave motion</a>
+  </div>
+  <div class="navbar-collapse collapse navbar-responsive-collapse">
+    <ul class="nav navbar-nav navbar-right">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Contents <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+     <!-- navigation toc: --> <li><a href="._wave-sol001.html#wave:string" style="font-size: 80%;">Simulation of waves on a string</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol001.html#___sec11" style="font-size: 80%;">Verification</a></li>
+     <!-- navigation toc: --> <li><a href="#wave:pde1:impl" style="font-size: 80%;">Implementation</a></li>
+     <!-- navigation toc: --> <li><a href="#wave:pde1:impl:vec" style="font-size: 80%;">Vectorization</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec36" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol003.html#wave:pde2:Neumann" style="font-size: 80%;">Generalization: reflecting boundaries</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol003.html#wave:pde2:var:c" style="font-size: 80%;">Generalization: variable wave velocity</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol003.html#wave:pde2:software" style="font-size: 80%;">Building a general 1D wave equation solver</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol003.html#___sec66" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol004.html#wave:pde1:analysis" style="font-size: 80%;">Analysis of the difference equations</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol005.html#wave:2D3D" style="font-size: 80%;">Finite difference methods for 2D and 3D wave equations</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol006.html#wave:2D3D:impl" style="font-size: 80%;">Implementation</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol006.html#___sec101" style="font-size: 80%;">Using classes to implement a simulator</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol006.html#___sec102" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol007.html#wave:app" style="font-size: 80%;">Applications of wave equations</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol010.html#wave:app:exer" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol010.html#___sec139" style="font-size: 80%;">References</a></li>
+
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+</div> <!-- end of navigation bar -->
+
+<div class="container">
+
+<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p> <!-- add vertical space -->
+
+<a name="part0002"></a>
+<!-- !split -->
+
+<h1 id="wave:pde1:impl">Implementation</h1>
+
+<p>
+This section presents the complete computational algorithm, its
+implementation in Python code, animation of the solution, and
+verification of the implementation.
+
+<p>
+A real implementation of the basic computational algorithm from
+the sections <a href="._wave-sol001.html#wave:string:alg">Formulating a recursive algorithm</a> and <a href="._wave-sol001.html#wave:string:impl">Sketch of an implementation</a> can be
+encapsulated in a function, taking all the input data for the problem
+as arguments.  The physical input data consists of \( c \), \( I(x) \),
+\( V(x) \), \( f(x,t) \), \( L \), and \( T \).  The numerical input is the mesh
+parameters \( \Delta t \) and \( \Delta x \).
+
+<p>
+Instead of specifying \( \Delta t \) <em>and</em> \( \Delta x \), we can specify one
+of them and the Courant number \( C \) instead, since having explicit
+control of the Courant number is convenient when investigating the
+numerical method. Many find it natural to prescribe the resolution of
+the spatial grid and set \( N_x \). The solver function can then compute
+\( \Delta t = CL/(cN_x) \). However, for comparing \( u(x,t) \) curves (as
+functions of \( x \)) for various Courant numbers
+it is more convenient to keep \( \Delta t \) fixed for
+all \( C \) and let \( \Delta x \) vary according to \( \Delta x = c\Delta t/C \).
+With \( \Delta t \) fixed, all frames correspond to the same time \( t \),
+and this simplifies animations that compare simulations with different
+mesh resolutions. Plotting functions of \( x \)
+with different spatial resolution is trivial,
+so it is easier to let \( \Delta x \) vary in the simulations than \( \Delta t \).
+
+<h2 id="___sec17">Callback function for user-specific actions </h2>
+
+<p>
+The solution at all spatial points at a new time level is stored in an
+array <code>u</code> of length \( N_x+1 \). We need to decide what do to with
+this solution, e.g., visualize the curve, analyze the values, or write
+the array to file for later use. The decision about what to do is left to
+the user in the form of a user-suppled supplied function
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">user_action(u, x, t, n)
+</pre></div>
+<p>
+where <code>u</code> is the solution at the spatial points <code>x</code> at time <code>t[n]</code>.
+The <code>user_action</code> function is call from the solver at each time level <code>n</code>.
+
+<p>
+If the user wants to plot the solution or store the solution at a
+time point, she needs to write such a function and take appropriate
+actions inside it. We will show examples on many such <code>user_action</code>
+functions.
+
+<p>
+Since the solver function make calls back to the user's code
+via such a function, this type of function is called a <em>callback function</em>.
+When writing general software, like our solver function, which also needs
+to carry out special problem-dependent actions (like visualization),
+it is a common technique to leave those actions to user-supplied
+callback functions.
+
+<h2 id="wave:pde1:impl:solver">The solver function</h2>
+
+<p>
+A first attempt at a solver function is listed below.
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">solver</span>(I, V, f, c, L, dt, C, T, user_action<span style="color: #666666">=</span><span style="color: #008000">None</span>):
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;Solve u_tt=c^2*u_xx + f on (0,L)x(0,T].&quot;&quot;&quot;</span>
+    Nt <span style="color: #666666">=</span> <span style="color: #008000">int</span>(<span style="color: #008000">round</span>(T<span style="color: #666666">/</span>dt))
+    t <span style="color: #666666">=</span> linspace(<span style="color: #666666">0</span>, Nt<span style="color: #666666">*</span>dt, Nt<span style="color: #666666">+1</span>)   <span style="color: #408080; font-style: italic"># Mesh points in time</span>
+    dx <span style="color: #666666">=</span> dt<span style="color: #666666">*</span>c<span style="color: #666666">/</span><span style="color: #008000">float</span>(C)
+    Nx <span style="color: #666666">=</span> <span style="color: #008000">int</span>(<span style="color: #008000">round</span>(L<span style="color: #666666">/</span>dx))
+    x <span style="color: #666666">=</span> linspace(<span style="color: #666666">0</span>, L, Nx<span style="color: #666666">+1</span>)       <span style="color: #408080; font-style: italic"># Mesh points in space</span>
+    C2 <span style="color: #666666">=</span> C<span style="color: #666666">**2</span>                      <span style="color: #408080; font-style: italic"># Help variable in the scheme</span>
+    <span style="color: #008000; font-weight: bold">if</span> f <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #008000">None</span> <span style="color: #AA22FF; font-weight: bold">or</span> f <span style="color: #666666">==</span> <span style="color: #666666">0</span> :
+        f <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">lambda</span> x, t: <span style="color: #666666">0</span>
+    <span style="color: #008000; font-weight: bold">if</span> V <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #008000">None</span> <span style="color: #AA22FF; font-weight: bold">or</span> V <span style="color: #666666">==</span> <span style="color: #666666">0</span>:
+        V <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">lambda</span> x: <span style="color: #666666">0</span>
+
+    u   <span style="color: #666666">=</span> zeros(Nx<span style="color: #666666">+1</span>)   <span style="color: #408080; font-style: italic"># Solution array at new time level</span>
+    u_1 <span style="color: #666666">=</span> zeros(Nx<span style="color: #666666">+1</span>)   <span style="color: #408080; font-style: italic"># Solution at 1 time level back</span>
+    u_2 <span style="color: #666666">=</span> zeros(Nx<span style="color: #666666">+1</span>)   <span style="color: #408080; font-style: italic"># Solution at 2 time levels back</span>
+
+    <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">time</span>;  t0 <span style="color: #666666">=</span> time<span style="color: #666666">.</span>clock()  <span style="color: #408080; font-style: italic"># for measuring CPU time</span>
+
+    <span style="color: #408080; font-style: italic"># Load initial condition into u_1</span>
+    <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">0</span>,Nx<span style="color: #666666">+1</span>):
+        u_1[i] <span style="color: #666666">=</span> I(x[i])
+
+    <span style="color: #008000; font-weight: bold">if</span> user_action <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #AA22FF; font-weight: bold">not</span> <span style="color: #008000">None</span>:
+        user_action(u_1, x, t, <span style="color: #666666">0</span>)
+
+    <span style="color: #408080; font-style: italic"># Special formula for first time step</span>
+    n <span style="color: #666666">=</span> <span style="color: #666666">0</span>
+    <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">1</span>, Nx):
+        u[i] <span style="color: #666666">=</span> u_1[i] <span style="color: #666666">+</span> dt<span style="color: #666666">*</span>V(x[i]) <span style="color: #666666">+</span> \ 
+               <span style="color: #666666">0.5*</span>C2<span style="color: #666666">*</span>(u_1[i<span style="color: #666666">-1</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u_1[i] <span style="color: #666666">+</span> u_1[i<span style="color: #666666">+1</span>]) <span style="color: #666666">+</span> \ 
+               <span style="color: #666666">0.5*</span>dt<span style="color: #666666">**2*</span>f(x[i], t[n])
+    u[<span style="color: #666666">0</span>] <span style="color: #666666">=</span> <span style="color: #666666">0</span>;  u[Nx] <span style="color: #666666">=</span> <span style="color: #666666">0</span>
+
+    <span style="color: #008000; font-weight: bold">if</span> user_action <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #AA22FF; font-weight: bold">not</span> <span style="color: #008000">None</span>:
+        user_action(u, x, t, <span style="color: #666666">1</span>)
+
+    <span style="color: #408080; font-style: italic"># Switch variables before next step</span>
+    u_2[:] <span style="color: #666666">=</span> u_1;  u_1[:] <span style="color: #666666">=</span> u
+
+    <span style="color: #008000; font-weight: bold">for</span> n <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">1</span>, Nt):
+        <span style="color: #408080; font-style: italic"># Update all inner points at time t[n+1]</span>
+        <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">1</span>, Nx):
+            u[i] <span style="color: #666666">=</span> <span style="color: #666666">-</span> u_2[i] <span style="color: #666666">+</span> <span style="color: #666666">2*</span>u_1[i] <span style="color: #666666">+</span> \ 
+                     C2<span style="color: #666666">*</span>(u_1[i<span style="color: #666666">-1</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u_1[i] <span style="color: #666666">+</span> u_1[i<span style="color: #666666">+1</span>]) <span style="color: #666666">+</span> \ 
+                     dt<span style="color: #666666">**2*</span>f(x[i], t[n])
+
+        <span style="color: #408080; font-style: italic"># Insert boundary conditions</span>
+        u[<span style="color: #666666">0</span>] <span style="color: #666666">=</span> <span style="color: #666666">0</span>;  u[Nx] <span style="color: #666666">=</span> <span style="color: #666666">0</span>
+        <span style="color: #008000; font-weight: bold">if</span> user_action <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #AA22FF; font-weight: bold">not</span> <span style="color: #008000">None</span>:
+            <span style="color: #008000; font-weight: bold">if</span> user_action(u, x, t, n<span style="color: #666666">+1</span>):
+                <span style="color: #008000; font-weight: bold">break</span>
+
+        <span style="color: #408080; font-style: italic"># Switch variables before next step</span>
+        u_2[:] <span style="color: #666666">=</span> u_1;  u_1[:] <span style="color: #666666">=</span> u
+
+    cpu_time <span style="color: #666666">=</span> t0 <span style="color: #666666">-</span> time<span style="color: #666666">.</span>clock()
+    <span style="color: #008000; font-weight: bold">return</span> u, x, t, cpu_time
+</pre></div>
+<p>
+<!-- Too trivial here: -->
+<!-- Checking that a solution \( u^n_i \) stays constant throughout some -->
+<!-- time steps is often of considerable help in tracking down bugs -->
+<!-- in an implementation. A constant solution \( \uex = Q \) fulfills -->
+<!-- the PDE problem <a href="._wave-sol001.html#mjx-eqn-12">(12)</a>-<a href="._wave-sol001.html#mjx-eqn-16">(16)</a> -->
+<!-- if \( I(x)=Q \), \( V=0 \), \( u(0,t)=u(L,t)=Q \), and \( f=0 \) -->
+
+<h2 id="wave:pde1:impl:verify:quadratic">Verification: exact quadratic solution</h2>
+
+<p>
+We use the test problem derived in the section <a href="._wave-sol001.html#wave:pde2:fd">A slightly generalized model problem</a> for
+verification. Below is a unit test based on this test problem
+and realized as a proper <em>test function</em> (compatible with the unit test
+frameworks nose or pytest).
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">test_quadratic</span>():
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;Check that u(x,t)=x(L-x)(1+t/2) is exactly reproduced.&quot;&quot;&quot;</span>
+    <span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">u_exact</span>(x, t):
+        <span style="color: #008000; font-weight: bold">return</span> x<span style="color: #666666">*</span>(L<span style="color: #666666">-</span>x)<span style="color: #666666">*</span>(<span style="color: #666666">1</span> <span style="color: #666666">+</span> <span style="color: #666666">0.5*</span>t)
+
+    <span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">I</span>(x):
+        <span style="color: #008000; font-weight: bold">return</span> u_exact(x, <span style="color: #666666">0</span>)
+
+    <span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">V</span>(x):
+        <span style="color: #008000; font-weight: bold">return</span> <span style="color: #666666">0.5*</span>u_exact(x, <span style="color: #666666">0</span>)
+
+    <span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">f</span>(x, t):
+        <span style="color: #008000; font-weight: bold">return</span> <span style="color: #666666">2*</span>(<span style="color: #666666">1</span> <span style="color: #666666">+</span> <span style="color: #666666">0.5*</span>t)<span style="color: #666666">*</span>c<span style="color: #666666">**2</span>
+
+    L <span style="color: #666666">=</span> <span style="color: #666666">2.5</span>
+    c <span style="color: #666666">=</span> <span style="color: #666666">1.5</span>
+    C <span style="color: #666666">=</span> <span style="color: #666666">0.75</span>
+    Nx <span style="color: #666666">=</span> <span style="color: #666666">3</span>  <span style="color: #408080; font-style: italic"># Very coarse mesh for this exact test</span>
+    dt <span style="color: #666666">=</span> C<span style="color: #666666">*</span>(L<span style="color: #666666">/</span>Nx)<span style="color: #666666">/</span>c
+    T <span style="color: #666666">=</span> <span style="color: #666666">18</span>
+
+    u, x, t, cpu <span style="color: #666666">=</span> solver(I, V, f, c, L, dt, C, T)
+    u_e <span style="color: #666666">=</span> u_exact(x, t[<span style="color: #666666">-1</span>])
+    tol <span style="color: #666666">=</span> <span style="color: #666666">1E-14</span>
+    diff <span style="color: #666666">=</span> <span style="color: #008000">abs</span>(u <span style="color: #666666">-</span> u_e)<span style="color: #666666">.</span>max()
+    <span style="color: #008000; font-weight: bold">assert</span> diff <span style="color: #666666">&lt;</span> tol
+</pre></div>
+<p>
+When this function resides in the file <code>wave1D_u0.py</code>, one can execute
+<code>py.test -s -v wave1D_u0.py</code> or <code>nosetests -s -v wave1D_u0.py</code> to automatically
+run all test functions with name <code>test_*()</code>.
+
+<h2 id="wave:pde1:impl:animate">Visualization: animating the solution</h2>
+
+<p>
+Now that we have verified the implementation it is time to do a
+real computation where we also display the evolution of the waves
+on the screen. Since the <code>solver</code> function knows nothing about
+what type of visualizations we may want, it calls the callback function
+<code>user_action(u, x, t, n)</code>. We must therefore write this function and
+find the proper statements for plotting the solution.
+
+<h3 id="___sec21">Function for administering the simulation </h3>
+
+<p>
+The following <code>viz</code> function
+
+<ol>
+<li> defines a <code>user_action</code> callback function
+   for plotting the solution at each time level,</li>
+<li> calls the <code>solver</code> function, and</li>
+<li> combines all the plots (in files) to video in different formats.</li>
+</ol>
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">viz</span>(
+    I, V, f, c, L, dt, C, T,  <span style="color: #408080; font-style: italic"># PDE paramteres</span>
+    umin, umax,               <span style="color: #408080; font-style: italic"># Interval for u in plots</span>
+    animate<span style="color: #666666">=</span><span style="color: #008000">True</span>,             <span style="color: #408080; font-style: italic"># Simulation with animation?</span>
+    tool<span style="color: #666666">=</span><span style="color: #BA2121">&#39;matplotlib&#39;</span>,        <span style="color: #408080; font-style: italic"># &#39;matplotlib&#39; or &#39;scitools&#39;</span>
+    solver_function<span style="color: #666666">=</span>solver,   <span style="color: #408080; font-style: italic"># Function with numerical algorithm</span>
+    ):
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;Run solver and visualize u at each time level.&quot;&quot;&quot;</span>
+
+    <span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">plot_u_st</span>(u, x, t, n):
+        <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;user_action function for solver.&quot;&quot;&quot;</span>
+        plt<span style="color: #666666">.</span>plot(x, u, <span style="color: #BA2121">&#39;r-&#39;</span>,
+                 xlabel<span style="color: #666666">=</span><span style="color: #BA2121">&#39;x&#39;</span>, ylabel<span style="color: #666666">=</span><span style="color: #BA2121">&#39;u&#39;</span>,
+                 axis<span style="color: #666666">=</span>[<span style="color: #666666">0</span>, L, umin, umax],
+                 title<span style="color: #666666">=</span><span style="color: #BA2121">&#39;t=</span><span style="color: #BB6688; font-weight: bold">%f</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> t[n], show<span style="color: #666666">=</span><span style="color: #008000">True</span>)
+        <span style="color: #408080; font-style: italic"># Let the initial condition stay on the screen for 2</span>
+        <span style="color: #408080; font-style: italic"># seconds, else insert a pause of 0.2 s between each plot</span>
+        time<span style="color: #666666">.</span>sleep(<span style="color: #666666">2</span>) <span style="color: #008000; font-weight: bold">if</span> t[n] <span style="color: #666666">==</span> <span style="color: #666666">0</span> <span style="color: #008000; font-weight: bold">else</span> time<span style="color: #666666">.</span>sleep(<span style="color: #666666">0.2</span>)
+        plt<span style="color: #666666">.</span>savefig(<span style="color: #BA2121">&#39;frame_</span><span style="color: #BB6688; font-weight: bold">%04d</span><span style="color: #BA2121">.png&#39;</span> <span style="color: #666666">%</span> n)  <span style="color: #408080; font-style: italic"># for movie making</span>
+
+    <span style="color: #008000; font-weight: bold">class</span> <span style="color: #0000FF; font-weight: bold">PlotMatplotlib</span>:
+        <span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">__call__</span>(<span style="color: #008000">self</span>, u, x, t, n):
+            <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;user_action function for solver.&quot;&quot;&quot;</span>
+            <span style="color: #008000; font-weight: bold">if</span> n <span style="color: #666666">==</span> <span style="color: #666666">0</span>:
+                plt<span style="color: #666666">.</span>ion()
+                <span style="color: #008000">self</span><span style="color: #666666">.</span>lines <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>plot(x, u, <span style="color: #BA2121">&#39;r-&#39;</span>)
+                plt<span style="color: #666666">.</span>xlabel(<span style="color: #BA2121">&#39;x&#39;</span>);  plt<span style="color: #666666">.</span>ylabel(<span style="color: #BA2121">&#39;u&#39;</span>)
+                plt<span style="color: #666666">.</span>axis([<span style="color: #666666">0</span>, L, umin, umax])
+                plt<span style="color: #666666">.</span>legend([<span style="color: #BA2121">&#39;t=</span><span style="color: #BB6688; font-weight: bold">%f</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> t[n]], loc<span style="color: #666666">=</span><span style="color: #BA2121">&#39;lower left&#39;</span>)
+            <span style="color: #008000; font-weight: bold">else</span>:
+                <span style="color: #008000">self</span><span style="color: #666666">.</span>lines[<span style="color: #666666">0</span>]<span style="color: #666666">.</span>set_ydata(u)
+                plt<span style="color: #666666">.</span>legend([<span style="color: #BA2121">&#39;t=</span><span style="color: #BB6688; font-weight: bold">%f</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> t[n]], loc<span style="color: #666666">=</span><span style="color: #BA2121">&#39;lower left&#39;</span>)
+                plt<span style="color: #666666">.</span>draw()
+            time<span style="color: #666666">.</span>sleep(<span style="color: #666666">2</span>) <span style="color: #008000; font-weight: bold">if</span> t[n] <span style="color: #666666">==</span> <span style="color: #666666">0</span> <span style="color: #008000; font-weight: bold">else</span> time<span style="color: #666666">.</span>sleep(<span style="color: #666666">0.2</span>)
+            plt<span style="color: #666666">.</span>savefig(<span style="color: #BA2121">&#39;tmp_</span><span style="color: #BB6688; font-weight: bold">%04d</span><span style="color: #BA2121">.png&#39;</span> <span style="color: #666666">%</span> n)  <span style="color: #408080; font-style: italic"># for movie making</span>
+
+    <span style="color: #008000; font-weight: bold">if</span> tool <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;matplotlib&#39;</span>:
+        <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">plt</span>
+        plot_u <span style="color: #666666">=</span> PlotMatplotlib()
+    <span style="color: #008000; font-weight: bold">elif</span> tool <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;scitools&#39;</span>:
+        <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">scitools.std</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">plt</span>  <span style="color: #408080; font-style: italic"># scitools.easyviz interface</span>
+        plot_u <span style="color: #666666">=</span> plot_u_st
+    <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">time</span><span style="color: #666666">,</span> <span style="color: #0000FF; font-weight: bold">glob</span><span style="color: #666666">,</span> <span style="color: #0000FF; font-weight: bold">os</span>
+
+    <span style="color: #408080; font-style: italic"># Clean up old movie frames</span>
+    <span style="color: #008000; font-weight: bold">for</span> filename <span style="color: #AA22FF; font-weight: bold">in</span> glob<span style="color: #666666">.</span>glob(<span style="color: #BA2121">&#39;tmp_*.png&#39;</span>):
+        os<span style="color: #666666">.</span>remove(filename)
+
+    <span style="color: #408080; font-style: italic"># Call solver and do the simulaton</span>
+    user_action <span style="color: #666666">=</span> plot_u <span style="color: #008000; font-weight: bold">if</span> animate <span style="color: #008000; font-weight: bold">else</span> <span style="color: #008000">None</span>
+    u, x, t, cpu <span style="color: #666666">=</span> solver_function(
+        I, V, f, c, L, dt, C, T, user_action)
+
+    <span style="color: #408080; font-style: italic"># Make video files</span>
+    fps <span style="color: #666666">=</span> <span style="color: #666666">4</span>  <span style="color: #408080; font-style: italic"># frames per second</span>
+    codec2ext <span style="color: #666666">=</span> <span style="color: #008000">dict</span>(flv<span style="color: #666666">=</span><span style="color: #BA2121">&#39;flv&#39;</span>, libx264<span style="color: #666666">=</span><span style="color: #BA2121">&#39;mp4&#39;</span>, libvpx<span style="color: #666666">=</span><span style="color: #BA2121">&#39;webm&#39;</span>,
+                     libtheora<span style="color: #666666">=</span><span style="color: #BA2121">&#39;ogg&#39;</span>)  <span style="color: #408080; font-style: italic"># video formats</span>
+    filespec <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;tmp_</span><span style="color: #BB6688; font-weight: bold">%04d</span><span style="color: #BA2121">.png&#39;</span>
+    movie_program <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;ffmpeg&#39;</span>  <span style="color: #408080; font-style: italic"># or &#39;avconv&#39;</span>
+    <span style="color: #008000; font-weight: bold">for</span> codec <span style="color: #AA22FF; font-weight: bold">in</span> codec2ext:
+        ext <span style="color: #666666">=</span> codec2ext[codec]
+        cmd <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;</span><span style="color: #BB6688; font-weight: bold">%(movie_program)s</span><span style="color: #BA2121"> -r </span><span style="color: #BB6688; font-weight: bold">%(fps)d</span><span style="color: #BA2121"> -i </span><span style="color: #BB6688; font-weight: bold">%(filespec)s</span><span style="color: #BA2121"> &#39;</span>\ 
+              <span style="color: #BA2121">&#39;-vcodec </span><span style="color: #BB6688; font-weight: bold">%(codec)s</span><span style="color: #BA2121"> movie.</span><span style="color: #BB6688; font-weight: bold">%(ext)s</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> <span style="color: #008000">vars</span>()
+        os<span style="color: #666666">.</span>system(cmd)
+
+    <span style="color: #008000; font-weight: bold">if</span> tool <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;scitools&#39;</span>:
+        <span style="color: #408080; font-style: italic"># Make an HTML play for showing the animation in a browser</span>
+        plt<span style="color: #666666">.</span>movie(<span style="color: #BA2121">&#39;tmp_*.png&#39;</span>, encoder<span style="color: #666666">=</span><span style="color: #BA2121">&#39;html&#39;</span>, fps<span style="color: #666666">=</span>fps,
+                  output_file<span style="color: #666666">=</span><span style="color: #BA2121">&#39;movie.html&#39;</span>)
+    <span style="color: #008000; font-weight: bold">return</span> cpu
+</pre></div>
+
+<h3 id="___sec22">Dissection of the code </h3>
+
+<p>
+The <code>viz</code> function can either use SciTools or Matplotlib for
+visualizing the solution. The <code>user_action</code> function based on SciTools
+is called <code>plot_u_st</code>, while the <code>user_action</code> function based on
+Matplotlib is a bit more complicated as it is realized as a class and
+needs statements that differ from those for making static plots.
+SciTools can utilize both Matplotlib and Gnuplot (and many other
+plotting programs) for doing the graphics, but Gnuplot is a relevant
+choice for large \( N_x \) or in two-dimensional problems
+as Gnuplot is significantly faster than
+Matplotlib for screen animations.
+
+<p>
+A function inside another function, like <code>plot_u_st</code> in the above code
+segment, has access to <em>and remembers</em> all the local variables in the
+surrounding code inside the <code>viz</code> function (!). This is known in
+computer science as a <em>closure</em> and is very convenient to program
+with. For example, the <code>plt</code> and <code>time</code> modules defined outside
+<code>plot_u</code> are accessible for <code>plot_u_st</code> when the function is called
+(as <code>user_action</code>) in the <code>solver</code> function.  Some may think, however,
+that a class instead of a closure is a cleaner and
+easier-to-understand implementation of the user action function, see
+the section <a href="._wave-sol003.html#wave:pde2:software">Building a general 1D wave equation solver</a>.
+
+<p>
+The <code>plot_u_st</code> function just makes a standard SciTools <code>plot</code> command
+for plotting <code>u</code> as a function of <code>x</code> at time <code>t[n]</code>.  To achieve a
+smooth animation, the <code>plot</code> command should take keyword arguments
+instead of being broken into separate calls to <code>xlabel</code>, <code>ylabel</code>,
+<code>axis</code>, <code>time</code>, and <code>show</code>.  Several <code>plot</code> calls will automatically
+cause an animation on the screen. In addition, we want to save each
+frame in the animation to file. We then need a filename where the
+frame number is padded with zeros, here <code>tmp_0000.png</code>,
+<code>tmp_0001.png</code>, and so on.  The proper printf construction is then
+<code>tmp_%04d.png</code>.
+
+<p>
+The solver is called with an argument <code>plot_u</code> as <code>user_function</code>.
+If the user chooses to use SciTools, <code>plot_u</code> is the <code>plot_u_st</code>
+callback function, but for Matplotlib it is an instance of the
+class <code>PlotMatplotlib</code>. Also this class makes use of variables
+defined in the <code>viz</code> function: <code>plt</code> and <code>time</code>.
+With Matplotlib, one has to make the first plot the standard way, and
+then update the \( y \) data in the plot at every time level. The update
+requires active use of the returned value from <code>plt.plot</code> in the first
+plot.  This value would need to be stored in a local variable if we
+were to use a closure for the <code>user_action</code> function when doing the
+animation with Matplotlib. It is much easier to store the
+variable as a class attribute <code>self.lines</code>. Since the class is essentially a
+function, we implement the function as the special method <code>__call__</code>
+such that the instance <code>plot_u(u, x, t, n)</code> can be called as a standard
+callback function from <code>solver</code>.
+
+<h3 id="___sec23">Making movie files </h3>
+
+<p>
+From the
+<code>frame_*.png</code> files containing the frames in the animation we can
+make video files.
+We use the <code>ffmpeg</code> (or <code>avconv</code>) program to combine individual
+plot files to movies in modern formats: Flash, MP4, Webm, and Ogg.
+A typical <code>ffmpeg</code> (or <code>avconv</code>) command for creating a movie file
+in Ogg format
+with 4 frames per second built from a collection of
+plot files with names generated by <code>frame_%04d.png</code>,
+look like
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">Terminal&gt; ffmpeg -r 4 -i frame_%04d.png -c:v libtheora movie.ogg
+</pre></div>
+<p>
+The different formats require different video encoders (<code>-c:v</code>) to
+be installed: Flash applies <code>flv</code>, WebM applies <code>libvpx</code>, and MP4
+applies <code>libx264</code>:
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">Terminal&gt; ffmpeg -r 4 -i frame_%04d.png -c:v flv movie.flv
+Terminal&gt; ffmpeg -r 4 -i frame_%04d.png -c:v libvpx movie.webm
+Terminal&gt; ffmpeg -r 4 -i frame_%04d.png -c:v libx264 movie.mp4
+</pre></div>
+<p>
+Players like <code>vlc</code>, <code>mplayer</code>, <code>gxine</code>, and <code>totem</code>
+can be used to play these movie files.
+
+<p>
+Note that padding the frame counter with zeros in the <code>frame_*.png</code>
+files, as specified by the <code>%04d</code> format, is essential so that the wildcard
+notation <code>frame_*.png</code> expands to the correct set of files.
+
+<p>
+The <code>viz</code> function creates a <code>ffmpeg</code> or <code>avconv</code> command
+with the proper arguments for each of the formats Flash, MP4, WebM,
+and Ogg. The task is greatly simplified by having a
+<code>codec2ext</code> dictionary for mapping
+video codec names to filename extensions.
+Only
+two formats are actually needed to ensure that all browsers can
+successfully play the video: MP4 and WebM.
+
+<p>
+Some animations consisting of a large number of plot files may not
+be properly combined into a video using <code>ffmpeg</code> or <code>avconv</code>.
+A method that always works is to play the PNG files as an animation
+in a browser using JavaScript code in an HTML file.
+The SciTools package has a function <code>movie</code> (or a stand-alone command
+<code>scitools movie</code>) for creating such an HTML player. The <code>plt.movie</code>
+call in the <code>viz</code> function shows how the function is used.
+The file <code>movie.html</code> can be loaded into a browser and features
+a user interface where the speed of the animation can be controlled.
+Note that the movie in this case consists of the <code>movie.html</code> file
+and all the frame files <code>tmp_*.png</code>.
+
+<h3 id="___sec24">Skipping frames for animation speed </h3>
+
+<p>
+Sometimes the time step is small and \( T \) is large, leading to an
+inconveniently large number of plot files and a slow animation on the
+screen. The solution to such a problem is to decide on a total number
+of frames in the animation, <code>num_frames</code>, and plot the solution only for
+every <code>skip_frame</code> frames. For example, setting <code>skip_frame=5</code> leads
+to plots of every 5 frames. The default value <code>skip_frame=1</code> plots
+every frame.
+The total number of time levels (i.e., maximum
+possible number of frames) is the length of <code>t</code>, <code>t.size</code> (or <code>len(t)</code>),
+so if we want <code>num_frames</code> frames in the animation,
+we need to plot every <code>t.size/num_frames</code> frames:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">skip_frame <span style="color: #666666">=</span> <span style="color: #008000">int</span>(t<span style="color: #666666">.</span>size<span style="color: #666666">/</span><span style="color: #008000">float</span>(num_frames))
+<span style="color: #008000; font-weight: bold">if</span> n <span style="color: #666666">%</span> skip_frame <span style="color: #666666">==</span> <span style="color: #666666">0</span> <span style="color: #AA22FF; font-weight: bold">or</span> n <span style="color: #666666">==</span> t<span style="color: #666666">.</span>size<span style="color: #666666">-1</span>:
+    st<span style="color: #666666">.</span>plot(x, u, <span style="color: #BA2121">&#39;r-&#39;</span>, <span style="color: #666666">...</span>)
+</pre></div>
+<p>
+The initial condition (<code>n=0</code>) included by <code>n % skip_frame == 0</code>,
+as well as every <code>skip_frame</code>-th frame.
+As <code>n % skip_frame == 0</code> will very seldom be true for the
+very final frame, we must also check if <code>n == t.size-1</code> to
+get the final frame included.
+
+<p>
+A simple choice of numbers may illustrate the formulas: say we have
+801 frames in total (<code>t.size</code>) and we allow only 60 frames to be
+plotted. Then we need to plot every 801/60 frame, which with integer
+division yields 13 as <code>every</code>. Using the mod function, <code>n % every</code>,
+this operation is zero every time <code>n</code> can be divided by 13 without a
+remainder. That is, the <code>if</code> test is true when <code>n</code> equals \( 0, 13, 26,
+39, ..., 780, 801 \). The associated code is included in the <code>plot_u</code>
+function in the file <a href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_u0v.py" target="_self"><tt>wave1D_u0v.py</tt></a>.
+
+<h2 id="wave:pde1:guitar:data">Running a case</h2>
+
+<p>
+The first demo of our 1D wave equation solver concerns vibrations of a
+string that is initially deformed to a triangular shape, like when picking
+a guitar string:
+
+$$
+\begin{equation}
+I(x) = \left\lbrace
+\begin{array}{ll}
+ax/x_0, & x < x_0,\\ 
+a(L-x)/(L-x_0), & \hbox{otherwise}
+\end{array}\right.
+\tag{121}
+\end{equation}
+$$
+
+We choose \( L=75 \) cm, \( x_0=0.8L \), \( a=5 \) mm, and a time frequency
+\( \nu = 440 \) Hz. The relation between the wave speed \( c \) and \( \nu \) is
+\( c=\nu\lambda \), where \( \lambda \) is the wavelength, taken as \( 2L \) because
+the longest wave on the string form half a wavelength. There is no
+external force, so \( f=0 \), and the string is at rest initially so
+that \( V=0 \).
+
+<p>
+Regarding numerical parameters, we need to specify a \( \Delta t \).
+Sometimes it is more natural to think of a spatial resolution instead
+of a time step. A natural semi-coarse spatial resolution in the present
+problem is \( N_x=50 \). We can then choose the associated \( \Delta t \) (as required
+by the <code>viz</code> and <code>solver</code> functions) as the stability limit:
+\( \Delta t = L/(N_xc) \). This is the \( \Delta t \) to be specified,
+but notice that if \( C < 1 \), the actual \( \Delta x \) computed in <code>solver</code> gets
+larger than \( L/N_x \): \( \Delta x = c\Delta t/C = L/(N_xC) \). (The reason
+is that we fix \( \Delta t \) and adjust \( \Delta x \), so if \( C \) gets
+smaller, the code implements this effect in terms of a larger \( \Delta x \).)
+
+<p>
+A function for setting the physical and numerical parameters and
+calling <code>viz</code> in this application goes as follows:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">guitar</span>(C):
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;Triangular wave (pulled guitar string).&quot;&quot;&quot;</span>
+    L <span style="color: #666666">=</span> <span style="color: #666666">0.75</span>
+    x0 <span style="color: #666666">=</span> <span style="color: #666666">0.8*</span>L
+    a <span style="color: #666666">=</span> <span style="color: #666666">0.005</span>
+    freq <span style="color: #666666">=</span> <span style="color: #666666">440</span>
+    wavelength <span style="color: #666666">=</span> <span style="color: #666666">2*</span>L
+    c <span style="color: #666666">=</span> freq<span style="color: #666666">*</span>wavelength
+    omega <span style="color: #666666">=</span> <span style="color: #666666">2*</span>pi<span style="color: #666666">*</span>freq
+    num_periods <span style="color: #666666">=</span> <span style="color: #666666">1</span>
+    T <span style="color: #666666">=</span> <span style="color: #666666">2*</span>pi<span style="color: #666666">/</span>omega<span style="color: #666666">*</span>num_periods
+    <span style="color: #408080; font-style: italic"># Choose dt the same as the stability limit for Nx=50</span>
+    dt <span style="color: #666666">=</span> L<span style="color: #666666">/50./</span>c
+
+    <span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">I</span>(x):
+        <span style="color: #008000; font-weight: bold">return</span> a<span style="color: #666666">*</span>x<span style="color: #666666">/</span>x0 <span style="color: #008000; font-weight: bold">if</span> x <span style="color: #666666">&lt;</span> x0 <span style="color: #008000; font-weight: bold">else</span> a<span style="color: #666666">/</span>(L<span style="color: #666666">-</span>x0)<span style="color: #666666">*</span>(L<span style="color: #666666">-</span>x)
+
+    umin <span style="color: #666666">=</span> <span style="color: #666666">-1.2*</span>a;  umax <span style="color: #666666">=</span> <span style="color: #666666">-</span>umin
+    cpu <span style="color: #666666">=</span> viz(I, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, c, L, dt, C, T, umin, umax,
+              animate<span style="color: #666666">=</span><span style="color: #008000">True</span>, tool<span style="color: #666666">=</span><span style="color: #BA2121">&#39;scitools&#39;</span>)
+</pre></div>
+<p>
+The associated program has the name <a href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_u0.py" target="_self"><tt>wave1D_u0.py</tt></a>. Run
+the program and watch the <a href="http://tinyurl.com/opdfafk/pub/mov-wave/guitar_C0.8/index.html" target="_self">movie of the vibrating string</a>.
+
+<p>
+
+<!-- begin inline comment -->
+<font color="red">(<b>hpl 1</b>: Must recompute these movies as \( \Delta t \) is different when \( C < 1 \).)</font>
+<!-- end inline comment -->
+
+<h2 id="___sec26">Working with a scaled PDE model </h2>
+
+<p>
+Depending on the model, it may be a substantial job to establish
+consistent and relevant physical parameter values for a case.
+The guitar string example illustrates the point.
+However, by <em>scaling</em>
+the mathematical problem we can often reduce the need to estimate
+physical parameters dramatically. The scaling technique
+consists of introducing new
+independent and dependent variables, with the aim that the absolute
+value of these is not very large or small, but preferably around unity
+in size. We introduce the dimensionless variables
+
+$$ \bar x = \frac{x}{L},\quad \bar t = \frac{c}{L}t,\quad
+\bar u = \frac{u}{a}
+\tp
+$$
+
+Here, \( L \) is a typical length scale, e.g., the length of the domain,
+and \( a \) is a typical size of \( u \), e.g., determined from the
+initial condition: \( a=\max_x|I(x)| \).
+
+<p>
+Inserting these new variables in the PDE and noting that
+
+$$ \frac{\partial u}{\partial t} = \frac{aL}{c}\frac{\partial\bar u}{\partial\bar t},$$
+
+by the chain rule, one gets
+
+$$ \frac{a^2L^2}{c^2}\frac{\partial^2\bar u}{\partial\bar t^2}
+= \frac{a^2c^2}{L^2}\frac{\partial^2\bar u}{\partial\bar x^2},$$
+
+in case \( f=0 \).
+Dropping the bars, we arrive at the scaled PDE
+
+$$
+\begin{equation}
+\frac{\partial^2 u}{\partial t^2} = \frac{\partial^2 u}{\partial x^2},
+\end{equation}
+$$
+
+which has not parameter \( c^2 \) anymore. The initial conditions are scaled
+as
+
+$$ a\bar u(\bar x, 0) = I(L\bar x)$$
+
+and
+
+$$ \frac{a}{L/c}\frac{\partial\bar u}{\partial\bar t}(\bar x,0) = V(L\bar x),$$
+
+resulting in
+
+$$ \bar u(\bar x, 0) = \frac{I(L\bar x)}{\max_x |I(x)|},\quad
+\frac{\partial\bar u}{\partial\bar t}(\bar x,0) = \frac{L}{ac}V(L\bar x)\tp$$
+
+In the common case \( V=0 \) we see that there are no physical parameters to be
+estimated in the PDE model!
+
+<p>
+If we have a program implemented for the physical wave equation with
+dimensions, we can obtain the dimensionless, scaled version by
+setting \( c=1 \). The initial condition of a guitar string,
+given in <a href="._wave-sol010.html#mjx-eqn-121">(121)</a>, gets its scaled form by choosing
+\( a=1 \), \( L=1 \), and \( x_0\in [0,1] \). This means that we only need to
+decide on the \( x_0 \) value as a fraction of unity, because
+the scaled problem corresponds to setting all
+other parameters to unity. In the code we can just set
+<code>a=c=L=1</code>, <code>x0=0.8</code>, and there is no need to calculate with
+wavelengths and frequencies to estimate \( c \)!
+
+<p>
+The only non-trivial parameter to estimate in the scaled problem
+is the final end time of the simulation, or more precisely, how it relates
+to periods in periodic solutions in time, since we often want to
+express the end time as a certain number of periods.
+The period in the dimensionless problem is 2, so the end time can be
+set to the desired number of periods times 2.
+
+<p>
+Why the dimensionless period is 2 can be explained by the following
+reasoning.
+Suppose as \( u \) behaves as \( \cos (\omega t) \) in time in variables
+with dimension. The corresponding period is then \( P=2\pi/\omega \), but
+we need to estimate \( \omega \). A typical solution of the wave
+equation is \( u(x,t)=A\cos(kx)\cos(\omega t) \), where \( A \) is an amplitude
+and \( k \) is related to the wave length \( \lambda \) in space: \( \lambda = 2\pi/k \).
+Both \( \lambda \) and \( A \) will be given by the initial condition \( I(x) \).
+Inserting this \( u(x,t) \) in the PDE yields \( -\omega^2 = -c^2k^2 \), i.e.,
+\( \omega = kc \). The period is therefore \( P=2\pi/(kc) \).
+If the boundary conditions are \( u(0,t)=u(0,L) \), we need to have
+\( kL = n\pi \) for integer \( n \). The period becomes \( P=2L/nc \). The longest
+period is \( P=2L/c \). The dimensionless period is \( \tilde P \) is obtained
+by dividing \( P \) by the time scale \( L/c \), which results in \( \tilde P=2 \).
+Shorter waves in the initial condition will have a dimensionless
+shorter period \( \tilde P=2/n \) (\( n>1 \)).
+
+<h1 id="wave:pde1:impl:vec">Vectorization</h1>
+
+<p>
+The computational algorithm for solving the wave equation visits one
+mesh point at a time and evaluates a formula for the new value \( u_i^{n+1} \)
+at
+that point. Technically, this is implemented by a loop over array
+elements in a program. Such loops may run slowly in Python (and
+similar interpreted languages such as R and MATLAB).
+One technique for speeding up loops is to
+perform operations on entire arrays instead of working with one element
+at a time. This is referred to as <em>vectorization</em>, <em>vector computing</em>,
+or <em>array computing</em>.
+Operations on whole arrays are possible if the computations
+involving each element is independent of each other and therefore can,
+at least in principle, be performed simultaneously.
+Vectorization not only speeds up the code on serial computers, but
+also makes it easy to exploit parallel computing.
+
+<h2 id="wave:pde1:impl:vec:slices:basics">Operations on slices of arrays</h2>
+
+<p>
+Efficient computing with <code>numpy</code> arrays demands that we avoid loops
+and compute with entire arrays at once (or at least large portions of them).
+Consider this calculation of differences \( d_i = u_{i+1}-u_i \):
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">n <span style="color: #666666">=</span> u<span style="color: #666666">.</span>size
+<span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">0</span>, n<span style="color: #666666">-1</span>):
+    d[i] <span style="color: #666666">=</span> u[i<span style="color: #666666">+1</span>] <span style="color: #666666">-</span> u[i]
+</pre></div>
+<p>
+All the differences here are independent of each other.
+The computation of <code>d</code> can therefore alternatively be done by
+subtracting the array \( (u_0,u_1,\ldots,u_{n-1}) \) from
+the array where the elements are shifted one index upwards:
+\( (u_1,u_2,\ldots,u_n) \), see Figure <a href="#wave:pde1:vec:fig1">3</a>.
+The former subset of the array can be
+expressed by <code>u[0:n-1]</code>,
+<code>u[0:-1]</code>, or just
+<code>u[:-1]</code>, meaning from index 0 up to,
+but not including, the last element (<code>-1</code>). The latter subset
+is obtained by <code>u[1:n]</code> or <code>u[1:]</code>,
+meaning from index 1 and the rest of the array.
+The computation of <code>d</code> can now be done without an explicit Python loop:
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">d <span style="color: #666666">=</span> u[<span style="color: #666666">1</span>:] <span style="color: #666666">-</span> u[:<span style="color: #666666">-1</span>]
+</pre></div>
+<p>
+or with explicit limits if desired:
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">d <span style="color: #666666">=</span> u[<span style="color: #666666">1</span>:n] <span style="color: #666666">-</span> u[<span style="color: #666666">0</span>:n<span style="color: #666666">-1</span>]
+</pre></div>
+<p>
+Indices with a colon, going from an index to (but not including) another
+index are called <em>slices</em>. With <code>numpy</code> arrays, the computations
+are still done by loops, but in efficient, compiled, highly optimized
+C or Fortran code. Such loops are sometimes referred to as <em>vectorized
+loops</em>. Such loops can also easily be distributed
+among many processors on parallel computers. We say that the <em>scalar code</em>
+above, working on an element (a scalar) at a time, has been replaced by
+an equivalent <em>vectorized code</em>. The process of vectorizing code is called
+<em>vectorization</em>.
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 3:  Illustration of subtracting two slices of two arrays. <div id="wave:pde1:vec:fig1"></div> </p></center>
+<p><img src="fig-wave/vectorized_diff.png" align="bottom" width=400></p>
+</center>
+
+<p>
+<div class="alert alert-block alert-info alert-text-normal"><b>Test your understanding.</b>
+Newcomers to vectorization are encouraged to choose
+a small array <code>u</code>, say with five elements,
+and simulate with pen and paper
+both the loop version and the vectorized version above.
+</div>
+
+
+<p>
+Finite difference schemes basically contain differences between array
+elements with shifted indices. As an example,
+consider the updating formula
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">1</span>, n<span style="color: #666666">-1</span>):
+    u2[i] <span style="color: #666666">=</span> u[i<span style="color: #666666">-1</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u[i] <span style="color: #666666">+</span> u[i<span style="color: #666666">+1</span>]
+</pre></div>
+<p>
+The vectorization consists of replacing the loop by arithmetics on
+slices of arrays of length <code>n-2</code>:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">u2 <span style="color: #666666">=</span> u[:<span style="color: #666666">-2</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u[<span style="color: #666666">1</span>:<span style="color: #666666">-1</span>] <span style="color: #666666">+</span> u[<span style="color: #666666">2</span>:]
+u2 <span style="color: #666666">=</span> u[<span style="color: #666666">0</span>:n<span style="color: #666666">-2</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u[<span style="color: #666666">1</span>:n<span style="color: #666666">-1</span>] <span style="color: #666666">+</span> u[<span style="color: #666666">2</span>:n]   <span style="color: #408080; font-style: italic"># alternative</span>
+</pre></div>
+<p>
+Note that the length of <code>u2</code> becomes <code>n-2</code>. If <code>u2</code> is already an array of
+length <code>n</code> and we want to use the formula to update all the &quot;inner&quot;
+elements of <code>u2</code>, as we will when solving a 1D wave equation, we can write
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">u2[<span style="color: #666666">1</span>:<span style="color: #666666">-1</span>]  <span style="color: #666666">=</span> u[:<span style="color: #666666">-2</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u[<span style="color: #666666">1</span>:<span style="color: #666666">-1</span>] <span style="color: #666666">+</span> u[<span style="color: #666666">2</span>:]
+u2[<span style="color: #666666">1</span>:n<span style="color: #666666">-1</span>] <span style="color: #666666">=</span> u[<span style="color: #666666">0</span>:n<span style="color: #666666">-2</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u[<span style="color: #666666">1</span>:n<span style="color: #666666">-1</span>] <span style="color: #666666">+</span> u[<span style="color: #666666">2</span>:n]   <span style="color: #408080; font-style: italic"># alternative</span>
+</pre></div>
+<p>
+The first expression's right-hand side is realized by the
+following steps, involving temporary arrays with intermediate results,
+since each array operation can only involve one or two arrays.
+The <code>numpy</code> package performs the first line above in
+four steps:
+
+<p>
+
+<!-- code=text typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">temp1 = 2*u[1:-1]
+temp2 = u[:-2] - temp1
+temp3 = temp2 + u[2:]
+u2[1:-1] = temp3
+</pre></div>
+<p>
+We need three temporary arrays, but a user does not need to worry about
+such temporary arrays.
+
+<p>
+<div class="alert alert-block alert-success alert-text-normal"><b>Common mistakes with array slices.</b>
+Array expressions with slices demand that the slices have the same
+shape. It easy to make a mistake in, e.g.,
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%">u2[<span style="color: #666666">1</span>:n<span style="color: #666666">-1</span>] <span style="color: #666666">=</span> u[<span style="color: #666666">0</span>:n<span style="color: #666666">-2</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u[<span style="color: #666666">1</span>:n<span style="color: #666666">-1</span>] <span style="color: #666666">+</span> u[<span style="color: #666666">2</span>:n]
+</pre></div>
+<p>
+and write
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%">u2[<span style="color: #666666">1</span>:n<span style="color: #666666">-1</span>] <span style="color: #666666">=</span> u[<span style="color: #666666">0</span>:n<span style="color: #666666">-2</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u[<span style="color: #666666">1</span>:n<span style="color: #666666">-1</span>] <span style="color: #666666">+</span> u[<span style="color: #666666">1</span>:n]
+</pre></div>
+<p>
+Now <code>u[1:n]</code> has wrong length (<code>n-1</code>) compared to the other array
+slices, causing a <code>ValueError</code> and the message
+<code>could not broadcast input array from shape 103 into shape 104</code>
+(if <code>n</code> is 105). When such errors occur one must closely examine
+all the slices. Usually, it is easier to get upper limits of slices
+right when they use <code>-1</code> or <code>-2</code> or empty limit rather than
+expressions involving the length.
+
+<p>
+Another common mistake is to forget the slice in the array on the
+left-hand side,
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%">u2 <span style="color: #666666">=</span> u[<span style="color: #666666">0</span>:n<span style="color: #666666">-2</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u[<span style="color: #666666">1</span>:n<span style="color: #666666">-1</span>] <span style="color: #666666">+</span> u[<span style="color: #666666">1</span>:n]
+</pre></div>
+<p>
+This is really crucial: now <code>u2</code> becomes a <em>new</em> array of length
+<code>n-2</code>, which is the wrong length as we have no entries for the boundary
+values. We meant to insert the right-hand side array <em>into</em> the
+in the original <code>u2</code> array for the entries that correspond to the
+internal points in the mesh (<code>1:n-1</code> or <code>1:-1</code>).
+</div>
+
+
+<p>
+Vectorization may also work nicely with functions. To illustrate, we may
+extend the previous example as follows:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">f</span>(x):
+    <span style="color: #008000; font-weight: bold">return</span> x<span style="color: #666666">**2</span> <span style="color: #666666">+</span> <span style="color: #666666">1</span>
+
+<span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">1</span>, n<span style="color: #666666">-1</span>):
+    u2[i] <span style="color: #666666">=</span> u[i<span style="color: #666666">-1</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u[i] <span style="color: #666666">+</span> u[i<span style="color: #666666">+1</span>] <span style="color: #666666">+</span> f(x[i])
+</pre></div>
+<p>
+Assuming <code>u2</code>, <code>u</code>, and <code>x</code> all have length <code>n</code>, the vectorized
+version becomes
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">u2[<span style="color: #666666">1</span>:<span style="color: #666666">-1</span>] <span style="color: #666666">=</span> u[:<span style="color: #666666">-2</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u[<span style="color: #666666">1</span>:<span style="color: #666666">-1</span>] <span style="color: #666666">+</span> u[<span style="color: #666666">2</span>:] <span style="color: #666666">+</span> f(x[<span style="color: #666666">1</span>:<span style="color: #666666">-1</span>])
+</pre></div>
+<p>
+Obviously, <code>f</code> must be able to take an array as argument for <code>f[x[1:-1])</code>
+to make sense.
+
+<h2 id="wave:pde1:impl:vec:slices:fdm">Finite difference schemes expressed as slices</h2>
+
+<p>
+We now have the necessary tools to vectorize the wave equation
+algorithm as described mathematically in the section <a href="._wave-sol001.html#wave:string:alg">Formulating a recursive algorithm</a>
+and through code in the section <a href="#wave:pde1:impl:solver">The solver function</a>.  There are
+three loops: one for the initial condition, one for the first time
+step, and finally the loop that is repeated for all subsequent time
+levels. Since only the latter is repeated a potentially large number
+of times, we limit our vectorization efforts to this loop:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">1</span>, Nx):
+    u[i] <span style="color: #666666">=</span> <span style="color: #666666">2*</span>u_1[i] <span style="color: #666666">-</span> u_2[i] <span style="color: #666666">+</span> \ 
+           C2<span style="color: #666666">*</span>(u_1[i<span style="color: #666666">-1</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u_1[i] <span style="color: #666666">+</span> u_1[i<span style="color: #666666">+1</span>])
+</pre></div>
+<p>
+The vectorized version becomes
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">u[<span style="color: #666666">1</span>:<span style="color: #666666">-1</span>] <span style="color: #666666">=</span> <span style="color: #666666">-</span> u_2[<span style="color: #666666">1</span>:<span style="color: #666666">-1</span>] <span style="color: #666666">+</span> <span style="color: #666666">2*</span>u_1[<span style="color: #666666">1</span>:<span style="color: #666666">-1</span>] <span style="color: #666666">+</span> \ 
+          C2<span style="color: #666666">*</span>(u_1[:<span style="color: #666666">-2</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u_1[<span style="color: #666666">1</span>:<span style="color: #666666">-1</span>] <span style="color: #666666">+</span> u_1[<span style="color: #666666">2</span>:])
+</pre></div>
+<p>
+or
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">u[<span style="color: #666666">1</span>:Nx] <span style="color: #666666">=</span> <span style="color: #666666">2*</span>u_1[<span style="color: #666666">1</span>:Nx]<span style="color: #666666">-</span> u_2[<span style="color: #666666">1</span>:Nx] <span style="color: #666666">+</span> \ 
+          C2<span style="color: #666666">*</span>(u_1[<span style="color: #666666">0</span>:Nx<span style="color: #666666">-1</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u_1[<span style="color: #666666">1</span>:Nx] <span style="color: #666666">+</span> u_1[<span style="color: #666666">2</span>:Nx<span style="color: #666666">+1</span>])
+</pre></div>
+<p>
+<!-- We may vectorize the other loops regarding the initial condition and -->
+<!-- the first time step, but the effect will hardly be -->
+<!-- noticeable in long time simulations. -->
+
+<p>
+The program
+<a href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_u0v.py" target="_self"><tt>wave1D_u0v.py</tt></a>
+contains a new version of the function <code>solver</code> where both the scalar
+and the vectorized loops are included (the argument <code>version</code> is
+set to <code>scalar</code> or <code>vectorized</code>, respectively).
+
+<h2 id="wave:pde1:impl:vec:verify:quadratic">Verification</h2>
+
+<p>
+We may reuse the quadratic solution \( \uex(x,t)=x(L-x)(1+{\half}t) \) for
+verifying also the vectorized code. A test function can now verify
+both the scalar and the vectorized version. Moreover, we may
+use a <code>user_action</code> function that compares the computed and exact
+solution at each time level and performs a test:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">test_quadratic</span>():
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;</span>
+<span style="color: #BA2121; font-style: italic">    Check the scalar and vectorized versions work for</span>
+<span style="color: #BA2121; font-style: italic">    a quadratic u(x,t)=x(L-x)(1+t/2) that is exactly reproduced.</span>
+<span style="color: #BA2121; font-style: italic">    &quot;&quot;&quot;</span>
+    <span style="color: #408080; font-style: italic"># The following function must work for x as array or scalar</span>
+    u_exact <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">lambda</span> x, t: x<span style="color: #666666">*</span>(L <span style="color: #666666">-</span> x)<span style="color: #666666">*</span>(<span style="color: #666666">1</span> <span style="color: #666666">+</span> <span style="color: #666666">0.5*</span>t)
+    I <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">lambda</span> x: u_exact(x, <span style="color: #666666">0</span>)
+    V <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">lambda</span> x: <span style="color: #666666">0.5*</span>u_exact(x, <span style="color: #666666">0</span>)
+    <span style="color: #408080; font-style: italic"># f is a scalar (zeros_like(x) works for scalar x too)</span>
+    f <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">lambda</span> x, t: zeros_like(x) <span style="color: #666666">+</span> <span style="color: #666666">2*</span>c<span style="color: #666666">**2*</span>(<span style="color: #666666">1</span> <span style="color: #666666">+</span> <span style="color: #666666">0.5*</span>t)
+
+    L <span style="color: #666666">=</span> <span style="color: #666666">2.5</span>
+    c <span style="color: #666666">=</span> <span style="color: #666666">1.5</span>
+    C <span style="color: #666666">=</span> <span style="color: #666666">0.75</span>
+    Nx <span style="color: #666666">=</span> <span style="color: #666666">3</span>  <span style="color: #408080; font-style: italic"># Very coarse mesh for this exact test</span>
+    dt <span style="color: #666666">=</span> C<span style="color: #666666">*</span>(L<span style="color: #666666">/</span>Nx)<span style="color: #666666">/</span>c
+    T <span style="color: #666666">=</span> <span style="color: #666666">18</span>
+
+    <span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">assert_no_error</span>(u, x, t, n):
+        u_e <span style="color: #666666">=</span> u_exact(x, t[n])
+        tol <span style="color: #666666">=</span> <span style="color: #666666">1E-13</span>
+        diff <span style="color: #666666">=</span> <span style="color: #008000">abs</span>(u <span style="color: #666666">-</span> u_e)<span style="color: #666666">.</span>max()
+        <span style="color: #008000; font-weight: bold">assert</span> diff <span style="color: #666666">&lt;</span> tol
+
+    solver(I, V, f, c, L, dt, C, T,
+           user_action<span style="color: #666666">=</span>assert_no_error, version<span style="color: #666666">=</span><span style="color: #BA2121">&#39;scalar&#39;</span>)
+    solver(I, V, f, c, L, dt, C, T,
+           user_action<span style="color: #666666">=</span>assert_no_error, version<span style="color: #666666">=</span><span style="color: #BA2121">&#39;vectorized&#39;</span>)
+</pre></div>
+<p>
+<div class="alert alert-block alert-success alert-text-normal"><b>Lambda functions.</b>
+The code segment above demonstrates how to achieve very
+compact code, without degraded readability,
+by use of lambda functions for the various
+input parameters that require a Python function. In essence,
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%">f <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">lambda</span> x, t: L<span style="color: #666666">*</span>(x<span style="color: #666666">-</span>t)<span style="color: #666666">**2</span>
+</pre></div>
+<p>
+is equivalent to
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">f</span>(x, t):
+    <span style="color: #008000; font-weight: bold">return</span> L(x<span style="color: #666666">-</span>t)<span style="color: #666666">**2</span>
+</pre></div>
+<p>
+Note that lambda functions can just contain a single expression and no
+statements.
+
+<p>
+One advantage with lambda functions is that they can be used directly
+in calls:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%">solver(I<span style="color: #666666">=</span><span style="color: #008000; font-weight: bold">lambda</span> x: sin(pi<span style="color: #666666">*</span>x<span style="color: #666666">/</span>L), V<span style="color: #666666">=0</span>, f<span style="color: #666666">=0</span>, <span style="color: #666666">...</span>)
+</pre></div>
+<p>
+</div>
+
+
+<h2 id="___sec31">Efficiency measurements </h2>
+
+<p>
+The <code>wave1D_u0v.py</code> contains our new <code>solver</code> function with both
+scalar and vectorized code. For comparing the efficiency
+of scalar versus vectorized code, we need a <code>viz</code> function
+as discussed in the section <a href="#wave:pde1:impl:animate">Visualization: animating the solution</a>.
+All of this <code>viz</code> function can be reused, except the call
+to <code>solver_function</code>. This call lacks the parameter
+<code>version</code>, which we want to set to <code>vectorized</code> and <code>scalar</code>
+for our efficiency measurements.
+
+<p>
+One solution is to copy the <code>viz</code> code from <code>wave1D_u0</code> into
+<code>wave1D_u0v.py</code> and add a <code>version</code> argument to the <code>solver_function</code> call.
+Taking into account how much quite complicated animation code we
+then duplicate, this is not a good idea.
+Introducing the <code>version</code> argument in <code>wave1D_u0.viz</code> is not
+a good solution since <code>version</code> has no meaning in that file.
+
+<h3 id="___sec32">Solution 1 </h3>
+
+<p>
+Calling <code>viz</code> in <code>wave1D_u0</code> with <code>solver_function</code> as our new
+solver in <code>wave1D_u0v</code> works fine, since this solver has
+<code>version='vectorized'</code> as default value. The problem arises when we
+want to test <code>version='vectorized'</code>. The simplest solution is then
+to use <code>wave1D_u0.solver</code> instead. We make a new <code>viz</code> function
+in <code>wave1D_u0v.py</code> that has a <code>version</code> argument and that just
+calls <code>wave1D_u0.viz</code>:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">viz</span>(
+    I, V, f, c, L, dt, C, T,  <span style="color: #408080; font-style: italic"># PDE paramteres</span>
+    umin, umax,               <span style="color: #408080; font-style: italic"># Interval for u in plots</span>
+    animate<span style="color: #666666">=</span><span style="color: #008000">True</span>,             <span style="color: #408080; font-style: italic"># Simulation with animation?</span>
+    tool<span style="color: #666666">=</span><span style="color: #BA2121">&#39;matplotlib&#39;</span>,        <span style="color: #408080; font-style: italic"># &#39;matplotlib&#39; or &#39;scitools&#39;</span>
+    solver_function<span style="color: #666666">=</span>solver,   <span style="color: #408080; font-style: italic"># Function with numerical algorithm</span>
+    version<span style="color: #666666">=</span><span style="color: #BA2121">&#39;vectorized&#39;</span>,     <span style="color: #408080; font-style: italic"># &#39;scalar&#39; or &#39;vectorized&#39;</span>
+    ):
+    <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">wave1D_u0</span>
+    <span style="color: #008000; font-weight: bold">if</span> version <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;vectorized&#39;</span>:
+        <span style="color: #408080; font-style: italic"># Reuse viz from wave1D_u0, but with the present</span>
+        <span style="color: #408080; font-style: italic"># modules&#39; new vectorized solver (which has</span>
+        <span style="color: #408080; font-style: italic"># version=&#39;vectorized&#39; as default argument;</span>
+        <span style="color: #408080; font-style: italic"># wave1D_u0.viz does not feature this argument)</span>
+        cpu <span style="color: #666666">=</span> wave1D_u0<span style="color: #666666">.</span>viz(
+            I, V, f, c, L, dt, C, T, umin, umax,
+            animate, tool, solver_function<span style="color: #666666">=</span>solver)
+    <span style="color: #008000; font-weight: bold">elif</span> version <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;scalar&#39;</span>:
+        <span style="color: #408080; font-style: italic"># Call wave1D_u0.viz with a solver with</span>
+        <span style="color: #408080; font-style: italic"># scalar code and use wave1D_u0.solver.</span>
+        cpu <span style="color: #666666">=</span> wave1D_u0<span style="color: #666666">.</span>viz(
+            I, V, f, c, L, dt, C, T, umin, umax,
+            animate, tool,
+            solver_function<span style="color: #666666">=</span>wave1D_u0<span style="color: #666666">.</span>solver)
+</pre></div>
+
+<h3 id="___sec33">Solution 2 </h3>
+
+<p>
+There is a more advanced, fancier solution featuring a very useful trick:
+we can make a new function that will always call <code>wave1D_u0v.solver</code>
+with <code>version='scalar'</code>. The <code>functools.partial</code> function from
+standard Python takes a function <code>func</code> as argument and
+a series of positional and keyword arguments and returns a
+new function that will call <code>func</code> with the supplied arguments,
+while the user can control all the other arguments in <code>func</code>.
+Consider a trivial example,
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">f</span>(a, b, c<span style="color: #666666">=2</span>):
+    <span style="color: #008000; font-weight: bold">return</span> a <span style="color: #666666">+</span> b <span style="color: #666666">+</span> c
+</pre></div>
+<p>
+We want to ensure that <code>f</code> is always called with <code>c=3</code>, i.e., <code>f</code>
+has only two &quot;free&quot; arguments <code>a</code> and <code>b</code>.
+This functionality is obtained by
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">functools</span>
+f2 <span style="color: #666666">=</span> functools<span style="color: #666666">.</span>partial(f, c<span style="color: #666666">=3</span>)
+
+<span style="color: #008000; font-weight: bold">print</span> f2(<span style="color: #666666">1</span>, <span style="color: #666666">2</span>)  <span style="color: #408080; font-style: italic"># results in 1+2+3=6</span>
+</pre></div>
+<p>
+Now <code>f2</code> calls <code>f</code> with whatever the user supplies as <code>a</code> and <code>b</code>,
+but <code>c</code> is always <code>3</code>.
+
+<p>
+Back to our <code>viz</code> code, we can do
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">functools</span>
+<span style="color: #408080; font-style: italic"># Call scalar with version fixed to `scalar`</span>
+scalar_solver <span style="color: #666666">=</span> functools<span style="color: #666666">.</span>partial(scalar, version<span style="color: #666666">=</span><span style="color: #BA2121">&#39;scalar&#39;</span>)
+cpu <span style="color: #666666">=</span> wave1D_u0<span style="color: #666666">.</span>viz(
+        I, V, f, c, L, dt, C, T, umin, umax,
+        animate, tool, solver_function<span style="color: #666666">=</span>scalar_solver)
+</pre></div>
+<p>
+The new <code>scalar_solver</code> takes the same arguments as
+<code>wave1D_u0.scalar</code> and calls <code>wave1D_u0v.scalar</code>,
+but always supplies the extra argument
+<code>version='scalar'</code>. When sending this <code>solver_function</code>
+to <code>wave1D_u0.viz</code>, the latter will call <code>wave1D_u0v.solver</code>
+with all the <code>I</code>, <code>V</code>, <code>f</code>, etc., arguments we supply, plus
+<code>version='scalar'</code>.
+
+<h3 id="___sec34">Efficiency experiments </h3>
+
+<p>
+We now have a <code>viz</code> function that can call our solver function both in
+scalar and vectorized mode. The function <code>run_efficiency_experiments</code>
+in <code>wave1D_u0v.py</code> performs a set of experiments and reports the
+CPU time spent in the scalar and vectorized solver for
+the previous string vibration example with spatial mesh resolutions
+\( N_x=50,100,200,400,800 \). Running this function reveals
+that the vectorized
+code runs substantially faster: the vectorized code runs approximately
+\( N_x/10 \) times as fast as the scalar code!
+
+<h2 id="wave:pde1:impl:ref:switch">Remark on the updating of arrays</h2>
+
+<p>
+At the end of each time step we need to update the <code>u_2</code> and <code>u_1</code>
+arrays such that they have the right content for the next time step:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">u_2[:] <span style="color: #666666">=</span> u_1
+u_1[:] <span style="color: #666666">=</span> u
+</pre></div>
+<p>
+The order here is important! (Updating <code>u_1</code> first, makes <code>u_2</code> equal
+to <code>u</code>, which is wrong.)
+
+<p>
+The assignment <code>u_1[:] = u</code> copies the content of the <code>u</code> array into
+the elements of the <code>u_1</code> array. Such copying takes time, but
+that time is negligible compared to the time needed for
+computing <code>u</code> from the finite difference formula,
+even when the formula has a vectorized implementation.
+However, efficiency of program code is a key topic when solving
+PDEs numerically (particularly when there are two or three
+space dimensions), so it must be mentioned that there exists a
+much more efficient way of making the arrays <code>u_2</code> and <code>u_1</code>
+ready for the next time step. The idea is based on <em>switching
+references</em> and explained as follows.
+
+<p>
+A Python variable is actually a reference to some object (C programmers
+may think of pointers). Instead of copying data, we can let <code>u_2</code>
+refer to the <code>u_1</code> object and <code>u_1</code> refer to the <code>u</code> object.
+This is a very efficiency operation (like switching pointers in C).
+A naive implementation like
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">u_2 <span style="color: #666666">=</span> u_1
+u_1 <span style="color: #666666">=</span> u
+</pre></div>
+<p>
+will fail, however, because now <code>u_2</code> refers to the <code>u_1</code> object,
+but then the name <code>u_1</code> refers to <code>u</code>, so that this <code>u</code> object
+has two references, <code>u_1</code> and <code>u</code>, while our third array, originally
+referred to by <code>u_2</code> has no more references and is lost.
+This means that the variables <code>u</code>, <code>u_1</code>, and <code>u_2</code> refer to two
+arrays and not three. Consequently, the computations at the next
+time level will be messed up since updating the elements in
+<code>u</code> will imply updating the elements in <code>u_1</code> too so the solution
+at the previous time step, which is crucial in our formulas, is
+destroyed.
+
+<p>
+While <code>u_2 = u_1</code> is fine, <code>u_1 = u</code> is problematic, so
+the solution to this problem is to ensure that <code>u</code>
+points to the <code>u_2</code> array. This is mathematically wrong, but
+new correct values will be filled into <code>u</code> at the next time step
+and make it right.
+
+<p>
+The correct switch of references is
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">tmp <span style="color: #666666">=</span> u_2
+u_2 <span style="color: #666666">=</span> u_1
+u_1 <span style="color: #666666">=</span> u
+u <span style="color: #666666">=</span> tmp
+</pre></div>
+<p>
+We can get rid of the temporary reference <code>tmp</code> by writing
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">u_2, u_1, u <span style="color: #666666">=</span> u_1, u, u_2
+</pre></div>
+<p>
+This switching of references for updating our arrays
+will be used in later implementations.
+
+<p>
+<div class="alert alert-block alert-danger alert-text-normal"><b>Caution:</b>
+The update <code>u_2, u_1, u = u_1, u, u_2</code> leaves wrong content in <code>u</code>
+at the final time step. This means that if we return <code>u</code>, as we
+do in the example codes here, we actually return <code>u_2</code>, which is
+obviously wrong. It is therefore important to adjust the content
+of <code>u</code> to <code>u = u_1</code> before returning <code>u</code>.
+</div>
+
+
+<h1 id="___sec36">Exercises </h1>
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:exer:standingwave">Exercise 1: Simulate a standing wave</h2>
+
+<p>
+The purpose of this exercise is to simulate standing waves on \( [0,L] \)
+and illustrate the error in the simulation.
+Standing waves arise from an initial condition
+
+$$ u(x,0)= A \sin\left(\frac{\pi}{L}mx\right),$$
+
+where \( m \) is an integer and \( A \) is a freely chosen amplitude.
+The corresponding exact solution can be computed and reads
+
+$$ \uex(x,t) =  A\sin\left(\frac{\pi}{L}mx\right)
+\cos\left(\frac{\pi}{L}mct\right)\tp
+$$
+
+<p>
+<b>a)</b>
+Explain that for a function \( \sin kx\cos \omega t \) the wave length
+in space is \( \lambda = 2\pi /k \) and the period in time is \( P=2\pi/\omega \).
+Use these expressions to find the wave length in space and period in
+time of \( \uex \) above.
+
+<p>
+<b>b)</b>
+Import the <code>solver</code> function <code>wave1D_u0.py</code> into a new file
+where the <code>viz</code> function is reimplemented such that it
+plots either the numerical <em>and</em> the exact solution, <em>or</em> the error.
+
+<p>
+<b>c)</b>
+Make animations where you illustrate how the error
+\( e^n_i =\uex(x_i, t_n)- u^n_i \)
+develops and increases in time. Also make animations of
+\( u \) and \( \uex \) simultaneously.
+
+<p>
+<!-- --- begin hint in exercise --- -->
+
+<p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_1_1" style="font-size: 80%;"></a>
+<b>Hint 1.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_1_1">
+
+<p>
+Quite long time simulations are needed in order to display significant
+discrepancies between the numerical and exact solution.
+
+<p>
+</div></p>
+</div>
+</p>
+
+<p>
+<!-- --- end hint in exercise --- -->
+
+<p>
+<!-- --- begin hint in exercise --- -->
+
+<p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_1_2" style="font-size: 80%;"></a>
+<b>Hint 2.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_1_2">
+
+<p>
+A possible set of parameters is \( L=12 \), \( m=9 \), \( c=2 \), \( A=1 \), \( N_x=80 \),
+\( C=0.8 \). The error mesh function \( e^n \) can be simulated for 10 periods,
+while 20-30 periods are needed to show significant differences between
+the curves for the numerical and exact solution.
+
+<p>
+</div></p>
+</div>
+</p>
+
+<p>
+<!-- --- end hint in exercise --- -->
+
+<p>
+Filename: <code>wave_standing</code>.
+
+<p>
+<!-- Closing remarks for this Exercise -->
+
+<h3 id="___sec38">Remarks </h3>
+
+<p>
+The important
+parameters for numerical quality are \( C \) and \( k\Delta x \), where
+\( C=c\Delta t/\Delta x \) is the Courant number and \( k \) is defined above
+(\( k\Delta x \) is proportional to how many mesh points we have per wave length
+in space, see the section <a href="._wave-sol004.html#wave:pde1:num:dispersion">Numerical dispersion relation</a> for explanation).
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:exer:store:list">Exercise 2: Add storage of solution in a user action function</h2>
+
+<p>
+Extend the <code>plot_u</code> function in the file <code>wave1D_u0.py</code> to also store
+the solutions <code>u</code> in a list.
+To this end, declare <code>all_u</code> as
+an empty list in the <code>viz</code> function, outside <code>plot_u</code>, and perform
+an append operation inside the <code>plot_u</code> function. Note that a
+function, like <code>plot_u</code>, inside another function, like <code>viz</code>,
+remembers all local variables in <code>viz</code> function, including <code>all_u</code>,
+even when <code>plot_u</code> is called (as <code>user_action</code>) in the <code>solver</code> function.
+Test both <code>all_u.append(u)</code> and <code>all_u.append(u.copy())</code>.
+Why does one of these constructions fail to store the solution correctly?
+Let the <code>viz</code> function return the <code>all_u</code> list
+converted to a two-dimensional <code>numpy</code> array.
+Filename: <code>wave1D_u0_s_store</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:exer:store:list:class">Exercise 3: Use a class for the user action function</h2>
+
+<p>
+Redo <a href="#wave:exer:store:list">Exercise 2: Add storage of solution in a user action function</a> using a class for the
+user action function. That is, define a class <code>Action</code> where
+the <code>all_u</code> list is an attribute, and implement the user action
+function as a method (the special method <code>__call__</code> is a natural
+choice). The class versions avoids that the user action function
+depends on parameters defined outside the function (such as <code>all_u</code>
+in <a href="#wave:exer:store:list">Exercise 2: Add storage of solution in a user action function</a>).
+Filename: <code>wave1D_u0_s2c</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:exer:multiple:C">Exercise 4: Compare several Courant numbers in one movie</h2>
+
+<p>
+The goal of this exercise is to make movies where several curves,
+corresponding to different Courant numbers, are visualized.
+Import the <code>solver</code> function from the <code>wave1D_u0_s</code> movie
+in a new file <code>wave_compare.py</code>. Reimplement the <code>viz</code> function
+such that it can take a list of <code>C</code> values as argument
+and create a movie with solutions corresponding to the given <code>C</code>
+values. The <code>plot_u</code> function must be changed to store the solution
+in an array (see <a href="#wave:exer:store:list">Exercise 2: Add storage of solution in a user action function</a> or
+<a href="#wave:exer:store:list:class">Exercise 3: Use a class for the user action function</a> for details), <code>solver</code> must be
+computed for each value of the Courant number, and finally
+one must run through each time step and plot all the spatial
+solution curves in one figure and store it in a file.
+
+<p>
+The challenge in such a visualization is to ensure that the curves in
+one plot corresponds to the same time point. The easiest remedy is to
+keep the time and space resolution constant and change the wave
+velocity \( c \) to change the Courant number.
+Filename: <code>wave_numerics_comparison</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:exer:mesh1D:calculus">Project 5: Calculus with 1D mesh functions</h2>
+
+<p>
+This project explores integration and differentiation of
+mesh functions, both with scalar and vectorized implementations.
+We are given a mesh function \( f_i \) on a spatial one-dimensional
+mesh \( x_i=i\Delta x \), \( i=0,\ldots,N_x \), over the interval \( [a,b] \).
+
+<p>
+<b>a)</b>
+Define the discrete derivative of \( f_i \) by using centered
+differences at internal mesh points and one-sided differences
+at the end points. Implement a scalar version of
+the computation in a Python function and write an associated unit test
+for the linear case \( f(x)=4x-2.5 \) where the discrete derivative should
+be exact.
+
+<p>
+<b>b)</b>
+Vectorize the implementation of the discrete derivative.
+Extend the unit test to check the validity of the implementation.
+
+<p>
+<b>c)</b>
+To compute the discrete integral \( F_i \) of \( f_i \), we assume that
+the mesh function \( f_i \) varies linearly between the mesh points.
+Let \( f(x) \) be such a linear interpolant of \( f_i \). We then
+have
+
+$$ F_i = \int_{x_0}^{x_i} f(x) dx\tp$$
+
+The exact integral of a piecewise linear function \( f(x) \) is
+given by the Trapezoidal rule. S
+how that if \( F_{i} \) is already computed, we can find \( F_{i+1} \)
+from
+
+$$ F_{i+1} = F_i + \half(f_i + f_{i+1})\Delta x\tp$$
+
+Make a function for the scalar implementation of the discrete integral
+as a mesh function. That is, the function should return
+\( F_i \) for \( i=0,\ldots,N_x \).
+For a unit test one can use the fact that the above defined
+discrete integral of a linear
+function (say \( f(x)=4x-2.5 \)) is exact.
+
+<p>
+<b>d)</b>
+Vectorize the implementation of the discrete integral.
+Extend the unit test to check the validity of the implementation.
+
+<p>
+<!-- --- begin hint in exercise --- -->
+
+<p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_5_1" style="font-size: 80%;"></a>
+<b>Hint.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_5_1">
+
+<p>
+Interpret the recursive formula for \( F_{i+1} \) as a sum.
+Make an array with each element of the sum and use the "cumsum"
+(<code>numpy.cumsum</code>) operation to compute the accumulative sum:
+<code>numpy.cumsum([1,3,5])</code> is <code>[1,4,9]</code>.
+
+<p>
+</div></p>
+</div>
+</p>
+
+<p>
+<!-- --- end hint in exercise --- -->
+
+<p>
+<b>e)</b>
+Create a class <code>MeshCalculus</code> that can integrate and differentiate
+mesh functions. The class can just define some methods that call
+the previously implemented Python functions. Here is an example
+on the usage:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+calc <span style="color: #666666">=</span> MeshCalculus(vectorized<span style="color: #666666">=</span><span style="color: #008000">True</span>)
+x <span style="color: #666666">=</span> np<span style="color: #666666">.</span>linspace(<span style="color: #666666">0</span>, <span style="color: #666666">1</span>, <span style="color: #666666">11</span>)        <span style="color: #408080; font-style: italic"># mesh</span>
+f <span style="color: #666666">=</span> np<span style="color: #666666">.</span>exp(x)                    <span style="color: #408080; font-style: italic"># mesh function</span>
+df <span style="color: #666666">=</span> calc<span style="color: #666666">.</span>differentiate(f, x)    <span style="color: #408080; font-style: italic"># discrete derivative</span>
+F <span style="color: #666666">=</span> calc<span style="color: #666666">.</span>integrate(f, x)         <span style="color: #408080; font-style: italic"># discrete anti-derivative</span>
+</pre></div>
+<p>
+Filename: <code>mesh_calculus_1D</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<p>
+<!-- navigation buttons at the bottom of the page -->
+<ul class="pager">
+  <li class="previous">
+    <a href="._wave-sol001.html">&larr; Prev</a>
+  </li>
+  <li class="next">
+    <a href="._wave-sol003.html">Next &rarr;</a>
+  </li>
+</ul>
+<!-- ------------------- end of main content --------------- -->
+
+</div>  <!-- end container -->
+<!-- include javascript, jQuery *first* -->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+<!-- Bootstrap footer
+<footer>
+<a href="http://..."><img width="250" align=right src="http://..."></a>
+</footer>
+-->
+
+
+</body>
+</html>
+    
+

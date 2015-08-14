@@ -8,7 +8,7 @@ Implementation  (1)
 .. index::
    single: wave equation; 1D, implementation
 
-This section present the complete computational algorithm, its
+This section presents the complete computational algorithm, its
 implementation in Python code, animation of the solution, and
 verification of the implementation.
 
@@ -25,28 +25,49 @@ control of the Courant number is convenient when investigating the
 numerical method. Many find it natural to prescribe the resolution of
 the spatial grid and set :math:`N_x`. The solver function can then compute
 :math:`\Delta t = CL/(cN_x)`. However, for comparing :math:`u(x,t)` curves (as
-functions of :math:`x`) for various Courant numbers, especially in
-animations in time, it is more convenient to keep :math:`\Delta t` fixed for
+functions of :math:`x`) for various Courant numbers
+it is more convenient to keep :math:`\Delta t` fixed for
 all :math:`C` and let :math:`\Delta x` vary according to :math:`\Delta x = c\Delta t/C`.
-(With :math:`\Delta t` fixed, all frames correspond to the same time :math:`t`,
-and plotting curves with different spatial resolution is trivial.)
+With :math:`\Delta t` fixed, all frames correspond to the same time :math:`t`,
+and this simplifies animations that compare simulations with different
+mesh resolutions. Plotting functions of :math:`x`
+with different spatial resolution is trivial,
+so it is easier to let :math:`\Delta x` vary in the simulations than :math:`\Delta t`.
+
+Callback function for user-specific actions
+-------------------------------------------
+
+.. index:: callback function
 
 The solution at all spatial points at a new time level is stored in an
-array ``u`` (of length :math:`N_x+1`). We need to decide what do to with
+array ``u`` of length :math:`N_x+1`. We need to decide what do to with
 this solution, e.g., visualize the curve, analyze the values, or write
-the array to file for later use. The decision what to do is left to
-the user in a suppled function
+the array to file for later use. The decision about what to do is left to
+the user in the form of a user-suppled supplied function
 
 .. code-block:: python
 
-        def user_action(u, x, t, n):
+        user_action(u, x, t, n)
 
 where ``u`` is the solution at the spatial points ``x`` at time ``t[n]``.
+The ``user_action`` function is call from the solver at each time level ``n``.
+
+If the user wants to plot the solution or store the solution at a
+time point, she needs to write such a function and take appropriate
+actions inside it. We will show examples on many such ``user_action``
+functions.
+
+Since the solver function make calls back to the user's code
+via such a function, this type of function is called a *callback function*.
+When writing general software, like our solver function, which also needs
+to carry out special problem-dependent actions (like visualization),
+it is a common technique to leave those actions to user-supplied
+callback functions.
 
 .. _wave:pde1:impl:solver:
 
-Making a solver function
-------------------------
+The solver function
+-------------------
 
 A first attempt at a solver function is listed below.
 
@@ -130,24 +151,25 @@ A first attempt at a solver function is listed below.
 Verification: exact quadratic solution
 --------------------------------------
 
-.. index:: nose tests
+.. index:: nose test
+
+.. index:: pytest test
 
 .. index:: unit testing
 
 .. index::
    single: software testing; nose
 
+.. index::
+   single: software testing; pytest
+
 We use the test problem derived in the section :ref:`wave:pde2:fd` for
-verification. Here is a function realizing this verification as a
-
-.. cite
-
-nose test:
+verification. Below is a unit test based on this test problem
+and realized as a proper *test function* (compatible with the unit test
+frameworks nose or pytest).
 
 .. code-block:: python
 
-        import nose.tools as nt
-        
         def test_quadratic():
             """Check that u(x,t)=x(L-x)(1+t/2) is exactly reproduced."""
             def u_exact(x, t):
@@ -171,8 +193,13 @@ nose test:
         
             u, x, t, cpu = solver(I, V, f, c, L, dt, C, T)
             u_e = u_exact(x, t[-1])
+            tol = 1E-14
             diff = abs(u - u_e).max()
-            nt.assert_almost_equal(diff, 0, places=14)
+            assert diff < tol
+
+When this function resides in the file ``wave1D_u0.py``, one can execute
+``py.test -s -v wave1D_u0.py`` or ``nosetests -s -v wave1D_u0.py`` to automatically
+run all test functions with name ``test_*()``.
 
 .. _wave:pde1:impl:animate:
 
@@ -181,22 +208,35 @@ Visualization: animating the solution
 
 Now that we have verified the implementation it is time to do a
 real computation where we also display the evolution of the waves
-on the screen.
+on the screen. Since the ``solver`` function knows nothing about
+what type of visualizations we may want, it calls the callback function
+``user_action(u, x, t, n)``. We must therefore write this function and
+find the proper statements for plotting the solution.
 
-Visualization via SciTools
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Function for administering the simulation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following ``viz`` function defines a ``user_action``
-callback function for plotting the solution at each time level:
+The following ``viz`` function
+
+1. defines a ``user_action`` callback function
+   for plotting the solution at each time level,
+
+2. calls the ``solver`` function, and
+
+3. combines all the plots (in files) to video in different formats.
 
 .. code-block:: python
 
-        def viz(I, V, f, c, L, dt, C, T, umin, umax, animate=True):
+        def viz(
+            I, V, f, c, L, dt, C, T,  # PDE paramteres
+            umin, umax,               # Interval for u in plots
+            animate=True,             # Simulation with animation?
+            tool='matplotlib',        # 'matplotlib' or 'scitools'
+            solver_function=solver,   # Function with numerical algorithm
+            ):
             """Run solver and visualize u at each time level."""
-            import scitools.std as plt
-            import time, glob, os
         
-            def plot_u(u, x, t, n):
+            def plot_u_st(u, x, t, n):
                 """user_action function for solver."""
                 plt.plot(x, u, 'r-',
                          xlabel='x', ylabel='u',
@@ -207,48 +247,120 @@ callback function for plotting the solution at each time level:
                 time.sleep(2) if t[n] == 0 else time.sleep(0.2)
                 plt.savefig('frame_%04d.png' % n)  # for movie making
         
+            class PlotMatplotlib:
+                def __call__(self, u, x, t, n):
+                    """user_action function for solver."""
+                    if n == 0:
+                        plt.ion()
+                        self.lines = plt.plot(x, u, 'r-')
+                        plt.xlabel('x');  plt.ylabel('u')
+                        plt.axis([0, L, umin, umax])
+                        plt.legend(['t=%f' % t[n]], loc='lower left')
+                    else:
+                        self.lines[0].set_ydata(u)
+                        plt.legend(['t=%f' % t[n]], loc='lower left')
+                        plt.draw()
+                    time.sleep(2) if t[n] == 0 else time.sleep(0.2)
+                    plt.savefig('tmp_%04d.png' % n)  # for movie making
+        
+            if tool == 'matplotlib':
+                import matplotlib.pyplot as plt
+                plot_u = PlotMatplotlib()
+            elif tool == 'scitools':
+                import scitools.std as plt  # scitools.easyviz interface
+                plot_u = plot_u_st
+            import time, glob, os
+        
             # Clean up old movie frames
-            for filename in glob.glob('frame_*.png'):
+            for filename in glob.glob('tmp_*.png'):
                 os.remove(filename)
         
+            # Call solver and do the simulaton
             user_action = plot_u if animate else None
-            u, x, t, cpu = solver(I, V, f, c, L, dt, C, T, user_action)
+            u, x, t, cpu = solver_function(
+                I, V, f, c, L, dt, C, T, user_action)
         
-            # Make movie files
-            fps = 4  # Frames per second
-            plt.movie('frame_*.png', encoder='html', fps=fps,
-                      output_file='movie.html')
+            # Make video files
+            fps = 4  # frames per second
             codec2ext = dict(flv='flv', libx264='mp4', libvpx='webm',
-                             libtheora='ogg')
-            filespec = 'frame_%04d.png'
-            movie_program = 'avconv'  # or 'ffmpeg'
+                             libtheora='ogg')  # video formats
+            filespec = 'tmp_%04d.png'
+            movie_program = 'ffmpeg'  # or 'avconv'
             for codec in codec2ext:
                 ext = codec2ext[codec]
                 cmd = '%(movie_program)s -r %(fps)d -i %(filespec)s '\ 
                       '-vcodec %(codec)s movie.%(ext)s' % vars()
                 os.system(cmd)
+        
+            if tool == 'scitools':
+                # Make an HTML play for showing the animation in a browser
+                plt.movie('tmp_*.png', encoder='html', fps=fps,
+                          output_file='movie.html')
+            return cpu
 
-A function inside another function, like ``plot_u`` in the above code
-segment, has access to *and remembers* all the local variables
-in the surrounding code inside the ``viz`` function (!). This is known
-in computer science as a *closure* and is very convenient to
-program with. For example,
-the ``plt`` and ``time`` modules defined outside ``plot_u`` are accessible for
-``plot_u`` when
-the function is called (as ``user_action``) in the ``solver`` function.
-Some may think, however, that a class instead of a closure is a cleaner
-and easier-to-understand implementation of
-the user action function, see the section :ref:`wave:pde2:software`.
+Dissection of the code
+~~~~~~~~~~~~~~~~~~~~~~
+
+The ``viz`` function can either use SciTools or Matplotlib for
+visualizing the solution. The ``user_action`` function based on SciTools
+is called ``plot_u_st``, while the ``user_action`` function based on
+Matplotlib is a bit more complicated as it is realized as a class and
+needs statements that differ from those for making static plots.
+SciTools can utilize both Matplotlib and Gnuplot (and many other
+plotting programs) for doing the graphics, but Gnuplot is a relevant
+choice for large :math:`N_x` or in two-dimensional problems
+as Gnuplot is significantly faster than
+Matplotlib for screen animations.
+
+.. index:: closure
+
+A function inside another function, like ``plot_u_st`` in the above code
+segment, has access to *and remembers* all the local variables in the
+surrounding code inside the ``viz`` function (!). This is known in
+computer science as a *closure* and is very convenient to program
+with. For example, the ``plt`` and ``time`` modules defined outside
+``plot_u`` are accessible for ``plot_u_st`` when the function is called
+(as ``user_action``) in the ``solver`` function.  Some may think, however,
+that a class instead of a closure is a cleaner and
+easier-to-understand implementation of the user action function, see
+the section :ref:`wave:pde2:software`.
+
+The ``plot_u_st`` function just makes a standard SciTools ``plot`` command
+for plotting ``u`` as a function of ``x`` at time ``t[n]``.  To achieve a
+smooth animation, the ``plot`` command should take keyword arguments
+instead of being broken into separate calls to ``xlabel``, ``ylabel``,
+``axis``, ``time``, and ``show``.  Several ``plot`` calls will automatically
+cause an animation on the screen. In addition, we want to save each
+frame in the animation to file. We then need a filename where the
+frame number is padded with zeros, here ``tmp_0000.png``,
+``tmp_0001.png``, and so on.  The proper printf construction is then
+``tmp_%04d.png``.
+
+The solver is called with an argument ``plot_u`` as ``user_function``.
+If the user chooses to use SciTools, ``plot_u`` is the ``plot_u_st``
+callback function, but for Matplotlib it is an instance of the
+class ``PlotMatplotlib``. Also this class makes use of variables
+defined in the ``viz`` function: ``plt`` and ``time``.
+With Matplotlib, one has to make the first plot the standard way, and
+then update the :math:`y` data in the plot at every time level. The update
+requires active use of the returned value from ``plt.plot`` in the first
+plot.  This value would need to be stored in a local variable if we
+were to use a closure for the ``user_action`` function when doing the
+animation with Matplotlib. It is much easier to store the
+variable as a class attribute ``self.lines``. Since the class is essentially a
+function, we implement the function as the special method ``__call__``
+such that the instance ``plot_u(u, x, t, n)`` can be called as a standard
+callback function from ``solver``.
 
 Making movie files
 ~~~~~~~~~~~~~~~~~~
 
-Several hardcopies of the animation are made from the
-``frame_*.png`` files. We use
-the ``avconv`` (or ``ffmpeg``) programs to combine individual
-plot files to movies in modern
-formats: Flash, MP4, Webm, and Ogg.
-A typical ``avconv`` (or ``ffmpeg``) command for creating a movie file
+From the
+``frame_*.png`` files containing the frames in the animation we can
+make video files.
+We use the ``ffmpeg`` (or ``avconv``) program to combine individual
+plot files to movies in modern formats: Flash, MP4, Webm, and Ogg.
+A typical ``ffmpeg`` (or ``avconv``) command for creating a movie file
 in Ogg format
 with 4 frames per second built from a collection of
 plot files with names generated by ``frame_%04d.png``,
@@ -256,7 +368,7 @@ look like
 
 .. code-block:: text
 
-        Terminal> avconv -r 4 -i frame_%04d.png -c:v libtheora movie.ogg
+        Terminal> ffmpeg -r 4 -i frame_%04d.png -c:v libtheora movie.ogg
 
 The different formats require different video encoders (``-c:v``) to
 be installed: Flash applies ``flv``, WebM applies ``libvpx``, and MP4
@@ -264,9 +376,9 @@ applies ``libx264``:
 
 .. code-block:: text
 
-        Terminal> avconv -r 4 -i frame_%04d.png -c:v flv movie.flv
-        Terminal> avconv -r 4 -i frame_%04d.png -c:v libvpx movie.webm
-        Terminal> avconv -r 4 -i frame_%04d.png -c:v libx264 movie.mp4
+        Terminal> ffmpeg -r 4 -i frame_%04d.png -c:v flv movie.flv
+        Terminal> ffmpeg -r 4 -i frame_%04d.png -c:v libvpx movie.webm
+        Terminal> ffmpeg -r 4 -i frame_%04d.png -c:v libx264 movie.mp4
 
 Players like ``vlc``, ``mplayer``, ``gxine``, and ``totem``
 can be used to play these movie files.
@@ -275,16 +387,26 @@ Note that padding the frame counter with zeros in the ``frame_*.png``
 files, as specified by the ``%04d`` format, is essential so that the wildcard
 notation ``frame_*.png`` expands to the correct set of files.
 
-The
-``plt.movie`` function also creates a ``movie.html`` file with a movie player
-for displaying the ``frame_*.png`` files in a web browser.
-This movie player can
-be generated from the command line too
+The ``viz`` function creates a ``ffmpeg`` or ``avconv`` command
+with the proper arguments for each of the formats Flash, MP4, WebM,
+and Ogg. The task is greatly simplified by having a
+``codec2ext`` dictionary for mapping
+video codec names to filename extensions.
+Only
+two formats are actually needed to ensure that all browsers can
+successfully play the video: MP4 and WebM.
 
-.. code-block:: text
-
-        Terminal> scitools movie encoder=html output_file=movie.html \ 
-                  fps=4 frame_*.png
+Some animations consisting of a large number of plot files may not
+be properly combined into a video using ``ffmpeg`` or ``avconv``.
+A method that always works is to play the PNG files as an animation
+in a browser using JavaScript code in an HTML file.
+The SciTools package has a function ``movie`` (or a stand-alone command
+``scitools movie``) for creating such an HTML player. The ``plt.movie``
+call in the ``viz`` function shows how the function is used.
+The file ``movie.html`` can be loaded into a browser and features
+a user interface where the speed of the animation can be controlled.
+Note that the movie in this case consists of the ``movie.html`` file
+and all the frame files ``tmp_*.png``.
 
 Skipping frames for animation speed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -292,21 +414,26 @@ Skipping frames for animation speed
 Sometimes the time step is small and :math:`T` is large, leading to an
 inconveniently large number of plot files and a slow animation on the
 screen. The solution to such a problem is to decide on a total number
-of frames in the animation, ``num_frames``, and plot the solution only at
-every ``every`` frame. The total number of time levels (i.e., maximum
-possible number of frames) is the length of ``t``, ``t.size``, and if we
-want ``num_frames``, we need to plot every ``t.size/num_frames`` frame:
+of frames in the animation, ``num_frames``, and plot the solution only for
+every ``skip_frame`` frames. For example, setting ``skip_frame=5`` leads
+to plots of every 5 frames. The default value ``skip_frame=1`` plots
+every frame.
+The total number of time levels (i.e., maximum
+possible number of frames) is the length of ``t``, ``t.size`` (or ``len(t)``),
+so if we want ``num_frames`` frames in the animation,
+we need to plot every ``t.size/num_frames`` frames:
 
 .. code-block:: python
 
-        every = int(t.size/float(num_frames))
-        if n % every == 0 or n == t.size-1:
+        skip_frame = int(t.size/float(num_frames))
+        if n % skip_frame == 0 or n == t.size-1:
             st.plot(x, u, 'r-', ...)
 
-The initial condition (``n=0``) is natural to include,
-and as ``n % every == 0`` will very seldom be true for the
-very final frame, we also ensure that ``n == t.size-1`` and hence
-the final frame is included.
+The initial condition (``n=0``) included by ``n % skip_frame == 0``,
+as well as every ``skip_frame``-th frame.
+As ``n % skip_frame == 0`` will very seldom be true for the
+very final frame, we must also check if ``n == t.size-1`` to
+get the final frame included.
 
 A simple choice of numbers may illustrate the formulas: say we have
 801 frames in total (``t.size``) and we allow only 60 frames to be
@@ -316,60 +443,6 @@ this operation is zero every time ``n`` can be divided by 13 without a
 remainder. That is, the ``if`` test is true when ``n`` equals :math:`0, 13, 26,
 39, ..., 780, 801`. The associated code is included in the ``plot_u``
 function in the file `wave1D_u0v.py <http://tinyurl.com/nm5587k/wave/wave1D/wave1D_u0v.py>`__.
-
-Visualization via Matplotlib
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The previous code based on the ``plot`` interface from ``scitools.std``
-can be run with Matplotlib as the visualization backend, but if one
-desires to program directly with Matplotlib, quite different code
-is needed. Matplotlib's interactive mode must be turned on:
-
-.. code-block:: python
-
-        import matplotlib.pyplot as plt
-        plt.ion()  # interactive mode on
-
-The most
-commonly used animation technique with Matplotlib
-is to update the data in the plot at each time level:
-
-.. code-block:: python
-
-        # Make a first plot
-        lines = plt.plot(t, u)
-        # call plt.axis, plt.xlabel, plt.ylabel, etc. as desired
-        
-        # At later time levels
-        lines[0].set_ydata(u)
-        plt.legend('t=%g' % t[n])
-        plt.draw()  # make updated plot
-        plt.savefig(...)
-
-An alternative is to rebuild the plot at every time level:
-
-.. code-block:: python
-
-        plt.clf()        # delete any previous curve(s)
-        plt.axis([...])
-        plt.plot(t, u)
-        # plt.xlabel, plt.legend and other decorations
-        plt.draw()
-        plt.savefig(...)
-
-Many prefer to work with figure and axis objects as in MATLAB:
-
-.. code-block:: python
-
-        fig = plt.figure()
-        ...
-        fig.clf()
-        ax = fig.gca()
-        ax.axis(...)
-        ax.plot(t, u)
-        # ax.set_xlabel, ax.legend and other decorations
-        plt.draw()
-        fig.savefig(...)
 
 .. _wave:pde1:guitar:data:
 
@@ -434,20 +507,27 @@ calling ``viz`` in this application goes as follows:
                 return a*x/x0 if x < x0 else a/(L-x0)*(L-x)
         
             umin = -1.2*a;  umax = -umin
-            cpu = viz(I, 0, 0, c, L, dt, C, T, umin, umax, animate=True)
+            cpu = viz(I, 0, 0, c, L, dt, C, T, umin, umax,
+                      animate=True, tool='scitools')
 
 The associated program has the name `wave1D_u0.py <http://tinyurl.com/nm5587k/wave/wave1D/wave1D_u0.py>`__. Run
 the program and watch the `movie of the vibrating string <http://tinyurl.com/opdfafk/pub/mov-wave/guitar_C0.8/index.html>`__.
 
-The benefits of scaling
------------------------
+[**hpl 1**: Must recompute these movies as :math:`\Delta t` is different when :math:`C<1`.]
 
-The previous example demonstrated that quite some work is needed
-with establishing relevant physical parameters for a case. By *scaling*
+Working with a scaled PDE model
+-------------------------------
+
+Depending on the model, it may be a substantial job to establish
+consistent and relevant physical parameter values for a case.
+The guitar string example illustrates the point.
+However, by *scaling*
 the mathematical problem we can often reduce the need to estimate
-physical parameters dramatically. A scaling consists of introducing new
+physical parameters dramatically. The scaling technique
+consists of introducing new
 independent and dependent variables, with the aim that the absolute
-value of these vary between 0 and 1:
+value of these is not very large or small, but preferably around unity
+in size. We introduce the dimensionless variables
 
 .. math::
          \bar x = \frac{x}{L},\quad \bar t = \frac{c}{L}t,\quad
@@ -455,35 +535,83 @@ value of these vary between 0 and 1:
         {\thinspace .}
         
 
-Replacing old by new variables in the PDE, using :math:`f=0`,
-and dropping the bars, results in the *scaled equation*
-:math:`u_{tt} = u_{xx}`. This equation has no physical parameter (!).
+Here, :math:`L` is a typical length scale, e.g., the length of the domain,
+and :math:`a` is a typical size of :math:`u`, e.g., determined from the
+initial condition: :math:`a=\max_x|I(x)|`.
+
+Inserting these new variables in the PDE and noting that
+
+.. math::
+         \frac{\partial u}{\partial t} = \frac{aL}{c}\frac{\partial\bar u}{\partial\bar t},
+
+by the chain rule, one gets
+
+.. math::
+         \frac{a^2L^2}{c^2}\frac{\partial^2\bar u}{\partial\bar t^2}
+        = \frac{a^2c^2}{L^2}\frac{\partial^2\bar u}{\partial\bar x^2},
+
+in case :math:`f=0`.
+Dropping the bars, we arrive at the scaled PDE
+
+.. math::
+        
+        \frac{\partial^2 u}{\partial t^2} = \frac{\partial^2 u}{\partial x^2},
+        
+
+which has not parameter :math:`c^2` anymore. The initial conditions are scaled
+as
+
+.. math::
+         a\bar u(\bar x, 0) = I(L\bar x)
+
+and
+
+.. math::
+         \frac{a}{L/c}\frac{\partial\bar u}{\partial\bar t}(\bar x,0) = V(L\bar x),
+
+resulting in
+
+.. math::
+         \bar u(\bar x, 0) = \frac{I(L\bar x)}{\max_x |I(x)|},\quad
+        \frac{\partial\bar u}{\partial\bar t}(\bar x,0) = \frac{L}{ac}V(L\bar x){\thinspace .}
+
+In the common case :math:`V=0` we see that there are no physical parameters to be
+estimated in the PDE model!
 
 If we have a program implemented for the physical wave equation with
 dimensions, we can obtain the dimensionless, scaled version by
-setting :math:`c=1`. The initial condition
-corresponds to :ref:`(11.19) <Eq:wave:pde1:guitar:I>`, but with setting
+setting :math:`c=1`. The initial condition of a guitar string,
+given in :ref:`(11.14) <Eq:wave:pde1:guitar:I>`, gets its scaled form by choosing
 :math:`a=1`, :math:`L=1`, and :math:`x_0\in [0,1]`. This means that we only need to
 decide on the :math:`x_0` value as a fraction of unity, because
 the scaled problem corresponds to setting all
-other parameters to unity! In the code we can just set
+other parameters to unity. In the code we can just set
 ``a=c=L=1``, ``x0=0.8``, and there is no need to calculate with
-wavelengths and frequencies to estimate :math:`c`.
+wavelengths and frequencies to estimate :math:`c`!
 
 The only non-trivial parameter to estimate in the scaled problem
 is the final end time of the simulation, or more precisely, how it relates
 to periods in periodic solutions in time, since we often want to
 express the end time as a certain number of periods.
-Suppose as :math:`u` behaves as :math:`\sin (\omega t)` in time in variables
-with dimension. The corresponding period is :math:`P=2\pi/\omega`.
-The frequency :math:`\omega` is related to the wavelength :math:`\lambda` of the waves
-through the relations :math:`\omega = kc` and :math:`k=2\pi/\lambda`, giving
-:math:`\omega = 2\pi c/\lambda` and :math:`P=\lambda/c`. It remains to estimate :math:`\lambda`.
-With :math:`u(x,t)=F(x)\sin\omega t` we find from :math:`u_{tt}=c^2u_{xx}`
-that :math:`c^2F'' + \omega^2F=0`, and the boundary conditions demand
-:math:`F(0)=F(L)=0`. The solution is :math:`F(x)=\sin(x\pi/L)`, which has
-wavelength :math:`\lambda = 2\pi/(\pi/L)=2L`. One period is therefore
-given by :math:`P=2L/c`. The dimensionless period is :math:`\bar P=Pc/L = 2`.
+The period in the dimensionless problem is 2, so the end time can be
+set to the desired number of periods times 2.
+
+Why the dimensionless period is 2 can be explained by the following
+reasoning.
+Suppose as :math:`u` behaves as :math:`\cos (\omega t)` in time in variables
+with dimension. The corresponding period is then :math:`P=2\pi/\omega`, but
+we need to estimate :math:`\omega`. A typical solution of the wave
+equation is :math:`u(x,t)=A\cos(kx)\cos(\omega t)`, where :math:`A` is an amplitude
+and :math:`k` is related to the wave length :math:`\lambda` in space: :math:`\lambda = 2\pi/k`.
+Both :math:`\lambda` and :math:`A` will be given by the initial condition :math:`I(x)`.
+Inserting this :math:`u(x,t)` in the PDE yields :math:`-\omega^2 = -c^2k^2`, i.e.,
+:math:`\omega = kc`. The period is therefore :math:`P=2\pi/(kc)`.
+If the boundary conditions are :math:`u(0,t)=u(0,L)`, we need to have
+:math:`kL = n\pi` for integer :math:`n`. The period becomes :math:`P=2L/nc`. The longest
+period is :math:`P=2L/c`. The dimensionless period is :math:`\tilde P` is obtained
+by dividing :math:`P` by the time scale :math:`L/c`, which results in :math:`\tilde P=2`.
+Shorter waves in the initial condition will have a dimensionless
+shorter period :math:`\tilde P=2/n` (:math:`n>1`).
 
 .. _wave:pde1:impl:vec:
 
@@ -505,7 +633,7 @@ or *array computing*.
 Operations on whole arrays are possible if the computations
 involving each element is independent of each other and therefore can,
 at least in principle, be performed simultaneously.
-Vectorization not only speeds up the code on serial computers, but it
+Vectorization not only speeds up the code on serial computers, but
 also makes it easy to exploit parallel computing.
 
 .. _wave:pde1:impl:vec:slices:basics:
@@ -514,6 +642,10 @@ Operations on slices of arrays
 ------------------------------
 
 .. index:: scalar code
+
+.. index:: vectorization
+
+.. index:: array computing
 
 .. index:: array slices
 
@@ -555,8 +687,9 @@ or with explicit limits if desired:
 
 Indices with a colon, going from an index to (but not including) another
 index are called *slices*. With ``numpy`` arrays, the computations
-are still done by loops, but in efficient, compiled, highly optimized code
-in C or Fortran. Such array operations can also easily be distributed
+are still done by loops, but in efficient, compiled, highly optimized
+C or Fortran code. Such loops are sometimes referred to as *vectorized
+loops*. Such loops can also easily be distributed
 among many processors on parallel computers. We say that the *scalar code*
 above, working on an element (a scalar) at a time, has been replaced by
 an equivalent *vectorized code*. The process of vectorizing code is called
@@ -570,18 +703,19 @@ an equivalent *vectorized code*. The process of vectorizing code is called
    *Illustration of subtracting two slices of two arrays*
 
 
-.. admonition:: Test the understanding
+.. admonition:: Test your understanding
 
    Newcomers to vectorization are encouraged to choose
    a small array ``u``, say with five elements,
    and simulate with pen and paper
-   both the loop version and the vectorized version.
+   both the loop version and the vectorized version above.
 
 
 
 
-Finite difference schemes basically contains differences between array
-elements with shifted indices. Consider the updating formula
+Finite difference schemes basically contain differences between array
+elements with shifted indices. As an example,
+consider the updating formula
 
 .. code-block:: python
 
@@ -596,7 +730,7 @@ slices of arrays of length ``n-2``:
         u2 = u[:-2] - 2*u[1:-1] + u[2:]
         u2 = u[0:n-2] - 2*u[1:n-1] + u[2:n]   # alternative
 
-Note that ``u2`` here gets length ``n-2``. If ``u2`` is already an array of
+Note that the length of ``u2`` becomes ``n-2``. If ``u2`` is already an array of
 length ``n`` and we want to use the formula to update all the "inner"
 elements of ``u2``, as we will when solving a 1D wave equation, we can write
 
@@ -605,21 +739,64 @@ elements of ``u2``, as we will when solving a 1D wave equation, we can write
         u2[1:-1]  = u[:-2] - 2*u[1:-1] + u[2:]
         u2[1:n-1] = u[0:n-2] - 2*u[1:n-1] + u[2:n]   # alternative
 
-Pen and paper calculations with a small array will demonstrate what is
-actually going on. The expression on the right-hand side are done in the
+The first expression's right-hand side is realized by the
 following steps, involving temporary arrays with intermediate results,
-since we can only work with two arrays at a time in
-arithmetic expressions:
+since each array operation can only involve one or two arrays.
+The ``numpy`` package performs the first line above in
+four steps:
 
-.. code-block:: python
+.. code-block:: text
 
         temp1 = 2*u[1:-1]
-        temp2 = u[0:-2] - temp1
+        temp2 = u[:-2] - temp1
         temp3 = temp2 + u[2:]
         u2[1:-1] = temp3
 
-We can extend the previous example to a formula with an additional term computed
-by calling a function:
+We need three temporary arrays, but a user does not need to worry about
+such temporary arrays.
+
+
+.. admonition:: Common mistakes with array slices
+
+   Array expressions with slices demand that the slices have the same
+   shape. It easy to make a mistake in, e.g.,
+   
+   .. code-block:: python
+   
+           u2[1:n-1] = u[0:n-2] - 2*u[1:n-1] + u[2:n]
+   
+   and write
+   
+   .. code-block:: python
+   
+           u2[1:n-1] = u[0:n-2] - 2*u[1:n-1] + u[1:n]
+   
+   Now ``u[1:n]`` has wrong length (``n-1``) compared to the other array
+   slices, causing a ``ValueError`` and the message
+   ``could not broadcast input array from shape 103 into shape 104``
+   (if ``n`` is 105). When such errors occur one must closely examine
+   all the slices. Usually, it is easier to get upper limits of slices
+   right when they use ``-1`` or ``-2`` or empty limit rather than
+   expressions involving the length.
+   
+   Another common mistake is to forget the slice in the array on the
+   left-hand side,
+   
+   .. code-block:: python
+   
+           u2 = u[0:n-2] - 2*u[1:n-1] + u[1:n]
+   
+   This is really crucial: now ``u2`` becomes a *new* array of length
+   ``n-2``, which is the wrong length as we have no entries for the boundary
+   values. We meant to insert the right-hand side array *into* the
+   in the original ``u2`` array for the entries that correspond to the
+   internal points in the mesh (``1:n-1`` or ``1:-1``).
+
+
+
+
+Vectorization may also work nicely with functions. To illustrate, we may
+extend the previous example as follows:
 
 .. code-block:: python
 
@@ -636,17 +813,21 @@ version becomes
 
         u2[1:-1] = u[:-2] - 2*u[1:-1] + u[2:] + f(x[1:-1])
 
+Obviously, ``f`` must be able to take an array as argument for ``f[x[1:-1])``
+to make sense.
+
 .. _wave:pde1:impl:vec:slices:fdm:
 
 Finite difference schemes expressed as slices
 ---------------------------------------------
 
-We now have the necessary tools to vectorize the algorithm for
-the wave equation. There are three loops: one for the initial condition,
-one for the first time step, and finally the loop that is repeated for
-all subsequent time levels. Since only the latter is repeated a potentially
-large number of times, we limit the efforts of vectorizing the code
-to this loop:
+We now have the necessary tools to vectorize the wave equation
+algorithm as described mathematically in the section :ref:`wave:string:alg`
+and through code in the section :ref:`wave:pde1:impl:solver`.  There are
+three loops: one for the initial condition, one for the first time
+step, and finally the loop that is repeated for all subsequent time
+levels. Since only the latter is repeated a potentially large number
+of times, we limit our vectorization efforts to this loop:
 
 .. code-block:: python
 
@@ -688,7 +869,7 @@ Verification  (2)
 .. index:: lambda function (Python)
 
 We may reuse the quadratic solution :math:`{u_{\small\mbox{e}}}(x,t)=x(L-x)(1+{\frac{1}{2}}t)` for
-verifying also the vectorized code. A nose test can now test
+verifying also the vectorized code. A test function can now verify
 both the scalar and the vectorized version. Moreover, we may
 use a ``user_action`` function that compares the computed and exact
 solution at each time level and performs a test:
@@ -716,8 +897,9 @@ solution at each time level and performs a test:
         
             def assert_no_error(u, x, t, n):
                 u_e = u_exact(x, t[n])
+                tol = 1E-13
                 diff = abs(u - u_e).max()
-                nt.assert_almost_equal(diff, 0, places=13)
+                assert diff < tol
         
             solver(I, V, f, c, L, dt, C, T,
                    user_action=assert_no_error, version='scalar')
@@ -728,7 +910,8 @@ solution at each time level and performs a test:
 .. admonition:: Lambda functions
 
    The code segment above demonstrates how to achieve very
-   compact code with the use of lambda functions for the various
+   compact code, without degraded readability,
+   by use of lambda functions for the various
    input parameters that require a Python function. In essence,
    
    .. code-block:: python
@@ -758,11 +941,122 @@ solution at each time level and performs a test:
 Efficiency measurements
 -----------------------
 
-Running the ``wave1D_u0v.py`` code with the previous string vibration example
-for :math:`N_x=50,100,200,400,800`, and measuring the CPU time
-(see the ``run_efficiency_experiments`` function), shows that the vectorized
-code runs substantially faster: the scalar code uses approximately
-a factor :math:`N_x/5` more time!
+The ``wave1D_u0v.py`` contains our new ``solver`` function with both
+scalar and vectorized code. For comparing the efficiency
+of scalar versus vectorized code, we need a ``viz`` function
+as discussed in the section :ref:`wave:pde1:impl:animate`.
+All of this ``viz`` function can be reused, except the call
+to ``solver_function``. This call lacks the parameter
+``version``, which we want to set to ``vectorized`` and ``scalar``
+for our efficiency measurements.
+
+One solution is to copy the ``viz`` code from ``wave1D_u0`` into
+``wave1D_u0v.py`` and add a ``version`` argument to the ``solver_function`` call.
+Taking into account how much quite complicated animation code we
+then duplicate, this is not a good idea.
+Introducing the ``version`` argument in ``wave1D_u0.viz`` is not
+a good solution since ``version`` has no meaning in that file.
+
+Solution 1
+~~~~~~~~~~
+
+Calling ``viz`` in ``wave1D_u0`` with ``solver_function`` as our new
+solver in ``wave1D_u0v`` works fine, since this solver has
+``version='vectorized'`` as default value. The problem arises when we
+want to test ``version='vectorized'``. The simplest solution is then
+to use ``wave1D_u0.solver`` instead. We make a new ``viz`` function
+in ``wave1D_u0v.py`` that has a ``version`` argument and that just
+calls ``wave1D_u0.viz``:
+
+.. code-block:: python
+
+        def viz(
+            I, V, f, c, L, dt, C, T,  # PDE paramteres
+            umin, umax,               # Interval for u in plots
+            animate=True,             # Simulation with animation?
+            tool='matplotlib',        # 'matplotlib' or 'scitools'
+            solver_function=solver,   # Function with numerical algorithm
+            version='vectorized',     # 'scalar' or 'vectorized'
+            ):
+            import wave1D_u0
+            if version == 'vectorized':
+                # Reuse viz from wave1D_u0, but with the present
+                # modules' new vectorized solver (which has
+                # version='vectorized' as default argument;
+                # wave1D_u0.viz does not feature this argument)
+                cpu = wave1D_u0.viz(
+                    I, V, f, c, L, dt, C, T, umin, umax,
+                    animate, tool, solver_function=solver)
+            elif version == 'scalar':
+                # Call wave1D_u0.viz with a solver with
+                # scalar code and use wave1D_u0.solver.
+                cpu = wave1D_u0.viz(
+                    I, V, f, c, L, dt, C, T, umin, umax,
+                    animate, tool,
+                    solver_function=wave1D_u0.solver)
+
+Solution 2
+~~~~~~~~~~
+
+There is a more advanced, fancier solution featuring a very useful trick:
+we can make a new function that will always call ``wave1D_u0v.solver``
+with ``version='scalar'``. The ``functools.partial`` function from
+standard Python takes a function ``func`` as argument and
+a series of positional and keyword arguments and returns a
+new function that will call ``func`` with the supplied arguments,
+while the user can control all the other arguments in ``func``.
+Consider a trivial example,
+
+.. code-block:: python
+
+        def f(a, b, c=2):
+            return a + b + c
+
+We want to ensure that ``f`` is always called with ``c=3``, i.e., ``f``
+has only two "free" arguments ``a`` and ``b``.
+This functionality is obtained by
+
+.. code-block:: python
+
+        import functools
+        f2 = functools.partial(f, c=3)
+        
+        print f2(1, 2)  # results in 1+2+3=6
+
+Now ``f2`` calls ``f`` with whatever the user supplies as ``a`` and ``b``,
+but ``c`` is always ``3``.
+
+Back to our ``viz`` code, we can do
+
+.. code-block:: python
+
+        import functools
+        # Call scalar with version fixed to `scalar`
+        scalar_solver = functools.partial(scalar, version='scalar')
+        cpu = wave1D_u0.viz(
+                I, V, f, c, L, dt, C, T, umin, umax,
+                animate, tool, solver_function=scalar_solver)
+
+The new ``scalar_solver`` takes the same arguments as
+``wave1D_u0.scalar`` and calls ``wave1D_u0v.scalar``,
+but always supplies the extra argument
+``version='scalar'``. When sending this ``solver_function``
+to ``wave1D_u0.viz``, the latter will call ``wave1D_u0v.solver``
+with all the ``I``, ``V``, ``f``, etc., arguments we supply, plus
+``version='scalar'``.
+
+Efficiency experiments
+~~~~~~~~~~~~~~~~~~~~~~
+
+We now have a ``viz`` function that can call our solver function both in
+scalar and vectorized mode. The function ``run_efficiency_experiments``
+in ``wave1D_u0v.py`` performs a set of experiments and reports the
+CPU time spent in the scalar and vectorized solver for
+the previous string vibration example with spatial mesh resolutions
+:math:`N_x=50,100,200,400,800`. Running this function reveals
+that the vectorized
+code runs substantially faster: the vectorized code runs approximately
+:math:`N_x/10` times as fast as the scalar code!
 
 .. _wave:pde1:impl:ref:switch:
 
@@ -782,17 +1076,20 @@ to ``u``, which is wrong.)
 
 The assignment ``u_1[:] = u`` copies the content of the ``u`` array into
 the elements of the ``u_1`` array. Such copying takes time, but
-little compared to computing ``u`` from the finite difference formula,
+that time is negligible compared to the time needed for
+computing ``u`` from the finite difference formula,
 even when the formula has a vectorized implementation.
 However, efficiency of program code is a key topic when solving
-PDEs numerically, so it must be mentioned that there exists a
+PDEs numerically (particularly when there are two or three
+space dimensions), so it must be mentioned that there exists a
 much more efficient way of making the arrays ``u_2`` and ``u_1``
 ready for the next time step. The idea is based on *switching
-references* and explained below.
+references* and explained as follows.
 
 A Python variable is actually a reference to some object (C programmers
 may think of pointers). Instead of copying data, we can let ``u_2``
 refer to the ``u_1`` object and ``u_1`` refer to the ``u`` object.
+This is a very efficiency operation (like switching pointers in C).
 A naive implementation like
 
 .. code-block:: python
@@ -800,16 +1097,24 @@ A naive implementation like
         u_2 = u_1
         u_1 = u
 
-will fail, however, because now ``u_1`` and ``u`` refers to the same
-object and the update of ``u`` from the finite difference formula
-at the next time step will overwrite ``u_1`` and lead to erroneous
-computations. Also, with the suggested change of references, the
-reference to the ``u_2`` array is lost, and we have in fact only
-two arrays. The solution to this problem is to ensure that ``u``
-points to the ``u_2`` array. This is mathematically wrong, but
-new correct values will be filled into ``u`` at the next time step.
+will fail, however, because now ``u_2`` refers to the ``u_1`` object,
+but then the name ``u_1`` refers to ``u``, so that this ``u`` object
+has two references, ``u_1`` and ``u``, while our third array, originally
+referred to by ``u_2`` has no more references and is lost.
+This means that the variables ``u``, ``u_1``, and ``u_2`` refer to two
+arrays and not three. Consequently, the computations at the next
+time level will be messed up since updating the elements in
+``u`` will imply updating the elements in ``u_1`` too so the solution
+at the previous time step, which is crucial in our formulas, is
+destroyed.
 
-The correct switch of references is then
+While ``u_2 = u_1`` is fine, ``u_1 = u`` is problematic, so
+the solution to this problem is to ensure that ``u``
+points to the ``u_2`` array. This is mathematically wrong, but
+new correct values will be filled into ``u`` at the next time step
+and make it right.
+
+The correct switch of references is
 
 .. code-block:: python
 
@@ -824,7 +1129,8 @@ We can get rid of the temporary reference ``tmp`` by writing
 
         u_2, u_1, u = u_1, u, u_2
 
-This update will be used in later implementations.
+This switching of references for updating our arrays
+will be used in later implementations.
 
 
 .. admonition:: Caution
@@ -837,24 +1143,6 @@ This update will be used in later implementations.
 
 
 
-
-.. ===== Profiling code ===== better in 2D
-
-.. ======= Storing simulation data =======
-
-.. plain files, NUumPyDB, XDMF, joblib, exercises with retrieval and comparison
-
-.. ======= Programming with classes =======
-
-.. can integrate data storage and check pointing, or maybe do it later in 2D
-
-.. with Cython, Fortran and C? Might have a very simple version here and
-
-.. then a new, more sophisticated version in 2D.
-
-.. Think about grabbing out all soft eng and
-
-.. present in short course. Need to be self-contained.
 
 Exercises  (1)
 ==============
@@ -916,7 +1204,7 @@ the curves for the numerical and exact solution.
 
 .. --- end hint in exercise ---
 
-Filename: ``wave_standing.py``.
+Filename: ``wave_standing``.
 
 .. Closing remarks for this Exercise
 
@@ -950,7 +1238,7 @@ Test both ``all_u.append(u)`` and ``all_u.append(u.copy())``.
 Why does one of these constructions fail to store the solution correctly?
 Let the ``viz`` function return the ``all_u`` list
 converted to a two-dimensional ``numpy`` array.
-Filename: ``wave1D_u0_s_store.py``.
+Filename: ``wave1D_u0_s_store``.
 
 .. --- end exercise ---
 
@@ -968,7 +1256,7 @@ function as a method (the special method ``__call__`` is a natural
 choice). The class versions avoids that the user action function
 depends on parameters defined outside the function (such as ``all_u``
 in :ref:`wave:exer:store:list`).
-Filename: ``wave1D_u0_s2c.py``.
+Filename: ``wave1D_u0_s2c``.
 
 .. --- end exercise ---
 
@@ -996,7 +1284,7 @@ The challenge in such a visualization is to ensure that the curves in
 one plot corresponds to the same time point. The easiest remedy is to
 keep the time and space resolution constant and change the wave
 velocity :math:`c` to change the Courant number.
-Filename: ``wave_numerics_comparison.py``.
+Filename: ``wave_numerics_comparison``.
 
 .. --- end exercise ---
 
@@ -1016,13 +1304,13 @@ mesh :math:`x_i=i\Delta x`, :math:`i=0,\ldots,N_x`, over the interval :math:`[a,
 Define the discrete derivative of :math:`f_i` by using centered
 differences at internal mesh points and one-sided differences
 at the end points. Implement a scalar version of
-the computation in a Python function and supply a nose test
+the computation in a Python function and write an associated unit test
 for the linear case :math:`f(x)=4x-2.5` where the discrete derivative should
 be exact.
 
 **b)**
 Vectorize the implementation of the discrete derivative.
-Extend the nose test to check the validity of the implementation.
+Extend the unit test to check the validity of the implementation.
 
 **c)**
 To compute the discrete integral :math:`F_i` of :math:`f_i`, we assume that
@@ -1041,16 +1329,16 @@ from
 .. math::
          F_{i+1} = F_i + \frac{1}{2}(f_i + f_{i+1})\Delta x{\thinspace .}
 
-Make a function for a scalar implementation of the discrete integral
+Make a function for the scalar implementation of the discrete integral
 as a mesh function. That is, the function should return
 :math:`F_i` for :math:`i=0,\ldots,N_x`.
-For a nose test one can use the fact that the above defined
+For a unit test one can use the fact that the above defined
 discrete integral of a linear
 function (say :math:`f(x)=4x-2.5`) is exact.
 
 **d)**
 Vectorize the implementation of the discrete integral.
-Extend the nose test to check the validity of the implementation.
+Extend the unit test to check the validity of the implementation.
 
 .. --- begin hint in exercise ---
 
@@ -1077,7 +1365,7 @@ on the usage:
         df = calc.differentiate(f, x)    # discrete derivative
         F = calc.integrate(f, x)         # discrete anti-derivative
 
-Filename: ``mesh_calculus_1D.py``.
+Filename: ``mesh_calculus_1D``.
 
 .. --- end exercise ---
 

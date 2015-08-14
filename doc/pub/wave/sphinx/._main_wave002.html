@@ -25,7 +25,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/javascript" src="_static/sidebar.js"></script>
 
         <script src="http://sagecell.sagemath.org/static/jquery.min.js"></script>
@@ -49,14 +49,14 @@
     <link rel="prev" title="Simulation of waves on a string" href="._main_wave001.html" />
  
   
-   <style type="text/css">
-     div.admonition {
-       background-color: whiteSmoke;
-       border: 1px solid #bababa;
-     }
-   </style>
-  </head>
-
+       <style type="text/css">
+         div.admonition {
+           background-color: whiteSmoke;
+           border: 1px solid #bababa;
+         }
+       </style>
+      </head>
+    
   <body>
     <div class="related">
       <h3>Navigation</h3>
@@ -81,11 +81,11 @@
             
   <div class="section" id="implementation-1">
 <span id="wave-pde1-impl"></span><h1>Implementation  (1)<a class="headerlink" href="#implementation-1" title="Permalink to this headline">¶</a></h1>
-<p id="index-0">This section present the complete computational algorithm, its
+<p id="index-0">This section presents the complete computational algorithm, its
 implementation in Python code, animation of the solution, and
 verification of the implementation.</p>
 <p>A real implementation of the basic computational algorithm from
-the sections <a class="reference internal" href="._main_wave001.html#wave-string-alg"><em>Formulating a recursive algorithm</em></a> and <a class="reference internal" href="._main_wave001.html#wave-string-impl"><em>Sketch of an implementation</em></a> can be
+the sections <a class="reference internal" href="._main_wave001.html#wave-string-alg"><span class="std std-ref">Formulating a recursive algorithm</span></a> and <a class="reference internal" href="._main_wave001.html#wave-string-impl"><span class="std std-ref">Sketch of an implementation</span></a> can be
 encapsulated in a function, taking all the input data for the problem
 as arguments.  The physical input data consists of <span class="math">\(c\)</span>, <span class="math">\(I(x)\)</span>,
 <span class="math">\(V(x)\)</span>, <span class="math">\(f(x,t)\)</span>, <span class="math">\(L\)</span>, and <span class="math">\(T\)</span>.  The numerical input is the mesh
@@ -96,22 +96,39 @@ control of the Courant number is convenient when investigating the
 numerical method. Many find it natural to prescribe the resolution of
 the spatial grid and set <span class="math">\(N_x\)</span>. The solver function can then compute
 <span class="math">\(\Delta t = CL/(cN_x)\)</span>. However, for comparing <span class="math">\(u(x,t)\)</span> curves (as
-functions of <span class="math">\(x\)</span>) for various Courant numbers, especially in
-animations in time, it is more convenient to keep <span class="math">\(\Delta t\)</span> fixed for
+functions of <span class="math">\(x\)</span>) for various Courant numbers
+it is more convenient to keep <span class="math">\(\Delta t\)</span> fixed for
 all <span class="math">\(C\)</span> and let <span class="math">\(\Delta x\)</span> vary according to <span class="math">\(\Delta x = c\Delta t/C\)</span>.
-(With <span class="math">\(\Delta t\)</span> fixed, all frames correspond to the same time <span class="math">\(t\)</span>,
-and plotting curves with different spatial resolution is trivial.)</p>
-<p>The solution at all spatial points at a new time level is stored in an
-array <tt class="docutils literal"><span class="pre">u</span></tt> (of length <span class="math">\(N_x+1\)</span>). We need to decide what do to with
+With <span class="math">\(\Delta t\)</span> fixed, all frames correspond to the same time <span class="math">\(t\)</span>,
+and this simplifies animations that compare simulations with different
+mesh resolutions. Plotting functions of <span class="math">\(x\)</span>
+with different spatial resolution is trivial,
+so it is easier to let <span class="math">\(\Delta x\)</span> vary in the simulations than <span class="math">\(\Delta t\)</span>.</p>
+<div class="section" id="callback-function-for-user-specific-actions">
+<h2>Callback function for user-specific actions<a class="headerlink" href="#callback-function-for-user-specific-actions" title="Permalink to this headline">¶</a></h2>
+<p id="index-1">The solution at all spatial points at a new time level is stored in an
+array <code class="docutils literal"><span class="pre">u</span></code> of length <span class="math">\(N_x+1\)</span>. We need to decide what do to with
 this solution, e.g., visualize the curve, analyze the values, or write
-the array to file for later use. The decision what to do is left to
-the user in a suppled function</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">user_action</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+the array to file for later use. The decision about what to do is left to
+the user in the form of a user-suppled supplied function</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">user_action</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>where <tt class="docutils literal"><span class="pre">u</span></tt> is the solution at the spatial points <tt class="docutils literal"><span class="pre">x</span></tt> at time <tt class="docutils literal"><span class="pre">t[n]</span></tt>.</p>
-<div class="section" id="making-a-solver-function">
-<span id="wave-pde1-impl-solver"></span><h2>Making a solver function<a class="headerlink" href="#making-a-solver-function" title="Permalink to this headline">¶</a></h2>
+<p>where <code class="docutils literal"><span class="pre">u</span></code> is the solution at the spatial points <code class="docutils literal"><span class="pre">x</span></code> at time <code class="docutils literal"><span class="pre">t[n]</span></code>.
+The <code class="docutils literal"><span class="pre">user_action</span></code> function is call from the solver at each time level <code class="docutils literal"><span class="pre">n</span></code>.</p>
+<p>If the user wants to plot the solution or store the solution at a
+time point, she needs to write such a function and take appropriate
+actions inside it. We will show examples on many such <code class="docutils literal"><span class="pre">user_action</span></code>
+functions.</p>
+<p>Since the solver function make calls back to the user&#8217;s code
+via such a function, this type of function is called a <em>callback function</em>.
+When writing general software, like our solver function, which also needs
+to carry out special problem-dependent actions (like visualization),
+it is a common technique to leave those actions to user-supplied
+callback functions.</p>
+</div>
+<div class="section" id="the-solver-function">
+<span id="wave-pde1-impl-solver"></span><h2>The solver function<a class="headerlink" href="#the-solver-function" title="Permalink to this headline">¶</a></h2>
 <p>A first attempt at a solver function is listed below.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
 
@@ -178,12 +195,11 @@ the user in a suppled function</p>
 </div>
 <div class="section" id="verification-exact-quadratic-solution">
 <span id="wave-pde1-impl-verify-quadratic"></span><h2>Verification: exact quadratic solution<a class="headerlink" href="#verification-exact-quadratic-solution" title="Permalink to this headline">¶</a></h2>
-<span class="target" id="index-1"></span><span class="target" id="index-2"></span><p id="index-3">We use the test problem derived in the section <a class="reference internal" href="._main_wave001.html#wave-pde2-fd"><em>A slightly generalized model problem</em></a> for
-verification. Here is a function realizing this verification as a</p>
-<p>nose test:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">nose.tools</span> <span class="kn">as</span> <span class="nn">nt</span>
-
-<span class="k">def</span> <span class="nf">test_quadratic</span><span class="p">():</span>
+<span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><span class="target" id="index-5"></span><p id="index-6">We use the test problem derived in the section <a class="reference internal" href="._main_wave001.html#wave-pde2-fd"><span class="std std-ref">A slightly generalized model problem</span></a> for
+verification. Below is a unit test based on this test problem
+and realized as a proper <em>test function</em> (compatible with the unit test
+frameworks nose or pytest).</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_quadratic</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Check that u(x,t)=x(L-x)(1+t/2) is exactly reproduced.&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">u_exact</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="n">L</span><span class="o">-</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
@@ -206,26 +222,42 @@ verification. Here is a function realizing this verification as a</p>
 
     <span class="n">u</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">cpu</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
     <span class="n">u_e</span> <span class="o">=</span> <span class="n">u_exact</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">tol</span> <span class="o">=</span> <span class="mf">1E-14</span>
     <span class="n">diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">u</span> <span class="o">-</span> <span class="n">u_e</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
-    <span class="n">nt</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">places</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">diff</span> <span class="o">&lt;</span> <span class="n">tol</span>
 </pre></div>
 </div>
+<p>When this function resides in the file <code class="docutils literal"><span class="pre">wave1D_u0.py</span></code>, one can execute
+<code class="docutils literal"><span class="pre">py.test</span> <span class="pre">-s</span> <span class="pre">-v</span> <span class="pre">wave1D_u0.py</span></code> or <code class="docutils literal"><span class="pre">nosetests</span> <span class="pre">-s</span> <span class="pre">-v</span> <span class="pre">wave1D_u0.py</span></code> to automatically
+run all test functions with name <code class="docutils literal"><span class="pre">test_*()</span></code>.</p>
 </div>
 <div class="section" id="visualization-animating-the-solution">
 <span id="wave-pde1-impl-animate"></span><h2>Visualization: animating the solution<a class="headerlink" href="#visualization-animating-the-solution" title="Permalink to this headline">¶</a></h2>
 <p>Now that we have verified the implementation it is time to do a
 real computation where we also display the evolution of the waves
-on the screen.</p>
-<div class="section" id="visualization-via-scitools">
-<h3>Visualization via SciTools<a class="headerlink" href="#visualization-via-scitools" title="Permalink to this headline">¶</a></h3>
-<p>The following <tt class="docutils literal"><span class="pre">viz</span></tt> function defines a <tt class="docutils literal"><span class="pre">user_action</span></tt>
-callback function for plotting the solution at each time level:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">viz</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">umin</span><span class="p">,</span> <span class="n">umax</span><span class="p">,</span> <span class="n">animate</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+on the screen. Since the <code class="docutils literal"><span class="pre">solver</span></code> function knows nothing about
+what type of visualizations we may want, it calls the callback function
+<code class="docutils literal"><span class="pre">user_action(u,</span> <span class="pre">x,</span> <span class="pre">t,</span> <span class="pre">n)</span></code>. We must therefore write this function and
+find the proper statements for plotting the solution.</p>
+<div class="section" id="function-for-administering-the-simulation">
+<h3>Function for administering the simulation<a class="headerlink" href="#function-for-administering-the-simulation" title="Permalink to this headline">¶</a></h3>
+<p>The following <code class="docutils literal"><span class="pre">viz</span></code> function</p>
+<ol class="arabic simple">
+<li>defines a <code class="docutils literal"><span class="pre">user_action</span></code> callback function
+for plotting the solution at each time level,</li>
+<li>calls the <code class="docutils literal"><span class="pre">solver</span></code> function, and</li>
+<li>combines all the plots (in files) to video in different formats.</li>
+</ol>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">viz</span><span class="p">(</span>
+    <span class="n">I</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span>  <span class="c"># PDE paramteres</span>
+    <span class="n">umin</span><span class="p">,</span> <span class="n">umax</span><span class="p">,</span>               <span class="c"># Interval for u in plots</span>
+    <span class="n">animate</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>             <span class="c"># Simulation with animation?</span>
+    <span class="n">tool</span><span class="o">=</span><span class="s">&#39;matplotlib&#39;</span><span class="p">,</span>        <span class="c"># &#39;matplotlib&#39; or &#39;scitools&#39;</span>
+    <span class="n">solver_function</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span>   <span class="c"># Function with numerical algorithm</span>
+    <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Run solver and visualize u at each time level.&quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">scitools.std</span> <span class="kn">as</span> <span class="nn">plt</span>
-    <span class="kn">import</span> <span class="nn">time</span><span class="o">,</span> <span class="nn">glob</span><span class="o">,</span> <span class="nn">os</span>
 
-    <span class="k">def</span> <span class="nf">plot_u</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">plot_u_st</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;user_action function for solver.&quot;&quot;&quot;</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="s">&#39;r-&#39;</span><span class="p">,</span>
                  <span class="n">xlabel</span><span class="o">=</span><span class="s">&#39;x&#39;</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s">&#39;u&#39;</span><span class="p">,</span>
@@ -236,150 +268,186 @@ callback function for plotting the solution at each time level:</p>
         <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s">&#39;frame_</span><span class="si">%04d</span><span class="s">.png&#39;</span> <span class="o">%</span> <span class="n">n</span><span class="p">)</span>  <span class="c"># for movie making</span>
 
+    <span class="k">class</span> <span class="nc">PlotMatplotlib</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;user_action function for solver.&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="s">&#39;r-&#39;</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">);</span>  <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;u&#39;</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">umin</span><span class="p">,</span> <span class="n">umax</span><span class="p">])</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s">&#39;t=</span><span class="si">%f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">]],</span> <span class="n">loc</span><span class="o">=</span><span class="s">&#39;lower left&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ydata</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s">&#39;t=</span><span class="si">%f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">]],</span> <span class="n">loc</span><span class="o">=</span><span class="s">&#39;lower left&#39;</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s">&#39;tmp_</span><span class="si">%04d</span><span class="s">.png&#39;</span> <span class="o">%</span> <span class="n">n</span><span class="p">)</span>  <span class="c"># for movie making</span>
+
+    <span class="k">if</span> <span class="n">tool</span> <span class="o">==</span> <span class="s">&#39;matplotlib&#39;</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+        <span class="n">plot_u</span> <span class="o">=</span> <span class="n">PlotMatplotlib</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">tool</span> <span class="o">==</span> <span class="s">&#39;scitools&#39;</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">scitools.std</span> <span class="kn">as</span> <span class="nn">plt</span>  <span class="c"># scitools.easyviz interface</span>
+        <span class="n">plot_u</span> <span class="o">=</span> <span class="n">plot_u_st</span>
+    <span class="kn">import</span> <span class="nn">time</span><span class="o">,</span> <span class="nn">glob</span><span class="o">,</span> <span class="nn">os</span>
+
     <span class="c"># Clean up old movie frames</span>
-    <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s">&#39;frame_*.png&#39;</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s">&#39;tmp_*.png&#39;</span><span class="p">):</span>
         <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
 
+    <span class="c"># Call solver and do the simulaton</span>
     <span class="n">user_action</span> <span class="o">=</span> <span class="n">plot_u</span> <span class="k">if</span> <span class="n">animate</span> <span class="k">else</span> <span class="bp">None</span>
-    <span class="n">u</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">cpu</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">user_action</span><span class="p">)</span>
+    <span class="n">u</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">cpu</span> <span class="o">=</span> <span class="n">solver_function</span><span class="p">(</span>
+        <span class="n">I</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">user_action</span><span class="p">)</span>
 
-    <span class="c"># Make movie files</span>
-    <span class="n">fps</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c"># Frames per second</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">movie</span><span class="p">(</span><span class="s">&#39;frame_*.png&#39;</span><span class="p">,</span> <span class="n">encoder</span><span class="o">=</span><span class="s">&#39;html&#39;</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span>
-              <span class="n">output_file</span><span class="o">=</span><span class="s">&#39;movie.html&#39;</span><span class="p">)</span>
+    <span class="c"># Make video files</span>
+    <span class="n">fps</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c"># frames per second</span>
     <span class="n">codec2ext</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">flv</span><span class="o">=</span><span class="s">&#39;flv&#39;</span><span class="p">,</span> <span class="n">libx264</span><span class="o">=</span><span class="s">&#39;mp4&#39;</span><span class="p">,</span> <span class="n">libvpx</span><span class="o">=</span><span class="s">&#39;webm&#39;</span><span class="p">,</span>
-                     <span class="n">libtheora</span><span class="o">=</span><span class="s">&#39;ogg&#39;</span><span class="p">)</span>
-    <span class="n">filespec</span> <span class="o">=</span> <span class="s">&#39;frame_</span><span class="si">%04d</span><span class="s">.png&#39;</span>
-    <span class="n">movie_program</span> <span class="o">=</span> <span class="s">&#39;avconv&#39;</span>  <span class="c"># or &#39;ffmpeg&#39;</span>
+                     <span class="n">libtheora</span><span class="o">=</span><span class="s">&#39;ogg&#39;</span><span class="p">)</span>  <span class="c"># video formats</span>
+    <span class="n">filespec</span> <span class="o">=</span> <span class="s">&#39;tmp_</span><span class="si">%04d</span><span class="s">.png&#39;</span>
+    <span class="n">movie_program</span> <span class="o">=</span> <span class="s">&#39;ffmpeg&#39;</span>  <span class="c"># or &#39;avconv&#39;</span>
     <span class="k">for</span> <span class="n">codec</span> <span class="ow">in</span> <span class="n">codec2ext</span><span class="p">:</span>
         <span class="n">ext</span> <span class="o">=</span> <span class="n">codec2ext</span><span class="p">[</span><span class="n">codec</span><span class="p">]</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%(movie_program)s</span><span class="s"> -r </span><span class="si">%(fps)d</span><span class="s"> -i </span><span class="si">%(filespec)s</span><span class="s"> &#39;</span>\
               <span class="s">&#39;-vcodec </span><span class="si">%(codec)s</span><span class="s"> movie.</span><span class="si">%(ext)s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="nb">vars</span><span class="p">()</span>
         <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">tool</span> <span class="o">==</span> <span class="s">&#39;scitools&#39;</span><span class="p">:</span>
+        <span class="c"># Make an HTML play for showing the animation in a browser</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">movie</span><span class="p">(</span><span class="s">&#39;tmp_*.png&#39;</span><span class="p">,</span> <span class="n">encoder</span><span class="o">=</span><span class="s">&#39;html&#39;</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span>
+                  <span class="n">output_file</span><span class="o">=</span><span class="s">&#39;movie.html&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">cpu</span>
 </pre></div>
 </div>
-<p>A function inside another function, like <tt class="docutils literal"><span class="pre">plot_u</span></tt> in the above code
-segment, has access to <em>and remembers</em> all the local variables
-in the surrounding code inside the <tt class="docutils literal"><span class="pre">viz</span></tt> function (!). This is known
-in computer science as a <em>closure</em> and is very convenient to
-program with. For example,
-the <tt class="docutils literal"><span class="pre">plt</span></tt> and <tt class="docutils literal"><span class="pre">time</span></tt> modules defined outside <tt class="docutils literal"><span class="pre">plot_u</span></tt> are accessible for
-<tt class="docutils literal"><span class="pre">plot_u</span></tt> when
-the function is called (as <tt class="docutils literal"><span class="pre">user_action</span></tt>) in the <tt class="docutils literal"><span class="pre">solver</span></tt> function.
-Some may think, however, that a class instead of a closure is a cleaner
-and easier-to-understand implementation of
-the user action function, see the section <a class="reference internal" href="._main_wave003.html#wave-pde2-software"><em>Building a general 1D wave equation solver</em></a>.</p>
+</div>
+<div class="section" id="dissection-of-the-code">
+<h3>Dissection of the code<a class="headerlink" href="#dissection-of-the-code" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal"><span class="pre">viz</span></code> function can either use SciTools or Matplotlib for
+visualizing the solution. The <code class="docutils literal"><span class="pre">user_action</span></code> function based on SciTools
+is called <code class="docutils literal"><span class="pre">plot_u_st</span></code>, while the <code class="docutils literal"><span class="pre">user_action</span></code> function based on
+Matplotlib is a bit more complicated as it is realized as a class and
+needs statements that differ from those for making static plots.
+SciTools can utilize both Matplotlib and Gnuplot (and many other
+plotting programs) for doing the graphics, but Gnuplot is a relevant
+choice for large <span class="math">\(N_x\)</span> or in two-dimensional problems
+as Gnuplot is significantly faster than
+Matplotlib for screen animations.</p>
+<p id="index-7">A function inside another function, like <code class="docutils literal"><span class="pre">plot_u_st</span></code> in the above code
+segment, has access to <em>and remembers</em> all the local variables in the
+surrounding code inside the <code class="docutils literal"><span class="pre">viz</span></code> function (!). This is known in
+computer science as a <em>closure</em> and is very convenient to program
+with. For example, the <code class="docutils literal"><span class="pre">plt</span></code> and <code class="docutils literal"><span class="pre">time</span></code> modules defined outside
+<code class="docutils literal"><span class="pre">plot_u</span></code> are accessible for <code class="docutils literal"><span class="pre">plot_u_st</span></code> when the function is called
+(as <code class="docutils literal"><span class="pre">user_action</span></code>) in the <code class="docutils literal"><span class="pre">solver</span></code> function.  Some may think, however,
+that a class instead of a closure is a cleaner and
+easier-to-understand implementation of the user action function, see
+the section <a class="reference internal" href="._main_wave003.html#wave-pde2-software"><span class="std std-ref">Building a general 1D wave equation solver</span></a>.</p>
+<p>The <code class="docutils literal"><span class="pre">plot_u_st</span></code> function just makes a standard SciTools <code class="docutils literal"><span class="pre">plot</span></code> command
+for plotting <code class="docutils literal"><span class="pre">u</span></code> as a function of <code class="docutils literal"><span class="pre">x</span></code> at time <code class="docutils literal"><span class="pre">t[n]</span></code>.  To achieve a
+smooth animation, the <code class="docutils literal"><span class="pre">plot</span></code> command should take keyword arguments
+instead of being broken into separate calls to <code class="docutils literal"><span class="pre">xlabel</span></code>, <code class="docutils literal"><span class="pre">ylabel</span></code>,
+<code class="docutils literal"><span class="pre">axis</span></code>, <code class="docutils literal"><span class="pre">time</span></code>, and <code class="docutils literal"><span class="pre">show</span></code>.  Several <code class="docutils literal"><span class="pre">plot</span></code> calls will automatically
+cause an animation on the screen. In addition, we want to save each
+frame in the animation to file. We then need a filename where the
+frame number is padded with zeros, here <code class="docutils literal"><span class="pre">tmp_0000.png</span></code>,
+<code class="docutils literal"><span class="pre">tmp_0001.png</span></code>, and so on.  The proper printf construction is then
+<code class="docutils literal"><span class="pre">tmp_%04d.png</span></code>.</p>
+<p>The solver is called with an argument <code class="docutils literal"><span class="pre">plot_u</span></code> as <code class="docutils literal"><span class="pre">user_function</span></code>.
+If the user chooses to use SciTools, <code class="docutils literal"><span class="pre">plot_u</span></code> is the <code class="docutils literal"><span class="pre">plot_u_st</span></code>
+callback function, but for Matplotlib it is an instance of the
+class <code class="docutils literal"><span class="pre">PlotMatplotlib</span></code>. Also this class makes use of variables
+defined in the <code class="docutils literal"><span class="pre">viz</span></code> function: <code class="docutils literal"><span class="pre">plt</span></code> and <code class="docutils literal"><span class="pre">time</span></code>.
+With Matplotlib, one has to make the first plot the standard way, and
+then update the <span class="math">\(y\)</span> data in the plot at every time level. The update
+requires active use of the returned value from <code class="docutils literal"><span class="pre">plt.plot</span></code> in the first
+plot.  This value would need to be stored in a local variable if we
+were to use a closure for the <code class="docutils literal"><span class="pre">user_action</span></code> function when doing the
+animation with Matplotlib. It is much easier to store the
+variable as a class attribute <code class="docutils literal"><span class="pre">self.lines</span></code>. Since the class is essentially a
+function, we implement the function as the special method <code class="docutils literal"><span class="pre">__call__</span></code>
+such that the instance <code class="docutils literal"><span class="pre">plot_u(u,</span> <span class="pre">x,</span> <span class="pre">t,</span> <span class="pre">n)</span></code> can be called as a standard
+callback function from <code class="docutils literal"><span class="pre">solver</span></code>.</p>
 </div>
 <div class="section" id="making-movie-files">
 <h3>Making movie files<a class="headerlink" href="#making-movie-files" title="Permalink to this headline">¶</a></h3>
-<p>Several hardcopies of the animation are made from the
-<tt class="docutils literal"><span class="pre">frame_*.png</span></tt> files. We use
-the <tt class="docutils literal"><span class="pre">avconv</span></tt> (or <tt class="docutils literal"><span class="pre">ffmpeg</span></tt>) programs to combine individual
-plot files to movies in modern
-formats: Flash, MP4, Webm, and Ogg.
-A typical <tt class="docutils literal"><span class="pre">avconv</span></tt> (or <tt class="docutils literal"><span class="pre">ffmpeg</span></tt>) command for creating a movie file
+<p>From the
+<code class="docutils literal"><span class="pre">frame_*.png</span></code> files containing the frames in the animation we can
+make video files.
+We use the <code class="docutils literal"><span class="pre">ffmpeg</span></code> (or <code class="docutils literal"><span class="pre">avconv</span></code>) program to combine individual
+plot files to movies in modern formats: Flash, MP4, Webm, and Ogg.
+A typical <code class="docutils literal"><span class="pre">ffmpeg</span></code> (or <code class="docutils literal"><span class="pre">avconv</span></code>) command for creating a movie file
 in Ogg format
 with 4 frames per second built from a collection of
-plot files with names generated by <tt class="docutils literal"><span class="pre">frame_%04d.png</span></tt>,
+plot files with names generated by <code class="docutils literal"><span class="pre">frame_%04d.png</span></code>,
 look like</p>
-<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; avconv -r 4 -i frame_%04d.png -c:v libtheora movie.ogg
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; ffmpeg -r 4 -i frame_%04d.png -c:v libtheora movie.ogg
 </pre></div>
 </div>
-<p>The different formats require different video encoders (<tt class="docutils literal"><span class="pre">-c:v</span></tt>) to
-be installed: Flash applies <tt class="docutils literal"><span class="pre">flv</span></tt>, WebM applies <tt class="docutils literal"><span class="pre">libvpx</span></tt>, and MP4
-applies <tt class="docutils literal"><span class="pre">libx264</span></tt>:</p>
-<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; avconv -r 4 -i frame_%04d.png -c:v flv movie.flv
-Terminal&gt; avconv -r 4 -i frame_%04d.png -c:v libvpx movie.webm
-Terminal&gt; avconv -r 4 -i frame_%04d.png -c:v libx264 movie.mp4
+<p>The different formats require different video encoders (<code class="docutils literal"><span class="pre">-c:v</span></code>) to
+be installed: Flash applies <code class="docutils literal"><span class="pre">flv</span></code>, WebM applies <code class="docutils literal"><span class="pre">libvpx</span></code>, and MP4
+applies <code class="docutils literal"><span class="pre">libx264</span></code>:</p>
+<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; ffmpeg -r 4 -i frame_%04d.png -c:v flv movie.flv
+Terminal&gt; ffmpeg -r 4 -i frame_%04d.png -c:v libvpx movie.webm
+Terminal&gt; ffmpeg -r 4 -i frame_%04d.png -c:v libx264 movie.mp4
 </pre></div>
 </div>
-<p>Players like <tt class="docutils literal"><span class="pre">vlc</span></tt>, <tt class="docutils literal"><span class="pre">mplayer</span></tt>, <tt class="docutils literal"><span class="pre">gxine</span></tt>, and <tt class="docutils literal"><span class="pre">totem</span></tt>
+<p>Players like <code class="docutils literal"><span class="pre">vlc</span></code>, <code class="docutils literal"><span class="pre">mplayer</span></code>, <code class="docutils literal"><span class="pre">gxine</span></code>, and <code class="docutils literal"><span class="pre">totem</span></code>
 can be used to play these movie files.</p>
-<p>Note that padding the frame counter with zeros in the <tt class="docutils literal"><span class="pre">frame_*.png</span></tt>
-files, as specified by the <tt class="docutils literal"><span class="pre">%04d</span></tt> format, is essential so that the wildcard
-notation <tt class="docutils literal"><span class="pre">frame_*.png</span></tt> expands to the correct set of files.</p>
-<p>The
-<tt class="docutils literal"><span class="pre">plt.movie</span></tt> function also creates a <tt class="docutils literal"><span class="pre">movie.html</span></tt> file with a movie player
-for displaying the <tt class="docutils literal"><span class="pre">frame_*.png</span></tt> files in a web browser.
-This movie player can
-be generated from the command line too</p>
-<div class="highlight-text"><div class="highlight"><pre>Terminal&gt; scitools movie encoder=html output_file=movie.html \
-          fps=4 frame_*.png
-</pre></div>
-</div>
+<p>Note that padding the frame counter with zeros in the <code class="docutils literal"><span class="pre">frame_*.png</span></code>
+files, as specified by the <code class="docutils literal"><span class="pre">%04d</span></code> format, is essential so that the wildcard
+notation <code class="docutils literal"><span class="pre">frame_*.png</span></code> expands to the correct set of files.</p>
+<p>The <code class="docutils literal"><span class="pre">viz</span></code> function creates a <code class="docutils literal"><span class="pre">ffmpeg</span></code> or <code class="docutils literal"><span class="pre">avconv</span></code> command
+with the proper arguments for each of the formats Flash, MP4, WebM,
+and Ogg. The task is greatly simplified by having a
+<code class="docutils literal"><span class="pre">codec2ext</span></code> dictionary for mapping
+video codec names to filename extensions.
+Only
+two formats are actually needed to ensure that all browsers can
+successfully play the video: MP4 and WebM.</p>
+<p>Some animations consisting of a large number of plot files may not
+be properly combined into a video using <code class="docutils literal"><span class="pre">ffmpeg</span></code> or <code class="docutils literal"><span class="pre">avconv</span></code>.
+A method that always works is to play the PNG files as an animation
+in a browser using JavaScript code in an HTML file.
+The SciTools package has a function <code class="docutils literal"><span class="pre">movie</span></code> (or a stand-alone command
+<code class="docutils literal"><span class="pre">scitools</span> <span class="pre">movie</span></code>) for creating such an HTML player. The <code class="docutils literal"><span class="pre">plt.movie</span></code>
+call in the <code class="docutils literal"><span class="pre">viz</span></code> function shows how the function is used.
+The file <code class="docutils literal"><span class="pre">movie.html</span></code> can be loaded into a browser and features
+a user interface where the speed of the animation can be controlled.
+Note that the movie in this case consists of the <code class="docutils literal"><span class="pre">movie.html</span></code> file
+and all the frame files <code class="docutils literal"><span class="pre">tmp_*.png</span></code>.</p>
 </div>
 <div class="section" id="skipping-frames-for-animation-speed">
 <h3>Skipping frames for animation speed<a class="headerlink" href="#skipping-frames-for-animation-speed" title="Permalink to this headline">¶</a></h3>
 <p>Sometimes the time step is small and <span class="math">\(T\)</span> is large, leading to an
 inconveniently large number of plot files and a slow animation on the
 screen. The solution to such a problem is to decide on a total number
-of frames in the animation, <tt class="docutils literal"><span class="pre">num_frames</span></tt>, and plot the solution only at
-every <tt class="docutils literal"><span class="pre">every</span></tt> frame. The total number of time levels (i.e., maximum
-possible number of frames) is the length of <tt class="docutils literal"><span class="pre">t</span></tt>, <tt class="docutils literal"><span class="pre">t.size</span></tt>, and if we
-want <tt class="docutils literal"><span class="pre">num_frames</span></tt>, we need to plot every <tt class="docutils literal"><span class="pre">t.size/num_frames</span></tt> frame:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">every</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">num_frames</span><span class="p">))</span>
-<span class="k">if</span> <span class="n">n</span> <span class="o">%</span> <span class="n">every</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">n</span> <span class="o">==</span> <span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+of frames in the animation, <code class="docutils literal"><span class="pre">num_frames</span></code>, and plot the solution only for
+every <code class="docutils literal"><span class="pre">skip_frame</span></code> frames. For example, setting <code class="docutils literal"><span class="pre">skip_frame=5</span></code> leads
+to plots of every 5 frames. The default value <code class="docutils literal"><span class="pre">skip_frame=1</span></code> plots
+every frame.
+The total number of time levels (i.e., maximum
+possible number of frames) is the length of <code class="docutils literal"><span class="pre">t</span></code>, <code class="docutils literal"><span class="pre">t.size</span></code> (or <code class="docutils literal"><span class="pre">len(t)</span></code>),
+so if we want <code class="docutils literal"><span class="pre">num_frames</span></code> frames in the animation,
+we need to plot every <code class="docutils literal"><span class="pre">t.size/num_frames</span></code> frames:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">skip_frame</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">num_frames</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">n</span> <span class="o">%</span> <span class="n">skip_frame</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">n</span> <span class="o">==</span> <span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
     <span class="n">st</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="s">&#39;r-&#39;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The initial condition (<tt class="docutils literal"><span class="pre">n=0</span></tt>) is natural to include,
-and as <tt class="docutils literal"><span class="pre">n</span> <span class="pre">%</span> <span class="pre">every</span> <span class="pre">==</span> <span class="pre">0</span></tt> will very seldom be true for the
-very final frame, we also ensure that <tt class="docutils literal"><span class="pre">n</span> <span class="pre">==</span> <span class="pre">t.size-1</span></tt> and hence
-the final frame is included.</p>
+<p>The initial condition (<code class="docutils literal"><span class="pre">n=0</span></code>) included by <code class="docutils literal"><span class="pre">n</span> <span class="pre">%</span> <span class="pre">skip_frame</span> <span class="pre">==</span> <span class="pre">0</span></code>,
+as well as every <code class="docutils literal"><span class="pre">skip_frame</span></code>-th frame.
+As <code class="docutils literal"><span class="pre">n</span> <span class="pre">%</span> <span class="pre">skip_frame</span> <span class="pre">==</span> <span class="pre">0</span></code> will very seldom be true for the
+very final frame, we must also check if <code class="docutils literal"><span class="pre">n</span> <span class="pre">==</span> <span class="pre">t.size-1</span></code> to
+get the final frame included.</p>
 <p>A simple choice of numbers may illustrate the formulas: say we have
-801 frames in total (<tt class="docutils literal"><span class="pre">t.size</span></tt>) and we allow only 60 frames to be
+801 frames in total (<code class="docutils literal"><span class="pre">t.size</span></code>) and we allow only 60 frames to be
 plotted. Then we need to plot every 801/60 frame, which with integer
-division yields 13 as <tt class="docutils literal"><span class="pre">every</span></tt>. Using the mod function, <tt class="docutils literal"><span class="pre">n</span> <span class="pre">%</span> <span class="pre">every</span></tt>,
-this operation is zero every time <tt class="docutils literal"><span class="pre">n</span></tt> can be divided by 13 without a
-remainder. That is, the <tt class="docutils literal"><span class="pre">if</span></tt> test is true when <tt class="docutils literal"><span class="pre">n</span></tt> equals <span class="math">\(0, 13, 26,
-39, ..., 780, 801\)</span>. The associated code is included in the <tt class="docutils literal"><span class="pre">plot_u</span></tt>
+division yields 13 as <code class="docutils literal"><span class="pre">every</span></code>. Using the mod function, <code class="docutils literal"><span class="pre">n</span> <span class="pre">%</span> <span class="pre">every</span></code>,
+this operation is zero every time <code class="docutils literal"><span class="pre">n</span></code> can be divided by 13 without a
+remainder. That is, the <code class="docutils literal"><span class="pre">if</span></code> test is true when <code class="docutils literal"><span class="pre">n</span></code> equals <span class="math">\(0, 13, 26,
+39, ..., 780, 801\)</span>. The associated code is included in the <code class="docutils literal"><span class="pre">plot_u</span></code>
 function in the file <a class="reference external" href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_u0v.py">wave1D_u0v.py</a>.</p>
-</div>
-<div class="section" id="visualization-via-matplotlib">
-<h3>Visualization via Matplotlib<a class="headerlink" href="#visualization-via-matplotlib" title="Permalink to this headline">¶</a></h3>
-<p>The previous code based on the <tt class="docutils literal"><span class="pre">plot</span></tt> interface from <tt class="docutils literal"><span class="pre">scitools.std</span></tt>
-can be run with Matplotlib as the visualization backend, but if one
-desires to program directly with Matplotlib, quite different code
-is needed. Matplotlib&#8217;s interactive mode must be turned on:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>  <span class="c"># interactive mode on</span>
-</pre></div>
-</div>
-<p>The most
-commonly used animation technique with Matplotlib
-is to update the data in the plot at each time level:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="c"># Make a first plot</span>
-<span class="n">lines</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
-<span class="c"># call plt.axis, plt.xlabel, plt.ylabel, etc. as desired</span>
-
-<span class="c"># At later time levels</span>
-<span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ydata</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="s">&#39;t=</span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">])</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>  <span class="c"># make updated plot</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>An alternative is to rebuild the plot at every time level:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>        <span class="c"># delete any previous curve(s)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
-<span class="c"># plt.xlabel, plt.legend and other decorations</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Many prefer to work with figure and axis objects as in MATLAB:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
-<span class="o">...</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
-<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
-<span class="c"># ax.set_xlabel, ax.legend and other decorations</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-</pre></div>
-</div>
 </div>
 </div>
 <div class="section" id="running-a-case">
@@ -403,14 +471,14 @@ that <span class="math">\(V=0\)</span>.</p>
 Sometimes it is more natural to think of a spatial resolution instead
 of a time step. A natural semi-coarse spatial resolution in the present
 problem is <span class="math">\(N_x=50\)</span>. We can then choose the associated <span class="math">\(\Delta t\)</span> (as required
-by the <tt class="docutils literal"><span class="pre">viz</span></tt> and <tt class="docutils literal"><span class="pre">solver</span></tt> functions) as the stability limit:
+by the <code class="docutils literal"><span class="pre">viz</span></code> and <code class="docutils literal"><span class="pre">solver</span></code> functions) as the stability limit:
 <span class="math">\(\Delta t = L/(N_xc)\)</span>. This is the <span class="math">\(\Delta t\)</span> to be specified,
-but notice that if <span class="math">\(C&lt;1\)</span>, the actual <span class="math">\(\Delta x\)</span> computed in <tt class="docutils literal"><span class="pre">solver</span></tt> gets
+but notice that if <span class="math">\(C&lt;1\)</span>, the actual <span class="math">\(\Delta x\)</span> computed in <code class="docutils literal"><span class="pre">solver</span></code> gets
 larger than <span class="math">\(L/N_x\)</span>: <span class="math">\(\Delta x = c\Delta t/C = L/(N_xC)\)</span>. (The reason
 is that we fix <span class="math">\(\Delta t\)</span> and adjust <span class="math">\(\Delta x\)</span>, so if <span class="math">\(C\)</span> gets
 smaller, the code implements this effect in terms of a larger <span class="math">\(\Delta x\)</span>.)</p>
 <p>A function for setting the physical and numerical parameters and
-calling <tt class="docutils literal"><span class="pre">viz</span></tt> in this application goes as follows:</p>
+calling <code class="docutils literal"><span class="pre">viz</span></code> in this application goes as follows:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">guitar</span><span class="p">(</span><span class="n">C</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Triangular wave (pulled guitar string).&quot;&quot;&quot;</span>
     <span class="n">L</span> <span class="o">=</span> <span class="mf">0.75</span>
@@ -429,56 +497,94 @@ calling <tt class="docutils literal"><span class="pre">viz</span></tt> in this a
         <span class="k">return</span> <span class="n">a</span><span class="o">*</span><span class="n">x</span><span class="o">/</span><span class="n">x0</span> <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">x0</span> <span class="k">else</span> <span class="n">a</span><span class="o">/</span><span class="p">(</span><span class="n">L</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">L</span><span class="o">-</span><span class="n">x</span><span class="p">)</span>
 
     <span class="n">umin</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.2</span><span class="o">*</span><span class="n">a</span><span class="p">;</span>  <span class="n">umax</span> <span class="o">=</span> <span class="o">-</span><span class="n">umin</span>
-    <span class="n">cpu</span> <span class="o">=</span> <span class="n">viz</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">umin</span><span class="p">,</span> <span class="n">umax</span><span class="p">,</span> <span class="n">animate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">cpu</span> <span class="o">=</span> <span class="n">viz</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">umin</span><span class="p">,</span> <span class="n">umax</span><span class="p">,</span>
+              <span class="n">animate</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">tool</span><span class="o">=</span><span class="s">&#39;scitools&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The associated program has the name <a class="reference external" href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_u0.py">wave1D_u0.py</a>. Run
 the program and watch the <a class="reference external" href="http://tinyurl.com/opdfafk/pub/mov-wave/guitar_C0.8/index.html">movie of the vibrating string</a>.</p>
+<p>[<strong>hpl 1</strong>: Must recompute these movies as <span class="math">\(\Delta t\)</span> is different when <span class="math">\(C&lt;1\)</span>.]</p>
 </div>
-<div class="section" id="the-benefits-of-scaling">
-<h2>The benefits of scaling<a class="headerlink" href="#the-benefits-of-scaling" title="Permalink to this headline">¶</a></h2>
-<p>The previous example demonstrated that quite some work is needed
-with establishing relevant physical parameters for a case. By <em>scaling</em>
+<div class="section" id="working-with-a-scaled-pde-model">
+<h2>Working with a scaled PDE model<a class="headerlink" href="#working-with-a-scaled-pde-model" title="Permalink to this headline">¶</a></h2>
+<p>Depending on the model, it may be a substantial job to establish
+consistent and relevant physical parameter values for a case.
+The guitar string example illustrates the point.
+However, by <em>scaling</em>
 the mathematical problem we can often reduce the need to estimate
-physical parameters dramatically. A scaling consists of introducing new
+physical parameters dramatically. The scaling technique
+consists of introducing new
 independent and dependent variables, with the aim that the absolute
-value of these vary between 0 and 1:</p>
+value of these is not very large or small, but preferably around unity
+in size. We introduce the dimensionless variables</p>
 <div class="math">
 \[\bar x = \frac{x}{L},\quad \bar t = \frac{c}{L}t,\quad
 \bar u = \frac{u}{a}
 {\thinspace .}\]</div>
-<p>Replacing old by new variables in the PDE, using <span class="math">\(f=0\)</span>,
-and dropping the bars, results in the <em>scaled equation</em>
-<span class="math">\(u_{tt} = u_{xx}\)</span>. This equation has no physical parameter (!).</p>
+<p>Here, <span class="math">\(L\)</span> is a typical length scale, e.g., the length of the domain,
+and <span class="math">\(a\)</span> is a typical size of <span class="math">\(u\)</span>, e.g., determined from the
+initial condition: <span class="math">\(a=\max_x|I(x)|\)</span>.</p>
+<p>Inserting these new variables in the PDE and noting that</p>
+<div class="math">
+\[\frac{\partial u}{\partial t} = \frac{aL}{c}\frac{\partial\bar u}{\partial\bar t},\]</div>
+<p>by the chain rule, one gets</p>
+<div class="math">
+\[\frac{a^2L^2}{c^2}\frac{\partial^2\bar u}{\partial\bar t^2}
+= \frac{a^2c^2}{L^2}\frac{\partial^2\bar u}{\partial\bar x^2},\]</div>
+<p>in case <span class="math">\(f=0\)</span>.
+Dropping the bars, we arrive at the scaled PDE</p>
+<div class="math">
+\[\frac{\partial^2 u}{\partial t^2} = \frac{\partial^2 u}{\partial x^2},\]</div>
+<p>which has not parameter <span class="math">\(c^2\)</span> anymore. The initial conditions are scaled
+as</p>
+<div class="math">
+\[a\bar u(\bar x, 0) = I(L\bar x)\]</div>
+<p>and</p>
+<div class="math">
+\[\frac{a}{L/c}\frac{\partial\bar u}{\partial\bar t}(\bar x,0) = V(L\bar x),\]</div>
+<p>resulting in</p>
+<div class="math">
+\[\bar u(\bar x, 0) = \frac{I(L\bar x)}{\max_x |I(x)|},\quad
+\frac{\partial\bar u}{\partial\bar t}(\bar x,0) = \frac{L}{ac}V(L\bar x){\thinspace .}\]</div>
+<p>In the common case <span class="math">\(V=0\)</span> we see that there are no physical parameters to be
+estimated in the PDE model!</p>
 <p>If we have a program implemented for the physical wave equation with
 dimensions, we can obtain the dimensionless, scaled version by
-setting <span class="math">\(c=1\)</span>. The initial condition
-corresponds to <a class="reference internal" href="._main_wave010.html#eq-wave-pde1-guitar-i"><em>(11.19)</em></a>, but with setting
+setting <span class="math">\(c=1\)</span>. The initial condition of a guitar string,
+given in <a class="reference internal" href="._main_wave010.html#eq-wave-pde1-guitar-i"><span class="std std-ref">(11.14)</span></a>, gets its scaled form by choosing
 <span class="math">\(a=1\)</span>, <span class="math">\(L=1\)</span>, and <span class="math">\(x_0\in [0,1]\)</span>. This means that we only need to
 decide on the <span class="math">\(x_0\)</span> value as a fraction of unity, because
 the scaled problem corresponds to setting all
-other parameters to unity! In the code we can just set
-<tt class="docutils literal"><span class="pre">a=c=L=1</span></tt>, <tt class="docutils literal"><span class="pre">x0=0.8</span></tt>, and there is no need to calculate with
-wavelengths and frequencies to estimate <span class="math">\(c\)</span>.</p>
+other parameters to unity. In the code we can just set
+<code class="docutils literal"><span class="pre">a=c=L=1</span></code>, <code class="docutils literal"><span class="pre">x0=0.8</span></code>, and there is no need to calculate with
+wavelengths and frequencies to estimate <span class="math">\(c\)</span>!</p>
 <p>The only non-trivial parameter to estimate in the scaled problem
 is the final end time of the simulation, or more precisely, how it relates
 to periods in periodic solutions in time, since we often want to
 express the end time as a certain number of periods.
-Suppose as <span class="math">\(u\)</span> behaves as <span class="math">\(\sin (\omega t)\)</span> in time in variables
-with dimension. The corresponding period is <span class="math">\(P=2\pi/\omega\)</span>.
-The frequency <span class="math">\(\omega\)</span> is related to the wavelength <span class="math">\(\lambda\)</span> of the waves
-through the relations <span class="math">\(\omega = kc\)</span> and <span class="math">\(k=2\pi/\lambda\)</span>, giving
-<span class="math">\(\omega = 2\pi c/\lambda\)</span> and <span class="math">\(P=\lambda/c\)</span>. It remains to estimate <span class="math">\(\lambda\)</span>.
-With <span class="math">\(u(x,t)=F(x)\sin\omega t\)</span> we find from <span class="math">\(u_{tt}=c^2u_{xx}\)</span>
-that <span class="math">\(c^2F'' + \omega^2F=0\)</span>, and the boundary conditions demand
-<span class="math">\(F(0)=F(L)=0\)</span>. The solution is <span class="math">\(F(x)=\sin(x\pi/L)\)</span>, which has
-wavelength <span class="math">\(\lambda = 2\pi/(\pi/L)=2L\)</span>. One period is therefore
-given by <span class="math">\(P=2L/c\)</span>. The dimensionless period is <span class="math">\(\bar P=Pc/L = 2\)</span>.</p>
+The period in the dimensionless problem is 2, so the end time can be
+set to the desired number of periods times 2.</p>
+<p>Why the dimensionless period is 2 can be explained by the following
+reasoning.
+Suppose as <span class="math">\(u\)</span> behaves as <span class="math">\(\cos (\omega t)\)</span> in time in variables
+with dimension. The corresponding period is then <span class="math">\(P=2\pi/\omega\)</span>, but
+we need to estimate <span class="math">\(\omega\)</span>. A typical solution of the wave
+equation is <span class="math">\(u(x,t)=A\cos(kx)\cos(\omega t)\)</span>, where <span class="math">\(A\)</span> is an amplitude
+and <span class="math">\(k\)</span> is related to the wave length <span class="math">\(\lambda\)</span> in space: <span class="math">\(\lambda = 2\pi/k\)</span>.
+Both <span class="math">\(\lambda\)</span> and <span class="math">\(A\)</span> will be given by the initial condition <span class="math">\(I(x)\)</span>.
+Inserting this <span class="math">\(u(x,t)\)</span> in the PDE yields <span class="math">\(-\omega^2 = -c^2k^2\)</span>, i.e.,
+<span class="math">\(\omega = kc\)</span>. The period is therefore <span class="math">\(P=2\pi/(kc)\)</span>.
+If the boundary conditions are <span class="math">\(u(0,t)=u(0,L)\)</span>, we need to have
+<span class="math">\(kL = n\pi\)</span> for integer <span class="math">\(n\)</span>. The period becomes <span class="math">\(P=2L/nc\)</span>. The longest
+period is <span class="math">\(P=2L/c\)</span>. The dimensionless period is <span class="math">\(\tilde P\)</span> is obtained
+by dividing <span class="math">\(P\)</span> by the time scale <span class="math">\(L/c\)</span>, which results in <span class="math">\(\tilde P=2\)</span>.
+Shorter waves in the initial condition will have a dimensionless
+shorter period <span class="math">\(\tilde P=2/n\)</span> (<span class="math">\(n&gt;1\)</span>).</p>
 </div>
 </div>
 <div class="section" id="vectorization">
 <span id="wave-pde1-impl-vec"></span><h1>Vectorization<a class="headerlink" href="#vectorization" title="Permalink to this headline">¶</a></h1>
-<p id="index-4">The computational algorithm for solving the wave equation visits one
+<p id="index-8">The computational algorithm for solving the wave equation visits one
 mesh point at a time and evaluates a formula for the new value <span class="math">\(u_i^{n+1}\)</span>
 at
 that point. Technically, this is implemented by a loop over array
@@ -491,11 +597,11 @@ or <em>array computing</em>.
 Operations on whole arrays are possible if the computations
 involving each element is independent of each other and therefore can,
 at least in principle, be performed simultaneously.
-Vectorization not only speeds up the code on serial computers, but it
+Vectorization not only speeds up the code on serial computers, but
 also makes it easy to exploit parallel computing.</p>
 <div class="section" id="operations-on-slices-of-arrays">
 <span id="wave-pde1-impl-vec-slices-basics"></span><h2>Operations on slices of arrays<a class="headerlink" href="#operations-on-slices-of-arrays" title="Permalink to this headline">¶</a></h2>
-<span class="target" id="index-5"></span><span class="target" id="index-6"></span><p id="index-7">Efficient computing with <tt class="docutils literal"><span class="pre">numpy</span></tt> arrays demands that we avoid loops
+<span class="target" id="index-9"></span><span class="target" id="index-10"></span><span class="target" id="index-11"></span><span class="target" id="index-12"></span><p id="index-13">Efficient computing with <code class="docutils literal"><span class="pre">numpy</span></code> arrays demands that we avoid loops
 and compute with entire arrays at once (or at least large portions of them).
 Consider this calculation of differences <span class="math">\(d_i = u_{i+1}-u_i\)</span>:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">n</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">size</span>
@@ -504,18 +610,18 @@ Consider this calculation of differences <span class="math">\(d_i = u_{i+1}-u_i\
 </pre></div>
 </div>
 <p>All the differences here are independent of each other.
-The computation of <tt class="docutils literal"><span class="pre">d</span></tt> can therefore alternatively be done by
+The computation of <code class="docutils literal"><span class="pre">d</span></code> can therefore alternatively be done by
 subtracting the array <span class="math">\((u_0,u_1,\ldots,u_{n-1})\)</span> from
 the array where the elements are shifted one index upwards:
-<span class="math">\((u_1,u_2,\ldots,u_n)\)</span>, see Figure <a class="reference internal" href="#wave-pde1-vec-fig1"><em>Illustration of subtracting two slices of two arrays</em></a>.
+<span class="math">\((u_1,u_2,\ldots,u_n)\)</span>, see Figure <a class="reference internal" href="#wave-pde1-vec-fig1"><span class="std std-ref">Illustration of subtracting two slices of two arrays</span></a>.
 The former subset of the array can be
-expressed by <tt class="docutils literal"><span class="pre">u[0:n-1]</span></tt>,
-<tt class="docutils literal"><span class="pre">u[0:-1]</span></tt>, or just
-<tt class="docutils literal"><span class="pre">u[:-1]</span></tt>, meaning from index 0 up to,
-but not including, the last element (<tt class="docutils literal"><span class="pre">-1</span></tt>). The latter subset
-is obtained by <tt class="docutils literal"><span class="pre">u[1:n]</span></tt> or <tt class="docutils literal"><span class="pre">u[1:]</span></tt>,
+expressed by <code class="docutils literal"><span class="pre">u[0:n-1]</span></code>,
+<code class="docutils literal"><span class="pre">u[0:-1]</span></code>, or just
+<code class="docutils literal"><span class="pre">u[:-1]</span></code>, meaning from index 0 up to,
+but not including, the last element (<code class="docutils literal"><span class="pre">-1</span></code>). The latter subset
+is obtained by <code class="docutils literal"><span class="pre">u[1:n]</span></code> or <code class="docutils literal"><span class="pre">u[1:]</span></code>,
 meaning from index 1 and the rest of the array.
-The computation of <tt class="docutils literal"><span class="pre">d</span></tt> can now be done without an explicit Python loop:</p>
+The computation of <code class="docutils literal"><span class="pre">d</span></code> can now be done without an explicit Python loop:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">d</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">u</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -524,56 +630,89 @@ The computation of <tt class="docutils literal"><span class="pre">d</span></tt> 
 </pre></div>
 </div>
 <p>Indices with a colon, going from an index to (but not including) another
-index are called <em>slices</em>. With <tt class="docutils literal"><span class="pre">numpy</span></tt> arrays, the computations
-are still done by loops, but in efficient, compiled, highly optimized code
-in C or Fortran. Such array operations can also easily be distributed
+index are called <em>slices</em>. With <code class="docutils literal"><span class="pre">numpy</span></code> arrays, the computations
+are still done by loops, but in efficient, compiled, highly optimized
+C or Fortran code. Such loops are sometimes referred to as <em>vectorized
+loops</em>. Such loops can also easily be distributed
 among many processors on parallel computers. We say that the <em>scalar code</em>
 above, working on an element (a scalar) at a time, has been replaced by
 an equivalent <em>vectorized code</em>. The process of vectorizing code is called
 <em>vectorization</em>.</p>
-<div class="figure" id="wave-pde1-vec-fig1">
-<a class="reference internal image-reference" href="_images/vectorized_diff.png"><img alt="_images/vectorized_diff.png" src="_images/vectorized_diff.png" style="width: 400px;" /></a>
-<p class="caption"><em>Illustration of subtracting two slices of two arrays</em></p>
+<div class="figure" id="id1">
+<span id="wave-pde1-vec-fig1"></span><a class="reference internal image-reference" href="_images/vectorized_diff.png"><img alt="_images/vectorized_diff.png" src="_images/vectorized_diff.png" style="width: 400px;" /></a>
+<p class="caption"><span class="caption-text"><em>Illustration of subtracting two slices of two arrays</em></span></p>
 </div>
-<div class="admonition-test-the-understanding admonition">
-<p class="first admonition-title">Test the understanding</p>
+<div class="admonition-test-your-understanding admonition">
+<p class="first admonition-title">Test your understanding</p>
 <p class="last">Newcomers to vectorization are encouraged to choose
-a small array <tt class="docutils literal"><span class="pre">u</span></tt>, say with five elements,
+a small array <code class="docutils literal"><span class="pre">u</span></code>, say with five elements,
 and simulate with pen and paper
-both the loop version and the vectorized version.</p>
+both the loop version and the vectorized version above.</p>
 </div>
-<p>Finite difference schemes basically contains differences between array
-elements with shifted indices. Consider the updating formula</p>
+<p>Finite difference schemes basically contain differences between array
+elements with shifted indices. As an example,
+consider the updating formula</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
     <span class="n">u2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>The vectorization consists of replacing the loop by arithmetics on
-slices of arrays of length <tt class="docutils literal"><span class="pre">n-2</span></tt>:</p>
+slices of arrays of length <code class="docutils literal"><span class="pre">n-2</span></code>:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">u2</span> <span class="o">=</span> <span class="n">u</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
 <span class="n">u2</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="n">n</span><span class="p">]</span>   <span class="c"># alternative</span>
 </pre></div>
 </div>
-<p>Note that <tt class="docutils literal"><span class="pre">u2</span></tt> here gets length <tt class="docutils literal"><span class="pre">n-2</span></tt>. If <tt class="docutils literal"><span class="pre">u2</span></tt> is already an array of
-length <tt class="docutils literal"><span class="pre">n</span></tt> and we want to use the formula to update all the &#8220;inner&#8221;
-elements of <tt class="docutils literal"><span class="pre">u2</span></tt>, as we will when solving a 1D wave equation, we can write</p>
+<p>Note that the length of <code class="docutils literal"><span class="pre">u2</span></code> becomes <code class="docutils literal"><span class="pre">n-2</span></code>. If <code class="docutils literal"><span class="pre">u2</span></code> is already an array of
+length <code class="docutils literal"><span class="pre">n</span></code> and we want to use the formula to update all the &#8220;inner&#8221;
+elements of <code class="docutils literal"><span class="pre">u2</span></code>, as we will when solving a 1D wave equation, we can write</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">u2</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="o">=</span> <span class="n">u</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
 <span class="n">u2</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="n">n</span><span class="p">]</span>   <span class="c"># alternative</span>
 </pre></div>
 </div>
-<p>Pen and paper calculations with a small array will demonstrate what is
-actually going on. The expression on the right-hand side are done in the
+<p>The first expression&#8217;s right-hand side is realized by the
 following steps, involving temporary arrays with intermediate results,
-since we can only work with two arrays at a time in
-arithmetic expressions:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">temp1</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">temp2</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">temp1</span>
-<span class="n">temp3</span> <span class="o">=</span> <span class="n">temp2</span> <span class="o">+</span> <span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
-<span class="n">u2</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp3</span>
+since each array operation can only involve one or two arrays.
+The <code class="docutils literal"><span class="pre">numpy</span></code> package performs the first line above in
+four steps:</p>
+<div class="highlight-text"><div class="highlight"><pre>temp1 = 2*u[1:-1]
+temp2 = u[:-2] - temp1
+temp3 = temp2 + u[2:]
+u2[1:-1] = temp3
 </pre></div>
 </div>
-<p>We can extend the previous example to a formula with an additional term computed
-by calling a function:</p>
+<p>We need three temporary arrays, but a user does not need to worry about
+such temporary arrays.</p>
+<div class="admonition-common-mistakes-with-array-slices admonition">
+<p class="first admonition-title">Common mistakes with array slices</p>
+<p>Array expressions with slices demand that the slices have the same
+shape. It easy to make a mistake in, e.g.,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">u2</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="n">n</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>and write</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">u2</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">n</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Now <code class="docutils literal"><span class="pre">u[1:n]</span></code> has wrong length (<code class="docutils literal"><span class="pre">n-1</span></code>) compared to the other array
+slices, causing a <code class="docutils literal"><span class="pre">ValueError</span></code> and the message
+<code class="docutils literal"><span class="pre">could</span> <span class="pre">not</span> <span class="pre">broadcast</span> <span class="pre">input</span> <span class="pre">array</span> <span class="pre">from</span> <span class="pre">shape</span> <span class="pre">103</span> <span class="pre">into</span> <span class="pre">shape</span> <span class="pre">104</span></code>
+(if <code class="docutils literal"><span class="pre">n</span></code> is 105). When such errors occur one must closely examine
+all the slices. Usually, it is easier to get upper limits of slices
+right when they use <code class="docutils literal"><span class="pre">-1</span></code> or <code class="docutils literal"><span class="pre">-2</span></code> or empty limit rather than
+expressions involving the length.</p>
+<p>Another common mistake is to forget the slice in the array on the
+left-hand side,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">u2</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">n</span><span class="p">]</span>
+</pre></div>
+</div>
+<p class="last">This is really crucial: now <code class="docutils literal"><span class="pre">u2</span></code> becomes a <em>new</em> array of length
+<code class="docutils literal"><span class="pre">n-2</span></code>, which is the wrong length as we have no entries for the boundary
+values. We meant to insert the right-hand side array <em>into</em> the
+in the original <code class="docutils literal"><span class="pre">u2</span></code> array for the entries that correspond to the
+internal points in the mesh (<code class="docutils literal"><span class="pre">1:n-1</span></code> or <code class="docutils literal"><span class="pre">1:-1</span></code>).</p>
+</div>
+<p>Vectorization may also work nicely with functions. To illustrate, we may
+extend the previous example as follows:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
 
@@ -581,20 +720,23 @@ by calling a function:</p>
     <span class="n">u2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>Assuming <tt class="docutils literal"><span class="pre">u2</span></tt>, <tt class="docutils literal"><span class="pre">u</span></tt>, and <tt class="docutils literal"><span class="pre">x</span></tt> all have length <tt class="docutils literal"><span class="pre">n</span></tt>, the vectorized
+<p>Assuming <code class="docutils literal"><span class="pre">u2</span></code>, <code class="docutils literal"><span class="pre">u</span></code>, and <code class="docutils literal"><span class="pre">x</span></code> all have length <code class="docutils literal"><span class="pre">n</span></code>, the vectorized
 version becomes</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">u2</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span> <span class="o">+</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
 </pre></div>
 </div>
+<p>Obviously, <code class="docutils literal"><span class="pre">f</span></code> must be able to take an array as argument for <code class="docutils literal"><span class="pre">f[x[1:-1])</span></code>
+to make sense.</p>
 </div>
 <div class="section" id="finite-difference-schemes-expressed-as-slices">
 <span id="wave-pde1-impl-vec-slices-fdm"></span><h2>Finite difference schemes expressed as slices<a class="headerlink" href="#finite-difference-schemes-expressed-as-slices" title="Permalink to this headline">¶</a></h2>
-<p>We now have the necessary tools to vectorize the algorithm for
-the wave equation. There are three loops: one for the initial condition,
-one for the first time step, and finally the loop that is repeated for
-all subsequent time levels. Since only the latter is repeated a potentially
-large number of times, we limit the efforts of vectorizing the code
-to this loop:</p>
+<p>We now have the necessary tools to vectorize the wave equation
+algorithm as described mathematically in the section <a class="reference internal" href="._main_wave001.html#wave-string-alg"><span class="std std-ref">Formulating a recursive algorithm</span></a>
+and through code in the section <a class="reference internal" href="#wave-pde1-impl-solver"><span class="std std-ref">The solver function</span></a>.  There are
+three loops: one for the initial condition, one for the first time
+step, and finally the loop that is repeated for all subsequent time
+levels. Since only the latter is repeated a potentially large number
+of times, we limit our vectorization efforts to this loop:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Nx</span><span class="p">):</span>
     <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">u_2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> \
            <span class="n">C2</span><span class="o">*</span><span class="p">(</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">u_1</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
@@ -612,16 +754,16 @@ to this loop:</p>
 </div>
 <p>The program
 <a class="reference external" href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_u0v.py">wave1D_u0v.py</a>
-contains a new version of the function <tt class="docutils literal"><span class="pre">solver</span></tt> where both the scalar
-and the vectorized loops are included (the argument <tt class="docutils literal"><span class="pre">version</span></tt> is
-set to <tt class="docutils literal"><span class="pre">scalar</span></tt> or <tt class="docutils literal"><span class="pre">vectorized</span></tt>, respectively).</p>
+contains a new version of the function <code class="docutils literal"><span class="pre">solver</span></code> where both the scalar
+and the vectorized loops are included (the argument <code class="docutils literal"><span class="pre">version</span></code> is
+set to <code class="docutils literal"><span class="pre">scalar</span></code> or <code class="docutils literal"><span class="pre">vectorized</span></code>, respectively).</p>
 </div>
 <div class="section" id="verification-2">
 <span id="wave-pde1-impl-vec-verify-quadratic"></span><h2>Verification  (2)<a class="headerlink" href="#verification-2" title="Permalink to this headline">¶</a></h2>
-<p id="index-8">We may reuse the quadratic solution <span class="math">\({u_{\small\mbox{e}}}(x,t)=x(L-x)(1+{\frac{1}{2}}t)\)</span> for
-verifying also the vectorized code. A nose test can now test
+<p id="index-14">We may reuse the quadratic solution <span class="math">\({u_{\small\mbox{e}}}(x,t)=x(L-x)(1+{\frac{1}{2}}t)\)</span> for
+verifying also the vectorized code. A test function can now verify
 both the scalar and the vectorized version. Moreover, we may
-use a <tt class="docutils literal"><span class="pre">user_action</span></tt> function that compares the computed and exact
+use a <code class="docutils literal"><span class="pre">user_action</span></code> function that compares the computed and exact
 solution at each time level and performs a test:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_quadratic</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -644,8 +786,9 @@ solution at each time level and performs a test:</p>
 
     <span class="k">def</span> <span class="nf">assert_no_error</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
         <span class="n">u_e</span> <span class="o">=</span> <span class="n">u_exact</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="n">n</span><span class="p">])</span>
+        <span class="n">tol</span> <span class="o">=</span> <span class="mf">1E-13</span>
         <span class="n">diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">u</span> <span class="o">-</span> <span class="n">u_e</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
-        <span class="n">nt</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">places</span><span class="o">=</span><span class="mi">13</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">diff</span> <span class="o">&lt;</span> <span class="n">tol</span>
 
     <span class="n">solver</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span>
            <span class="n">user_action</span><span class="o">=</span><span class="n">assert_no_error</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s">&#39;scalar&#39;</span><span class="p">)</span>
@@ -656,7 +799,8 @@ solution at each time level and performs a test:</p>
 <div class="admonition-lambda-functions admonition">
 <p class="first admonition-title">Lambda functions</p>
 <p>The code segment above demonstrates how to achieve very
-compact code with the use of lambda functions for the various
+compact code, without degraded readability,
+by use of lambda functions for the various
 input parameters that require a Python function. In essence,</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">L</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">t</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
 </pre></div>
@@ -677,66 +821,176 @@ in calls:</p>
 </div>
 <div class="section" id="efficiency-measurements">
 <h2>Efficiency measurements<a class="headerlink" href="#efficiency-measurements" title="Permalink to this headline">¶</a></h2>
-<p>Running the <tt class="docutils literal"><span class="pre">wave1D_u0v.py</span></tt> code with the previous string vibration example
-for <span class="math">\(N_x=50,100,200,400,800\)</span>, and measuring the CPU time
-(see the <tt class="docutils literal"><span class="pre">run_efficiency_experiments</span></tt> function), shows that the vectorized
-code runs substantially faster: the scalar code uses approximately
-a factor <span class="math">\(N_x/5\)</span> more time!</p>
+<p>The <code class="docutils literal"><span class="pre">wave1D_u0v.py</span></code> contains our new <code class="docutils literal"><span class="pre">solver</span></code> function with both
+scalar and vectorized code. For comparing the efficiency
+of scalar versus vectorized code, we need a <code class="docutils literal"><span class="pre">viz</span></code> function
+as discussed in the section <a class="reference internal" href="#wave-pde1-impl-animate"><span class="std std-ref">Visualization: animating the solution</span></a>.
+All of this <code class="docutils literal"><span class="pre">viz</span></code> function can be reused, except the call
+to <code class="docutils literal"><span class="pre">solver_function</span></code>. This call lacks the parameter
+<code class="docutils literal"><span class="pre">version</span></code>, which we want to set to <code class="docutils literal"><span class="pre">vectorized</span></code> and <code class="docutils literal"><span class="pre">scalar</span></code>
+for our efficiency measurements.</p>
+<p>One solution is to copy the <code class="docutils literal"><span class="pre">viz</span></code> code from <code class="docutils literal"><span class="pre">wave1D_u0</span></code> into
+<code class="docutils literal"><span class="pre">wave1D_u0v.py</span></code> and add a <code class="docutils literal"><span class="pre">version</span></code> argument to the <code class="docutils literal"><span class="pre">solver_function</span></code> call.
+Taking into account how much quite complicated animation code we
+then duplicate, this is not a good idea.
+Introducing the <code class="docutils literal"><span class="pre">version</span></code> argument in <code class="docutils literal"><span class="pre">wave1D_u0.viz</span></code> is not
+a good solution since <code class="docutils literal"><span class="pre">version</span></code> has no meaning in that file.</p>
+<div class="section" id="solution-1">
+<h3>Solution 1<a class="headerlink" href="#solution-1" title="Permalink to this headline">¶</a></h3>
+<p>Calling <code class="docutils literal"><span class="pre">viz</span></code> in <code class="docutils literal"><span class="pre">wave1D_u0</span></code> with <code class="docutils literal"><span class="pre">solver_function</span></code> as our new
+solver in <code class="docutils literal"><span class="pre">wave1D_u0v</span></code> works fine, since this solver has
+<code class="docutils literal"><span class="pre">version='vectorized'</span></code> as default value. The problem arises when we
+want to test <code class="docutils literal"><span class="pre">version='vectorized'</span></code>. The simplest solution is then
+to use <code class="docutils literal"><span class="pre">wave1D_u0.solver</span></code> instead. We make a new <code class="docutils literal"><span class="pre">viz</span></code> function
+in <code class="docutils literal"><span class="pre">wave1D_u0v.py</span></code> that has a <code class="docutils literal"><span class="pre">version</span></code> argument and that just
+calls <code class="docutils literal"><span class="pre">wave1D_u0.viz</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">viz</span><span class="p">(</span>
+    <span class="n">I</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span>  <span class="c"># PDE paramteres</span>
+    <span class="n">umin</span><span class="p">,</span> <span class="n">umax</span><span class="p">,</span>               <span class="c"># Interval for u in plots</span>
+    <span class="n">animate</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>             <span class="c"># Simulation with animation?</span>
+    <span class="n">tool</span><span class="o">=</span><span class="s">&#39;matplotlib&#39;</span><span class="p">,</span>        <span class="c"># &#39;matplotlib&#39; or &#39;scitools&#39;</span>
+    <span class="n">solver_function</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span>   <span class="c"># Function with numerical algorithm</span>
+    <span class="n">version</span><span class="o">=</span><span class="s">&#39;vectorized&#39;</span><span class="p">,</span>     <span class="c"># &#39;scalar&#39; or &#39;vectorized&#39;</span>
+    <span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">wave1D_u0</span>
+    <span class="k">if</span> <span class="n">version</span> <span class="o">==</span> <span class="s">&#39;vectorized&#39;</span><span class="p">:</span>
+        <span class="c"># Reuse viz from wave1D_u0, but with the present</span>
+        <span class="c"># modules&#39; new vectorized solver (which has</span>
+        <span class="c"># version=&#39;vectorized&#39; as default argument;</span>
+        <span class="c"># wave1D_u0.viz does not feature this argument)</span>
+        <span class="n">cpu</span> <span class="o">=</span> <span class="n">wave1D_u0</span><span class="o">.</span><span class="n">viz</span><span class="p">(</span>
+            <span class="n">I</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">umin</span><span class="p">,</span> <span class="n">umax</span><span class="p">,</span>
+            <span class="n">animate</span><span class="p">,</span> <span class="n">tool</span><span class="p">,</span> <span class="n">solver_function</span><span class="o">=</span><span class="n">solver</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">version</span> <span class="o">==</span> <span class="s">&#39;scalar&#39;</span><span class="p">:</span>
+        <span class="c"># Call wave1D_u0.viz with a solver with</span>
+        <span class="c"># scalar code and use wave1D_u0.solver.</span>
+        <span class="n">cpu</span> <span class="o">=</span> <span class="n">wave1D_u0</span><span class="o">.</span><span class="n">viz</span><span class="p">(</span>
+            <span class="n">I</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">umin</span><span class="p">,</span> <span class="n">umax</span><span class="p">,</span>
+            <span class="n">animate</span><span class="p">,</span> <span class="n">tool</span><span class="p">,</span>
+            <span class="n">solver_function</span><span class="o">=</span><span class="n">wave1D_u0</span><span class="o">.</span><span class="n">solver</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="solution-2">
+<h3>Solution 2<a class="headerlink" href="#solution-2" title="Permalink to this headline">¶</a></h3>
+<p>There is a more advanced, fancier solution featuring a very useful trick:
+we can make a new function that will always call <code class="docutils literal"><span class="pre">wave1D_u0v.solver</span></code>
+with <code class="docutils literal"><span class="pre">version='scalar'</span></code>. The <code class="docutils literal"><span class="pre">functools.partial</span></code> function from
+standard Python takes a function <code class="docutils literal"><span class="pre">func</span></code> as argument and
+a series of positional and keyword arguments and returns a
+new function that will call <code class="docutils literal"><span class="pre">func</span></code> with the supplied arguments,
+while the user can control all the other arguments in <code class="docutils literal"><span class="pre">func</span></code>.
+Consider a trivial example,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="o">+</span> <span class="n">c</span>
+</pre></div>
+</div>
+<p>We want to ensure that <code class="docutils literal"><span class="pre">f</span></code> is always called with <code class="docutils literal"><span class="pre">c=3</span></code>, i.e., <code class="docutils literal"><span class="pre">f</span></code>
+has only two &#8220;free&#8221; arguments <code class="docutils literal"><span class="pre">a</span></code> and <code class="docutils literal"><span class="pre">b</span></code>.
+This functionality is obtained by</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">functools</span>
+<span class="n">f2</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="k">print</span> <span class="n">f2</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>  <span class="c"># results in 1+2+3=6</span>
+</pre></div>
+</div>
+<p>Now <code class="docutils literal"><span class="pre">f2</span></code> calls <code class="docutils literal"><span class="pre">f</span></code> with whatever the user supplies as <code class="docutils literal"><span class="pre">a</span></code> and <code class="docutils literal"><span class="pre">b</span></code>,
+but <code class="docutils literal"><span class="pre">c</span></code> is always <code class="docutils literal"><span class="pre">3</span></code>.</p>
+<p>Back to our <code class="docutils literal"><span class="pre">viz</span></code> code, we can do</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">functools</span>
+<span class="c"># Call scalar with version fixed to `scalar`</span>
+<span class="n">scalar_solver</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">scalar</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s">&#39;scalar&#39;</span><span class="p">)</span>
+<span class="n">cpu</span> <span class="o">=</span> <span class="n">wave1D_u0</span><span class="o">.</span><span class="n">viz</span><span class="p">(</span>
+        <span class="n">I</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">umin</span><span class="p">,</span> <span class="n">umax</span><span class="p">,</span>
+        <span class="n">animate</span><span class="p">,</span> <span class="n">tool</span><span class="p">,</span> <span class="n">solver_function</span><span class="o">=</span><span class="n">scalar_solver</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The new <code class="docutils literal"><span class="pre">scalar_solver</span></code> takes the same arguments as
+<code class="docutils literal"><span class="pre">wave1D_u0.scalar</span></code> and calls <code class="docutils literal"><span class="pre">wave1D_u0v.scalar</span></code>,
+but always supplies the extra argument
+<code class="docutils literal"><span class="pre">version='scalar'</span></code>. When sending this <code class="docutils literal"><span class="pre">solver_function</span></code>
+to <code class="docutils literal"><span class="pre">wave1D_u0.viz</span></code>, the latter will call <code class="docutils literal"><span class="pre">wave1D_u0v.solver</span></code>
+with all the <code class="docutils literal"><span class="pre">I</span></code>, <code class="docutils literal"><span class="pre">V</span></code>, <code class="docutils literal"><span class="pre">f</span></code>, etc., arguments we supply, plus
+<code class="docutils literal"><span class="pre">version='scalar'</span></code>.</p>
+</div>
+<div class="section" id="efficiency-experiments">
+<h3>Efficiency experiments<a class="headerlink" href="#efficiency-experiments" title="Permalink to this headline">¶</a></h3>
+<p>We now have a <code class="docutils literal"><span class="pre">viz</span></code> function that can call our solver function both in
+scalar and vectorized mode. The function <code class="docutils literal"><span class="pre">run_efficiency_experiments</span></code>
+in <code class="docutils literal"><span class="pre">wave1D_u0v.py</span></code> performs a set of experiments and reports the
+CPU time spent in the scalar and vectorized solver for
+the previous string vibration example with spatial mesh resolutions
+<span class="math">\(N_x=50,100,200,400,800\)</span>. Running this function reveals
+that the vectorized
+code runs substantially faster: the vectorized code runs approximately
+<span class="math">\(N_x/10\)</span> times as fast as the scalar code!</p>
+</div>
 </div>
 <div class="section" id="remark-on-the-updating-of-arrays">
 <span id="wave-pde1-impl-ref-switch"></span><h2>Remark on the updating of arrays<a class="headerlink" href="#remark-on-the-updating-of-arrays" title="Permalink to this headline">¶</a></h2>
-<p>At the end of each time step we need to update the <tt class="docutils literal"><span class="pre">u_2</span></tt> and <tt class="docutils literal"><span class="pre">u_1</span></tt>
+<p>At the end of each time step we need to update the <code class="docutils literal"><span class="pre">u_2</span></code> and <code class="docutils literal"><span class="pre">u_1</span></code>
 arrays such that they have the right content for the next time step:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">u_2</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">u_1</span>
 <span class="n">u_1</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">u</span>
 </pre></div>
 </div>
-<p>The order here is important! (Updating <tt class="docutils literal"><span class="pre">u_1</span></tt> first, makes <tt class="docutils literal"><span class="pre">u_2</span></tt> equal
-to <tt class="docutils literal"><span class="pre">u</span></tt>, which is wrong.)</p>
-<p>The assignment <tt class="docutils literal"><span class="pre">u_1[:]</span> <span class="pre">=</span> <span class="pre">u</span></tt> copies the content of the <tt class="docutils literal"><span class="pre">u</span></tt> array into
-the elements of the <tt class="docutils literal"><span class="pre">u_1</span></tt> array. Such copying takes time, but
-little compared to computing <tt class="docutils literal"><span class="pre">u</span></tt> from the finite difference formula,
+<p>The order here is important! (Updating <code class="docutils literal"><span class="pre">u_1</span></code> first, makes <code class="docutils literal"><span class="pre">u_2</span></code> equal
+to <code class="docutils literal"><span class="pre">u</span></code>, which is wrong.)</p>
+<p>The assignment <code class="docutils literal"><span class="pre">u_1[:]</span> <span class="pre">=</span> <span class="pre">u</span></code> copies the content of the <code class="docutils literal"><span class="pre">u</span></code> array into
+the elements of the <code class="docutils literal"><span class="pre">u_1</span></code> array. Such copying takes time, but
+that time is negligible compared to the time needed for
+computing <code class="docutils literal"><span class="pre">u</span></code> from the finite difference formula,
 even when the formula has a vectorized implementation.
 However, efficiency of program code is a key topic when solving
-PDEs numerically, so it must be mentioned that there exists a
-much more efficient way of making the arrays <tt class="docutils literal"><span class="pre">u_2</span></tt> and <tt class="docutils literal"><span class="pre">u_1</span></tt>
+PDEs numerically (particularly when there are two or three
+space dimensions), so it must be mentioned that there exists a
+much more efficient way of making the arrays <code class="docutils literal"><span class="pre">u_2</span></code> and <code class="docutils literal"><span class="pre">u_1</span></code>
 ready for the next time step. The idea is based on <em>switching
-references</em> and explained below.</p>
+references</em> and explained as follows.</p>
 <p>A Python variable is actually a reference to some object (C programmers
-may think of pointers). Instead of copying data, we can let <tt class="docutils literal"><span class="pre">u_2</span></tt>
-refer to the <tt class="docutils literal"><span class="pre">u_1</span></tt> object and <tt class="docutils literal"><span class="pre">u_1</span></tt> refer to the <tt class="docutils literal"><span class="pre">u</span></tt> object.
+may think of pointers). Instead of copying data, we can let <code class="docutils literal"><span class="pre">u_2</span></code>
+refer to the <code class="docutils literal"><span class="pre">u_1</span></code> object and <code class="docutils literal"><span class="pre">u_1</span></code> refer to the <code class="docutils literal"><span class="pre">u</span></code> object.
+This is a very efficiency operation (like switching pointers in C).
 A naive implementation like</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">u_2</span> <span class="o">=</span> <span class="n">u_1</span>
 <span class="n">u_1</span> <span class="o">=</span> <span class="n">u</span>
 </pre></div>
 </div>
-<p>will fail, however, because now <tt class="docutils literal"><span class="pre">u_1</span></tt> and <tt class="docutils literal"><span class="pre">u</span></tt> refers to the same
-object and the update of <tt class="docutils literal"><span class="pre">u</span></tt> from the finite difference formula
-at the next time step will overwrite <tt class="docutils literal"><span class="pre">u_1</span></tt> and lead to erroneous
-computations. Also, with the suggested change of references, the
-reference to the <tt class="docutils literal"><span class="pre">u_2</span></tt> array is lost, and we have in fact only
-two arrays. The solution to this problem is to ensure that <tt class="docutils literal"><span class="pre">u</span></tt>
-points to the <tt class="docutils literal"><span class="pre">u_2</span></tt> array. This is mathematically wrong, but
-new correct values will be filled into <tt class="docutils literal"><span class="pre">u</span></tt> at the next time step.</p>
-<p>The correct switch of references is then</p>
+<p>will fail, however, because now <code class="docutils literal"><span class="pre">u_2</span></code> refers to the <code class="docutils literal"><span class="pre">u_1</span></code> object,
+but then the name <code class="docutils literal"><span class="pre">u_1</span></code> refers to <code class="docutils literal"><span class="pre">u</span></code>, so that this <code class="docutils literal"><span class="pre">u</span></code> object
+has two references, <code class="docutils literal"><span class="pre">u_1</span></code> and <code class="docutils literal"><span class="pre">u</span></code>, while our third array, originally
+referred to by <code class="docutils literal"><span class="pre">u_2</span></code> has no more references and is lost.
+This means that the variables <code class="docutils literal"><span class="pre">u</span></code>, <code class="docutils literal"><span class="pre">u_1</span></code>, and <code class="docutils literal"><span class="pre">u_2</span></code> refer to two
+arrays and not three. Consequently, the computations at the next
+time level will be messed up since updating the elements in
+<code class="docutils literal"><span class="pre">u</span></code> will imply updating the elements in <code class="docutils literal"><span class="pre">u_1</span></code> too so the solution
+at the previous time step, which is crucial in our formulas, is
+destroyed.</p>
+<p>While <code class="docutils literal"><span class="pre">u_2</span> <span class="pre">=</span> <span class="pre">u_1</span></code> is fine, <code class="docutils literal"><span class="pre">u_1</span> <span class="pre">=</span> <span class="pre">u</span></code> is problematic, so
+the solution to this problem is to ensure that <code class="docutils literal"><span class="pre">u</span></code>
+points to the <code class="docutils literal"><span class="pre">u_2</span></code> array. This is mathematically wrong, but
+new correct values will be filled into <code class="docutils literal"><span class="pre">u</span></code> at the next time step
+and make it right.</p>
+<p>The correct switch of references is</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">tmp</span> <span class="o">=</span> <span class="n">u_2</span>
 <span class="n">u_2</span> <span class="o">=</span> <span class="n">u_1</span>
 <span class="n">u_1</span> <span class="o">=</span> <span class="n">u</span>
 <span class="n">u</span> <span class="o">=</span> <span class="n">tmp</span>
 </pre></div>
 </div>
-<p>We can get rid of the temporary reference <tt class="docutils literal"><span class="pre">tmp</span></tt> by writing</p>
+<p>We can get rid of the temporary reference <code class="docutils literal"><span class="pre">tmp</span></code> by writing</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">u_2</span><span class="p">,</span> <span class="n">u_1</span><span class="p">,</span> <span class="n">u</span> <span class="o">=</span> <span class="n">u_1</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">u_2</span>
 </pre></div>
 </div>
-<p>This update will be used in later implementations.</p>
+<p>This switching of references for updating our arrays
+will be used in later implementations.</p>
 <div class="admonition-caution admonition">
 <p class="first admonition-title">Caution</p>
-<p class="last">The update <tt class="docutils literal"><span class="pre">u_2,</span> <span class="pre">u_1,</span> <span class="pre">u</span> <span class="pre">=</span> <span class="pre">u_1,</span> <span class="pre">u,</span> <span class="pre">u_2</span></tt> leaves wrong content in <tt class="docutils literal"><span class="pre">u</span></tt>
-at the final time step. This means that if we return <tt class="docutils literal"><span class="pre">u</span></tt>, as we
-do in the example codes here, we actually return <tt class="docutils literal"><span class="pre">u_2</span></tt>, which is
+<p class="last">The update <code class="docutils literal"><span class="pre">u_2,</span> <span class="pre">u_1,</span> <span class="pre">u</span> <span class="pre">=</span> <span class="pre">u_1,</span> <span class="pre">u,</span> <span class="pre">u_2</span></code> leaves wrong content in <code class="docutils literal"><span class="pre">u</span></code>
+at the final time step. This means that if we return <code class="docutils literal"><span class="pre">u</span></code>, as we
+do in the example codes here, we actually return <code class="docutils literal"><span class="pre">u_2</span></code>, which is
 obviously wrong. It is therefore important to adjust the content
-of <tt class="docutils literal"><span class="pre">u</span></tt> to <tt class="docutils literal"><span class="pre">u</span> <span class="pre">=</span> <span class="pre">u_1</span></tt> before returning <tt class="docutils literal"><span class="pre">u</span></tt>.</p>
+of <code class="docutils literal"><span class="pre">u</span></code> to <code class="docutils literal"><span class="pre">u</span> <span class="pre">=</span> <span class="pre">u_1</span></code> before returning <code class="docutils literal"><span class="pre">u</span></code>.</p>
 </div>
 </div>
 </div>
@@ -760,8 +1014,8 @@ in space is <span class="math">\(\lambda = 2\pi /k\)</span> and the period in ti
 Use these expressions to find the wave length in space and period in
 time of <span class="math">\({u_{\small\mbox{e}}}\)</span> above.</p>
 <p><strong>b)</strong>
-Import the <tt class="docutils literal"><span class="pre">solver</span></tt> function <tt class="docutils literal"><span class="pre">wave1D_u0.py</span></tt> into a new file
-where the <tt class="docutils literal"><span class="pre">viz</span></tt> function is reimplemented such that it
+Import the <code class="docutils literal"><span class="pre">solver</span></code> function <code class="docutils literal"><span class="pre">wave1D_u0.py</span></code> into a new file
+where the <code class="docutils literal"><span class="pre">viz</span></code> function is reimplemented such that it
 plots either the numerical <em>and</em> the exact solution, <em>or</em> the error.</p>
 <p><strong>c)</strong>
 Make animations where you illustrate how the error
@@ -776,54 +1030,54 @@ A possible set of parameters is <span class="math">\(L=12\)</span>, <span class=
 <span class="math">\(C=0.8\)</span>. The error mesh function <span class="math">\(e^n\)</span> can be simulated for 10 periods,
 while 20-30 periods are needed to show significant differences between
 the curves for the numerical and exact solution.</p>
-<p>Filename: <tt class="docutils literal"><span class="pre">wave_standing.py</span></tt>.</p>
+<p>Filename: <code class="docutils literal"><span class="pre">wave_standing</span></code>.</p>
 <div class="section" id="remarks-1">
 <h3>Remarks  (1)<a class="headerlink" href="#remarks-1" title="Permalink to this headline">¶</a></h3>
 <p>The important
 parameters for numerical quality are <span class="math">\(C\)</span> and <span class="math">\(k\Delta x\)</span>, where
 <span class="math">\(C=c\Delta t/\Delta x\)</span> is the Courant number and <span class="math">\(k\)</span> is defined above
 (<span class="math">\(k\Delta x\)</span> is proportional to how many mesh points we have per wave length
-in space, see the section <a class="reference internal" href="._main_wave004.html#wave-pde1-num-dispersion"><em>Numerical dispersion relation</em></a> for explanation).</p>
+in space, see the section <a class="reference internal" href="._main_wave004.html#wave-pde1-num-dispersion"><span class="std std-ref">Numerical dispersion relation</span></a> for explanation).</p>
 </div>
 </div>
 <div class="section" id="exercise-2-add-storage-of-solution-in-a-user-action-function">
 <span id="wave-exer-store-list"></span><h2>Exercise 2: Add storage of solution in a user action function<a class="headerlink" href="#exercise-2-add-storage-of-solution-in-a-user-action-function" title="Permalink to this headline">¶</a></h2>
-<p>Extend the <tt class="docutils literal"><span class="pre">plot_u</span></tt> function in the file <tt class="docutils literal"><span class="pre">wave1D_u0.py</span></tt> to also store
-the solutions <tt class="docutils literal"><span class="pre">u</span></tt> in a list.
-To this end, declare <tt class="docutils literal"><span class="pre">all_u</span></tt> as
-an empty list in the <tt class="docutils literal"><span class="pre">viz</span></tt> function, outside <tt class="docutils literal"><span class="pre">plot_u</span></tt>, and perform
-an append operation inside the <tt class="docutils literal"><span class="pre">plot_u</span></tt> function. Note that a
-function, like <tt class="docutils literal"><span class="pre">plot_u</span></tt>, inside another function, like <tt class="docutils literal"><span class="pre">viz</span></tt>,
-remembers all local variables in <tt class="docutils literal"><span class="pre">viz</span></tt> function, including <tt class="docutils literal"><span class="pre">all_u</span></tt>,
-even when <tt class="docutils literal"><span class="pre">plot_u</span></tt> is called (as <tt class="docutils literal"><span class="pre">user_action</span></tt>) in the <tt class="docutils literal"><span class="pre">solver</span></tt> function.
-Test both <tt class="docutils literal"><span class="pre">all_u.append(u)</span></tt> and <tt class="docutils literal"><span class="pre">all_u.append(u.copy())</span></tt>.
+<p>Extend the <code class="docutils literal"><span class="pre">plot_u</span></code> function in the file <code class="docutils literal"><span class="pre">wave1D_u0.py</span></code> to also store
+the solutions <code class="docutils literal"><span class="pre">u</span></code> in a list.
+To this end, declare <code class="docutils literal"><span class="pre">all_u</span></code> as
+an empty list in the <code class="docutils literal"><span class="pre">viz</span></code> function, outside <code class="docutils literal"><span class="pre">plot_u</span></code>, and perform
+an append operation inside the <code class="docutils literal"><span class="pre">plot_u</span></code> function. Note that a
+function, like <code class="docutils literal"><span class="pre">plot_u</span></code>, inside another function, like <code class="docutils literal"><span class="pre">viz</span></code>,
+remembers all local variables in <code class="docutils literal"><span class="pre">viz</span></code> function, including <code class="docutils literal"><span class="pre">all_u</span></code>,
+even when <code class="docutils literal"><span class="pre">plot_u</span></code> is called (as <code class="docutils literal"><span class="pre">user_action</span></code>) in the <code class="docutils literal"><span class="pre">solver</span></code> function.
+Test both <code class="docutils literal"><span class="pre">all_u.append(u)</span></code> and <code class="docutils literal"><span class="pre">all_u.append(u.copy())</span></code>.
 Why does one of these constructions fail to store the solution correctly?
-Let the <tt class="docutils literal"><span class="pre">viz</span></tt> function return the <tt class="docutils literal"><span class="pre">all_u</span></tt> list
-converted to a two-dimensional <tt class="docutils literal"><span class="pre">numpy</span></tt> array.
-Filename: <tt class="docutils literal"><span class="pre">wave1D_u0_s_store.py</span></tt>.</p>
+Let the <code class="docutils literal"><span class="pre">viz</span></code> function return the <code class="docutils literal"><span class="pre">all_u</span></code> list
+converted to a two-dimensional <code class="docutils literal"><span class="pre">numpy</span></code> array.
+Filename: <code class="docutils literal"><span class="pre">wave1D_u0_s_store</span></code>.</p>
 </div>
 <div class="section" id="exercise-3-use-a-class-for-the-user-action-function">
 <span id="wave-exer-store-list-class"></span><h2>Exercise 3: Use a class for the user action function<a class="headerlink" href="#exercise-3-use-a-class-for-the-user-action-function" title="Permalink to this headline">¶</a></h2>
-<p>Redo <a class="reference internal" href="#wave-exer-store-list"><em>Exercise 2: Add storage of solution in a user action function</em></a> using a class for the
-user action function. That is, define a class <tt class="docutils literal"><span class="pre">Action</span></tt> where
-the <tt class="docutils literal"><span class="pre">all_u</span></tt> list is an attribute, and implement the user action
-function as a method (the special method <tt class="docutils literal"><span class="pre">__call__</span></tt> is a natural
+<p>Redo <a class="reference internal" href="#wave-exer-store-list"><span class="std std-ref">Exercise 2: Add storage of solution in a user action function</span></a> using a class for the
+user action function. That is, define a class <code class="docutils literal"><span class="pre">Action</span></code> where
+the <code class="docutils literal"><span class="pre">all_u</span></code> list is an attribute, and implement the user action
+function as a method (the special method <code class="docutils literal"><span class="pre">__call__</span></code> is a natural
 choice). The class versions avoids that the user action function
-depends on parameters defined outside the function (such as <tt class="docutils literal"><span class="pre">all_u</span></tt>
-in <a class="reference internal" href="#wave-exer-store-list"><em>Exercise 2: Add storage of solution in a user action function</em></a>).
-Filename: <tt class="docutils literal"><span class="pre">wave1D_u0_s2c.py</span></tt>.</p>
+depends on parameters defined outside the function (such as <code class="docutils literal"><span class="pre">all_u</span></code>
+in <a class="reference internal" href="#wave-exer-store-list"><span class="std std-ref">Exercise 2: Add storage of solution in a user action function</span></a>).
+Filename: <code class="docutils literal"><span class="pre">wave1D_u0_s2c</span></code>.</p>
 </div>
 <div class="section" id="exercise-4-compare-several-courant-numbers-in-one-movie">
 <span id="wave-exer-multiple-c"></span><h2>Exercise 4: Compare several Courant numbers in one movie<a class="headerlink" href="#exercise-4-compare-several-courant-numbers-in-one-movie" title="Permalink to this headline">¶</a></h2>
 <p>The goal of this exercise is to make movies where several curves,
 corresponding to different Courant numbers, are visualized.
-Import the <tt class="docutils literal"><span class="pre">solver</span></tt> function from the <tt class="docutils literal"><span class="pre">wave1D_u0_s</span></tt> movie
-in a new file <tt class="docutils literal"><span class="pre">wave_compare.py</span></tt>. Reimplement the <tt class="docutils literal"><span class="pre">viz</span></tt> function
-such that it can take a list of <tt class="docutils literal"><span class="pre">C</span></tt> values as argument
-and create a movie with solutions corresponding to the given <tt class="docutils literal"><span class="pre">C</span></tt>
-values. The <tt class="docutils literal"><span class="pre">plot_u</span></tt> function must be changed to store the solution
-in an array (see <a class="reference internal" href="#wave-exer-store-list"><em>Exercise 2: Add storage of solution in a user action function</em></a> or
-<a class="reference internal" href="#wave-exer-store-list-class"><em>Exercise 3: Use a class for the user action function</em></a> for details), <tt class="docutils literal"><span class="pre">solver</span></tt> must be
+Import the <code class="docutils literal"><span class="pre">solver</span></code> function from the <code class="docutils literal"><span class="pre">wave1D_u0_s</span></code> movie
+in a new file <code class="docutils literal"><span class="pre">wave_compare.py</span></code>. Reimplement the <code class="docutils literal"><span class="pre">viz</span></code> function
+such that it can take a list of <code class="docutils literal"><span class="pre">C</span></code> values as argument
+and create a movie with solutions corresponding to the given <code class="docutils literal"><span class="pre">C</span></code>
+values. The <code class="docutils literal"><span class="pre">plot_u</span></code> function must be changed to store the solution
+in an array (see <a class="reference internal" href="#wave-exer-store-list"><span class="std std-ref">Exercise 2: Add storage of solution in a user action function</span></a> or
+<a class="reference internal" href="#wave-exer-store-list-class"><span class="std std-ref">Exercise 3: Use a class for the user action function</span></a> for details), <code class="docutils literal"><span class="pre">solver</span></code> must be
 computed for each value of the Courant number, and finally
 one must run through each time step and plot all the spatial
 solution curves in one figure and store it in a file.</p>
@@ -831,7 +1085,7 @@ solution curves in one figure and store it in a file.</p>
 one plot corresponds to the same time point. The easiest remedy is to
 keep the time and space resolution constant and change the wave
 velocity <span class="math">\(c\)</span> to change the Courant number.
-Filename: <tt class="docutils literal"><span class="pre">wave_numerics_comparison.py</span></tt>.</p>
+Filename: <code class="docutils literal"><span class="pre">wave_numerics_comparison</span></code>.</p>
 </div>
 <div class="section" id="project-5-calculus-with-1d-mesh-functions">
 <span id="wave-exer-mesh1d-calculus"></span><h2>Project 5: Calculus with 1D mesh functions<a class="headerlink" href="#project-5-calculus-with-1d-mesh-functions" title="Permalink to this headline">¶</a></h2>
@@ -843,12 +1097,12 @@ mesh <span class="math">\(x_i=i\Delta x\)</span>, <span class="math">\(i=0,\ldot
 Define the discrete derivative of <span class="math">\(f_i\)</span> by using centered
 differences at internal mesh points and one-sided differences
 at the end points. Implement a scalar version of
-the computation in a Python function and supply a nose test
+the computation in a Python function and write an associated unit test
 for the linear case <span class="math">\(f(x)=4x-2.5\)</span> where the discrete derivative should
 be exact.</p>
 <p><strong>b)</strong>
 Vectorize the implementation of the discrete derivative.
-Extend the nose test to check the validity of the implementation.</p>
+Extend the unit test to check the validity of the implementation.</p>
 <p><strong>c)</strong>
 To compute the discrete integral <span class="math">\(F_i\)</span> of <span class="math">\(f_i\)</span>, we assume that
 the mesh function <span class="math">\(f_i\)</span> varies linearly between the mesh points.
@@ -862,22 +1116,22 @@ how that if <span class="math">\(F_{i}\)</span> is already computed, we can find
 from</p>
 <div class="math">
 \[F_{i+1} = F_i + \frac{1}{2}(f_i + f_{i+1})\Delta x{\thinspace .}\]</div>
-<p>Make a function for a scalar implementation of the discrete integral
+<p>Make a function for the scalar implementation of the discrete integral
 as a mesh function. That is, the function should return
 <span class="math">\(F_i\)</span> for <span class="math">\(i=0,\ldots,N_x\)</span>.
-For a nose test one can use the fact that the above defined
+For a unit test one can use the fact that the above defined
 discrete integral of a linear
 function (say <span class="math">\(f(x)=4x-2.5\)</span>) is exact.</p>
 <p><strong>d)</strong>
 Vectorize the implementation of the discrete integral.
-Extend the nose test to check the validity of the implementation.</p>
+Extend the unit test to check the validity of the implementation.</p>
 <p><strong>Hint.</strong>
 Interpret the recursive formula for <span class="math">\(F_{i+1}\)</span> as a sum.
 Make an array with each element of the sum and use the &#8220;cumsum&#8221;
-(<tt class="docutils literal"><span class="pre">numpy.cumsum</span></tt>) operation to compute the accumulative sum:
-<tt class="docutils literal"><span class="pre">numpy.cumsum([1,3,5])</span></tt> is <tt class="docutils literal"><span class="pre">[1,4,9]</span></tt>.</p>
+(<code class="docutils literal"><span class="pre">numpy.cumsum</span></code>) operation to compute the accumulative sum:
+<code class="docutils literal"><span class="pre">numpy.cumsum([1,3,5])</span></code> is <code class="docutils literal"><span class="pre">[1,4,9]</span></code>.</p>
 <p><strong>e)</strong>
-Create a class <tt class="docutils literal"><span class="pre">MeshCalculus</span></tt> that can integrate and differentiate
+Create a class <code class="docutils literal"><span class="pre">MeshCalculus</span></code> that can integrate and differentiate
 mesh functions. The class can just define some methods that call
 the previously implemented Python functions. Here is an example
 on the usage:</p>
@@ -889,7 +1143,7 @@ on the usage:</p>
 <span class="n">F</span> <span class="o">=</span> <span class="n">calc</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>         <span class="c"># discrete anti-derivative</span>
 </pre></div>
 </div>
-<p>Filename: <tt class="docutils literal"><span class="pre">mesh_calculus_1D.py</span></tt>.</p>
+<p>Filename: <code class="docutils literal"><span class="pre">mesh_calculus_1D</span></code>.</p>
 </div>
 </div>
 
@@ -907,24 +1161,30 @@ on the usage:</p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Implementation  (1)</a><ul>
-<li><a class="reference internal" href="#making-a-solver-function">Making a solver function</a></li>
+<li><a class="reference internal" href="#callback-function-for-user-specific-actions">Callback function for user-specific actions</a></li>
+<li><a class="reference internal" href="#the-solver-function">The solver function</a></li>
 <li><a class="reference internal" href="#verification-exact-quadratic-solution">Verification: exact quadratic solution</a></li>
 <li><a class="reference internal" href="#visualization-animating-the-solution">Visualization: animating the solution</a><ul>
-<li><a class="reference internal" href="#visualization-via-scitools">Visualization via SciTools</a></li>
+<li><a class="reference internal" href="#function-for-administering-the-simulation">Function for administering the simulation</a></li>
+<li><a class="reference internal" href="#dissection-of-the-code">Dissection of the code</a></li>
 <li><a class="reference internal" href="#making-movie-files">Making movie files</a></li>
 <li><a class="reference internal" href="#skipping-frames-for-animation-speed">Skipping frames for animation speed</a></li>
-<li><a class="reference internal" href="#visualization-via-matplotlib">Visualization via Matplotlib</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#running-a-case">Running a case</a></li>
-<li><a class="reference internal" href="#the-benefits-of-scaling">The benefits of scaling</a></li>
+<li><a class="reference internal" href="#working-with-a-scaled-pde-model">Working with a scaled PDE model</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#vectorization">Vectorization</a><ul>
 <li><a class="reference internal" href="#operations-on-slices-of-arrays">Operations on slices of arrays</a></li>
 <li><a class="reference internal" href="#finite-difference-schemes-expressed-as-slices">Finite difference schemes expressed as slices</a></li>
 <li><a class="reference internal" href="#verification-2">Verification  (2)</a></li>
-<li><a class="reference internal" href="#efficiency-measurements">Efficiency measurements</a></li>
+<li><a class="reference internal" href="#efficiency-measurements">Efficiency measurements</a><ul>
+<li><a class="reference internal" href="#solution-1">Solution 1</a></li>
+<li><a class="reference internal" href="#solution-2">Solution 2</a></li>
+<li><a class="reference internal" href="#efficiency-experiments">Efficiency experiments</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#remark-on-the-updating-of-arrays">Remark on the updating of arrays</a></li>
 </ul>
 </li>

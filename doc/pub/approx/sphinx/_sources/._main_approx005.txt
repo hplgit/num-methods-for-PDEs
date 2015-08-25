@@ -8,13 +8,12 @@ Implementation  (1)
 Based on the experience from the previous example, it makes
 sense to write some code to automate the analytical integration process
 for any choice of finite element basis functions. In addition,
-we can automate the assembly process and linear system
-solution. Appropriate
-functions for this purpose document all details of all
-steps in the finite element computations and can be found in the module file
+we can automate the assembly process and the solution of the linear system.
+Another advantage is that the
+code for these purposes document all details of all
+steps in the finite element computational machinery.
+The complete code can be found in the module file
 `fe_approx1D.py <http://tinyurl.com/nm5587k/fem/fe_approx1D.py>`__.
-The key steps in the computational machinery are now explained in
-detail in terms of code and text.
 
 .. _fem:approx:fe:impl:intg:
 
@@ -67,8 +66,7 @@ symbolic expressions, is constructed by
             phi = [phi_r(r, X, d) for r in range(d+1)]
             return phi
 
-Now we are in a position to write the function for computing
-the element matrix:
+Now we can write the function that computes the element matrix:
 
 .. code-block:: python
 
@@ -140,10 +138,10 @@ right-hand side ``sympy`` may face difficulties with certain types of
 expressions ``f``. The result of the integral is then an ``Integral``
 object and not a number or expression
 as when symbolic integration is successful.
-It may therefore be wise to introduce a fallback on numerical
-integration. The symbolic integration can also take much time
-before an unsuccessful conclusion so we may also introduce a parameter
-``symbolic`` and set it to ``False`` in order to avoid symbolic integration:
+It may therefore be wise to introduce a fall back on numerical
+integration. The symbolic integration can also spend considerable time
+before reaching an unsuccessful conclusion, so we may also introduce a parameter
+``symbolic`` to turn symbolic integration on and off:
 
 .. code-block:: python
 
@@ -253,12 +251,14 @@ Let us first work with a symbolic element length:
 
 .. _fem:approx:fe:impl:ex1:collocation:
 
-Comparison with finite elements and interpolation/collocation
--------------------------------------------------------------
+Using interpolation instead of least squares
+--------------------------------------------
 
-We may, for comparison, compute the ``c`` vector corresponding to
-an interpolation/collocation method with finite element basis functions.
-Choosing the nodes as points, the principle is
+As an alternative to the least squares formulation,
+we may compute the ``c`` vector based on
+the interpolation method from the section :ref:`fem:approx:global:interp`,
+using finite element basis functions.
+Choosing the nodes as interpolation points, the method can be written as
 
 .. math::
          u(x_{i}) = \sum_{j\in{\mathcal{I}_s}} c_j{\varphi}_j(x_{i}) = f(x_{i}),\quad
@@ -266,7 +266,7 @@ Choosing the nodes as points, the principle is
 
 The coefficient matrix :math:`A_{i,j}={\varphi}_j(x_{i})` becomes
 the identity matrix because basis function number :math:`j` vanishes
-at all nodes, except node :math:`j`: :math:`{\varphi}_j(x_{i})=\delta_{ij}`.
+at all nodes, except node :math:`i`: :math:`{\varphi}_j(x_{i})=\delta_{ij}`.
 Therefore, :math:`c_i = f(x_{i})`.
 
 The associated ``sympy`` calculations are
@@ -280,6 +280,8 @@ The associated ``sympy`` calculations are
 
 These expressions are much simpler than those based on least squares
 or projection in combination with finite element basis functions.
+However, which of the two methods that is most appropriate for a given
+task is problem-dependent, so we need both methods in our toolbox.
 
 .. _fem:approx:fe:impl:ex1:numeric:
 
@@ -287,8 +289,8 @@ Example on computing numerical approximations
 ---------------------------------------------
 
 The numerical computations corresponding to the
-symbolic ones in the section :ref:`fem:approx:fe:impl:ex1:symbolic`,
-and still done by ``sympy`` and the ``assemble`` function, go as follows:
+symbolic ones in the section :ref:`fem:approx:fe:impl:ex1:symbolic`
+(still done by ``sympy`` and the ``assemble`` function) go as follows:
 
 .. code-block:: ipy
 
@@ -431,7 +433,7 @@ Trapezoidal rule at the global node points to arrive at
         \end{array}\right.
         
 
-The reason for this simple formula is simply that :math:`{\varphi}_i` is either
+The reason for this simple formula is just that :math:`{\varphi}_i` is either
 0 or 1 at the nodes and 0 at all but one of them.
 
 Going to P2 elements (``d=2``) leads
@@ -447,7 +449,7 @@ to the element matrix
         \end{array}\right)
         
 
-and the following global assembled matrix from four elements:
+and the following global matrix, assembled here from four elements:
 
 .. math::
         
@@ -486,7 +488,7 @@ multiplied by :math:`h/30`. The rows with odd numbers correspond to
 nodes at the element boundaries and get contributions from two
 neighboring elements in the assembly process,
 while the even numbered rows correspond to
-internal nodes in the elements where the only one element contributes
+internal nodes in the elements where only one element contributes
 to the values in the global matrix.
 
 .. _fem:approx:fe:impl:ex2:
@@ -497,7 +499,7 @@ Applications
 With the aid of the ``approximate`` function in the ``fe_approx1D``
 module we can easily investigate the quality of various finite element
 approximations to some given functions. Figure :ref:`fem:approx:fe:x9:sin`
-shows how linear and quadratic elements approximates the polynomial
+shows how linear and quadratic elements approximate the polynomial
 :math:`f(x)=x(1-x)^8` on :math:`\Omega =[0,1]`, using equal-sized elements.
 The results arise from the program
 
@@ -515,7 +517,7 @@ The results arise from the program
 The quadratic functions are seen to be better than the linear ones for the same
 value of :math:`N`, as we increase :math:`N`. This observation has some generality:
 higher degree is not necessarily better on a coarse mesh, but it is as
-we refined the mesh.
+we refine the mesh.
 
 .. _fem:approx:fe:x9:sin:
 
@@ -542,25 +544,34 @@ accept flexible choices of :math:`f(x)` should compute all integrals
 numerically and replace the matrix objects from ``sympy`` by
 the far more efficient array objects from ``numpy``.
 
-Another reason for slow code is related to the fact that most of the
+There is also another reason for slow code: the solution algorithm for
+the linear system performs much more work than necessary. Most of the
 matrix entries :math:`A_{i,j}` are zero, because :math:`({\varphi}_i,{\varphi}_j)=0`
-unless :math:`i` and :math:`j` are nodes in the same element.  A matrix whose
-majority of entries are zeros, is known as a *sparse* matrix.  The
-sparsity should be utilized in software as it dramatically decreases
+unless :math:`i` and :math:`j` are nodes in the same element. In 1D problems,
+we do not need to store or compute with these zeros when solving the
+linear system, but that requires solution methods adapted to the kind
+of matrices produced by the finite element approximations.
+
+A matrix whose majority of entries are zeros, is known as a *sparse* matrix.
+Utilizing sparsity in software dramatically decreases
 the storage demands and the CPU-time needed to compute the solution of
-the linear system. This optimization is not critical in 1D problems
+the linear system. This optimization is not very critical in 1D problems
 where modern computers can afford computing with all the zeros in the
 complete square matrix, but in 2D and especially in 3D, sparse
 matrices are fundamental for feasible finite element computations.
+One of the advantageous features of the finite element method is that it
+produces very sparse matrices. The reason is that the basis functions
+have local support such that the product of two basis functions, as
+typically met in integrals, is mostly zero.
 
-In 1D problems, using a
-numbering of nodes and elements from left to right over the domain,
-the assembled coefficient matrix has only a few diagonals different
-from zero. More precisely, :math:`2d+1` diagonals are different from
-zero. With a different numbering of global nodes, say a random
-ordering, the diagonal structure is lost, but the number of
-nonzero elements is unaltered. Figures :ref:`fem:approx:fe:sparsity:P1`
-and :ref:`fem:approx:fe:sparsity:P3` exemplify sparsity patterns.
+Using a numbering of nodes and elements from left to right over a 1D
+domain, the assembled coefficient matrix has only a few diagonals
+different from zero. More precisely, :math:`2d+1` diagonals around the main
+diagonal are different from zero. With a different numbering of global
+nodes, say a random ordering, the diagonal structure is lost, but the
+number of nonzero elements is unaltered. Figures
+:ref:`fem:approx:fe:sparsity:P1` and :ref:`fem:approx:fe:sparsity:P3`
+exemplify sparsity patterns.
 
 .. _fem:approx:fe:sparsity:P1:
 
@@ -585,9 +596,7 @@ and linear system solution.
 
  * ``scipy.sparse.diags`` for matrix defined via diagonals
 
- * ``scipy.sparse.lil_matrix`` for creation via setting matrix entries
-
- * ``scipy.sparse.dok_matrix`` for creation via setting matrix entries
+ * ``scipy.sparse.lil_matrix`` and ``scipy.sparse.dok_matrix`` for creation via setting matrix entries
 
 .. 2DO
 

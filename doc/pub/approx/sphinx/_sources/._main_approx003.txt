@@ -26,13 +26,14 @@ combination of the basis functions:
         
         
 
-The index set :math:`{\mathcal{I}_s}` is defined as :math:`{\mathcal{I}_s} =\{0,\ldots,N\}` and is used
+The index set :math:`{\mathcal{I}_s}` is defined as :math:`{\mathcal{I}_s} =\{0,\ldots,N\}` and is
+from now on used
 both for compact notation and for flexibility in the numbering of
 elements in sequences.
 
 For now, in this introduction, we shall look at functions of a
 single variable :math:`x`:
-:math:`u=u(x)`, :math:`{\psi}_i={\psi}_i(x)`, :math:`i\in{\mathcal{I}_s}`. Later, we will almost
+:math:`u=u(x)`, :math:`{\psi}_j={\psi}_j(x)`, :math:`j\in{\mathcal{I}_s}`. Later, we will almost
 trivially extend the mathematical details
 to functions of two- or three-dimensional physical spaces.
 The approximation :eq:`fem:approx:ufem` is typically used
@@ -52,9 +53,10 @@ we minimize the distance between :math:`u` and :math:`f`. However, this requires
 a norm for measuring distances, and a norm is most conveniently
 defined through an
 inner product. Viewing a function as a vector of infinitely
-many point values, one for each value of :math:`x`, the inner product could
+many point values, one for each value of :math:`x`, the inner product of
+two arbitrary functions :math:`f(x)` and :math:`g(x)` could
 intuitively be defined as the usual summation of
-pairwise components, with summation replaced by integration:
+pairwise "components" (values), with summation replaced by integration:
 
 .. math::
         
@@ -257,7 +259,15 @@ Symbolic integration
 
 The linear system can be computed either symbolically or
 numerically (a numerical integration rule is needed in the latter case).
-Here is a function for symbolic computation of the linear system,
+Let us first compute the system and its solution symbolically, i.e.,
+using classical "pen and paper" mathematics with symbols.
+The Python package ``sympy`` can greatly help with this type of
+mathematics, and will therefore be frequently used in this text.
+Some basic familiarity with ``sympy`` is assumed, typically
+``symbols``, ``integrate``, ``diff``, ``expand``, and ``simplify``. Much can be learned
+by studying the many applications of ``sympy`` that will be presented.
+
+Below is a function for symbolic computation of the linear system,
 where :math:`f(x)` is given as a ``sympy`` expression ``f`` involving
 the symbol ``x``, ``psi`` is a list of expressions for :math:`\left\{ {{\psi}}_i \right\}_{i\in{\mathcal{I}_s}}`,
 and ``Omega`` is a 2-tuple/list holding the limits of the domain :math:`\Omega`:
@@ -284,17 +294,17 @@ and ``Omega`` is a 2-tuple/list holding the limits of the domain :math:`\Omega`:
             return u, c
 
 Observe that we exploit the symmetry of the coefficient matrix:
-only the upper triangular part is computed. Symbolic integration in
-``sympy`` is often time consuming, and (roughly) halving the
-work has noticeable effect on the waiting time for the function to
-finish execution.
+only the upper triangular part is computed. Symbolic integration, also in
+``sympy``, is often time consuming, and (roughly) halving the
+work has noticeable effect on the waiting time for the computations to
+finish.
 
-Fallback on numerical integration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Fall back on numerical integration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Obviously, ``sympy`` mail fail to successfully integrate
-:math:`\int_\Omega{\psi}_i{\psi}_jdx` and
-especially :math:`\int_\Omega f{\psi}_idx` symbolically.
+Obviously, ``sympy`` may fail to successfully integrate
+:math:`\int_\Omega{\psi}_i{\psi}_jdx`, and
+especially :math:`\int_\Omega f{\psi}_idx`, symbolically.
 Therefore, we should extend
 the ``least_squares`` function such that it falls back on
 numerical integration if the symbolic integration is unsuccessful.
@@ -305,8 +315,8 @@ We can test on this type and utilize the ``mpmath`` module in
 Even when ``sympy`` manages to integrate symbolically, it can
 take an undesirable long time. We therefore include an
 argument ``symbolic`` that governs whether or not to try
-symbolic integration. Here is the complete code of
-the improved version of function ``least_squares``:
+symbolic integration. Here is a complete and
+improved version of the previous function ``least_squares``:
 
 .. code-block:: python
 
@@ -344,10 +354,9 @@ The function is found in the file ``approx1D.py``.
 Plotting the approximation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Comparing the given :math:`f(x)` and the approximate :math:`u(x)` visually is
-done by the following function, which with the aid of
-``sympy``'s ``lambdify`` tool converts a ``sympy``
-expression to a Python function for numerical
+Comparing the given :math:`f(x)` and the approximate :math:`u(x)` visually is done
+by the following function, which utilizes ``sympy``'s ``lambdify`` tool to
+convert a ``sympy`` expression to a Python function for numerical
 computations:
 
 .. code-block:: python
@@ -372,12 +381,10 @@ in the symbolic expressions in ``f`` or ``u``, and these
 mathematical functions are to be used with vector arguments, like
 ``xcoor`` above.
 
-Both the ``least_squares`` and
-``comparison_plot``
-are found and coded in the file
-`approx1D.py <http://tinyurl.com/nm5587k/fem/approx1D.py>`__.
-The forthcoming examples on their use appear in
-``ex_approx1D.py``.
+Both the ``least_squares`` and ``comparison_plot`` functions are found in
+the file `approx1D.py <http://tinyurl.com/nm5587k/fem/approx1D.py>`__.  The file
+``ex_approx1D.py`` applies this module to accomplish the forthcoming
+examples.
 
 .. _fem:approx:global:exact:
 
@@ -518,7 +525,7 @@ returns a plain zero.
 
    The 15 first basis functions :math:`x^i`, :math:`i=0,\ldots,14`
 
-On the other hand, the double precision ``numpy`` solver do run for
+On the other hand, the double precision ``numpy`` solver does run for
 :math:`N=100`, resulting in answers that are not significantly worse than
 those in the table above, and large powers are
 associated with small coefficients (e.g., :math:`c_j<10^{-2}` for :math:`10\leq
@@ -561,16 +568,16 @@ That is,
 .. math::
          {\psi}_i(x) = \sin ((i+1)\pi x),\quad i\in{\mathcal{I}_s}{\thinspace .} 
 
-An approximation to the :math:`f(x)` function from
+An approximation to the parabola :math:`f(x)=10(x-1)^2-1` for :math:`x\in\Omega=[1,2]` from
 the section :ref:`fem:approx:global:linear` can then be computed by the
 ``least_squares`` function from the section :ref:`fem:approx:global:LS:code`:
 
 .. code-block:: python
 
         N = 3
-        from sympy import sin, pi
+        import sympy as sym
         x = sym.Symbol('x')
-        psi = [sin(pi*(i+1)*x) for i in range(N+1)]
+        psi = [sym.sin(sym.pi*(i+1)*x) for i in range(N+1)]
         f = 10*(x-1)**2 - 1
         Omega = [0, 1]
         u, c = least_squares(f, psi, Omega)
@@ -661,9 +668,9 @@ result is realized by trying
 in `WolframAlpha <http://wolframalpha.com>`__
 (avoid ``i`` in the integrand as this symbol means
 the imaginary unit :math:`\sqrt{-1}`).
-Also by asking WolframAlpha
-about :math:`\int_0^1\sin^2 (j\pi x) {\, \mathrm{d}x}`, we find it
-to equal 1/2.
+Asking WolframAlpha also
+about :math:`\int_0^1\sin^2 (j\pi x) {\, \mathrm{d}x}`, we find that it equals
+1/2.
 With a diagonal matrix we can easily solve for the coefficients
 by hand:
 
@@ -744,9 +751,9 @@ Numerical computations
 Sometimes the basis functions :math:`{\psi}_i` and/or the function :math:`f`
 have a nature that makes symbolic integration CPU-time
 consuming or impossible.
-Even though we implemented a fallback on numerical integration
-of :math:`\int f{\varphi}_i dx` considerable time might be required
-by ``sympy`` in the attempt to integrate symbolically.
+Even though we implemented a fall back on numerical integration
+of :math:`\int f{\varphi}_i dx`, considerable time might still be required
+by ``sympy`` just by *attempting* to integrate symbolically.
 Therefore, it will be handy to have function for fast
 *numerical integration and numerical solution
 of the linear system*. Below is such a method. It requires
@@ -755,8 +762,9 @@ as input. The output is a mesh function
 with values ``u`` on the mesh with points in the array ``x``.
 Three numerical integration methods are offered:
 ``scipy.integrate.quad`` (precision set to :math:`10^{-8}`),
-``sympy.mpmath.quad`` (high precision), and a Trapezoidal
-rule based on the points in ``x``.
+``sympy.mpmath.quad`` (about machine precision), and a Trapezoidal
+rule based on the points in ``x`` (unknown accuracy, but
+increasing with the number of mesh points in ``x``).
 
 .. code-block:: python
 
@@ -841,15 +849,15 @@ One is to demand that :math:`u(x_{i}) = f(x_{i})` at some selected points
         u(x_{i}) = \sum_{j\in{\mathcal{I}_s}} c_j {\psi}_j(x_{i}) = f(x_{i}),
         \quad i\in{\mathcal{I}_s}{\thinspace .} 
 
-This criterion also gives a linear system
-with :math:`N+1` unknown coefficients :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}`:
+We recognize that the equation :math:`\sum_j c_j {\psi}_j(x_{i}) = f(x_{i})`
+is actually a linear system with :math:`N+1` unknown coefficients :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}`:
 
 .. math::
         
         \sum_{j\in{\mathcal{I}_s}} A_{i,j}c_j = b_i,\quad i\in{\mathcal{I}_s},
         
 
-with
+with coefficient matrix and right-hand side vector given by
 
 .. math::
         
@@ -913,8 +921,8 @@ in a simple setting:
 
 .. code-block:: ipy
 
-        >>> from sympy import *
-        >>> x = Symbol('x')
+        >>> import sympy as sym
+        >>> x = sym.Symbol('x')
         >>> e = x**2              # symbolic expression involving x
         >>> p = 0.5               # a value of x
         >>> v = e.subs(x, p)      # evaluate e for x=p
@@ -939,7 +947,7 @@ distribute them uniformly throughout :math:`\Omega`.
 Example  (1)
 ~~~~~~~~~~~~
 
-Let us illustrate the interpolation or collocation method by approximating
+Let us illustrate the interpolation method by approximating
 our parabola :math:`f(x)=10(x-1)^2-1` by a linear function on :math:`\Omega=[1,2]`,
 using two collocation points :math:`x_0=1+1/3` and :math:`x_1=1+2/3`:
 
@@ -992,16 +1000,19 @@ Lagrange polynomials
 
 .. index:: Lagrange (interpolating) polynomial
 
-In the section :ref:`fem:approx:global:Fourier` we explain the advantage with having
+In the section :ref:`fem:approx:global:Fourier` we explained the advantage with having
 a diagonal matrix: formulas for the coefficients :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` can
-then be derived by hand. For an interpolation/collocation method a
+then be derived by hand. For an interpolation (or collocation) method a
 diagonal matrix implies that
 :math:`{\psi}_j(x_{i}) = 0` if :math:`i\neq j`. One set of basis functions :math:`{\psi}_i(x)`
 with this property is the *Lagrange interpolating polynomials*,
 or just *Lagrange polynomials*. (Although the functions are named
 after Lagrange, they were first discovered by Waring in 1779,
 rediscovered by Euler in 1783, and published by Lagrange in 1795.)
-The Lagrange polynomials have the form
+Lagrange polynomials key building blocks in the finite element method, so
+familiarity with these polynomials will be required anyway.
+
+A Lagrange polynomial can be written as
 
 .. _Eq:fem:approx:global:Lagrange:poly:
 
@@ -1035,11 +1046,11 @@ functions are polynomials of degree :math:`N` which have the property
         
         
 
-when :math:`x_s` is an interpolation/collocation point.
+when :math:`x_s` is an interpolation (collocation) point.
 Here we have used the *Kronecker delta* symbol :math:`\delta_{is}`.
 This property implies that :math:`A_{i,j}=0` for :math:`i\neq j` and
 :math:`A_{i,j}=1` when :math:`i=j`. The solution of the linear system is
-them simply
+then simply
 
 .. math::
         
@@ -1081,8 +1092,8 @@ The next function computes a complete basis using equidistant points throughout
 
 When ``x`` is an ``sym.Symbol`` object, we let the
 spacing between
-the interpolation points, ``h``, be a ``sympy`` rational number
-for nice end results in the formulas for :math:`{\psi}_i`.
+the interpolation points, ``h``, be a ``sympy`` rational number, so
+that we get nice end results in the formulas for :math:`{\psi}_i`.
 The other case, when ``x`` is a plain Python ``float``,
 signifies numerical computing, and then we let ``h`` be a floating-point
 number.
@@ -1117,7 +1128,7 @@ Approximation of a polynomial
 
 The Galerkin or least squares method lead to an exact approximation
 if :math:`f` lies in the space spanned by the basis functions. It could be
-interest to see how the interpolation method with Lagrange
+of interest to see how the interpolation method with Lagrange
 polynomials as basis is able to approximate a polynomial, e.g.,
 a parabola. Running
 
@@ -1224,15 +1235,21 @@ both uniformly distributed points and Chebyshev nodes:
 
 All the functions computing Lagrange polynomials listed
 above are found in the module file ``Lagrange.py``.
-Figure :ref:`fem:approx:global:Lagrange:fig:abs:Lag:Cheb:7:14` shows the improvement of
-using Chebyshev nodes (compared with Figure :ref:`fem:approx:global:Lagrange:fig:abs:Lag:unif:7:14`). The reason is that the corresponding Lagrange
-polynomials have much smaller oscillations as seen in
-Figure :ref:`fem:approx:global:Lagrange:fig:abs:Lag:Cheb:osc`
-(compare with Figure :ref:`fem:approx:global:Lagrange:fig:abs:Lag:unif:osc`).
 
-Another cure for undesired oscillation of higher-degree interpolating
+Figure :ref:`fem:approx:global:Lagrange:fig:abs:Lag:Cheb:7:14` shows the improvement of
+using Chebyshev nodes, compared with the equidistant points in
+Figure :ref:`fem:approx:global:Lagrange:fig:abs:Lag:unif:7:14`.
+The reason for this improvement is that the corresponding Lagrange
+polynomials have much smaller oscillations, which can be seen by
+comparing Figure :ref:`fem:approx:global:Lagrange:fig:abs:Lag:Cheb:osc`
+(Chebyshev points)
+with Figure :ref:`fem:approx:global:Lagrange:fig:abs:Lag:unif:osc`
+(equidistant points). Note the different scale on the vertical axes in
+the two figures.
+
+Another cure for undesired oscillations of higher-degree interpolating
 polynomials is to use lower-degree Lagrange
-polynomials on many small patches of the domain, which is the idea
+polynomials on many small patches of the domain. This is actually the idea
 pursued in the finite element method. For instance, linear Lagrange
 polynomials on :math:`[0,1/2]` and :math:`[1/2,1]` would yield a perfect
 approximation to :math:`f(x)=|1-2x|` on :math:`\Omega = [0,1]`
@@ -1270,7 +1287,7 @@ How does the least squares or projection methods work with Lagrange
 polynomials?
 We can just call the ``least_squares`` function, but
 ``sympy`` has problems integrating the :math:`f(x)=|1-2x|`
-function times a polynomial, so we need to fallback on numerical
+function times a polynomial, so we need to fall back on numerical
 integration.
 
 .. code-block:: python
@@ -1285,7 +1302,7 @@ integration.
                     integrand = psi[i]*psi[j]
                     I = sym.integrate(integrand, (x, Omega[0], Omega[1]))
                     if isinstance(I, sym.Integral):
-                        # Could not integrate symbolically, fallback
+                        # Could not integrate symbolically, fall back
                         # on numerical integration with mpmath.quad
                         integrand = sym.lambdify([x], integrand)
                         I = sym.mpmath.quad(integrand, [Omega[0], Omega[1]])
@@ -1303,4 +1320,10 @@ integration.
             return u
 
 .. Convergence of Lagrange polynomials.
+
+The idea of avoiding oscillatory solutions by
+using lower-order Lagrange polynomials on smaller patches
+throughout the domain, is important in the finite element
+method, and the next section introduces finite element basis
+functions based on Lagrange polynomials.
 

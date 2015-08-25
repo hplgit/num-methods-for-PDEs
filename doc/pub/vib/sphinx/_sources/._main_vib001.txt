@@ -334,8 +334,8 @@ input :math:`I`, :math:`\omega`, :math:`\Delta t`, and :math:`T`:
 
 .. code-block:: python
 
-        from numpy import *
-        from matplotlib.pyplot import *
+        import numpy as np
+        import matplotlib.pyplot as plt
         
         def solver(I, w, dt, T):
             """
@@ -344,8 +344,8 @@ input :math:`I`, :math:`\omega`, :math:`\Delta t`, and :math:`T`:
             """
             dt = float(dt)
             Nt = int(round(T/dt))
-            u = zeros(Nt+1)
-            t = linspace(0, Nt*dt, Nt+1)
+            u = np.zeros(Nt+1)
+            t = np.linspace(0, Nt*dt, Nt+1)
         
             u[0] = I
             u[1] = u[0] - 0.5*dt**2*w**2*u[0]
@@ -366,22 +366,22 @@ convenient to have:
 .. code-block:: python
 
         def u_exact(t, I, w):
-            return I*cos(w*t)
+            return I*np.cos(w*t)
         
         def visualize(u, t, I, w):
-            plot(t, u, 'r--o')
-            t_fine = linspace(0, t[-1], 1001)  # very fine mesh for u_e
+            plt.plot(t, u, 'r--o')
+            t_fine = np.linspace(0, t[-1], 1001)  # very fine mesh for u_e
             u_e = u_exact(t_fine, I, w)
-            hold('on')
-            plot(t_fine, u_e, 'b-')
-            legend(['numerical', 'exact'], loc='upper left')
-            xlabel('t')
-            ylabel('u')
+            plt.hold('on')
+            plt.plot(t_fine, u_e, 'b-')
+            plt.legend(['numerical', 'exact'], loc='upper left')
+            plt.xlabel('t')
+            plt.ylabel('u')
             dt = t[1] - t[0]
-            title('dt=%g' % dt)
+            plt.title('dt=%g' % dt)
             umin = 1.2*u.min();  umax = -umin
-            axis([t[0], t[-1], umin, umax])
-            savefig('tmp1.png');  savefig('tmp1.pdf')
+            plt.axis([t[0], t[-1], umin, umax])
+            plt.savefig('tmp1.png');  plt.savefig('tmp1.pdf')
 
 A corresponding main program calling these functions for a simulation
 of a given number of periods (``num_periods``) may take the form
@@ -488,12 +488,13 @@ shows the details how we use the hand calculations to test the code:
 .. code-block:: python
 
         def test_three_steps():
+            from math import pi
             I = 1;  w = 2*pi;  dt = 0.1;  T = 1
-            u_by_hand = array([1.000000000000000,
-                               0.802607911978213,
-                               0.288358920740053])
+            u_by_hand = np.array([1.000000000000000,
+                                  0.802607911978213,
+                                  0.288358920740053])
             u, t = solver(I, w, dt, T)
-            diff = abs(u_by_hand - u[:3]).max()
+            diff = np.abs(u_by_hand - u[:3]).max()
             tol = 1E-14
             assert diff < tol
 
@@ -557,6 +558,7 @@ All the implementational details of computing the sequence
             solver_function(I, w, dt, T) solves each problem, where T
             is based on simulation for num_periods periods.
             """
+            from math import pi
             w = 0.35; I = 0.3       # just chosen values
             P = 2*pi/w              # period
             dt = P/30               # 30 time step per period 2*pi/w
@@ -567,13 +569,13 @@ All the implementational details of computing the sequence
             for i in range(m):
                 u, t = solver_function(I, w, dt, T)
                 u_e = u_exact(t, I, w)
-                E = sqrt(dt*sum((u_e-u)**2))
+                E = np.sqrt(dt*np.sum((u_e-u)**2))
                 dt_values.append(dt)
                 E_values.append(E)
                 dt = dt/2
         
-            r = [log(E_values[i-1]/E_values[i])/
-                 log(dt_values[i-1]/dt_values[i])
+            r = [np.log(E_values[i-1]/E_values[i])/
+                 np.log(dt_values[i-1]/dt_values[i])
                  for i in range(1, m, 1)]
             return r
 
@@ -714,6 +716,7 @@ if the number of periods in the simulation exceeds 10.
             """
             import scitools.std as st
             from scitools.MovingPlotWindow import MovingPlotWindow
+            from math import pi
         
             # Remove all old plot files tmp_*.png
             import glob, os
@@ -920,6 +923,31 @@ considered feasible.
 
 [**hpl 5**: Combine two simulations side by side!]
 
+Using Bokeh to compare graphs
+-----------------------------
+
+Instead of a moving plot frame, one can use tools that allows panning
+by the mouse. For example, we can show four periods of a signal in
+a plot and then scroll with the mouse through the rest of the
+simulation. The `Bokeh <http://bokeh.pydata.org/en/latest/docs/quickstart.html>`__ plotting library offers such tools, but the plot must be displayed in
+a web browser. The documentation of Bokeh is excellent, so here we just
+show how the library can be used to compare a set of :math:`u` curves corresponding
+to long time simulations.
+
+Imagine we have performed experiments for a set of :math:`\Delta t` values.
+We want each curve, together with the exact solution, to appear in
+a plot, and then arrange all plots in a grid-like fashion:
+
+.. figure:: bokeh_gridplot1.png
+   :width: 800
+
+Furthermore, we want the axis to couple such that if we move into
+the future in one plot, all the other plots follows (note the
+displaced :math:`t` axes!):
+
+.. figure:: bokeh_gridplot2.png
+   :width: 800
+
 Using a line-by-line ascii plotter
 ----------------------------------
 
@@ -940,6 +968,7 @@ The tool
             """
             from scitools.avplotter import Plotter
             import time
+            from math import pi
             P = 2*pi/w
             umin = 1.2*u.min();  umax = -umin
         
@@ -948,10 +977,6 @@ The tool
                 print p.plot(t[n], u[n], I*cos(w*t[n])), \ 
                       '%.1f' % (t[n]/P)
                 time.sleep(1/float(fps))
-        
-        if __name__ == '__main__':
-            main()
-            raw_input()
 
 The call ``p.plot`` returns a line of text, with the :math:`t` axis marked and
 a symbol ``+`` for the first function (``u``) and ``o`` for the second
@@ -2540,7 +2565,7 @@ The function below, found in `vib_EulerCromer.py <http://tinyurl.com/nm5587k/vib
 
 .. code-block:: python
 
-        from numpy import zeros, linspace
+        import numpy as np
         
         def solver(I, w, dt, T):
             """
@@ -2549,9 +2574,9 @@ The function below, found in `vib_EulerCromer.py <http://tinyurl.com/nm5587k/vib
             """
             dt = float(dt)
             Nt = int(round(T/dt))
-            u = zeros(Nt+1)
-            v = zeros(Nt+1)
-            t = linspace(0, Nt*dt, Nt+1)
+            u = np.zeros(Nt+1)
+            v = np.zeros(Nt+1)
+            t = np.linspace(0, Nt*dt, Nt+1)
         
             v[0] = 0
             u[0] = I
@@ -2589,7 +2614,7 @@ formula :eq:`vib:ode1:un:exact`:
             u, v, t = solver_ic_fix(I, w, dt, T)
             from vib_undamped import solver as solver2  # 2nd-order ODE
             u2, t2 = solver2(I, w, dt, T)
-            error = abs(u - u2).max()
+            error = np.abs(u - u2).max()
             tol = 1E-14
             assert error < tol
 
@@ -2674,10 +2699,7 @@ code appears in the file `vib_undamped_velocity_Verlet.py <http://tinyurl.com/nm
 
 .. code-block:: python
 
-        from vib_undamped import (
-            zeros, linspace,
-            convergence_rates,
-            main)
+        from vib_undamped import convergence_rates, main
         
         def solver(I, w, dt, T, return_v=False):
             """
@@ -2686,9 +2708,9 @@ code appears in the file `vib_undamped_velocity_Verlet.py <http://tinyurl.com/nm
             """
             dt = float(dt)
             Nt = int(round(T/dt))
-            u = zeros(Nt+1)
-            v = zeros(Nt+1)
-            t = linspace(0, Nt*dt, Nt+1)
+            u = np.zeros(Nt+1)
+            v = np.zeros(Nt+1)
+            t = np.linspace(0, Nt*dt, Nt+1)
         
             u[0] = I
             v[0] = 0

@@ -6,39 +6,43 @@ Finite element basis functions
 ==============================
 
 The specific basis functions exemplified in the section :ref:`fem:approx:global` are in general nonzero on the entire domain
-:math:`\Omega`, see Figure :ref:`fem:approx:fe:fig:u:sin` for an example
-where we plot :math:`\psi_0(x)=\sin\frac{1}{2}\pi x` and
-:math:`\psi_1(x)=\sin 2\pi x` together with a possible sum
+:math:`\Omega`, as can be seen in Figure :ref:`fem:approx:fe:fig:u:sin`,
+where we plot two sinusoidal basis functions :math:`\psi_0(x)=\sin\frac{1}{2}\pi x` and
+:math:`\psi_1(x)=\sin 2\pi x` together with the sum
 :math:`u(x)=4\psi_0(x) - \frac{1}{2}\psi_1(x)`. We shall
-now turn the attention to basis functions that have *compact support*,
-meaning that they are nonzero on only a small portion of
-:math:`\Omega`. Moreover, we shall restrict the functions to be *piecewise
+now turn our attention to basis functions that have *compact support*,
+meaning that they are nonzero on a small portion of
+:math:`\Omega` only. Moreover, we shall restrict the functions to be *piecewise
 polynomials*. This means that the domain is split into subdomains and
-the function is a polynomial on one or more subdomains, see Figure
+each basis function is a polynomial on one or more of these
+subdomains, see Figure
 :ref:`fem:approx:fe:fig:u:fe` for a sketch involving locally defined
 hat functions that make :math:`u=\sum_jc_j{\psi}_j` piecewise linear. At
-the boundaries between subdomains one normally forces continuity of
-the function only so that when connecting two polynomials from two
-subdomains, the derivative becomes discontinuous. These type
-of basis functions are fundamental in the finite element method.
+the boundaries between subdomains, one normally just forces continuity of
+:math:`u`, so that when connecting two polynomials from two
+subdomains, the derivative becomes discontinuous. This type
+of basis functions is fundamental in the finite element method.
+(One may wonder why continuity of derivatives is not desired, and it
+is, but it turns out to be mathematically challenging
+in 2D and 3D, and it is not strictly needed.)
 
 .. _fem:approx:fe:fig:u:sin:
 
 .. figure:: u_example_sin.png
    :width: 600
 
-   *A function resulting from adding two sine basis functions*
+   *A function resulting from a weighted sum of two sine basis functions*
 
 .. _fem:approx:fe:fig:u:fe:
 
 .. figure:: u_example_P1.png
    :width: 600
 
-   *A function resulting from adding three local piecewise linear (hat) functions*
+   *A function resulting from a weighted sum of three local piecewise linear (hat) functions*
 
-We first introduce the concepts of elements and nodes in a simplistic fashion
+We first introduce the concepts of elements and nodes in a simplistic fashion,
 as often met in the literature. Later, we shall generalize the concept
-of an element, which is a necessary step to treat a wider class of
+of an element, which is a necessary step before treating a wider class of
 approximations within the family of finite element methods.
 The generalization is also compatible with
 the concepts used in the `FEniCS <http://fenicsproject.org>`__ finite
@@ -49,7 +53,8 @@ element software.
 Elements and nodes
 ------------------
 
-Let us divide the interval :math:`\Omega` on which :math:`f` and :math:`u` are defined
+Let :math:`u` and :math:`f` be defined on an interval :math:`\Omega`. We
+divide :math:`\Omega`
 into :math:`N_e` non-overlapping subintervals :math:`\Omega^{(e)}`, :math:`e=0,\ldots,N_e-1`:
 
 .. math::
@@ -57,7 +62,7 @@ into :math:`N_e` non-overlapping subintervals :math:`\Omega^{(e)}`, :math:`e=0,\
         \Omega = \Omega^{(0)}\cup \cdots \cup \Omega^{(N_e)}{\thinspace .}  
 
 We shall for now
-refer to :math:`\Omega^{(e)}` as an *element*, having number :math:`e`.
+refer to :math:`\Omega^{(e)}` as an *element*, identified by the unique number :math:`e`.
 On each element we introduce a set of points called *nodes*.
 For now we assume that the nodes are uniformly spaced throughout the
 element and that the boundary points of the elements are also nodes.
@@ -67,12 +72,15 @@ referred to as *local* and *global* node numbers, respectively.
 Local nodes are numbered with an index :math:`r=0,\ldots,d`, while the
 :math:`N_n` global nodes are numbered as :math:`i=0,\ldots,N_n-1`.
 Figure :ref:`fem:approx:fe:def:elements:nodes:fig:P1` shows
-element boundaries with small vertical lines, nodes as small disks,
-element numbers in circles, and global node numbers under the nodes.
+nodes as small circular
+disks and element boundaries as small vertical lines.
+Global node numbers appear under the nodes, but local node numbers
+are not shown. Since there are two nodes in each elements, the local
+nodes are numbered 0 (left) and 1 (right) in each element.
 
 .. _fem:approx:fe:def:elements:nodes:fig:P1:
 
-.. figure:: fe_mesh1D.png
+.. figure:: fe_mesh1D_P1.png
    :width: 500
 
    *Finite element mesh with 5 elements and 6 nodes*
@@ -86,6 +94,12 @@ Nodes and elements uniquely define a *finite element mesh*, which is our
 discrete representation of the domain in the computations.
 A common special case is that of a *uniformly partitioned mesh* where
 each element has the same length and the distance between nodes is constant.
+Figure :ref:`fem:approx:fe:def:elements:nodes:fig:P1` shows
+an example on a uniformly partitioned mesh. The strength of the finite
+element method (in contrast to the
+finite difference method)
+is that it is equally easy to work with a non-uniformly
+partitioned mesh as a uniformly partitioned one.
 
 Example  (2)
 ~~~~~~~~~~~~
@@ -96,7 +110,12 @@ let us introduce three nodes
 per element, equally spaced within each element.
 Figure :ref:`fem:approx:fe:def:elements:nodes:fig:P2` shows the
 mesh with :math:`N_e=2` elements and :math:`N_n=2N_e+1=5` nodes.
-The three nodes in element number 0 are :math:`x_0=0`, :math:`x_1=0.2`, and :math:`x_2=0.4`.
+A node's coordinate is denoted by :math:`x_i`, where :math:`i` is either a global
+node number or a local one. In the latter case we also need to know
+the element number to uniquely define the node.
+
+The three nodes in element number 0 are
+:math:`x_0=0`, :math:`x_1=0.2`, and :math:`x_2=0.4`.
 The local and global node numbers are here equal.
 In element number 1, we have the local nodes :math:`x_0=0.4`, :math:`x_1=0.7`, and :math:`x_2=1`
 and the corresponding
@@ -113,8 +132,11 @@ the global node :math:`x_2=0.4` is shared by the two elements.
 For the purpose of implementation, we introduce two lists or arrays:
 ``nodes`` for storing the coordinates of the nodes, with the
 global node numbers as indices, and ``elements`` for holding
-the global node numbers in each element, with the local node numbers
-as indices. The ``nodes`` and ``elements`` lists for the sample mesh
+the global node numbers in each element. By defining ``elements`` as a
+list of lists, where each sublist contains the global node numbers of
+one particular element, the indices of each sublist will correspond to
+local node numbers for that element.
+The ``nodes`` and ``elements`` lists for the sample mesh
 above take the form
 
 .. code-block:: python
@@ -122,9 +144,10 @@ above take the form
         nodes = [0, 0.2, 0.4, 0.7, 1]
         elements = [[0, 1, 2], [2, 3, 4]]
 
-Looking up the coordinate of local node number 2 in element 1
-is here done by ``nodes[elements[1][2]]`` (recall that nodes and
-elements start their numbering at 0).
+Looking up the coordinate of, e.g., local node number 2 in element 1,
+is done by ``nodes[elements[1][2]]`` (recall that nodes and
+elements start their numbering at 0). The corresponding global node number
+is 4, so we could alternatively look up the coordinate as ``nodes[4]``.
 
 The numbering of elements and nodes does not need to be regular.
 Figure :ref:`fem:approx:fe:def:elements:nodes:fig:P1:irregular` shows
@@ -149,27 +172,53 @@ Construction principles
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 Finite element basis functions are in this text recognized by
-the notation :math:`{\varphi}_i(x)`, where the index now in the beginning corresponds to
-a global node number. In the current approximation problem we shall
-simply take :math:`{\psi}_i = {\varphi}_i`.
+the notation :math:`{\varphi}_i(x)`, where the index (now in the beginning)
+corresponds to
+a global node number. Since :math:`{\varphi}_i` is the symbol for basis
+functions in general in this text, the particular choice of
+finite element basis functions means that we take
+:math:`{\psi}_i = {\varphi}_i`.
+
+.. index:: internal node
+
+.. index:: shared node
 
 Let :math:`i` be the global node number corresponding to local node :math:`r` in
-element number :math:`e`.  The finite element basis functions :math:`{\varphi}_i`
+element number :math:`e` with :math:`d+1` local nodes. We distinguish between
+*internal* nodes in an element and *shared* nodes. The latter are
+nodes that are shared with the neighboring elements.
+The finite element basis functions :math:`{\varphi}_i`
 are now defined as follows.
 
-  * If local node number :math:`r` is not on the boundary of the element,
+  * For an internal node, with global number :math:`i` and local number :math:`r`,
     take :math:`{\varphi}_i(x)` to be the Lagrange
-    polynomial that is 1 at the local node number :math:`r` and zero
-    at all other nodes in the element. On all other elements, :math:`{\varphi}_i=0`.
-
-  * If local node number :math:`r` is on the boundary of the element,
-    let :math:`{\varphi}_i` be made up of the Lagrange polynomial over element :math:`e`
-    that is 1 at node :math:`i`, combined with the Lagrange polynomial over
-    element :math:`e+1` that is also 1 at node :math:`i`.
+    polynomial that is 1 at the local node :math:`r` and zero
+    at all other nodes in the element.
+    The degree of the polynomial is :math:`d`, according to :ref:`(4.8) <Eq:fem:approx:global:Lagrange:poly>`.
     On all other elements, :math:`{\varphi}_i=0`.
 
-A visual impression of three such basis functions are given in
+  * For a shared node,
+    let :math:`{\varphi}_i` be made up of the Lagrange polynomial on this element
+    that is 1 at node :math:`i`, combined with the Lagrange polynomial over
+    the neighboring element that is also 1 at node :math:`i`.
+    On all other elements, :math:`{\varphi}_i=0`.
+
+A visual impression of three such basis functions is given in
 Figure :ref:`fem:approx:fe:fig:P2`.
+The domain :math:`\Omega = [0,1]` is divided into four equal-sized elements,
+each having three local nodes.
+The element boundaries are
+marked by vertical dashed lines and the nodes by small circles.
+The function :math:`{\varphi}_2(x)`
+is composed of a quadratic Lagrange polynomial over element 0 and 1,
+:math:`{\varphi}_3(x)` corresponds to an internal node in element 1 and
+is therefore nonzero on this element only, while :math:`{\varphi}_4(x)`
+is like :math:`{\varphi}_2(x)` composed to two Lagrange polynomials over two
+elements. Also observe that the basis function :math:`{\varphi}_i` is zero at
+all nodes, except at global node number :math:`i`.
+We also remark that
+the shape of a basis function over an element is completely determined
+by the coordinates of the local nodes in the element.
 
 .. Sometimes we refer to a Lagrange polynomial on an element :math:`e`, which
 
@@ -182,7 +231,7 @@ Figure :ref:`fem:approx:fe:fig:P2`.
 .. figure:: mpl_fe_basis_p2_4e_lab.png
    :width: 600
 
-   *Illustration of the piecewise quadratic basis functions associated with nodes in element 1*
+   *Illustration of the piecewise quadratic basis functions associated with nodes in an element*
 
 Properties of :math:`{\varphi}_i`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -240,29 +289,22 @@ Since :math:`A_{i,j}` is the integral of
 We will come back to these properties and use
 them actively in computations to save memory and CPU time.
 
-We let each element have :math:`d+1` nodes, resulting in local Lagrange
-polynomials of degree :math:`d`. It is not a requirement to have the same
-:math:`d` value in each element, but for now we will assume so.
+In our example so far, each element has :math:`d+1` nodes, resulting in
+local Lagrange polynomials of degree :math:`d` (according to the section :ref:`fem:approx:global:Lagrange`), but it is not a requirement to have
+the same :math:`d` value in each element.
 
 Example on piecewise quadratic finite element functions
 -------------------------------------------------------
 
-Figure :ref:`fem:approx:fe:fig:P2` illustrates how piecewise
-quadratic basis functions can look like (:math:`d=2`). We work with the
-domain :math:`\Omega = [0,1]` divided into four equal-sized elements, each having
-three nodes.
-The ``nodes`` and ``elements`` lists in this particular example become
+Let us set up the ``nodes`` and ``elements`` lists corresponding to the
+mesh implied by Figure :ref:`fem:approx:fe:fig:P2`.
+Figure :ref:`fem:approx:fe:fig:P2:mesh` sketches the mesh and the
+numbering. We have
 
 .. code-block:: python
 
         nodes = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0]
         elements = [[0, 1, 2], [2, 3, 4], [4, 5, 6], [6, 7, 8]]
-
-Figure :ref:`fem:approx:fe:fig:P2:mesh` sketches the mesh and the
-numbering.
-Nodes are marked with circles on the :math:`x` axis and
-element boundaries are marked with vertical dashed lines
-in Figure :ref:`fem:approx:fe:fig:P2`.
 
 .. _fem:approx:fe:fig:P2:mesh:
 
@@ -271,9 +313,9 @@ in Figure :ref:`fem:approx:fe:fig:P2`.
 
    *Sketch of mesh with 4 elements and 3 nodes per element*
 
-Let us explain in detail how the basis functions are constructed
+Let us explain in mathematically how the basis functions are constructed
 according to the principles.
-Consider element number 1 in Figure :ref:`fem:approx:fe:fig:P2`,
+Consider element number 1 in Figure :ref:`fem:approx:fe:fig:P2:mesh`,
 :math:`\Omega^{(1)}=[0.25, 0.5]`, with local nodes
 0, 1, and 2 corresponding to global nodes 2, 3, and 4.
 The coordinates of these nodes are
@@ -282,11 +324,11 @@ We define three Lagrange
 polynomials on this element:
 
 1. The polynomial that is 1 at local node 1
-   (:math:`x=0.375`, global node 3) makes up the basis function
+   (global node 3) makes up the basis function
    :math:`{\varphi}_3(x)` over this element,
    with :math:`{\varphi}_3(x)=0` outside the element.
 
-2. The Lagrange polynomial that is 1 at local node 0 is the "right
+2. The polynomial that is 1 at local node 0 (global node 2) is the "right
    part" of the global basis function
    :math:`{\varphi}_2(x)`. The "left part" of :math:`{\varphi}_2(x)` consists of
    a Lagrange polynomial associated with local node 2 in
@@ -297,15 +339,26 @@ polynomials on this element:
    The "right part" comes from the Lagrange polynomial that is 1 at
    local node 0 in the neighboring element :math:`\Omega^{(2)}=[0.5, 0.75]`.
 
-As mentioned earlier,
-any global basis function :math:`{\varphi}_i(x)` is zero on elements that
-do not contain the node with global node number :math:`i`.
+The specific mathematical form of the polynomials *over element* 1 is
+given by the formula :ref:`(4.8) <Eq:fem:approx:global:Lagrange:poly>`:
 
-The other global functions associated with internal
-nodes, :math:`{\varphi}_1`, :math:`{\varphi}_5`, and :math:`{\varphi}_7`, are all of the
-same shape as the drawn :math:`{\varphi}_3`, while the global basis functions
-associated with shared nodes also have the same shape, provided the
-elements are of the same length.
+.. math::
+        
+        {\varphi}_3(x) &= \frac{(x-0.25)(x-0.5)}{(0.375-0.25)(0.375-0.5)},\quad x\in\Omega^{(1)}\\ 
+        {\varphi}_2(x) &= \frac{(x-0.375)(x-0.5)}{(0.25-0.375)(0.25-0.5)},\quad x\in\Omega^{(1)}\\ 
+        {\varphi}_4(x) &= \frac{(x-0.25)(x-0.375)}{(0.5-0.25)(0.5-0.25)},\quad x\in\Omega^{(1)}
+        
+
+As mentioned earlier, any global basis function :math:`{\varphi}_i(x)` is zero
+on elements that do not contain the node with global node number :math:`i`.
+
+The other global functions associated with internal nodes,
+:math:`{\varphi}_1`, :math:`{\varphi}_5`, and :math:`{\varphi}_7`, are all of the same shape
+as the drawn :math:`{\varphi}_3` in Figure :ref:`fem:approx:fe:fig:P2`, while
+the global basis functions associated with shared nodes have the same
+shape as shown :math:`{\varphi}_2` and :math:`{\varphi}_4`. If the elements were of
+different length, the basis functions would be stretched according to
+the element size and hence be different.
 
 .. This was difficult to follow:
 
@@ -329,31 +382,39 @@ elements are of the same length.
 
 [**hpl 1**: Karen suggested we begin with P1 and not P2.]
 
+Example on piecewise linear finite element functions
+----------------------------------------------------
+
+Figure :ref:`fem:approx:fe:fig:P1` shows
+piecewise linear basis functions (:math:`d=1`). These are mathematically
+simpler than the quadratic functions in the previous section, and one would
+therefore think that it is easier to understand the linear functions
+first. However, linear basis functions do not involve internal nodes
+and are therefore a special case of the general situation. That is why
+we think it is better to understand the construction of quadratic functions
+first, which easily generalize to any :math:`d > 2`, and then look at the
+special case :math:`d=1`.
+
 .. _fem:approx:fe:fig:P1:
 
 .. figure:: mpl_fe_basis_p1_4e_lab.png
    :width: 600
 
-   *Illustration of the piecewise linear basis functions associated with nodes in element 1*
+   *Illustration of the piecewise linear basis functions associated with nodes in an element*
 
-Example on piecewise linear finite element functions
-----------------------------------------------------
+We have the same four elements on :math:`\Omega = [0,1]`.  Now there are no
+internal nodes in the elements so that all basis functions are
+associated with shared nodes and hence made up of two Lagrange
+polynomials, one from each of the two neighboring elements.  For
+example, :math:`{\varphi}_1(x)` results from the Lagrange polynomial in
+element 0 that is 1 at local node 1 and 0 at local node 0, combined
+with the Lagrange polynomial in element 1 that is 1 at local node 0
+and 0 at local node 1.  The other basis functions are constructed
+similarly.
 
-Figure :ref:`fem:approx:fe:fig:P1` shows
-piecewise linear basis functions (:math:`d=1`). Also here we have four elements on
-:math:`\Omega = [0,1]`. Consider the element :math:`\Omega^{(1)}=[0.25,0.5]`.
-Now there are no internal nodes in the elements so that all basis
-functions are associated with nodes at the element boundaries and hence
-made up of two Lagrange polynomials from neighboring elements.
-For example, :math:`{\varphi}_1(x)` results from the Lagrange polynomial in
-element 0 that is 1 at local node 1 and 0 at local node 0, combined with
-the Lagrange polynomial in
-element 1 that is 1 at local node 0 and 0 at local node 1.
-The other basis functions are constructed similarly.
-
-Explicit mathematical formulas are needed for :math:`{\varphi}_i(x)` in computations.
-In the
-piecewise linear case, one can show that
+Explicit mathematical formulas are needed for :math:`{\varphi}_i(x)` in
+computations.  In the piecewise linear case, the formula
+:ref:`(4.8) <Eq:fem:approx:global:Lagrange:poly>` leads to
 
 .. _Eq:fem:approx:fe:phi:1:formula1:
 
@@ -409,7 +470,7 @@ neighboring elements.
 .. figure:: mpl_fe_basis_p3_4e.png
    :width: 600
 
-   *Illustration of the piecewise cubic basis functions associated with nodes in element 1*
+   *Illustration of the piecewise cubic basis functions associated with nodes in an element*
 
 .. index:: chapeau function
 
@@ -440,7 +501,7 @@ elements with two local nodes associated with
 piecewise linear basis functions. Similarly, *quadratic elements* and
 *cubic elements* refer to piecewise quadratic or cubic functions
 over elements with three or four local nodes, respectively.
-Alternative names, frequently used later, are P1 elements for linear
+Alternative names, frequently used in the following, are P1 elements for linear
 elements, P2 for quadratic elements, and so forth: Pd signifies
 degree :math:`d` of the polynomial basis functions.
 
@@ -451,10 +512,10 @@ Calculating the linear system
 
 The elements in the coefficient matrix and right-hand side are given
 by the formulas :ref:`(4.4) <Eq:fem:approx:Aij>` and :ref:`(4.5) <Eq:fem:approx:bi>`, but
-now the choice of :math:`{\psi}_i` is :math:`{\varphi}_i`.
-Consider P1 elements where :math:`{\varphi}_i(x)` piecewise linear. Nodes and elements
-numbered consecutively from left to right in a uniformly partitioned
-mesh imply the nodes
+now the choice of :math:`{\psi}_i` is :math:`{\varphi}_i`.  Consider P1 elements
+where :math:`{\varphi}_i(x)` is piecewise linear.  Nodes and elements numbered
+consecutively from left to right in a uniformly partitioned mesh imply
+the nodes
 
 .. math::
          x_i=i h,\quad i=0,\ldots,N_n-1,
@@ -475,12 +536,19 @@ The domain is :math:`\Omega=[x_{0},x_{N}]`.
 The formula for :math:`{\varphi}_i(x)` is given by
 :eq:`fem:approx:fe:phi:1:formula2` and a graphical illustration is
 provided in Figures :ref:`fem:approx:fe:fig:P1` and
-:ref:`fem:approx:fe:fig:phi:i:im1`. First we clearly see
-from the figures the very important property
-:math:`{\varphi}_i(x){\varphi}_j(x)\neq 0` if and only if :math:`j=i-1`, :math:`j=i`, or
-:math:`j=i+1`, or alternatively expressed, if and only if :math:`i` and :math:`j` are
-nodes in the same element. Otherwise, :math:`{\varphi}_i` and :math:`{\varphi}_j` are
-too distant to have an overlap and consequently their product vanishes.
+:ref:`fem:approx:fe:fig:phi:i:im1`.
+
+.. We clearly see
+
+.. from the figures the very important property
+
+.. :math:`{\varphi}_i(x){\varphi}_j(x)\neq 0` if and only if :math:`j=i-1`, :math:`j=i`, or
+
+.. :math:`j=i+1`, or alternatively expressed, if and only if :math:`i` and :math:`j` are
+
+.. nodes in the same element. Otherwise, :math:`{\varphi}_i` and :math:`{\varphi}_j` are
+
+.. too distant to have an overlap and consequently their product vanishes.
 
 .. _fem:approx:fe:fig:phi:2:3:
 
@@ -489,12 +557,12 @@ too distant to have an overlap and consequently their product vanishes.
 
    *Illustration of the piecewise linear basis functions corresponding to global node 2 and 3*
 
-Calculating a specific matrix entry
+Calculating specific matrix entries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Let us calculate the specific matrix entry :math:`A_{2,3} = \int_\Omega
 {\varphi}_2{\varphi}_3{\, \mathrm{d}x}`. Figure :ref:`fem:approx:fe:fig:phi:2:3`
-shows how :math:`{\varphi}_2` and :math:`{\varphi}_3` look like. We realize
+shows what :math:`{\varphi}_2` and :math:`{\varphi}_3` look like. We realize
 from this figure that the product :math:`{\varphi}_2{\varphi}_3\neq 0`
 only over element 2, which contains node 2 and 3.
 The particular formulas for :math:`{\varphi}_{2}(x)` and :math:`{\varphi}_3(x)` on
@@ -535,7 +603,7 @@ The diagonal entry in the coefficient matrix becomes
         
 
 The entry :math:`A_{2,1}` has an
-the integral that is geometrically similar to the situation in
+integral that is geometrically similar to the situation in
 Figure :ref:`fem:approx:fe:fig:phi:2:3`, so we get
 :math:`A_{2,1}=h/6`.
 
@@ -573,9 +641,7 @@ to the interval :math:`[x_{i-1},x_{i}]` in
 :eq:`fem:approx:fe:phi:1:formula2`, while :math:`\phi_{i-1}` has a
 negative slope so the definition in interval
 :math:`[x_{i},x_{i+1}]` in :eq:`fem:approx:fe:phi:1:formula2` must be
-used. (The appearance of :math:`i` in :eq:`fem:approx:fe:phi:1:formula2`
-and the integral might be confusing, as we speak about two different
-:math:`i` indices.)
+used.
 
 .. _fem:approx:fe:fig:phi:i:im1:
 
@@ -593,7 +659,7 @@ different integrals:
         
 
 Similarly, :math:`A_{N,N}` involves an integral over only one element
-and equals hence :math:`h/3`.
+and hence equals :math:`h/3`.
 
 .. _fem:approx:fe:fig:phi:i:f:
 
@@ -662,12 +728,27 @@ approximation in the right part of Figure :ref:`fem:approx:fe:fig:ls:P1:2:4`.
 Assembly of elementwise computations
 ------------------------------------
 
-The integrals above are naturally split into integrals over individual elements
-since the formulas change with the elements. This idea of splitting the
-integral is fundamental in all practical implementations of the finite
-element method.
+Our integral computations so far have been straightforward. However,
+with higher-degree polynomials and in higher dimensions (2D and 3D),
+integrating in the physical domain gets increasingly complicated. Instead,
+integrating over one element at a time, and transforming each element
+to a common standardized geometry in a new reference coordinate system,
+is technically easier. Almost all computer codes employ a finite element
+algorithm that calculates the linear system by integrating over one
+element at a time. We shall therefore explain this algorithm next.
+The amount of details might be overwhelming during a first reading, but
+once all those details are done right, one has a general
+finite element algorithm that can be applied to all sorts of elements,
+in any space dimension, no matter how geometrically complicated the domain
+is.
 
-Let us split the integral over :math:`\Omega` into a sum of contributions from
+.. index:: element matrix
+
+The element matrix
+~~~~~~~~~~~~~~~~~~
+
+We start by splitting
+the integral over :math:`\Omega` into a sum of contributions from
 each element:
 
 .. _Eq:fem:approx:fe:elementwise:Asplit:
@@ -681,19 +762,17 @@ each element:
         
         
 
-Now, :math:`A^{(e)}_{i,j}\neq 0` if and only if :math:`i` and :math:`j` are nodes in element
+Now, :math:`A^{(e)}_{i,j}\neq 0`, if and only if, :math:`i` and :math:`j` are nodes in element
 :math:`e` (look at Figure :ref:`fem:approx:fe:fig:phi:i:im1` to realize this
-property).
+property, but the result also holds for all types of elements).
 Introduce :math:`i=q(e,r)` as the mapping of local node number :math:`r` in element
 :math:`e` to the global node number :math:`i`. This is just a short mathematical notation
 for the expression ``i=elements[e][r]`` in a program.
 Let :math:`r` and :math:`s` be the local node numbers corresponding to the global
 node numbers :math:`i=q(e,r)` and
-:math:`j=q(e,s)`. With :math:`d` nodes per element, all the nonzero elements
+:math:`j=q(e,s)`. With :math:`d` nodes per element, all the nonzero matrix entries
 in :math:`A^{(e)}_{i,j}` arise from the integrals involving basis functions with
 indices corresponding to the global node numbers in element number :math:`e`:
-
-.. index:: element matrix
 
 .. math::
         
@@ -712,11 +791,22 @@ We introduce the notation
         r,s\in{I_d},
         
 
-for the element matrix. For the case :math:`d=2` we have
+for the element matrix. For P1 elements (:math:`d=1`) we have
 
 .. math::
         
-        \tilde A^{(e)} = \left\lbrack\begin{array}{lllll}
+        \tilde A^{(e)} = \left\lbrack\begin{array}{ll}
+        \tilde A^{(e)}_{0,0} & \tilde A^{(e)}_{0,1}\\ 
+        \tilde A^{(e)}_{1,0} & \tilde A^{(e)}_{1,1}
+        \end{array}\right\rbrack
+        {\thinspace .}
+        
+
+while P2 elements have a :math:`3\times 3` element matrix:
+
+.. math::
+        
+        \tilde A^{(e)} = \left\lbrack\begin{array}{lll}
         \tilde A^{(e)}_{0,0} & \tilde A^{(e)}_{0,1} & \tilde A^{(e)}_{0,2}\\ 
         \tilde A^{(e)}_{1,0} & \tilde A^{(e)}_{1,1} & \tilde A^{(e)}_{1,2}\\ 
         \tilde A^{(e)}_{2,0} & \tilde A^{(e)}_{2,1} & \tilde A^{(e)}_{2,2}
@@ -724,8 +814,11 @@ for the element matrix. For the case :math:`d=2` we have
         {\thinspace .}
         
 
+Assembly of element matrices
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Given the numbers :math:`\tilde A^{(e)}_{r,s}`,
-we should according to :eq:`fem:approx:fe:elementwise:Asplit`
+we should, according to :eq:`fem:approx:fe:elementwise:Asplit`,
 add the contributions to the global coefficient matrix by
 
 .. index:: assembly
@@ -738,6 +831,7 @@ add the contributions to the global coefficient matrix by
 
 This process of adding in elementwise contributions to the global matrix
 is called *finite element assembly* or simply *assembly*.
+
 Figure :ref:`fem:approx:fe:fig:assembly:2x2` illustrates how element matrices
 for elements with two nodes are added into the global matrix.
 More specifically, the figure shows how the element matrix associated with
@@ -749,16 +843,19 @@ are sketched in Figure :ref:`fem:approx:fe:fig:assembly:4x4`.
 .. _fem:approx:fe:fig:assembly:2x2:
 
 .. figure:: fe_assembly_regular_2x2.png
-   :width: 700
+   :width: 500
 
    *Illustration of matrix assembly: regularly numbered P1 elements*
 
 .. _fem:approx:fe:fig:assembly:4x4:
 
 .. figure:: fe_assembly_regular_4x4.png
-   :width: 700
+   :width: 500
 
    *Illustration of matrix assembly: regularly numbered P3 elements*
+
+Assembly of irregularly numbered elements and nodes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After assembly of element matrices corresponding to regularly numbered elements
 and nodes are understood, it is wise to study the assembly process for
@@ -772,7 +869,12 @@ mapping in mathematical notation, is given as
 The associated assembly of element matrices 1 and 2 is sketched in
 Figure :ref:`fem:approx:fe:fig:assembly:irr2x2`.
 
-These three assembly processes can also be `animated <http://tinyurl.com/opdfafk/pub/mov-approx/fe_assembly.html>`__.
+We have created `animations <http://tinyurl.com/opdfafk/pub/mov-approx/fe_assembly.html>`__ to illustrate the assembly of
+P1 and P3 elements with regular numbering as well as P1 elements with
+irregular numbering. The reader is encouraged to develop a
+"geometric" understanding of how element matrix entries are added to
+the global matrix. This understanding is crucial for hand
+computations with the finite element method.
 
 .. `P1 assembly movie <http://tinyurl.com/opdfafk/pub/mov-approx/fe_assembly_regular_2x2/index.html>`__.
 
@@ -783,13 +885,16 @@ These three assembly processes can also be `animated <http://tinyurl.com/opdfafk
 .. _fem:approx:fe:fig:assembly:irr2x2:
 
 .. figure:: fe_assembly_irregular.png
-   :width: 700
+   :width: 500
 
    *Illustration of matrix assembly: irregularly numbered P1 elements*
 
 .. old:
 
 .. FIGURE: [fig-approx/matrix-assembly, width=600]  Illustration of matrix assembly.
+
+The element vector
+~~~~~~~~~~~~~~~~~~
 
 The right-hand side of the linear system is also computed elementwise:
 
@@ -835,16 +940,22 @@ Instead of computing the integrals
          \tilde A^{(e)}_{r,s} = \int_{\Omega^{(e)}}{\varphi}_{q(e,r)}(x){\varphi}_{q(e,s)}(x){\, \mathrm{d}x}
 
 over some element
-:math:`\Omega^{(e)} = [x_L, x_R]`,
-it is convenient to map the element domain :math:`[x_L, x_R]`
-to a standardized reference element domain :math:`[-1,1]`.
-(We have now introduced
+:math:`\Omega^{(e)} = [x_L, x_R]` in the physical coordinate system,
+it turns out that it is considerably easier and more convenient
+to map the element domain :math:`[x_L, x_R]`
+to a standardized reference element domain :math:`[-1,1]` and compute all
+integrals over the same domain :math:`[-1,1]`.
+We have now introduced
 :math:`x_L` and :math:`x_R` as the left and right boundary points of an arbitrary element.
 With a natural, regular numbering of nodes and elements from left to right
-through the domain, we have :math:`x_L=x_{e}` and :math:`x_R=x_{e+1}` for P1 elements.)
+through the domain, we have :math:`x_L=x_{e}` and :math:`x_R=x_{e+1}` for P1 elements.
+
+The coordinate transformation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Let :math:`X\in [-1,1]` be the coordinate
-in the reference element. A linear or *affine mapping* from :math:`X` to :math:`x` reads
+in the reference element. A linear mapping, also known as an affine mapping,
+from :math:`X` to :math:`x` can be written
 
 .. _Eq:fem:approx:fe:affine:mapping:
 
@@ -855,7 +966,7 @@ in the reference element. A linear or *affine mapping* from :math:`X` to :math:`
         
         
 
-This relation can alternatively be expressed by
+This relation can alternatively be expressed as
 
 .. _Eq:fem:approx:fe:affine:mapping2:
 
@@ -869,9 +980,11 @@ This relation can alternatively be expressed by
 where we have introduced the element midpoint :math:`x_m=(x_L+x_R)/2` and
 the element length :math:`h=x_R-x_L`.
 
-Integrating on
-the reference element is a matter of just changing the integration
-variable from :math:`x` to :math:`X`. Let
+Formulas for the element matrix and vector entries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Integrating on the reference element is a matter of just changing the
+integration variable from :math:`x` to :math:`X`. Let
 
 .. math::
         
@@ -879,7 +992,8 @@ variable from :math:`x` to :math:`X`. Let
         
 
 be the basis function associated with local node number :math:`r` in the
-reference element. The integral transformation reads
+reference element. Switching from :math:`x` to :math:`X` as integration variable,
+using the rules from calculus, results in
 
 .. math::
         
@@ -888,11 +1002,11 @@ reference element. The integral transformation reads
         = \int_{-1}^1 {\tilde{\varphi}}_r(X){\tilde{\varphi}}_s(X)\frac{dx}{dX}{\, \mathrm{d}X}
         {\thinspace .}  
 
-The stretch factor :math:`dx/dX` between the :math:`x` and :math:`X` coordinates
-becomes the determinant of the Jacobian matrix of the mapping
-between the coordinate systems in 2D and 3D. To obtain a uniform
+In 2D and 3D, :math:`{\, \mathrm{d}x}` is transformed to :math:`\hbox{det} J{\, \mathrm{d}X}`, where :math:`J` is
+the Jacobian of the mapping from :math:`x` to :math:`X`. In 1D,
+:math:`\hbox{det} J{\, \mathrm{d}X} = dx/dX = h/2`.To obtain a uniform
 notation for 1D, 2D, and 3D problems we therefore replace
-:math:`dx/dX` by :math:`\det J` already now. In 1D, :math:`\det J = dx/dX = h/2`.
+:math:`dx/dX` by :math:`\det J` already now.
 The integration over the reference element is then written as
 
 .. _Eq:fem:approx:fe:mapping:Ae:
@@ -919,12 +1033,43 @@ The corresponding formula for the element vector entries becomes
         {\thinspace .}
         
 
-Since we from now on will work in the reference
-element, we need explicit mathematical formulas for the basis
-functions :math:`{\varphi}_i(x)` in the reference element only, i.e., we only need
-to specify formulas for :math:`{\tilde{\varphi}}_r(X)`.
-This is a very convenient simplification compared to specifying
-piecewise polynomials in the physical domain.
+
+.. admonition:: Why reference elements
+
+   The great advantage of using reference elements is that
+   the formulas for the basis functions, :math:`{\tilde{\varphi}}_r(X)`, are the
+   same for all elements and independent of the element geometry
+   (length and location in the mesh). The geometric information
+   is "factored out" in the simple mapping formula and the associated
+   :math:`\det J` quantity. Also, the integration domain is the same for
+   all elements. All these features contribute to simplify computer
+   codes and make them more general.
+
+
+
+
+.. Since we from now on will work in the reference
+
+.. element, we need explicit mathematical formulas for the basis
+
+.. functions :math:`{\varphi}_i(x)` in the reference element only, i.e., we only need
+
+.. to specify formulas for :math:`{\tilde{\varphi}}_r(X)`.
+
+.. This is a very convenient simplification compared to specifying
+
+.. piecewise polynomials in the physical domain.
+
+.. , and perhaps the primary
+
+.. reason why almost all computer codes
+
+.. integrate over reference elements and assemble element
+
+.. contributions.
+
+Formulas for local basis functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :math:`{\tilde{\varphi}}_r(x)` functions are simply the Lagrange
 polynomials defined through the local nodes in the reference element.
@@ -978,21 +1123,6 @@ the reference element.
 These are normally uniformly spaced: :math:`X_{(r)} = -1 + 2r/d`,
 :math:`r\in{I_d}`.
 
-
-.. admonition:: Why reference elements
-
-   The great advantage of using reference elements is that
-   the formulas for the basis functions, :math:`{\tilde{\varphi}}_r(X)`, are the
-   same for all elements and independent of the element geometry
-   (length and location in the mesh). The geometric information
-   is "factored out" in the simple mapping formula and the associated
-   :math:`\det J` quantity, but this information is (here taken as) the same for
-   element types. Also, the integration domain is the same for
-   all elements.
-
-
-
-
 .. _fem:approx:fe:intg:ref:
 
 Example: Integration over a reference element
@@ -1031,19 +1161,19 @@ we can do the following calculations of the element matrix entries:
         = \int_{-1}^1 {\tilde{\varphi}}_1(X){\tilde{\varphi}}_0(X)\frac{h}{2} dX\nonumber
         
 
-.. math::
-          
-        =\int_{-1}^1 \frac{1}{2}(1+X)\frac{1}{2}(1-X) \frac{h}{2} dX =
-        \frac{h}{8}\int_{-1}^1 (1-X^2) dX = \frac{h}{6},
-        
-
 .. _Eq:fem:approx:fe:intg:ref:Ae10:
 
 .. math::
    :label: fem:approx:fe:intg:ref:Ae10
           
-        \tilde A^{(e)}_{0,1} = \tilde A^{(e)}_{1,0},
+        =\int_{-1}^1 \frac{1}{2}(1+X)\frac{1}{2}(1-X) \frac{h}{2} dX =
+        \frac{h}{8}\int_{-1}^1 (1-X^2) dX = \frac{h}{6},
         
+        
+
+.. math::
+          
+        \tilde A^{(e)}_{0,1} = \tilde A^{(e)}_{1,0},
         
 
 .. math::
@@ -1108,11 +1238,11 @@ The corresponding entries in the element vector becomes
 In the last two expressions we have used the element midpoint :math:`x_m`.
 
 Integration of lower-degree polynomials above is tedious,
-and higher-degree polynomials involve very much more algebra, but ``sympy``
+and higher-degree polynomials involve much more algebra, but ``sympy``
 may help. For example, we can easily calculate
 :eq:`fem:approx:fe:intg:ref:Ae00`,
-:eq:`fem:approx:fe:intg:ref:Ae00`, and
-:eq:`fem:approx:fe:intg:ref:be0` by
+:eq:`fem:approx:fe:intg:ref:Ae10`,
+and :eq:`fem:approx:fe:intg:ref:be0` by
 
 .. code-block:: ipy
 
@@ -1126,14 +1256,4 @@ may help. For example, we can easily calculate
         >>> b_0 = sym.integrate(h/4*x*(1-x)*(1-X), (X, -1, 1))
         >>> print b_0
         -h**3/24 + h**2*x_m/6 - h**2/12 - h*x_m**2/2 + h*x_m/2
-
-For inclusion of formulas in documents (like the present one), ``sympy`` can print
-expressions in LaTeX format:
-
-.. code-block:: ipy
-
-        >>> print sym.latex(b_0, mode='plain')
-        - \frac{1}{24} h^{3} + \frac{1}{6} h^{2} x_{m}
-        - \frac{1}{12} h^{2} - \half h x_{m}^{2}
-        + \half h x_{m}
 

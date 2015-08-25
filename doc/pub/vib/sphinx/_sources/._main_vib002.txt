@@ -337,8 +337,8 @@ the type of damping:
             """
             dt = float(dt); b = float(b); m = float(m) # avoid integer div.
             Nt = int(round(T/dt))
-            u = zeros(Nt+1)
-            t = linspace(0, Nt*dt, Nt+1)
+            u = np.zeros(Nt+1)
+            t = np.linspace(0, Nt*dt, Nt+1)
         
             u[0] = I
             if damping == 'linear':
@@ -1121,7 +1121,10 @@ Applications of vibration models
 The following text derives some of the most well-known physical problems
 that lead to
 second-order ODE models of the type addressed in this document.
-We consider ...
+We consider a simple spring-mass system; thereafter extended with
+nonlinear spring, damping, and external excitation; a spring-mass system
+with sliding friction; a simple and a physical (classical) pendulum;
+and an elastic pendulum.
 
 .. _vib:app:mass_spring:
 
@@ -1131,11 +1134,11 @@ Oscillating mass attached to a spring
 .. _vib:app:mass_spring:fig:
 
 .. figure:: oscillator_spring.png
-   :width: 600
+   :width: 500
 
    *Simple oscillating mass*
 
-The most fundamental mechanical vibration system is depicted in FIGURE
+The most fundamental mechanical vibration system is depicted in Figure
 :ref:`vib:app:mass_spring:fig`. A body with mass :math:`m` is attached to a
 spring and can move horizontally without friction (in the wheels). The
 position of the body is given by the vector :math:`\boldsymbol{r}(t) = u(t)\boldsymbol{i}`, where
@@ -1150,9 +1153,10 @@ vanishes.
 The basic physical principle that governs the motion of the body is
 Newton's second law of motion: :math:`\boldsymbol{F}=m\boldsymbol{a}`, where
 :math:`\boldsymbol{F}` is the sum of forces on the body, :math:`m` is its mass, and :math:`\boldsymbol{a}=\ddot\boldsymbol{r}`
-is the acceleration. We use the dot for differentiation time, which is
+is the acceleration. We use the dot for differentiation with respect
+to time, which is
 usual in mechanics. Newton's second law simplifies here
-to :math:`-F_s\boldsymbol{i}=m\ddot u\boldsymbol{i}` , which translates to
+to :math:`-\boldsymbol{F}_s=m\ddot u\boldsymbol{i}`, which translates to
 
 .. math::
          -ku = m\ddot u{\thinspace .}
@@ -1193,18 +1197,44 @@ Since only one scalar mathematical quantity, :math:`u(t)`, describes the
 complete motion, we say that the mechanical system has one degree of freedom
 (DOF).
 
+Scaling  (1)
+~~~~~~~~~~~~
+
+For numerical simulations it is very convenient to scale :eq:`vib:app:mass_spring:equ` and thereby get rid of the problem of finding relevant values
+for all the parameters :math:`m`, :math:`k`, :math:`I`, and :math:`V`.
+Since the amplitude of the oscillations are dictated by :math:`I` and :math:`V`
+(or more precisely, :math:`V/\omega`), we scale :math:`u` by :math:`I` (or :math:`V/omega` if
+:math:`I=0`):
+
+.. math::
+         \bar u = \frac{u}{I},\quad \bar t = \frac{t}{t_c}{\thinspace .}
+
+The time scale :math:`t_c` is normally chosen as the inverse period :math:`2\pi/\omega` or
+angular frequency :math:`1/\omega`, most often as :math:`t_c=1/\omega`.
+Inserting the dimensionless quantities :math:`\bar u` and :math:`\bar t` in
+:eq:`vib:app:mass_spring:equ` results in the scaled problem
+
+.. math::
+         \frac{d^2\bar u}{d\bar t^2} + \bar u = 0,\quad \bar u(0)=1,\ \frac{\bar u}{\bar t}(0)=\beta = \frac{V}{I\omega},
+
+where :math:`\beta` is a dimensionless number. Any motion that starts from rest
+(:math:`V=0`) is free of parameters in the scaled model!
+
+The physics
+~~~~~~~~~~~
+
 The typical physics of the system in Figure :ref:`vib:app:mass_spring:fig` can
 be described as follows.
 Initially, we displace the body to some position :math:`I`, say at rest
 (:math:`V=0`). After releasing the body, the spring, which is extended, will
 act with a force :math:`-kI\boldsymbol{i}` and pull the body to the left. This force
-causes an acceleration and therefore increased velocity. The body passes
+causes an acceleration and therefore increases velocity. The body passes
 the point :math:`x=0`, where :math:`u=0`,
 and the spring will then be compressed and act with a
 force :math:`kx\boldsymbol{i}` against the motion and cause retardation. At some point,
 the motion stops and the velocity is zero, before the spring force
 :math:`kx\boldsymbol{i}` accelerates the body in positive direction. The result is that
-the body accelerates back and forth. As long as there are no friction
+the body accelerates back and forth. As long as there is no friction
 forces to damp the motion, the oscillations will continue forever.
 
 .. _vib:app:mass_gen:
@@ -1215,7 +1245,7 @@ General mechanical vibrating system
 .. _vib:app:mass_gen:fig:
 
 .. figure:: oscillator_general.png
-   :width: 600
+   :width: 500
 
    *General oscillating system*
 
@@ -1257,9 +1287,62 @@ present chapter, but with prime denoting the derivative instead of the dot.
 The most common models for the spring and dashpot are linear: :math:`f(\dot u)
 =b\dot u` with a constant :math:`b\geq 0`, and :math:`s(u)=ku` for a constant :math:`k`.
 
-[**hpl 10**: Must mention resonance here. Can have an exercise.]
+Scaling  (2)
+~~~~~~~~~~~~
 
-[**hpl 11**: Should mention scaling of the full model.]
+A specific scaling requires specific choices of :math:`f`, :math:`s`, and :math:`F`.
+Suppose we have
+
+.. math::
+         f(\dot u) = b|\dot u|\dot u,\quad s(u)=ku,\quad F(t)=A\sin(\phi t){\thinspace .}
+
+We introduce dimensionless variables as usual, :math:`\bar u = u/u_c` and
+:math:`\bar t = t/t_c`. The scale :math:`u_c` depends both on the initial conditions
+and :math:`F`, but as time grows, the effect of the initial conditions die out
+and :math:`F` will drive the motion. Inserting :math:`\bar u` and :math:`\bar t` in the
+ODE gives
+
+.. math::
+         m\frac{u_c}{t_c^2}\frac{d^2\bar u}{d\bar t^2}
+        + b\frac{u_c^2}{t_c^2}\left\vert\frac{d\bar u}{d\bar t}\right\vert
+        \frac{d\bar u}{d\bar t} + ku_c\bar u = A\sin(\phi t_c\bar t){\thinspace .}
+
+We divide by :math:`u_c/t_c^2` and demand the coefficients of the
+:math:`\bar u` and the forcing term from :math:`F(t)` to have unit coefficients.
+This leads to the scales
+
+.. math::
+         t_c = \sqrt{\frac{m}{k}},\quad u_c = \frac{A}{k}{\thinspace .}
+
+The scaled ODE becomes
+
+.. _Eq:vib:app:mass_gen:scaled:
+
+.. math::
+   :label: vib:app:mass_gen:scaled
+        
+        \frac{d^2\bar u}{d\bar t^2}
+        + 2\beta\left\vert\frac{d\bar u}{d\bar t}\right\vert
+        \frac{d\bar u}{d\bar t} + \bar u = \sin(\gamma\bar t),
+        
+        
+
+where there are two dimensionless numbers:
+
+.. math::
+         \beta = \frac{Ab}{2mk},\quad\gamma =\phi\sqrt{\frac{m}{k}}{\thinspace .}
+
+The :math:`\beta` number measures the size of the damping term (relative to unity)
+and is assumed to be small, basically because :math:`b` is small. The :math:`\phi`
+number is the ratio of the time scale of free vibrations and the time scale
+of the forcing.
+The scaled initial conditions have two other dimensionless numbers
+as values:
+
+.. math::
+         \bar u(0) = \frac{Ik}{A},\quad \frac{d\bar u}{d\bar t}=\frac{t_c}{u_c}V = \frac{V}{A}\sqrt{mk}{\thinspace .}
+
+[**hpl 10**: Must mention resonance here. Can have an exercise.]
 
 .. _vib:app:mass_sliding:
 
@@ -1274,7 +1357,7 @@ Figure :ref:`vib:app:mass_sliding:fig` depicts the problem.
 .. _vib:app:mass_sliding:fig:
 
 .. figure:: oscillator_sliding.png
-   :width: 300
+   :width: 500
 
    *Sketch of a body sliding on a surface*
 
@@ -1298,7 +1381,7 @@ Here, :math:`\mu` is a friction coefficient. With the signum function
         0, & x=0
         \end{array}\right.
 
-we can simply write :math:`f(\dot u) = \mu mg\hbox{sign}(\dot u)`
+we can simply write :math:`f(\dot u) = \mu mg\,\hbox{sign}(\dot u)`
 (the sign function is implemented by ``numpy.sign``).
 
 The equation of motion becomes
@@ -1323,7 +1406,7 @@ the machine induces a sinusoidal external force and the machine will
 jump up and down if the frequency of the external force is close to
 the natural frequency of the machine and its spring-damper system.
 
-[**hpl 12**: Not finished. This is a good example on resonance.]
+[**hpl 11**: Not finished. This is a good example on resonance.]
 
 .. _vib:app:pendulum:
 
@@ -1339,7 +1422,7 @@ a sketch of the problem.
 .. _vib:app:pendulum:fig_problem:
 
 .. figure:: pendulum_problem.png
-   :width: 200
+   :width: 300
 
    *Sketch of a simple pendulum*
 
@@ -1365,7 +1448,7 @@ that :math:`{\boldsymbol{i}_r} = \cos\theta\boldsymbol{i} +\sin\theta\boldsymbol
 
 .. _vib:app:pendulum:fig_forces:
 
-.. figure:: pendulum_problem.png
+.. figure:: pendulum_forces.png
    :width: 400
 
    *Forces acting on a simple pendulum*
@@ -1394,7 +1477,7 @@ The acceleration is
         = L\ddot\theta\boldsymbol{i}_{\theta} + L\dot\theta\frac{d\boldsymbol{i}_{\theta}}{d\theta}\dot\theta =
         = L\ddot\theta\boldsymbol{i}_{\theta} - L\dot\theta^2{\boldsymbol{i}_r},
 
-since :math:`\frac{d}{d\theta}\boldsymbol{i}_{\theta} = -{\boldsymbol{i}_r}`. It follows that :math:`v=L\dot\theta`.
+since :math:`\frac{d}{d\theta}\boldsymbol{i}_{\theta} = -{\boldsymbol{i}_r}`.
 
 Newton's 2nd law of motion becomes
 
@@ -1440,6 +1523,7 @@ equation is ordered as
         
 
 Two initial conditions are needed: :math:`\theta=\Theta` and :math:`\dot\theta = \Omega`.
+Normally, the pendulum motion is started from rest, which means :math:`\Omega =0`.
 
 Equation :eq:`vib:app:pendulum:thetaeq` fits the general model
 used in :eq:`vib:ode2` in the section :ref:`vib:model2` if we define
@@ -1470,6 +1554,8 @@ for :math:`\theta(t)`:
         + mgL\sin\theta = 0{\thinspace .}
         
         
+
+[**hpl 12**: Scale the equations to arrive at the model problem with :math:`\sin\theta` spring.]
 
 .. _vib:app:pendulum_elastic:
 
@@ -1712,8 +1798,8 @@ We insert :math:`n_x` and :math:`n_y`  in the ODEs:
         
         
 
-Scaling
-~~~~~~~
+Scaling  (3)
+~~~~~~~~~~~~
 
 The elastic pendulum model can be used to study both an elastic pendulum
 and a classic, non-elastic pendulum. The latter problem is obtained
@@ -1976,9 +2062,43 @@ Exercises
 
 .. --- begin exercise ---
 
+.. _vib:exer:resonance:
+
+Exercise 18: Simulate resonance
+-------------------------------
+
+.. index:: resonance
+
+We consider the scaled ODE model
+:eq:`vib:app:mass_gen:scaled` from the section :ref:`vib:app:mass_gen`.
+After scaling, the amplitude of :math:`u` will have a size about unity
+as time grows and the effect of the initial conditions die out due
+to damping. However, as :math:`\gamma\rightarrow 1`, the amplitude of :math:`u`
+increases, especially if :math:`\beta` is small. This effect is called
+*resonance*. The purpose of this exercise is to explore resonance.
+
+**a)**
+Figure out how the ``solver`` function in ``vib.py`` can be called
+for the scaled ODE :eq:`vib:app:mass_gen:scaled`.
+
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
+
+**b)**
+Run :math:`\gamma =5, 1.5, 1.1, 1` for :math:`\beta=0.005, 0.05, 0.2`.
+For each :math:`\beta` value, present an image with plots of :math:`u(t)` for
+the four :math:`\gamma` values.
+
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
+
+Filename: ``resonance``.
+
+.. --- end exercise ---
+
+.. --- begin exercise ---
+
 .. _vib:exer:sliding_box:
 
-Exercise 18: Simulate oscillations of a sliding box
+Exercise 19: Simulate oscillations of a sliding box
 ---------------------------------------------------
 
 Consider a sliding box on a flat surface as modeled in the section :ref:`vib:app:mass_sliding`. As spring force we choose the nonlinear
@@ -2013,7 +2133,7 @@ Filename: ``sliding_box``.
 
 .. _vib:exer:bouncing:ball:
 
-Exercise 19: Simulate a bouncing ball
+Exercise 20: Simulate a bouncing ball
 -------------------------------------
 
 The section :ref:`vib:app:bouncing_ball` presents a model for a bouncing
@@ -2033,6 +2153,8 @@ Two consecutive impacts imply that the motion has stopped.
 
 .. --- end hint in exercise ---
 
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
+
 Filename: ``bouncing_ball``.
 
 .. --- end exercise ---
@@ -2041,7 +2163,7 @@ Filename: ``bouncing_ball``.
 
 .. _vib:exer:pendulum_elastic:
 
-Exercise 20: Simulate an elastic pendulum
+Exercise 21: Simulate an elastic pendulum
 -----------------------------------------
 
 The section :ref:`vib:app:pendulum_elastic` describes a model for an elastic
@@ -2151,7 +2273,7 @@ Filename: ``elastic_pendulum``.
 
 .. _vib:exer:pendulum_elastic_drag:
 
-Exercise 21: Simulate an elastic pendulum with air resistance
+Exercise 22: Simulate an elastic pendulum with air resistance
 -------------------------------------------------------------
 
 This is a continuation :ref:`vib:exer:pendulum_elastic_drag`.

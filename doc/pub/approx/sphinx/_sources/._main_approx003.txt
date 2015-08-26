@@ -288,6 +288,7 @@ and ``Omega`` is a 2-tuple/list holding the limits of the domain :math:`\Omega`:
                     A[j,i] = A[i,j]
                 b[i,0] = sym.integrate(psi[i]*f, (x, Omega[0], Omega[1]))
             c = A.LUsolve(b)
+            # Note: c is a sympy Matrix object, solution is in c[:,0]
             u = 0
             for i in range(len(psi)):
                 u += c[i,0]*psi[i]
@@ -346,8 +347,9 @@ improved version of the previous function ``least_squares``:
                 b[i,0] = I
             c = A.LUsolve(b)  # symbolic solve
             # c is a sympy Matrix object, numbers are in c[i,0]
-            u = sum(c[i,0]*psi[i] for i in range(len(psi)))
-            return u, [c[i,0] for i in range(len(c))]
+            c = [sym.simplify(c[i,0]) for i in range(c.shape[0])]
+            u = sum(c[i]*psi[i] for i in range(len(psi)))
+            return u, c
 
 The function is found in the file ``approx1D.py``.
 
@@ -1314,10 +1316,9 @@ integration.
                     I = sym.mpmath.quad(integrand, [Omega[0], Omega[1]])
                 b[i,0] = I
             c = A.LUsolve(b)
-            u = 0
-            for i in range(len(psi)):
-                u += c[i,0]*psi[i]
-            return u
+            c = [sym.simplify(c[i,0]) for i in range(c.shape[0])]
+            u = sum(c[i]*psi[i] for i in range(len(psi)))
+            return u, c
 
 .. Convergence of Lagrange polynomials.
 

@@ -3,7 +3,7 @@ Approximation of functions by linear combination of basis functions in
 function spaces and the least squares method or the collocation method
 for determining the coefficients.
 """
-import sympy as sp
+import sympy as sym
 import numpy as np
 import matplotlib.pyplot as plt
 #import scitools.std as plt
@@ -15,9 +15,9 @@ def least_squares(f, psi, Omega, symbolic=True):
     spanned by the functions in the list psi.
     """
     N = len(psi) - 1
-    A = sp.zeros((N+1, N+1))
-    b = sp.zeros((N+1, 1))
-    x = sp.Symbol('x')
+    A = sym.zeros((N+1, N+1))
+    b = sym.zeros((N+1, 1))
+    x = sym.Symbol('x')
     print '...evaluating matrix...',
     for i in range(N+1):
         for j in range(i, N+1):
@@ -25,34 +25,36 @@ def least_squares(f, psi, Omega, symbolic=True):
 
             integrand = psi[i]*psi[j]
             if symbolic:
-                I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
-            if not symbolic or isinstance(I, sp.Integral):
+                I = sym.integrate(integrand, (x, Omega[0], Omega[1]))
+            if not symbolic or isinstance(I, sym.Integral):
                 # Could not integrate symbolically, use numerical int.
                 print 'numerical integration of', integrand
-                integrand = sp.lambdify([x], integrand)
-                I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
+                integrand = sym.lambdify([x], integrand)
+                I = sym.mpmath.quad(integrand, [Omega[0], Omega[1]])
             A[i,j] = A[j,i] = I
         integrand = psi[i]*f
         if symbolic:
-            I = sp.integrate(integrand, (x, Omega[0], Omega[1]))
-        if not symbolic or isinstance(I, sp.Integral):
+            I = sym.integrate(integrand, (x, Omega[0], Omega[1]))
+        if not symbolic or isinstance(I, sym.Integral):
             # Could not integrate symbolically, use numerical int.
             print 'numerical integration of', integrand
-            integrand = sp.lambdify([x], integrand)
-            I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
+            integrand = sym.lambdify([x], integrand)
+            I = sym.mpmath.quad(integrand, [Omega[0], Omega[1]])
         b[i,0] = I
     print
     print 'A:\n', A, '\nb:\n', b
     if symbolic:
         c = A.LUsolve(b)  # symbolic solve
+        # c is a sympy Matrix object, numbers are in c[i,0]
+        c = [sym.simplify(c[i,0]) for i in range(c.shape[0])]
     else:
-        c = sp.mpmath.lu_solve(A, b)  # numerical solve
+        c = sym.mpmath.lu_solve(A, b)  # numerical solve
+        c = [c[i,0] for i in range(c.shape[0])]
     print 'coeff:', c
 
-    # c is a sympy Matrix object, numbers are in c[i,0]
-    u = sum(c[i,0]*psi[i] for i in range(len(psi)))
+    u = sum(c[i]*psi[i] for i in range(len(psi)))
     print 'approximation:', u
-    return u, [c[i,0] for i in range(len(c))]
+    return u, c
 
 def numerical_linsys_solve(A, b, floating_point_calc='sumpy'):
     """
@@ -64,12 +66,12 @@ def numerical_linsys_solve(A, b, floating_point_calc='sumpy'):
     of linear systems arising from approximation methods.
     """
     if floating_point_calc == 'sympy':
-        #sp.mpmath.mp.dsp = 10  # does not affect the computations here
-        A = sp.mpmath.fp.matrix(A)
-        b = sp.mpmath.fp.matrix(b)
+        #sym.mpmath.mp.dsp = 10  # does not affect the computations here
+        A = sym.mpmath.fp.matrix(A)
+        b = sym.mpmath.fp.matrix(b)
         print 'A:\n', A, '\nb:\n', b
-        c = sp.mpmath.fp.lu_solve(A, b)
-        #c = sp.mpmath.lu_solve(A, b) # more accurate
+        c = sym.mpmath.fp.lu_solve(A, b)
+        #c = sym.mpmath.lu_solve(A, b) # more accurate
         print 'sympy.mpmath.fp.lu_solve:', c
     elif floating_point_calc.startswith('numpy'):
         import numpy as np
@@ -93,23 +95,23 @@ def least_squares_orth(f, psi, Omega, symbolic=True):
     N = len(psi) - 1
     A = [0]*(N+1)       # plain list to hold symbolic expressions
     b = [0]*(N+1)
-    x = sp.Symbol('x')
+    x = sym.Symbol('x')
     print '...evaluating matrix...',
     for i in range(N+1):
         print '(%d,%d)' % (i, i)
         # Assume orthogonal psi can be be integrated symbolically
         # and that this is a successful/possible integration
-        A[i] = sp.integrate(psi[i]**2, (x, Omega[0], Omega[1]))
+        A[i] = sym.integrate(psi[i]**2, (x, Omega[0], Omega[1]))
 
         # Fallback on numerical integration if f*psi is too difficult
         # to integrate
         integrand = psi[i]*f
         if symbolic:
-            I = sp.integrate(integrand,  (x, Omega[0], Omega[1]))
-        if not symbolic or isinstance(I, sp.Integral):
+            I = sym.integrate(integrand,  (x, Omega[0], Omega[1]))
+        if not symbolic or isinstance(I, sym.Integral):
             print 'numerical integration of', integrand
-            integrand = sp.lambdify([x], integrand)
-            I = sp.mpmath.quad(integrand, [Omega[0], Omega[1]])
+            integrand = sym.lambdify([x], integrand)
+            I = sym.mpmath.quad(integrand, [Omega[0], Omega[1]])
         b[i] = I
     print 'A:\n', A, '\nb:\n', b
     c = [b[i]/A[i] for i in range(len(b))]
@@ -117,7 +119,7 @@ def least_squares_orth(f, psi, Omega, symbolic=True):
     u = 0
     #for i in range(len(psi)):
     #    u += c[i]*psi[i]
-    u = sum(c[i,0]*psi[i] for i in range(len(psi)))
+    u = sum(c[i]*psi[i] for i in range(len(psi)))
     print 'approximation:', u
     return u, c
 
@@ -161,7 +163,7 @@ def least_squares_numerical(f, psi, N, x,
                     lambda x: psi(x,i)*psi(x,j),
                     Omega[0], Omega[1], epsabs=1E-9, epsrel=1E-9)[0]
             elif integration_method == 'sympy':
-                A_ij = sp.mpmath.quad(
+                A_ij = sym.mpmath.quad(
                     lambda x: psi(x,i)*psi(x,j),
                     [Omega[0], Omega[1]])
             else:
@@ -174,7 +176,7 @@ def least_squares_numerical(f, psi, N, x,
                 lambda x: f(x)*psi(x,i), Omega[0], Omega[1],
                 epsabs=1E-9, epsrel=1E-9)[0]
         elif integration_method == 'sympy':
-            b_i = sp.mpmath.quad(
+            b_i = sym.mpmath.quad(
                 lambda x: f(x)*psi(x,i), [Omega[0], Omega[1]])
         else:
             values = f(x)*psi(x,i)
@@ -193,13 +195,13 @@ def interpolation(f, psi, points):
     f at the given points. Must have len(points) = len(psi)
     """
     N = len(psi) - 1
-    A = sp.zeros((N+1, N+1))
-    b = sp.zeros((N+1, 1))
+    A = sym.zeros((N+1, N+1))
+    b = sym.zeros((N+1, 1))
     # Wrap psi and f in Python functions rather than expressions
     # so that we can evaluate psi at points[i] (alternative to subs?)
-    x = sp.Symbol('x')
-    psi = [sp.lambdify([x], psi[i]) for i in range(N+1)]
-    f = sp.lambdify([x], f)
+    x = sym.Symbol('x')
+    psi = [sym.lambdify([x], psi[i]) for i in range(N+1)]
+    f = sym.lambdify([x], f)
     print '...evaluating matrix...'
     for i in range(N+1):
         for j in range(N+1):
@@ -209,29 +211,32 @@ def interpolation(f, psi, points):
     print
     print 'A:\n', A, '\nb:\n', b
     c = A.LUsolve(b)
+    # c is a sympy Matrix object, turn to list
+    c = [sym.simplify(c[i,0]) for i in range(c.shape[0])]
     print 'coeff:', c
     u = 0
     for i in range(len(psi)):
-        u += c[i,0]*psi[i](x)
+        u += c[i]*psi[i](x)
     # Alternative:
     # u = sum(c[i,0]*psi[i] for i in range(len(psi)))
-    print 'approximation:', sp.simplify(u)
+    print 'approximation:', sym.simplify(u)
     return u, c
 
 collocation = interpolation  # synonym in this module
 
-def comparison_plot(f, u, Omega, filename='tmp',
-                    plot_title='', ymin=None, ymax=None,
-                    u_legend='approximation',
-                    legend_loc='upper right',
-                    show=True):
+def comparison_plot(
+    f, u, Omega, filename='tmp',
+    plot_title='', ymin=None, ymax=None,
+    u_legend='approximation',
+    legend_loc='upper right',
+    show=True):
     """Compare f(x) and u(x) for x in Omega in a plot."""
-    x = sp.Symbol('x')
+    x = sym.Symbol('x')
     print 'f:', f
     print 'u:', u
 
-    f = sp.lambdify([x], f, modules="numpy")
-    u = sp.lambdify([x], u, modules="numpy")
+    f = sym.lambdify([x], f, modules="numpy")
+    u = sym.lambdify([x], u, modules="numpy")
     if len(Omega) != 2:
         raise ValueError('Omega=%s must be an interval (2-list)' % str(Omega))
     # When doing symbolics, Omega can easily contain symbolic expressions,

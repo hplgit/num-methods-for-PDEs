@@ -3,13 +3,13 @@ Examples on approximating functions by global basis functions,
 using the approx2D.py module.
 """
 from approx2D import *
-import sympy as sp
+import sympy as sym
 import sys
-x, y = sp.symbols('x y')
+x, y = sym.symbols('x y')
 
 
 def sines(x, y, Nx, Ny):
-    return [sp.sin(sp.pi*(i+1)*x)*sp.sin(sp.pi*(j+1)*y)
+    return [sym.sin(sym.pi*(i+1)*x)*sym.sin(sym.pi*(j+1)*y)
             for i in range(Nx+1) for j in range(Ny+1)]
 
 def taylor(x, y, Nx, Ny):

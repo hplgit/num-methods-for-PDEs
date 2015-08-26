@@ -125,14 +125,14 @@ def approximate(f, d=1, N_e=4, numint='Gauss-Legendre2',
     print 'elements:', elements
     print 'A:\n', A
     print 'b:\n', b
-    print sp.latex(A, mode='plain')
-    #print sp.latex(b, mode='plain')
+    print sym.latex(A, mode='plain')
+    #print sym.latex(b, mode='plain')
 
     c = A.LUsolve(b)
     print 'c:\n', c
     print 'Plain interpolation:'
-    x = sp.Symbol('x')
-    f = sp.lambdify([x], f, modules='numpy')
+    x = sym.Symbol('x')
+    f = sym.lambdify([x], f, modules='numpy')
     f_at_nodes = [f(xc) for xc in nodes]
     print f_at_nodes
     if not symbolic:

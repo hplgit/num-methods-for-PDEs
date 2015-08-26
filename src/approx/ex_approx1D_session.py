@@ -2,11 +2,11 @@
 
 from approx1D import *
 
-x = sp.Symbol('x')
+x = sym.Symbol('x')
 f = 10*(x-1)**2-1
 u = least_squares(f=f, psi=[1, x, x**2], Omega=[1, 2])
 print u
-print sp.expand(f)
+print sym.expand(f)
 
 # show how equal x**i functions are (ill-conditioning)
 import numpy as np

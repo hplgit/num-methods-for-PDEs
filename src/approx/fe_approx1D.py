@@ -1,5 +1,5 @@
 import numpy as np
-import sympy as sp
+import sympy as sym
 import sys
 import scitools.std as plt
 #import matplotlib.pyplot as plt
@@ -13,8 +13,8 @@ def mesh_uniform(N_e, d, Omega=[0,1], symbolic=False):
     sympy expressions with the symbol h as element length.
     """
     if symbolic:
-        h = sp.Symbol('h')  # element length
-        dx = h*sp.Rational(1, d)  # node spacing
+        h = sym.Symbol('h')  # element length
+        dx = h*sym.Rational(1, d)  # node spacing
         nodes = [Omega[0] + i*dx for i in range(N_e*d + 1)]
     else:
         nodes = np.linspace(Omega[0], Omega[1], N_e*d + 1).tolist()
@@ -33,10 +33,10 @@ def phi_r(r, X, d):
     if d == 0:
         return np.ones_like(X)
 
-    if isinstance(X, sp.Symbol):
-        # Use sp.Rational and integers for nodes
+    if isinstance(X, sym.Symbol):
+        # Use sym.Rational and integers for nodes
         # (to maximize nice-looking output)
-        h = sp.Rational(1, d)
+        h = sym.Rational(1, d)
         nodes = [2*i*h - 1 for i in range(d+1)]
     else:
         # X is numeric: use floats for nodes
@@ -53,16 +53,16 @@ def phi_r(r, X, d, point_distribution='uniform'):
         return np.ones_like(X)
 
     if point_distribution == 'uniform':
-        if isinstance(X, sp.Symbol):
-            # Use sp.Rational and integers for nodes
+        if isinstance(X, sym.Symbol):
+            # Use sym.Rational and integers for nodes
             # (to maximize nice-looking output)
-            h = sp.Rational(1, d)
+            h = sym.Rational(1, d)
             nodes = [2*i*h - 1 for i in range(d+1)]
         else:
             # X is numeric: use floats for nodes
             nodes = np.linspace(-1, 1, d+1)
     elif point_distribution == 'Chebyshev':
-        # assue X is not sp.Symbol, just numeric
+        # assue X is not sym.Symbol, just numeric
         nodes = Chebyshev_nodes(-1, 1, d)
     return Lagrange_polynomial(X, r, nodes)
 
@@ -95,7 +95,7 @@ def dphi_r(r, X, d, point_distribution='uniform'):
 
 def basis(d=1):
     """Return the finite element basis in 1D of degree d."""
-    X = sp.Symbol('X')
+    X = sym.Symbol('X')
     phi = [phi_r(r, X, d) for r in range(d+1)]
     return phi
 
@@ -181,41 +181,41 @@ def u_glob(U, elements, nodes, resolution_per_element=51):
 
 def element_matrix(phi, Omega_e, symbolic=True):
     n = len(phi)
-    A_e = sp.zeros((n, n))
-    X = sp.Symbol('X')
+    A_e = sym.zeros((n, n))
+    X = sym.Symbol('X')
     if symbolic:
-        h = sp.Symbol('h')
+        h = sym.Symbol('h')
     else:
         h = Omega_e[1] - Omega_e[0]
     detJ = h/2  # dx/dX
     for r in range(n):
         for s in range(r, n):
-            A_e[r,s] = sp.integrate(phi[r]*phi[s]*detJ, (X, -1, 1))
+            A_e[r,s] = sym.integrate(phi[r]*phi[s]*detJ, (X, -1, 1))
             A_e[s,r] = A_e[r,s]
     return A_e
 
 def element_vector(f, phi, Omega_e, symbolic=True):
     n = len(phi)
-    b_e = sp.zeros((n, 1))
+    b_e = sym.zeros((n, 1))
     # Make f a function of X (via f.subs to avoid floats from lambdify)
-    X = sp.Symbol('X')
+    X = sym.Symbol('X')
     if symbolic:
-        h = sp.Symbol('h')
+        h = sym.Symbol('h')
     else:
         h = Omega_e[1] - Omega_e[0]
     x = (Omega_e[0] + Omega_e[1])/2 + h/2*X  # mapping
-    f = f.subs('x', x)  # or subs(sp.Symbol('x'), x)?
+    f = f.subs('x', x)  # or subs(sym.Symbol('x'), x)?
     detJ = h/2  # dx/dX
     for r in range(n):
         if symbolic:
-            I = sp.integrate(f*phi[r]*detJ, (X, -1, 1))
-        if not symbolic or isinstance(I, sp.Integral):
+            I = sym.integrate(f*phi[r]*detJ, (X, -1, 1))
+        if not symbolic or isinstance(I, sym.Integral):
             print 'numerical integration of', f*phi[r]*detJ
             # Ensure h is numerical
             h = Omega_e[1] - Omega_e[0]
             detJ = h/2
-            integrand = sp.lambdify([X], f*phi[r]*detJ)
-            I = sp.mpmath.quad(integrand, [-1, 1])
+            integrand = sym.lambdify([X], f*phi[r]*detJ)
+            I = sym.mpmath.quad(integrand, [-1, 1])
         b_e[r] = I
     return b_e
 
@@ -225,7 +225,7 @@ def exemplify_element_matrix_vector(f, d, symbolic=True):
     Omega_e = [0.1, 0.2]
     A_e = element_matrix(phi, Omega_e=Omega_e, symbolic=symbolic)
     if symbolic:
-        h = sp.Symbol('h')
+        h = sym.Symbol('h')
         Omega_e=[1*h, 2*h]
     b_e = element_vector(f, phi, Omega_e=Omega_e,
                          symbolic=symbolic)
@@ -235,8 +235,8 @@ def exemplify_element_matrix_vector(f, d, symbolic=True):
 def assemble(nodes, elements, phi, f, symbolic=True):
     N_n, N_e = len(nodes), len(elements)
     if symbolic:
-        A = sp.zeros((N_n, N_n))
-        b = sp.zeros((N_n, 1))    # note: (N_n, 1) matrix
+        A = sym.zeros((N_n, N_n))
+        b = sym.zeros((N_n, 1))    # note: (N_n, 1) matrix
     else:
         A = np.zeros((N_n, N_n))
         b = np.zeros(N_n)
@@ -264,8 +264,8 @@ def approximate(f, symbolic=False, d=1, N_e=4,
     print 'elements:', elements
     print 'A:\n', A
     print 'b:\n', b
-    print sp.latex(A, mode='plain')
-    #print sp.latex(b, mode='plain')
+    print sym.latex(A, mode='plain')
+    #print sym.latex(b, mode='plain')
 
     if symbolic:
         c = A.LUsolve(b)
@@ -275,8 +275,8 @@ def approximate(f, symbolic=False, d=1, N_e=4,
     print 'c:\n', c
 
     print 'Plain interpolation/collocation:'
-    x = sp.Symbol('x')
-    f = sp.lambdify([x], f, modules='numpy')
+    x = sym.Symbol('x')
+    f = sym.lambdify([x], f, modules='numpy')
     try:
         f_at_nodes = [f(xc) for xc in nodes]
     except NameError as e:
@@ -300,6 +300,6 @@ if __name__ == '__main__':
         [phi_r, u_glob, element_matrix, element_vector,
          exemplify_element_matrix_vector, assemble, approximate],
         sys.argv)
-    x = sp.Symbol('x')  # needed in eval when expression f contains x
+    x = sym.Symbol('x')  # needed in eval when expression f contains x
     eval(cmd)
 

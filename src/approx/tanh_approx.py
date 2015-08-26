@@ -1,5 +1,5 @@
 from approx1D import least_squares_numerical
-import sympy as sp
+import sympy as sym
 from numpy import tanh, sin, pi, linspace
 #import matplotlib.pyplot as plt
 import scitools.std as plt

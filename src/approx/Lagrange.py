@@ -1,5 +1,5 @@
 """Lagrange interpolating polynomials in 1D."""
-import sympy as sp
+import sympy as sym
 
 def Lagrange_polynomial(x, i, points):
     """
@@ -26,8 +26,8 @@ def Lagrange_polynomials_01(x, N):
     expressions are made with rational expressions for the
     points, otherwise floating-point numbers are used).
     """
-    if isinstance(x, sp.Symbol):
-        h = sp.Rational(1, N)
+    if isinstance(x, sym.Symbol):
+        h = sym.Rational(1, N)
     else:
         h = 1.0/(N-1)
     points = [i*h for i in range(N+1)]
@@ -55,8 +55,8 @@ def Lagrange_polynomials(x, N, Omega, point_distribution='uniform'):
     Lagrange polynomials.
     """
     if point_distribution == 'uniform':
-        if isinstance(x, sp.Symbol):
-            h = sp.Rational(Omega[1] - Omega[0], N)
+        if isinstance(x, sym.Symbol):
+            h = sym.Rational(Omega[1] - Omega[0], N)
         else:
             h = (Omega[1] - Omega[0])/float(N)  # float value
         points = [Omega[0] + i*h for i in range(N+1)]

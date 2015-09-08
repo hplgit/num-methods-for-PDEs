@@ -1,6 +1,7 @@
-from fe_approx1D import *
+from fe_approx1D import basis, affine_mapping
 import sys
 from math import sqrt
+import numpy as np
 """
 This module extends and replaces functions in the module fe_approx1D.
 Two major changes are implemented:
@@ -12,7 +13,6 @@ Two major changes are implemented:
  * numerical integration (Midpoint, Trapezoidal, Simpson
    rules) can be used in the reference cell
 """
-import scitools.std as plt
 
 def mesh_uniform(N_e, d, Omega=[0,1], symbolic=False):
     """
@@ -153,6 +153,19 @@ def assemble(vertices, cells, dof_map, phi, f,
 
 def approximate(f, symbolic=False, d=1, N_e=4, numint=None,
                 Omega=[0, 1], filename='tmp'):
+    """
+    Compute the finite element approximation, using Lagrange
+    elements of degree d, to a symbolic expression f (with x
+    as independent variable) on a domain Omega. N_e is the
+    number of elements.
+    symbolic=True implies symbolic expressions in the
+    calculations, while symbolic=False means numerical
+    computing.
+    numint is the name of the numerical integration rule
+    (Trapezoidal, Simpson, GaussLegendre2, GaussLegendre3,
+    GaussLegendre4, etc.). numint=None implies exact
+    integration.
+    """
     numint_name = numint  # save name
     if symbolic:
         if numint == 'Trapezoidal':
@@ -245,6 +258,7 @@ def approximate(f, symbolic=False, d=1, N_e=4, numint=None,
         x_u, u = u_glob(np.asarray(c), vertices, cells, dof_map,
                         resolution_per_element=51)
         x_f = np.linspace(Omega[0], Omega[1], 10001) # mesh for f
+        import scitools.std as plt
         plt.plot(x_u, u, '-',
                  x_f, f(x_f), '--')
         plt.legend(['u', 'f'])

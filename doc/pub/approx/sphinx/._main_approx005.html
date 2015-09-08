@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Implementation (1)</title>
+    <title>Implementation (2)</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -78,8 +78,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="implementation-1">
-<span id="fem-approx-fe-impl"></span><h1>Implementation  (1)<a class="headerlink" href="#implementation-1" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="implementation-2">
+<span id="fem-approx-fe-impl"></span><h1>Implementation  (2)<a class="headerlink" href="#implementation-2" title="Permalink to this headline">¶</a></h1>
 <p>Based on the experience from the previous example, it makes
 sense to write some code to automate the analytical integration process
 for any choice of finite element basis functions. In addition,
@@ -97,14 +97,34 @@ of degree <code class="docutils literal"><span class="pre">d</span></code>:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">sympy</span> <span class="kn">as</span> <span class="nn">sym</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
-<span class="k">def</span> <span class="nf">phi_r</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">sym</span><span class="o">.</span><span class="n">Symbol</span><span class="p">):</span>
-        <span class="n">h</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">Rational</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>  <span class="c"># node spacing</span>
-        <span class="n">nodes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span><span class="o">*</span><span class="n">h</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+<span class="k">def</span> <span class="nf">basis</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">point_distribution</span><span class="o">=</span><span class="s">&#39;uniform&#39;</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return all local basis function phi as functions of the</span>
+<span class="sd">    local point X in a 1D element with d+1 nodes.</span>
+<span class="sd">    If symbolic=True, return symbolic expressions, else</span>
+<span class="sd">    return Python functions of X.</span>
+<span class="sd">    point_distribution can be &#39;uniform&#39; or &#39;Chebyshev&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s">&#39;X&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">d</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">phi_sym</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="c"># assume X is numeric: use floats for nodes</span>
-        <span class="n">nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">d</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">Lagrange_polynomial</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">nodes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">point_distribution</span> <span class="o">==</span> <span class="s">&#39;uniform&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">symbolic</span><span class="p">:</span>
+                <span class="c"># Compute symbolic nodes</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">Rational</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>  <span class="c"># node spacing</span>
+                <span class="n">nodes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span><span class="o">*</span><span class="n">h</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">d</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">point_distribution</span> <span class="o">==</span> <span class="s">&#39;Chebyshev&#39;</span><span class="p">:</span>
+            <span class="c"># Just numeric nodes</span>
+            <span class="n">nodes</span> <span class="o">=</span> <span class="n">Chebyshev_nodes</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>
+
+        <span class="n">phi_sym</span> <span class="o">=</span> <span class="p">[</span><span class="n">Lagrange_polynomial</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">nodes</span><span class="p">)</span>
+                   <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+    <span class="c"># Transform to Python functions</span>
+    <span class="n">phi_num</span> <span class="o">=</span> <span class="p">[</span><span class="n">sym</span><span class="o">.</span><span class="n">lambdify</span><span class="p">([</span><span class="n">X</span><span class="p">],</span> <span class="n">phi_sym</span><span class="p">[</span><span class="n">r</span><span class="p">])</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">phi_sym</span> <span class="k">if</span> <span class="n">symbolic</span> <span class="k">else</span> <span class="n">phi_num</span>
 
 <span class="k">def</span> <span class="nf">Lagrange_polynomial</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">points</span><span class="p">):</span>
     <span class="n">p</span> <span class="o">=</span> <span class="mi">1</span>
@@ -114,25 +134,15 @@ of degree <code class="docutils literal"><span class="pre">d</span></code>:</p>
     <span class="k">return</span> <span class="n">p</span>
 </pre></div>
 </div>
-<p>Observe how we construct the <code class="docutils literal"><span class="pre">phi_r</span></code> function to be
-a symbolic expression for <span class="math">\({\tilde{\varphi}}_r(X)\)</span> if <code class="docutils literal"><span class="pre">X</span></code> is a
-<code class="docutils literal"><span class="pre">Symbol</span></code> object from <code class="docutils literal"><span class="pre">sympy</span></code>. Otherwise, we assume that <code class="docutils literal"><span class="pre">X</span></code>
-is a <code class="docutils literal"><span class="pre">float</span></code> object and compute the corresponding
-floating-point value of <span class="math">\({\tilde{\varphi}}_r(X)\)</span>. Recall that the
-<code class="docutils literal"><span class="pre">Lagrange_polynomial</span></code> function, here simply copied
-from the section <a class="reference internal" href="._main_approx003.html#fem-approx-global-fourier"><span class="std std-ref">Fourier series</span></a>,
-works with both symbolic and
-numeric variables.</p>
-<p>The complete basis <span class="math">\({\tilde{\varphi}}_0(X),\ldots,{\tilde{\varphi}}_d(X)\)</span>
-on the reference element, represented as a list of
-symbolic expressions, is constructed by</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">basis</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-    <span class="n">X</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s">&#39;X&#39;</span><span class="p">)</span>
-    <span class="n">phi</span> <span class="o">=</span> <span class="p">[</span><span class="n">phi_r</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
-    <span class="k">return</span> <span class="n">phi</span>
-</pre></div>
-</div>
-<p>Now we can write the function that computes the element matrix:</p>
+<p>Observe how we construct the <code class="docutils literal"><span class="pre">phi_sym</span></code> list to be
+symbolic expressions for <span class="math">\({\tilde{\varphi}}_r(X)\)</span> with <code class="docutils literal"><span class="pre">X</span></code> as a
+<code class="docutils literal"><span class="pre">Symbol</span></code> object from <code class="docutils literal"><span class="pre">sympy</span></code>. Also note that the
+<code class="docutils literal"><span class="pre">Lagrange_polynomial</span></code> function (here simply copied
+from the section <a class="reference internal" href="._main_approx003.html#fem-approx-global-fourier"><span class="std std-ref">Fourier series</span></a>)
+works with both symbolic and numeric variables.</p>
+<p>Now we can write the function that computes the element matrix
+with a list of symbolic expressions for <span class="math">\({\varphi}_r\)</span>
+(<code class="docutils literal"><span class="pre">phi</span> <span class="pre">=</span> <span class="pre">basis(d,</span> <span class="pre">symbolic=True)</span></code>):</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">element_matrix</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">Omega_e</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
     <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>
     <span class="n">A_e</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
@@ -157,9 +167,9 @@ is used and the final matrix elements are numbers,
 not symbols.
 This functionality can be demonstrated:</p>
 <div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">fe_approx1D</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">phi</span> <span class="o">=</span> <span class="n">basis</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">phi</span> <span class="o">=</span> <span class="n">basis</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">phi</span>
-<span class="p">[</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">X</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">X</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
+<span class="p">[</span><span class="o">-</span><span class="n">X</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">X</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">element_matrix</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">Omega_e</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">],</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="p">[</span><span class="n">h</span><span class="o">/</span><span class="mi">3</span><span class="p">,</span> <span class="n">h</span><span class="o">/</span><span class="mi">6</span><span class="p">]</span>
 <span class="p">[</span><span class="n">h</span><span class="o">/</span><span class="mi">6</span><span class="p">,</span> <span class="n">h</span><span class="o">/</span><span class="mi">3</span><span class="p">]</span>
@@ -190,7 +200,7 @@ procedure:</p>
 <p>Here we need to replace the symbol <code class="docutils literal"><span class="pre">x</span></code> in the expression for <code class="docutils literal"><span class="pre">f</span></code>
 by the mapping formula such that <code class="docutils literal"><span class="pre">f</span></code> can be integrated
 in terms of <span class="math">\(X\)</span>, cf. the formula
-<span class="math">\(\tilde b^{(e)}_{r} = \int_{-1}^1 f(x(X)){\tilde{\varphi}}_r(X)\frac{h}{2}dX\)</span>.</p>
+<span class="math">\(\tilde b^{(e)}_{r} = \int_{-1}^1 f(x(X)){\tilde{\varphi}}_r(X)\frac{h}{2}{\, \mathrm{d}X}\)</span>.</p>
 <p>The integration in the element matrix function involves only products
 of polynomials, which <code class="docutils literal"><span class="pre">sympy</span></code> can easily deal with, but for the
 right-hand side <code class="docutils literal"><span class="pre">sympy</span></code> may face difficulties with certain types of
@@ -248,7 +258,7 @@ takes the following form</p>
 <p>The <code class="docutils literal"><span class="pre">nodes</span></code> and <code class="docutils literal"><span class="pre">elements</span></code> variables represent the finite
 element mesh as explained earlier.</p>
 <p>Given the coefficient matrix <code class="docutils literal"><span class="pre">A</span></code> and the right-hand side <code class="docutils literal"><span class="pre">b</span></code>,
-we can compute the coefficients <span class="math">\(\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}\)</span> in the expansion
+we can compute the coefficients <span class="math">\(\left\{ {c}_j \right\}_{j\in{\mathcal{I}_s}}\)</span> in the expansion
 <span class="math">\(u(x)=\sum_jc_j{\varphi}_j\)</span> as the solution vector <code class="docutils literal"><span class="pre">c</span></code> of the linear
 system:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">if</span> <span class="n">symbolic</span><span class="p">:</span>
@@ -275,7 +285,7 @@ Let us first work with a symbolic element length:</p>
 <div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="n">h</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s">&#39;h x&#39;</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">nodes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">h</span><span class="p">]</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">elements</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]]</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">phi</span> <span class="o">=</span> <span class="n">basis</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">phi</span> <span class="o">=</span> <span class="n">basis</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">f</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">x</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">A</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">assemble</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">elements</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">A</span>
@@ -327,7 +337,7 @@ symbolic ones in the section <a class="reference internal" href="#fem-approx-fe-
 (still done by <code class="docutils literal"><span class="pre">sympy</span></code> and the <code class="docutils literal"><span class="pre">assemble</span></code> function) go as follows:</p>
 <div class="highlight-ipy"><div class="highlight"><pre><span class="o">&gt;&gt;&gt;</span> <span class="n">nodes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">elements</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]]</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">phi</span> <span class="o">=</span> <span class="n">basis</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">phi</span> <span class="o">=</span> <span class="n">basis</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">x</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">f</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">x</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">A</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">assemble</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">elements</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
@@ -516,20 +526,21 @@ we refine the mesh.</p>
 compute, even on small meshes consisting of up to eight elements.
 The main explanation for slow computations is unsuccessful
 symbolic integration: <code class="docutils literal"><span class="pre">sympy</span></code> may use a lot of energy on
-integrals like <span class="math">\(\int f(x(X)){\tilde{\varphi}}_r(X)h/2 dx\)</span> before
+integrals like <span class="math">\(\int f(x(X)){\tilde{\varphi}}_r(X)h/2 {\, \mathrm{d}x}\)</span> before
 giving up, and the program then resorts to numerical integration.
 Codes that can deal with a large number of basis functions and
 accept flexible choices of <span class="math">\(f(x)\)</span> should compute all integrals
 numerically and replace the matrix objects from <code class="docutils literal"><span class="pre">sympy</span></code> by
 the far more efficient array objects from <code class="docutils literal"><span class="pre">numpy</span></code>.</p>
-<p>There is also another reason for slow code: the solution algorithm for
+<p>There is also another (potential)
+reason for slow code: the solution algorithm for
 the linear system performs much more work than necessary. Most of the
 matrix entries <span class="math">\(A_{i,j}\)</span> are zero, because <span class="math">\(({\varphi}_i,{\varphi}_j)=0\)</span>
 unless <span class="math">\(i\)</span> and <span class="math">\(j\)</span> are nodes in the same element. In 1D problems,
 we do not need to store or compute with these zeros when solving the
 linear system, but that requires solution methods adapted to the kind
 of matrices produced by the finite element approximations.</p>
-<p>A matrix whose majority of entries are zeros, is known as a <em>sparse</em> matrix.
+<p>A matrix whose majority of entries are zeros, is known as a <a class="reference external" href="https://en.wikipedia.org/wiki/Sparse_matrix">sparse</a> matrix.
 Utilizing sparsity in software dramatically decreases
 the storage demands and the CPU-time needed to compute the solution of
 the linear system. This optimization is not very critical in 1D problems
@@ -561,9 +572,47 @@ and linear system solution.</p>
 <blockquote>
 <div><ul class="simple">
 <li><code class="docutils literal"><span class="pre">scipy.sparse.diags</span></code> for matrix defined via diagonals</li>
-<li><code class="docutils literal"><span class="pre">scipy.sparse.lil_matrix</span></code> and <code class="docutils literal"><span class="pre">scipy.sparse.dok_matrix</span></code> for creation via setting matrix entries</li>
+<li><code class="docutils literal"><span class="pre">scipy.sparse.dok_matrix</span></code> for matrix incrementally defined via index pairs <span class="math">\((i,j)\)</span></li>
 </ul>
 </div></blockquote>
+<p>The <code class="docutils literal"><span class="pre">dok_matrix</span></code> object is most convenient for finite element computations.
+This sparse matrix format is called DOK, which stands for Dictionary Of Keys:
+the implementation is basically a dictionary (hash) with the
+entry indices <code class="docutils literal"><span class="pre">(i,j)</span></code> as keys.</p>
+<p>Rather than declaring <code class="docutils literal"><span class="pre">A</span> <span class="pre">=</span> <span class="pre">np.zeros((N_n,</span> <span class="pre">N_n))</span></code>, a DOK sparse
+matrix is created by</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">scipy.sparse</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">dok_matrix</span><span class="p">((</span><span class="n">N_n</span><span class="p">,</span> <span class="n">N_n</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>When there is any need to add or set some matrix entry <code class="docutils literal"><span class="pre">i,j</span></code>, just do</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>  <span class="o">=</span> <span class="n">entry</span>
+<span class="c"># or</span>
+<span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">entry</span>
+</pre></div>
+</div>
+<p>The indexing creates the matrix entry on the fly, and
+only the nonzero entries in the matrix will be stored.</p>
+<p>To solve a system with right-hand side <code class="docutils literal"><span class="pre">b</span></code> (one-dimensional <code class="docutils literal"><span class="pre">numpy</span></code>
+array) with a sparse coefficient matrix <code class="docutils literal"><span class="pre">A</span></code>, we must use some kind of
+a sparse linear system solver. The safest choice is a method based on
+sparse Gaussian elimination:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">scipy.sparse.linalg</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">spsolve</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">tocsr</span><span class="p">(),</span> <span class="n">b</span><span class="p">,</span> <span class="n">use_umfpack</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The call <code class="docutils literal"><span class="pre">A.tocsr()</span></code> is not strictly needed (a warning is issued
+otherwise), but ensures that the solution algorithm can efficiently
+work with a copy of the sparse matrix in <em>Compressed Sparse Row</em>  (CSR) format.</p>
+<p>An advantage of the <code class="docutils literal"><span class="pre">scipy.sparse.diags</span></code> matrix over the DOK format is
+that the former allows vectorized assignment to the matrix.
+Vectorization is possible for approximation problems when all elements
+are of the same type. However, when solving differential equations,
+vectorization is much more difficult. It also appears that the DOK
+sparse matrix format available in the <code class="docutils literal"><span class="pre">scipy.sparse</span></code> package is fast
+enough even for big 1D problems on today&#8217;s laptops, so the need for
+improving efficiency occurs in 2D and 3D problems, but then the
+complexity of the mesh favors the DOK format.</p>
 </div>
 </div>
 
@@ -580,7 +629,7 @@ and linear system solution.</p>
             </center>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Implementation  (1)</a><ul>
+<li><a class="reference internal" href="#">Implementation  (2)</a><ul>
 <li><a class="reference internal" href="#integration">Integration</a></li>
 <li><a class="reference internal" href="#linear-system-assembly-and-solution">Linear system assembly and solution</a></li>
 <li><a class="reference internal" href="#example-on-computing-symbolic-approximations">Example on computing symbolic approximations</a></li>
@@ -640,7 +689,10 @@ and linear system solution.</p>
     </div>
 <div class="wrapper">
   <div class="footer">
-  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+    <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+    <br />
+    <br />
+      &copy;H. P. Langtangen.
   </div>
 </div>
 

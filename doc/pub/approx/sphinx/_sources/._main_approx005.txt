@@ -2,7 +2,7 @@
 
 .. _fem:approx:fe:impl:
 
-Implementation  (1)
+Implementation  (2)
 ===================
 
 Based on the experience from the previous example, it makes
@@ -29,14 +29,34 @@ of degree ``d``:
         import sympy as sym
         import numpy as np
         
-        def phi_r(r, X, d):
-            if isinstance(X, sym.Symbol):
-                h = sym.Rational(1, d)  # node spacing
-                nodes = [2*i*h - 1 for i in range(d+1)]
+        def basis(d, point_distribution='uniform', symbolic=False):
+            """
+            Return all local basis function phi as functions of the
+            local point X in a 1D element with d+1 nodes.
+            If symbolic=True, return symbolic expressions, else
+            return Python functions of X.
+            point_distribution can be 'uniform' or 'Chebyshev'.
+            """
+            X = sym.symbols('X')
+            if d == 0:
+                phi_sym = [1]
             else:
-                # assume X is numeric: use floats for nodes
-                nodes = np.linspace(-1, 1, d+1)
-            return Lagrange_polynomial(X, r, nodes)
+                if point_distribution == 'uniform':
+                    if symbolic:
+        	        # Compute symbolic nodes
+                        h = sym.Rational(1, d)  # node spacing
+                        nodes = [2*i*h - 1 for i in range(d+1)]
+                    else:
+                        nodes = np.linspace(-1, 1, d+1)
+                elif point_distribution == 'Chebyshev':
+                    # Just numeric nodes
+                    nodes = Chebyshev_nodes(-1, 1, d)
+        
+                phi_sym = [Lagrange_polynomial(X, r, nodes)
+                           for r in range(d+1)]
+            # Transform to Python functions
+            phi_num = [sym.lambdify([X], phi_sym[r]) for r in range(d+1)]
+            return phi_sym if symbolic else phi_num
         
         def Lagrange_polynomial(x, i, points):
             p = 1
@@ -45,28 +65,16 @@ of degree ``d``:
                     p *= (x - points[k])/(points[i] - points[k])
             return p
 
-Observe how we construct the ``phi_r`` function to be
-a symbolic expression for :math:`{\tilde{\varphi}}_r(X)` if ``X`` is a
-``Symbol`` object from ``sympy``. Otherwise, we assume that ``X``
-is a ``float`` object and compute the corresponding
-floating-point value of :math:`{\tilde{\varphi}}_r(X)`. Recall that the
-``Lagrange_polynomial`` function, here simply copied
-from the section :ref:`fem:approx:global:Fourier`,
-works with both symbolic and
-numeric variables.
+Observe how we construct the ``phi_sym`` list to be
+symbolic expressions for :math:`{\tilde{\varphi}}_r(X)` with ``X`` as a
+``Symbol`` object from ``sympy``. Also note that the
+``Lagrange_polynomial`` function (here simply copied
+from the section :ref:`fem:approx:global:Fourier`)
+works with both symbolic and numeric variables.
 
-The complete basis :math:`{\tilde{\varphi}}_0(X),\ldots,{\tilde{\varphi}}_d(X)`
-on the reference element, represented as a list of
-symbolic expressions, is constructed by
-
-.. code-block:: python
-
-        def basis(d=1):
-            X = sym.Symbol('X')
-            phi = [phi_r(r, X, d) for r in range(d+1)]
-            return phi
-
-Now we can write the function that computes the element matrix:
+Now we can write the function that computes the element matrix
+with a list of symbolic expressions for :math:`{\varphi}_r`
+(``phi = basis(d, symbolic=True)``):
 
 .. code-block:: python
 
@@ -96,9 +104,9 @@ This functionality can be demonstrated:
 .. code-block:: ipy
 
         >>> from fe_approx1D import *
-        >>> phi = basis(d=1)
+        >>> phi = basis(d=1, symbolic=True)
         >>> phi
-        [1/2 - X/2, 1/2 + X/2]
+        [-X/2 + 1/2, X/2 + 1/2]
         >>> element_matrix(phi, Omega_e=[0.1, 0.2], symbolic=True)
         [h/3, h/6]
         [h/6, h/3]
@@ -130,7 +138,7 @@ procedure:
 Here we need to replace the symbol ``x`` in the expression for ``f``
 by the mapping formula such that ``f`` can be integrated
 in terms of :math:`X`, cf. the formula
-:math:`\tilde b^{(e)}_{r} = \int_{-1}^1 f(x(X)){\tilde{\varphi}}_r(X)\frac{h}{2}dX`.
+:math:`\tilde b^{(e)}_{r} = \int_{-1}^1 f(x(X)){\tilde{\varphi}}_r(X)\frac{h}{2}{\, \mathrm{d}X}`.
 
 The integration in the element matrix function involves only products
 of polynomials, which ``sympy`` can easily deal with, but for the
@@ -197,7 +205,7 @@ The ``nodes`` and ``elements`` variables represent the finite
 element mesh as explained earlier.
 
 Given the coefficient matrix ``A`` and the right-hand side ``b``,
-we can compute the coefficients :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` in the expansion
+we can compute the coefficients :math:`\left\{ {c}_j \right\}_{j\in{\mathcal{I}_s}}` in the expansion
 :math:`u(x)=\sum_jc_j{\varphi}_j` as the solution vector ``c`` of the linear
 system:
 
@@ -232,7 +240,7 @@ Let us first work with a symbolic element length:
         >>> h, x = sym.symbols('h x')
         >>> nodes = [0, h, 2*h]
         >>> elements = [[0, 1], [1, 2]]
-        >>> phi = basis(d=1)
+        >>> phi = basis(d=1, symbolic=True)
         >>> f = x*(1-x)
         >>> A, b = assemble(nodes, elements, phi, f, symbolic=True)
         >>> A
@@ -296,7 +304,7 @@ symbolic ones in the section :ref:`fem:approx:fe:impl:ex1:symbolic`
 
         >>> nodes = [0, 0.5, 1]
         >>> elements = [[0, 1], [1, 2]]
-        >>> phi = basis(d=1)
+        >>> phi = basis(d=1, symbolic=True)
         >>> x = sym.Symbol('x')
         >>> f = x*(1-x)
         >>> A, b = assemble(nodes, elements, phi, f, symbolic=False)
@@ -537,14 +545,15 @@ Some of the examples in the preceding section took several minutes to
 compute, even on small meshes consisting of up to eight elements.
 The main explanation for slow computations is unsuccessful
 symbolic integration: ``sympy`` may use a lot of energy on
-integrals like :math:`\int f(x(X)){\tilde{\varphi}}_r(X)h/2 dx` before
+integrals like :math:`\int f(x(X)){\tilde{\varphi}}_r(X)h/2 {\, \mathrm{d}x}` before
 giving up, and the program then resorts to numerical integration.
 Codes that can deal with a large number of basis functions and
 accept flexible choices of :math:`f(x)` should compute all integrals
 numerically and replace the matrix objects from ``sympy`` by
 the far more efficient array objects from ``numpy``.
 
-There is also another reason for slow code: the solution algorithm for
+There is also another (potential)
+reason for slow code: the solution algorithm for
 the linear system performs much more work than necessary. Most of the
 matrix entries :math:`A_{i,j}` are zero, because :math:`({\varphi}_i,{\varphi}_j)=0`
 unless :math:`i` and :math:`j` are nodes in the same element. In 1D problems,
@@ -552,7 +561,7 @@ we do not need to store or compute with these zeros when solving the
 linear system, but that requires solution methods adapted to the kind
 of matrices produced by the finite element approximations.
 
-A matrix whose majority of entries are zeros, is known as a *sparse* matrix.
+A matrix whose majority of entries are zeros, is known as a `sparse <https://en.wikipedia.org/wiki/Sparse_matrix>`__ matrix.
 Utilizing sparsity in software dramatically decreases
 the storage demands and the CPU-time needed to compute the solution of
 the linear system. This optimization is not very critical in 1D problems
@@ -587,16 +596,60 @@ exemplify sparsity patterns.
 
    *Matrix sparsity pattern for left-to-right numbering (left) and random numbering (right) of nodes in P3 elements*
 
-.. 2DO:
-
-.. figure of diagonals vs random, exact examples on sparsity in 2D/3D?
-
 The ``scipy.sparse`` library supports creation of sparse matrices
 and linear system solution.
 
  * ``scipy.sparse.diags`` for matrix defined via diagonals
 
- * ``scipy.sparse.lil_matrix`` and ``scipy.sparse.dok_matrix`` for creation via setting matrix entries
+ * ``scipy.sparse.dok_matrix`` for matrix incrementally defined via index pairs :math:`(i,j)`
+
+The ``dok_matrix`` object is most convenient for finite element computations.
+This sparse matrix format is called DOK, which stands for Dictionary Of Keys:
+the implementation is basically a dictionary (hash) with the
+entry indices ``(i,j)`` as keys.
+
+Rather than declaring ``A = np.zeros((N_n, N_n))``, a DOK sparse
+matrix is created by
+
+.. code-block:: python
+
+        import scipy.sparse
+        A = scipy.sparse.dok_matrix((N_n, N_n))
+
+When there is any need to add or set some matrix entry ``i,j``, just do
+
+.. code-block:: python
+
+        A[i,j]  = entry
+        # or
+        A[i,j] += entry
+
+The indexing creates the matrix entry on the fly, and
+only the nonzero entries in the matrix will be stored.
+
+To solve a system with right-hand side ``b`` (one-dimensional ``numpy``
+array) with a sparse coefficient matrix ``A``, we must use some kind of
+a sparse linear system solver. The safest choice is a method based on
+sparse Gaussian elimination:
+
+.. code-block:: python
+
+        import scipy.sparse.linalg
+        c = scipy.sparse.linalg.spsolve(A.tocsr(), b, use_umfpack=True)
+
+The call ``A.tocsr()`` is not strictly needed (a warning is issued
+otherwise), but ensures that the solution algorithm can efficiently
+work with a copy of the sparse matrix in *Compressed Sparse Row*  (CSR) format.
+
+An advantage of the ``scipy.sparse.diags`` matrix over the DOK format is
+that the former allows vectorized assignment to the matrix.
+Vectorization is possible for approximation problems when all elements
+are of the same type. However, when solving differential equations,
+vectorization is much more difficult. It also appears that the DOK
+sparse matrix format available in the ``scipy.sparse`` package is fast
+enough even for big 1D problems on today's laptops, so the need for
+improving efficiency occurs in 2D and 3D problems, but then the
+complexity of the mesh favors the DOK format.
 
 .. 2DO
 

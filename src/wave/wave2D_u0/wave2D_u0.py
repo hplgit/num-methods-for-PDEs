@@ -223,8 +223,6 @@ def advance_vectorized(u, u_1, u_2, f_a, Cx2, Cy2, dt2,
     u[i,:] = 0
     return u
 
-import nose.tools as nt
-
 def quadratic(Nx, Ny, version):
     """Exact discrete solution of the scheme."""
 
@@ -248,9 +246,9 @@ def quadratic(Nx, Ny, version):
     def assert_no_error(u, x, xv, y, yv, t, n):
         u_e = exact_solution(xv, yv, t[n])
         diff = abs(u - u_e).max()
-        #print n, version, diff
-        nt.assert_almost_equal(diff, 0, places=12,
-            msg='diff=%g, step %d, time=%g' % (diff, n, t[n]))
+        tol = 1E-12
+        msg = 'diff=%g, step %d, time=%g' % (diff, n, t[n]))
+        assert diff < tol, msg
 
     new_dt, cpu = solver(
         I, V, f, c, Lx, Ly, Nx, Ny, dt, T,

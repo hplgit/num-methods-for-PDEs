@@ -3,10 +3,10 @@ import sympy as sym
 
 def Lagrange_polynomial(x, i, points):
     """
-    Return the Lagrange polynomial no. i. points are the
-    interpolation points, and x can be a number or
-    a sympy.Symbol object (for symbolic representation of
-    the polynomial). When x is a sympy.Symbol object, it is
+    Return the Lagrange polynomial no. i.
+    points are the interpolation points, and x can be a number or
+    a sympy.Symbol object (for symbolic representation of the
+    polynomial). When x is a sympy.Symbol object, it is
     normally desirable (for nice output of polynomial expressions)
     to let points consist of integers or rational numbers in sympy.
     """

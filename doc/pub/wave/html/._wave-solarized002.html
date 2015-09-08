@@ -610,24 +610,24 @@ A first attempt at a solver function is listed below.
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
-<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">import</span> *
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">np</span>
 
 <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">solver</span>(I, V, f, c, L, dt, C, T, user_action=<span style="color: #658b00">None</span>):
     <span style="color: #CD5555">&quot;&quot;&quot;Solve u_tt=c^2*u_xx + f on (0,L)x(0,T].&quot;&quot;&quot;</span>
     Nt = <span style="color: #658b00">int</span>(<span style="color: #658b00">round</span>(T/dt))
-    t = linspace(<span style="color: #B452CD">0</span>, Nt*dt, Nt+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Mesh points in time</span>
+    t = np.linspace(<span style="color: #B452CD">0</span>, Nt*dt, Nt+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Mesh points in time</span>
     dx = dt*c/<span style="color: #658b00">float</span>(C)
     Nx = <span style="color: #658b00">int</span>(<span style="color: #658b00">round</span>(L/dx))
-    x = linspace(<span style="color: #B452CD">0</span>, L, Nx+<span style="color: #B452CD">1</span>)       <span style="color: #228B22"># Mesh points in space</span>
+    x = np.linspace(<span style="color: #B452CD">0</span>, L, Nx+<span style="color: #B452CD">1</span>)       <span style="color: #228B22"># Mesh points in space</span>
     C2 = C**<span style="color: #B452CD">2</span>                      <span style="color: #228B22"># Help variable in the scheme</span>
     <span style="color: #8B008B; font-weight: bold">if</span> f <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">or</span> f == <span style="color: #B452CD">0</span> :
         f = <span style="color: #8B008B; font-weight: bold">lambda</span> x, t: <span style="color: #B452CD">0</span>
     <span style="color: #8B008B; font-weight: bold">if</span> V <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">or</span> V == <span style="color: #B452CD">0</span>:
         V = <span style="color: #8B008B; font-weight: bold">lambda</span> x: <span style="color: #B452CD">0</span>
 
-    u   = zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution array at new time level</span>
-    u_1 = zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution at 1 time level back</span>
-    u_2 = zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution at 2 time levels back</span>
+    u   = np.zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution array at new time level</span>
+    u_1 = np.zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution at 1 time level back</span>
+    u_2 = np.zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution at 2 time levels back</span>
 
     <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">time</span>;  t0 = time.clock()  <span style="color: #228B22"># for measuring CPU time</span>
 
@@ -692,6 +692,7 @@ frameworks nose or pytest).
 <!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
 <div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">test_quadratic</span>():
     <span style="color: #CD5555">&quot;&quot;&quot;Check that u(x,t)=x(L-x)(1+t/2) is exactly reproduced.&quot;&quot;&quot;</span>
+
     <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">u_exact</span>(x, t):
         <span style="color: #8B008B; font-weight: bold">return</span> x*(L-x)*(<span style="color: #B452CD">1</span> + <span style="color: #B452CD">0.5</span>*t)
 
@@ -707,15 +708,18 @@ frameworks nose or pytest).
     L = <span style="color: #B452CD">2.5</span>
     c = <span style="color: #B452CD">1.5</span>
     C = <span style="color: #B452CD">0.75</span>
-    Nx = <span style="color: #B452CD">3</span>  <span style="color: #228B22"># Very coarse mesh for this exact test</span>
+    Nx = <span style="color: #B452CD">6</span>  <span style="color: #228B22"># Very coarse mesh for this exact test</span>
     dt = C*(L/Nx)/c
     T = <span style="color: #B452CD">18</span>
 
-    u, x, t, cpu = solver(I, V, f, c, L, dt, C, T)
-    u_e = u_exact(x, t[-<span style="color: #B452CD">1</span>])
-    tol = <span style="color: #B452CD">1E-14</span>
-    diff = <span style="color: #658b00">abs</span>(u - u_e).max()
-    <span style="color: #8B008B; font-weight: bold">assert</span> diff &lt; tol
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">assert_no_error</span>(u, x, t, n):
+        u_e = u_exact(x, t[n])
+        diff = np.abs(u - u_e).max()
+        tol = <span style="color: #B452CD">1E-13</span>
+        <span style="color: #8B008B; font-weight: bold">assert</span> diff &lt; tol
+
+    solver(I, V, f, c, L, dt, C, T,
+           user_action=assert_no_error)
 </pre></div>
 <p>
 When this function resides in the file <code>wave1D_u0.py</code>, one can execute
@@ -1044,12 +1048,6 @@ calling <code>viz</code> in this application goes as follows:
 <p>
 The associated program has the name <a href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_u0.py" target="_self"><tt>wave1D_u0.py</tt></a>. Run
 the program and watch the <a href="http://tinyurl.com/opdfafk/pub/mov-wave/guitar_C0.8/index.html" target="_self">movie of the vibrating string</a>.
-
-<p>
-
-<!-- begin inline comment -->
-<font color="red">(<b>hpl 1</b>: Must recompute these movies as \( \Delta t \) is different when \( C < 1 \).)</font>
-<!-- end inline comment -->
 
 <h2 id="___sec26">Working with a scaled PDE model </h2>
 
@@ -1426,7 +1424,7 @@ solution at each time level and performs a test:
     I = <span style="color: #8B008B; font-weight: bold">lambda</span> x: u_exact(x, <span style="color: #B452CD">0</span>)
     V = <span style="color: #8B008B; font-weight: bold">lambda</span> x: <span style="color: #B452CD">0.5</span>*u_exact(x, <span style="color: #B452CD">0</span>)
     <span style="color: #228B22"># f is a scalar (zeros_like(x) works for scalar x too)</span>
-    f = <span style="color: #8B008B; font-weight: bold">lambda</span> x, t: zeros_like(x) + <span style="color: #B452CD">2</span>*c**<span style="color: #B452CD">2</span>*(<span style="color: #B452CD">1</span> + <span style="color: #B452CD">0.5</span>*t)
+    f = <span style="color: #8B008B; font-weight: bold">lambda</span> x, t: np.zeros_like(x) + <span style="color: #B452CD">2</span>*c**<span style="color: #B452CD">2</span>*(<span style="color: #B452CD">1</span> + <span style="color: #B452CD">0.5</span>*t)
 
     L = <span style="color: #B452CD">2.5</span>
     c = <span style="color: #B452CD">1.5</span>
@@ -1438,7 +1436,7 @@ solution at each time level and performs a test:
     <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">assert_no_error</span>(u, x, t, n):
         u_e = u_exact(x, t[n])
         tol = <span style="color: #B452CD">1E-13</span>
-        diff = <span style="color: #658b00">abs</span>(u - u_e).max()
+        diff = np.abs(u - u_e).max()
         <span style="color: #8B008B; font-weight: bold">assert</span> diff &lt; tol
 
     solver(I, V, f, c, L, dt, C, T,

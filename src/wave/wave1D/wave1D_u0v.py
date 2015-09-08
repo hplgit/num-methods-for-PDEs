@@ -7,27 +7,27 @@ is that function solver takes an additional argument "version":
 version='scalar' implies explicit loops over mesh point,
 while version='vectorized' provides a vectorized version.
 """
-from numpy import *
+import numpy as np
 
 def solver(I, V, f, c, L, dt, C, T, user_action=None,
            version='vectorized'):
     """Solve u_tt=c^2*u_xx + f on (0,L)x(0,T]."""
     Nt = int(round(T/dt))
-    t = linspace(0, Nt*dt, Nt+1)   # Mesh points in time
+    t = np.linspace(0, Nt*dt, Nt+1)   # Mesh points in time
     dx = dt*c/float(C)
     Nx = int(round(L/dx))
-    x = linspace(0, L, Nx+1)       # Mesh points in space
-    C2 = C**2                      # Help variable in the scheme
+    x = np.linspace(0, L, Nx+1)       # Mesh points in space
+    C2 = C**2                         # Help variable in the scheme
     if f is None or f == 0:
         f = (lambda x, t: 0) if version == 'scalar' else \
-            lambda x, t: zeros(x.shape)
+            lambda x, t: np.zeros(x.shape)
     if V is None or V == 0:
         V = (lambda x: 0) if version == 'scalar' else \
-            lambda x: zeros(x.shape)
+            lambda x: np.zeros(x.shape)
 
-    u   = zeros(Nx+1)   # Solution array at new time level
-    u_1 = zeros(Nx+1)   # Solution at 1 time level back
-    u_2 = zeros(Nx+1)   # Solution at 2 time levels back
+    u   = np.zeros(Nx+1)   # Solution array at new time level
+    u_1 = np.zeros(Nx+1)   # Solution at 1 time level back
+    u_2 = np.zeros(Nx+1)   # Solution at 2 time levels back
 
     import time;  t0 = time.clock()  # for measuring CPU time
 
@@ -83,55 +83,35 @@ def solver(I, V, f, c, L, dt, C, T, user_action=None,
     cpu_time = t0 - time.clock()
     return u, x, t, cpu_time
 
-def viz(I, V, f, c, L, dt, C, T, umin, umax, animate=True,
-        version='vectorized'):
-    """Run solver and visualize u at each time level."""
-    import scitools.std as plt, time, glob, os
-    #num_frames = 100 # max no of frames in movie
-
-    def plot_u(u, x, t, n):
-        """user_action function for solver."""
-        try:
-            every = t.size/num_frames
-        except NameError:
-            every = 1  # plot every frame
-        if n % every == 0:
-            plt.plot(x, u, 'r-',
-                     xlabel='x', ylabel='u',
-                     axis=[0, L, umin, umax],
-                     title='t=%f' % t[n])
-            # Let the initial condition stay on the screen for 2
-            # seconds, else insert a pause of 0.2 s between each plot
-            time.sleep(2) if t[n] == 0 else time.sleep(0.2)
-            plt.savefig('frame_%04d.png' % n)  # for movie making
-
-    # Clean up old movie frames
-    for filename in glob.glob('frame_*.png'):
-        os.remove(filename)
-
-    user_action = plot_u if animate else None
-    u, x, t, cpu = solver(I, V, f, c, L, dt, C, T,
-                          user_action, version)
-    if not animate:
-        return cpu
-
-    # Make movie files
-    fps = 4  # Frames per second
-    plt.movie('frame_*.png', encoder='html', fps=fps,
-              output_file='movie.html')
-    # Ex: avconv -r 4 -i frame_%04d.png -vcodec libtheora movie.ogg
-    codec2ext = dict(flv='flv', libx264='mp4', libvpx='webm',
-                     libtheora='ogg')
-    filespec = 'frame_%04d.png'
-    movie_program = 'avconv'  # or 'ffmpeg'
-    for codec in codec2ext:
-        ext = codec2ext[codec]
-        cmd = '%(movie_program)s -r %(fps)d -i %(filespec)s '\
-              '-vcodec %(codec)s movie.%(ext)s' % vars()
-        os.system(cmd)
+def viz(
+    I, V, f, c, L, dt, C, T,  # PDE paramteres
+    umin, umax,               # Interval for u in plots
+    animate=True,             # Simulation with animation?
+    tool='matplotlib',        # 'matplotlib' or 'scitools'
+    solver_function=solver,   # Function with numerical algorithm
+    version='vectorized',     # 'scalar' or 'vectorized'
+    ):
+    import wave1D_u0
+    if version == 'vectorized':
+        # Reuse viz from wave1D_u0, but with the present
+        # modules' new vectorized solver (which has
+        # version='vectorized' as default argument;
+        # wave1D_u0.viz does not feature this argument)
+        cpu = wave1D_u0.viz(
+            I, V, f, c, L, dt, C, T, umin, umax,
+            animate, tool, solver_function=solver)
+    elif version == 'scalar':
+        # Call wave1D_u0.viz with a solver with
+        # scalar code and use wave1D_u0.solver.
+        cpu = wave1D_u0.viz(
+            I, V, f, c, L, dt, C, T, umin, umax,
+            animate, tool,
+            solver_function=wave1D_u0.solver)
+        # Method 2: wrap this module's solver with an extra
+        # argument version='scalar'
+        #import functools
+        #scalar_solver = functools.partial(scalar, version='scalar')
     return cpu
-
-import nose.tools as nt
 
 def test_quadratic():
     """
@@ -143,7 +123,7 @@ def test_quadratic():
     I = lambda x: u_exact(x, 0)
     V = lambda x: 0.5*u_exact(x, 0)
     # f is a scalar (zeros_like(x) works for scalar x too)
-    f = lambda x, t: zeros_like(x) + 2*c**2*(1 + 0.5*t)
+    f = lambda x, t: np.zeros_like(x) + 2*c**2*(1 + 0.5*t)
 
     L = 2.5
     c = 1.5
@@ -154,8 +134,9 @@ def test_quadratic():
 
     def assert_no_error(u, x, t, n):
         u_e = u_exact(x, t[n])
-        diff = abs(u - u_e).max()
-        nt.assert_almost_equal(diff, 0, places=13)
+        tol = 1E-13
+        diff = np.abs(u - u_e).max()
+        assert diff < tol
 
     solver(I, V, f, c, L, dt, C, T,
            user_action=assert_no_error, version='scalar')
@@ -197,7 +178,8 @@ def run_efficiency_experiments():
     intervals = []
     speedup = []
     for Nx in [50, 100, 200, 400, 800]:
-        dt = C*int(round(float(L)/Nx))/float(c)
+        dx = float(L)/Nx
+        dt = C/c*dx
         print 'solving scalar Nx=%d' % Nx,
         cpu_s = viz(I, 0, 0, c, L, dt, C, T, umin, umax,
                     animate=False, version='scalar')

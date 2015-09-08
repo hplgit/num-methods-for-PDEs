@@ -199,6 +199,7 @@ def interpolation(f, psi, points):
     b = sym.zeros((N+1, 1))
     # Wrap psi and f in Python functions rather than expressions
     # so that we can evaluate psi at points[i] (alternative to subs?)
+    psi_sym = psi # save symbolic expression
     x = sym.Symbol('x')
     psi = [sym.lambdify([x], psi[i]) for i in range(N+1)]
     f = sym.lambdify([x], f)
@@ -214,20 +215,85 @@ def interpolation(f, psi, points):
     # c is a sympy Matrix object, turn to list
     c = [sym.simplify(c[i,0]) for i in range(c.shape[0])]
     print 'coeff:', c
-    u = 0
-    for i in range(len(psi)):
-        u += c[i]*psi[i](x)
-    # Alternative:
-    # u = sum(c[i,0]*psi[i] for i in range(len(psi)))
-    print 'approximation:', sym.simplify(u)
+    u = sym.simplify(sum(c[i,0]*psi_sym[i] for i in range(N+1)))
+    print 'approximation:', u
     return u, c
 
 collocation = interpolation  # synonym in this module
+
+def regression(f, psi, points):
+    """
+    Given a function f(x), return the approximation to
+    f(x) in the space V, spanned by psi, using a regression
+    method based on points. Must have len(points) > len(psi).
+    """
+    N = len(psi) - 1
+    m = len(points) - 1
+    # Use numpy arrays and numerical computing
+    B = np.zeros((N+1, N+1))
+    d = np.zeros(N+1)
+    # Wrap psi and f in Python functions rather than expressions
+    # so that we can evaluate psi at points[i]
+    x = sym.Symbol('x')
+    psi_sym = psi  # save symbolic expression for u
+    psi = [sym.lambdify([x], psi[i]) for i in range(N+1)]
+    f = sym.lambdify([x], f)
+    print '...evaluating matrix...'
+    for i in range(N+1):
+        for j in range(N+1):
+            B[i,j] = 0
+            for k in range(m+1):
+                B[i,j] += psi[i](points[k])*psi[j](points[k])
+        d[i] = 0
+        for k in range(m+1):
+            d[i] += psi[i](points[k])*f(points[k])
+    print 'B:\n', B, '\nd:\n', d
+    c = np.linalg.solve(B, d)
+    print 'coeff:', c
+    u = sum(c[i]*psi_sym[i] for i in range(N+1))
+    print 'approximation:', sym.simplify(u)
+    return u, c
+
+def regression_with_noise(f, psi, points):
+    """
+    Given a data points in the array f, return the approximation
+    to the data in the space V, spanned by psi, using a regression
+    method based on f and the corresponding coordinates in points.
+    Must have len(points) = len(f) > len(psi).
+    """
+    N = len(psi) - 1
+    m = len(points) - 1
+    # Use numpy arrays and numerical computing
+    B = np.zeros((N+1, N+1))
+    d = np.zeros(N+1)
+    # Wrap psi and f in Python functions rather than expressions
+    # so that we can evaluate psi at points[i]
+    x = sym.Symbol('x')
+    psi_sym = psi  # save symbolic expression for u
+    psi = [sym.lambdify([x], psi[i]) for i in range(N+1)]
+    if not isinstance(f, np.ndarray):
+        raise TypeError('f is %s, must be ndarray' % type(f))
+    print '...evaluating matrix...'
+    for i in range(N+1):
+        for j in range(N+1):
+            B[i,j] = 0
+            for k in range(m+1):
+                B[i,j] += psi[i](points[k])*psi[j](points[k])
+        d[i] = 0
+        for k in range(m+1):
+            d[i] += psi[i](points[k])*f[k]
+    print 'B:\n', B, '\nd:\n', d
+    c = np.linalg.solve(B, d)
+    print 'coeff:', c
+    u = sum(c[i]*psi_sym[i] for i in range(N+1))
+    print 'approximation:', sym.simplify(u)
+    return u, c
 
 def comparison_plot(
     f, u, Omega, filename='tmp',
     plot_title='', ymin=None, ymax=None,
     u_legend='approximation',
+    points=None, point_values=None, points_legend=None,
     legend_loc='upper right',
     show=True):
     """Compare f(x) and u(x) for x in Omega in a plot."""
@@ -257,7 +323,19 @@ def comparison_plot(
     plt.figure()
     plt.plot(xcoor, approx, '-')
     plt.plot(xcoor, exact, '--')
-    plt.legend([u_legend, 'exact'], loc=legend_loc)
+    legends = [u_legend, 'exact']
+    if points is not None:
+        if point_values is None:
+            # Use f
+            plt.plot(points, f(points), 'ko')
+        else:
+            # Use supplied points
+            plt.plot(points, point_values, 'ko')
+        if points_legend is not None:
+            legends.append(points_legend)
+        else:
+            legends.append('points')
+    plt.legend(legends, loc=legend_loc)
     plt.title(plot_title)
     plt.xlabel('x')
     if ymin is not None and ymax is not None:

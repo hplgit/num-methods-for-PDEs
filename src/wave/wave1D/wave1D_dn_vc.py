@@ -29,41 +29,48 @@ user_action is a function of (u, x, t, n) where the calling code
 can add visualization, error computations, data analysis,
 store solutions, etc.
 """
-import time, glob, shutil
-from scitools.std import *
+import time, glob, shutil, os
+import numpy as np
 
 def solver(I, V, f, c, U_0, U_L, L, dt, C, T,
            user_action=None, version='scalar',
            stability_safety_factor=1.0):
     """Solve u_tt=(c^2*u_x)_x + f on (0,L)x(0,T]."""
+    Nt = int(round(T/dt))
+    t = np.linspace(0, Nt*dt, Nt+1)      # Mesh points in time
+
+    # Find max(c) using a fake mesh and adapt dx to C and dt
     if isinstance(c, (float,int)):
-        c = zeros(x.shape) + c
+        c_max = c
+    elif callable(c):
+        c_max = max([c(x_) for x_ in linspace(0, L, 101)])
+    dx = dt*c_max/(stability_safety_factor*C)
+    Nx = int(round(L/dx))
+    x = np.linspace(0, L, Nx+1)          # Mesh points in space
+
+    # Treat c(x) as array
+    if isinstance(c, (float,int)):
+        c = np.zeros(x.shape) + c
     elif callable(c):
         # Call c(x) and fill array c
-        c_ = zeros(x.shape)
+        c_ = np.zeros(x.shape)
         for i in range(Nx+1):
             c_[i] = c(x[i])
         c = c_
 
-    Nt = int(round(T/dt))
-    t = linspace(0, Nt*dt, Nt+1)      # Mesh points in time
-    dx = dt*c.max()/(stability_safety_factor*C)
-    Nx = int(round(L/dx))
-    x = linspace(0, L, Nx+1)          # Mesh points in space
-
     q = c**2
-    C2 = (dt/dx)**2; dt2 = dt*dt      # Help variables in the scheme
+    C2 = (dt/dx)**2; dt2 = dt*dt    # Help variables in the scheme
 
     # Wrap user-given f, I, V, U_0, U_L if None or 0
     if f is None or f == 0:
         f = (lambda x, t: 0) if version == 'scalar' else \
-            lambda x, t: zeros(x.shape)
+            lambda x, t: np.zeros(x.shape)
     if I is None or I == 0:
         I = (lambda x: 0) if version == 'scalar' else \
-            lambda x: zeros(x.shape)
+            lambda x: np.zeros(x.shape)
     if V is None or V == 0:
         V = (lambda x: 0) if version == 'scalar' else \
-            lambda x: zeros(x.shape)
+            lambda x: np.zeros(x.shape)
     if U_0 is not None:
         if isinstance(U_0, (float,int)) and U_0 == 0:
             U_0 = lambda t: 0
@@ -71,9 +78,22 @@ def solver(I, V, f, c, U_0, U_L, L, dt, C, T,
         if isinstance(U_L, (float,int)) and U_L == 0:
             U_L = lambda t: 0
 
-    u   = zeros(Nx+1)   # Solution array at new time level
-    u_1 = zeros(Nx+1)   # Solution at 1 time level back
-    u_2 = zeros(Nx+1)   # Solution at 2 time levels back
+    # Make hash of all input data
+    import hashlib, inspect
+    data = inspect.getsource(I) + '_' + inspect.getsource(V) + \
+           '_' + inspect.getsource(f) + '_' + str(c) + '_' + \
+           ('None' if U_0 is None else inspect.getsource(U_0)) + \
+           ('None' if U_L is None else inspect.getsource(U_L)) + \
+           '_' + str(L) + str(dt) + '_' + str(C) + '_' + str(T) + \
+           '_' + str(stability_safety_factor)
+    hashed_input = hashlib.sha1(data).hexdigest()
+    if os.path.isfile('.' + hashed_input + '_archive.npz'):
+        # Simulation is already run
+        return -1, hashed_input
+
+    u   = np.zeros(Nx+1)   # Solution array at new time level
+    u_1 = np.zeros(Nx+1)   # Solution at 1 time level back
+    u_2 = np.zeros(Nx+1)   # Solution at 2 time levels back
 
     import time;  t0 = time.clock()  # CPU time measurement
 
@@ -180,10 +200,8 @@ def solver(I, V, f, c, U_0, U_L, L, dt, C, T,
     # before returning u
     u = u_1
     cpu_time = t0 - time.clock()
-    return u, x, t, cpu_time
+    return cpu_time, hashed_input
 
-
-import nose.tools as nt
 
 def test_quadratic():
     """
@@ -203,16 +221,14 @@ def test_quadratic():
     c = 1.5
     C = 0.75
     Nx = 3  # Very coarse mesh for this exact test
-    dt = C*(L/Nx)/c
+    dt = C*((L/2)/Nx)/c
     T = 18  # long time integration
 
     def assert_no_error(u, x, t, n):
         u_e = u_exact(x, t[n])
-        diff = abs(u - u_e).max()
-        #print n, diff
-        #print u
-        #print u_e
-        nt.assert_almost_equal(diff, 0, places=13)
+        diff = np.abs(u - u_e).max()
+        tol = 1E-13
+        assert diff < tol
 
     solver(I, V, f, c, U_0, U_L, L/2, dt, C, T,
            user_action=assert_no_error, version='scalar',
@@ -228,60 +244,149 @@ def test_plug():
     dt = (L/10)/c  # Nx=10
     I = lambda x: 0 if abs(x-L/2.0) > 0.1 else 1
 
-    u_s, x, t, cpu = solver(
+    class Action:
+        """Store last solution."""
+        def __call__(self, u, x, t, n):
+            if n == len(t)-1:
+                self.u = u.copy()
+                self.x = x.copy()
+                self.t = t[n]
+
+    action = Action()
+
+    solver(
         I=I,
         V=None, f=None, c=c, U_0=None, U_L=None, L=L,
-        dt=dt, C=1, T=4, user_action=None, version='scalar')
-    u_v, x, t, cpu = solver(
+        dt=dt, C=1, T=4, user_action=action, version='scalar')
+    u_s = action.u
+    solver(
         I=I,
         V=None, f=None, c=c, U_0=None, U_L=None, L=L,
-        dt=dt, C=1, T=4, user_action=None, version='vectorized')
-    diff = abs(u_s - u_v).max()
-    nt.assert_almost_equal(diff, 0, places=13)
-    u_0 = array([I(x_) for x_ in x])
-    diff = abs(u_s - u_0).max()
-    nt.assert_almost_equal(diff, 0, places=13)
+        dt=dt, C=1, T=4, user_action=action, version='vectorized')
+    u_v = action.u
+    diff = np.abs(u_s - u_v).max()
+    tol = 1E-13
+    assert diff < tol
+    u_0 = np.array([I(x_) for x_ in action.x])
+    diff = np.abs(u_s - u_0).max()
+    assert diff < tol
 
+def merge_zip_archives(individual_archives, archive_name):
+    """
+    Merge individual zip archives made with numpy.savez into
+    one archive with name archive_name.
+    The individual archives can be given as a list of names
+    or as a Unix wild chard filename expression for glob.glob.
+    The result of this function is that all the individual
+    archives are deleted and the new single archive made.
+    """
+    import zipfile
+    archive = zipfile.ZipFile(
+        archive_name, 'w', zipfile.ZIP_DEFLATED,
+        allowZip64=True)
+    if isinstance(individual_archives, (list,tuple)):
+        filenames = individual_archives
+    elif isinstance(individual_archives, str):
+        filenames = glob.glob(individual_archives)
 
-class PlotSolution:
+    # Open each archive and write to the common archive
+    for filename in filenames:
+        f = zipfile.ZipFile(filename,  'r',
+                            zipfile.ZIP_DEFLATED)
+        for name in f.namelist():
+            data = f.open(name, 'r')
+            # Save under name without .npy
+            archive.writestr(name[:-4], data.read())
+        f.close()
+        os.remove(filename)
+    archive.close()
+
+class PlotAndStoreSolution:
     """
     Class for the user_action function in solver.
     Visualizes the solution only.
     """
-    def __init__(self,
-                 casename='tmp',    # Prefix in filenames
-                 umin=-1, umax=1,   # Fixed range of y axis
-                 pause_between_frames=None,  # Movie speed
-                 backend='matplotlib',       # or 'gnuplot'
-                 screen_movie=True, # Show movie on screen?
-                 title='',          # Extra message in title
-                 every_frame=1):    # Show every_frame frame
+    def __init__(
+        self,
+        casename='tmp',    # Prefix in filenames
+        umin=-1, umax=1,   # Fixed range of y axis
+        pause_between_frames=None,  # Movie speed
+        backend='matplotlib',       # or 'gnuplot' or None
+        screen_movie=True, # Show movie on screen?
+        title='',          # Extra message in title
+        skip_frame=1,      # Skip every skip_frame frame
+        filename=None):    # Name of file with solutions
         self.casename = casename
         self.yaxis = [umin, umax]
         self.pause = pause_between_frames
-        module = 'scitools.easyviz.' + backend + '_'
-        exec('import %s as plt' % module)
+        self.backend = backend
+        if backend is None:
+            # Use native matplotlib
+            import matplotlib.pyplot as plt
+        elif backend in ('matplotlib', 'gnuplot'):
+            module = 'scitools.easyviz.' + backend + '_'
+            exec('import %s as plt' % module)
         self.plt = plt
         self.screen_movie = screen_movie
         self.title = title
-        self.every_frame = every_frame
+        self.skip_frame = skip_frame
+        self.filename = filename
+        if filename is not None:
+            # Store time points when u is written to file
+            self.t = []
+            filenames = glob.glob('.' + self.filename + '*.dat.npz')
+            for filename in filenames:
+                os.remove(filename)
 
         # Clean up old movie frames
-        for filename in glob('frame_*.png'):
+        for filename in glob.glob('frame_*.png'):
             os.remove(filename)
 
     def __call__(self, u, x, t, n):
-        if n % self.every_frame != 0:
+        """
+        Callback function user_action, call by solver:
+        Store solution, plot on screen and save to file.
+        """
+        # Save solution u to a file using numpy.savez
+        if self.filename is not None:
+            name = 'u%04d' % n  # array name
+            kwargs = {name: u}
+            fname = '.' + self.filename + '_' + name + '.dat'
+            savez(fname, **kwargs)
+            self.t.append(t[n])  # store corresponding time value
+            if n == 0:           # save x once
+                savez('.' + self.filename + '_x.dat', x=x)
+
+        # Animate
+        if n % self.skip_frame != 0:
             return
-        title = 't=%.3g' % t[n]
+        title = 't=%.3f' % t[n]
         if self.title:
             title = self.title + ' ' + title
-        self.plt.plot(x, u, 'r-',
-                     xlabel='x', ylabel='u',
-                     axis=[x[0], x[-1],
-                           self.yaxis[0], self.yaxis[1]],
-                     title=title,
-                     show=self.screen_movie)
+        if self.backend is None:
+            # native matplotlib animation
+            if n == 0:
+                self.plt.ion()
+                self.lines = self.plt.plot(x, u, 'r-')
+                self.plt.axis([x[0], x[-1],
+                               self.yaxis[0], self.yaxis[1]])
+                self.plt.xlabel('x')
+                self.plt.ylabel('u')
+                self.plt.title(title)
+                self.plt.legend(['t=%.3f' % t[n]])
+            else:
+                # Update new solution
+                self.lines[0].set_ydata(u)
+                self.plt.legend(['t=%.3f' % t[n]])
+                self.plt.draw()
+        else:
+            # scitools.easyviz animation
+            self.plt.plot(x, u, 'r-',
+                          xlabel='x', ylabel='u',
+                          axis=[x[0], x[-1],
+                                self.yaxis[0], self.yaxis[1]],
+                          title=title,
+                          show=self.screen_movie)
         # pause
         if t[n] == 0:
             time.sleep(2)  # let initial condition stay 2 s
@@ -290,7 +395,7 @@ class PlotSolution:
                 pause = 0.2 if u.size < 100 else 0
             time.sleep(pause)
 
-        self.plt.savefig('%s_frame_%04d.png' % (self.casename, n))
+        self.plt.savefig('frame_%04d.png' % (n))
 
     def make_movie_file(self):
         """
@@ -305,17 +410,20 @@ class PlotSolution:
             shutil.rmtree(directory)   # rm -rf directory
         os.mkdir(directory)            # mkdir directory
         # mv frame_*.png directory
-        for filename in glob('frame_*.png'):
+        for filename in glob.glob('frame_*.png'):
             os.rename(filename, os.path.join(directory, filename))
         os.chdir(directory)        # cd directory
-        self.plt.movie('frame_*.png', encoder='html',
-                       output_file='index.html', fps=4)
+        fps = 4 # frames per second
+        if self.backend is not None:
+            from scitools.std import movie
+            movie('frame_*.png', encoder='html',
+                  output_file='index.html', fps=fps)
 
         # Make other movie formats: Flash, Webm, Ogg, MP4
         codec2ext = dict(flv='flv', libx264='mp4', libvpx='webm',
                          libtheora='ogg')
         filespec = 'frame_%04d.png'
-        movie_program = 'avconv'  # or 'ffmpeg'
+        movie_program = 'ffmpeg'  # or 'avconv'
         for codec in codec2ext:
             ext = codec2ext[codec]
             cmd = '%(movie_program)s -r %(fps)d -i %(filespec)s '\
@@ -323,34 +431,65 @@ class PlotSolution:
             os.system(cmd)
         os.chdir(os.pardir)  # move back to parent directory
 
+    def close_file(self, hashed_input):
+        """
+        Merge all files from savez calls into one archive.
+        hashed_input is a string reflecting input data
+        for this simulation (made by solver).
+        """
+        if self.filename is not None:
+            # Save all the time points where solutions are saved
+            savez('.' + self.filename + '_t.dat',
+                  t=array(self.t, dtype=float))
+
+            # Merge all savez files to one zip archive
+            archive_name = '.' + hashed_input + '_archive.npz'
+            filenames = glob.glob('.' + self.filename + '*.dat.npz')
+            merge_zip_archives(filenames, archive_name)
+	    print 'Archive name:', archive_name
+            # data = numpy.load(archive); data.files holds names
+            # data[name] extract the array
+
 def demo_BC_plug(C=1, Nx=40, T=4):
     """Demonstrate u=0 and u_x=0 boundary conditions with a plug."""
-    action = PlotSolution('plug', -1.3, 1.3, every_frame=1,
-                          title='u(0,t)=0, du(L,t)/dn=0.')
+    action = PlotAndStoreSolution(
+        'plug', -1.3, 1.3, skip_frame=1,
+        title='u(0,t)=0, du(L,t)/dn=0.', filename='tmpdata')
+    # Scaled problem: L=1, c=1, max I=1
     L = 1.
-    dt = (L/Nx)/c  # choose the stability limit with given Nx
-    solver(I=lambda x: 0 if abs(x-L/2.0) > 0.1 else 1,
-           V=0, f=0, c=1, U_0=lambda t: 0, U_L=None, L=L,
-           dt=dt, C=C, T=T,
-           user_action=action, version='vectorized',
-           stability_safety_factor=1)
+    dt = (L/Nx)/C  # choose the stability limit with given Nx
+    cpu, hashed_input = solver(
+        I=lambda x: 0 if abs(x-L/2.0) > 0.1 else 1,
+        V=0, f=0, c=1, U_0=lambda t: 0, U_L=None, L=L,
+        dt=dt, C=C, T=T,
+        user_action=action, version='vectorized',
+        stability_safety_factor=1)
     action.make_movie_file()
+    if cpu > 0:  # did we generate new data?
+        action.close_file(hashed_input)
+    print 'cpu:', cpu
 
 def demo_BC_gaussian(C=1, Nx=80, T=4):
     """Demonstrate u=0 and u_x=0 boundary conditions with a bell function."""
-    action = PlotSolution('gaussian', -1.3, 1.3, every_frame=1,
-                          title='u(0,t)=0, du(L,t)/dn=0.')
+    # Scaled problem: L=1, c=1, max I=1
+    action = PlotAndStoreSolution(
+        'gaussian', -1.3, 1.3, skip_frame=1,
+        title='u(0,t)=0, du(L,t)/dn=0.', filename='tmpdata')
     L = 1.
     dt = (L/Nx)/c  # choose the stability limit with given Nx
-    solver(I=lambda x: exp(-0.5*((x-0.5)/0.05)**2),
-           V=0, f=0, c=1, U_0=lambda t: 0, U_L=None, L=L,
-           dt=dt, C=C, T=T,
-           user_action=action, version='vectorized',
-           stability_safety_factor=1)
+    cpu, hashed_input = solver(
+        I=lambda x: exp(-0.5*((x-0.5)/0.05)**2),
+        V=0, f=0, c=1, U_0=lambda t: 0, U_L=None, L=L,
+        dt=dt, C=C, T=T,
+        user_action=action, version='vectorized',
+        stability_safety_factor=1)
     action.make_movie_file()
+    if cpu > 0:  # did we generate new data?
+        action.close_file(hashed_input)
 
 def moving_end(C=1, Nx=50, reflecting_right_boundary=True,
                version='vectorized'):
+    # Scaled problem: L=1, c=1, max I=1
     L = 1.
     c = 1
     dt = (L/Nx)/c  # choose the stability limit with given Nx
@@ -360,7 +499,7 @@ def moving_end(C=1, Nx=50, reflecting_right_boundary=True,
     f = 0
 
     def U_0(t):
-        retur 0.25*sin(6*pi*t) if t < 1./3 else 0
+        return 1.0*sin(6*pi*t) if t < 1./3 else 0
 
     if reflecting_right_boundary:
         U_L = None
@@ -369,44 +508,103 @@ def moving_end(C=1, Nx=50, reflecting_right_boundary=True,
         U_L = 0
         bc_right = 'u(L,t)=0'
 
-    action = PlotSolution('moving_end', -1, 1, every_frame=4,
-             title='u(0,t)=0.25*sin(6*pi*t) if t < 1/3 else 0, '
-                          + bc_right)
-    solver(I, V, f, c, U_0, U_L, L, dt, C, T,
-           user_action=action, version=version,
-           stability_safety_factor=1)
+    action = PlotAndStoreSolution(
+        'moving_end', -2.3, 2.3, skip_frame=4,
+        title='u(0,t)=0.25*sin(6*pi*t) if t < 1/3 else 0, '
+        + bc_right, filename='tmpdata')
+    cpu, hashed_input = solver(
+        I, V, f, c, U_0, U_L, L, dt, C, T,
+        user_action=action, version=version,
+        stability_safety_factor=1)
+    action.make_movie_file()
+    if cpu > 0:  # did we generate new data?
+        action.close_file(hashed_input)
 
 
-class PlotMediumAndSolution(PlotSolution):
+class PlotMediumAndSolution(PlotAndStoreSolution):
     def __init__(self, medium, **kwargs):
         """Mark medium in plot: medium=[x_L, x_R]."""
         self.medium = medium
-        PlotSolution.__init__(self, **kwargs)
+        PlotAndStoreSolution.__init__(self, **kwargs)
 
     def __call__(self, u, x, t, n):
-        if n % self.every_frame != 0:
+        # Save solution u to a file using numpy.savez
+        if self.filename is not None:
+            name = 'u%04d' % n  # array name
+            kwargs = {name: u}
+            fname = '.' + self.filename + '_' + name + '.dat'
+            savez(fname, **kwargs)
+            self.t.append(t[n])  # store corresponding time value
+            if n == 0:           # save x once
+                savez('.' + self.filename + '_x.dat', x=x)
+
+        # Animate
+        if n % self.skip_frame != 0:
             return
         # Plot u and mark medium x=x_L and x=x_R
         x_L, x_R = self.medium
         umin, umax = self.yaxis
-        title = 'Nx=%d, t=%f' % (x.size-1, t[n])
+        title = 'Nx=%d' % (x.size-1)
         if self.title:
             title = self.title + ' ' + title
-        self.plt.plot(x, u, 'r-',
-                      [x_L, x_L], [umin, umax], 'k--',
-                      [x_R, x_R], [umin, umax], 'k--',
-                      xlabel='x', ylabel='u',
-                      axis=[x[0], x[-1], umin, umax],
-                      title=title)
+        if self.backend is None:
+            # native matplotlib animation
+            if n == 0:
+                self.plt.ion()
+                self.lines = self.plt.plot(
+                    x, u, 'r-',
+                    [x_L, x_L], [umin, umax], 'k--',
+                    [x_R, x_R], [umin, umax], 'k--')
+                self.plt.axis([x[0], x[-1],
+                               self.yaxis[0], self.yaxis[1]])
+                self.plt.xlabel('x')
+                self.plt.ylabel('u')
+                self.plt.title(title)
+                self.plt.text(0.75, 1.0, 'C=0.25')
+                self.plt.text(0.32, 1.0, 'C=1')
+                self.plt.legend(['t=%.3f' % t[n]])
+            else:
+                # Update new solution
+                self.lines[0].set_ydata(u)
+                self.plt.legend(['t=%.3f' % t[n]])
+                self.plt.draw()
+        else:
+            # scitools.easyviz animation
+            self.plt.plot(x, u, 'r-',
+                          [x_L, x_L], [umin, umax], 'k--',
+                          [x_R, x_R], [umin, umax], 'k--',
+                          xlabel='x', ylabel='u',
+                          axis=[x[0], x[-1],
+                                self.yaxis[0], self.yaxis[1]],
+                          title=title,
+                          show=self.screen_movie)
+        # pause
         if t[n] == 0:
             time.sleep(2)  # let initial condition stay 2 s
-        # No sleep - this is used for large meshes
-        self.plt.savefig('frame_%04d.png' % n)  # for movie making
+        else:
+            if self.pause is None:
+                pause = 0.2 if u.size < 100 else 0
+            time.sleep(pause)
 
+        self.plt.savefig('frame_%04d.png' % (n))
 
-def pulse(C=1, Nx=200, animate=True, version='vectorized', T=2,
-          loc='center', pulse_tp='gaussian', slowness_factor=2,
-          medium=[0.7, 0.9], every_frame=1, sigma=0.05):
+def animate_multiple_solutions(*archives):
+    a = [load(archive) for archive in archives]
+    # Assume the array names are the same in all archives
+    raise NotImplementedError  # more to do...
+
+def pulse(C=1,            # aximum Courant number
+          Nx=200,         # spatial resolution
+          animate=True,
+          version='vectorized',
+          T=2,            # end time
+          loc='left',     # location of initial condition
+          pulse_tp='gaussian',  # pulse/init.cond. type
+          slowness_factor=2, # wave vel. in right medium
+          medium=[0.7, 0.9], # interval for right medium
+          skip_frame=1,      # skip frames in animations
+          sigma=0.05,        # width measure of the pulse
+          ):
     """
     Various peaked-shaped initial conditions on [0,1].
     Wave velocity is decreased by the slowness_factor inside
@@ -456,16 +654,17 @@ def pulse(C=1, Nx=200, animate=True, version='vectorized', T=2,
                (pulse_tp, Nx, slowness_factor)
     action = PlotMediumAndSolution(
         medium, casename=casename, umin=umin, umax=umax,
-        every_frame=every_frame, screen_movie=animate)
+        skip_frame=skip_frame, screen_movie=animate,
+        backend=None, filename='tmpdata')
 
-    dt = (L/Nx)/c  # choose the stability limit with given Nx
+    dt = (L/Nx)/c_0  # choose the stability limit with given Nx, worst case c
     # Lower C will then use this dt, but smaller Nx
     solver(I=I, V=None, f=None, c=c, U_0=None, U_L=None,
            L=L, dt=dt, C=C, T=T,
            user_action=action, version=version,
            stability_safety_factor=1)
-
-
+    action.make_movie_file()
+    action.file_close()
 
 if __name__ == '__main__':
     pass

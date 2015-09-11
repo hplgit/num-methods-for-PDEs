@@ -28,7 +28,7 @@ print 'w_tilde series expansion:', w_tilde_series
 print 'Error in frequency, leading order term:', \
       (w-w_tilde_series).as_leading_term(dt)
 # Get rid of O() term
-w_tilde_series = sum(w_tilde_series.as_ordered_terms()[:-1])
+w_tilde_series = w_tilde_series.removeO()
 print 'w_tilde series without O() term:', w_tilde_series
 
 # The error mesh function (I=1)

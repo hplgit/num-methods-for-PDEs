@@ -5,7 +5,7 @@ import odespy
 import numpy as np
 
 class RHS:
-    """m*u'' + b*u' + k*u = A_F*cos(w_F*t)."""
+    """m*u'' + b*f(u') + k*u = A_F*cos(w_F*t). Linear/quadratic f."""
 
     def __init__(self, m=1, b=0, k=2*np.pi, A_F=0.01, w_F=1.5,
                  I=1, V=0, damping='linear'):
@@ -145,4 +145,3 @@ if __name__ == '__main__':
                          num_periods)
     plt.show()
     raw_input()
-

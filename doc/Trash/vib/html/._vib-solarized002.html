@@ -415,12 +415,6 @@ specific building blocks introduced in the forthcoming text can be
 reused to construct sound methods for partial differential equations
 of wave nature in multiple spatial dimensions.
 
-<p>
-
-<!-- begin inline comment -->
-<font color="red">(<b>hpl 1</b>: Need to discuss errors also for the damped and nonlinear models. At least the frequency errors must be illustrated here as well and investigated numerically, either in text or exercises.)</font>
-<!-- end inline comment -->
-
 <h1 id="vib:model1">Finite difference discretization</h1>
 
 <p>
@@ -714,12 +708,6 @@ the <code>numpy</code> and <code>matplotlib</code> calls by (abbreviations of) t
 name.
 
 <p>
-
-<!-- begin inline comment -->
-<font color="red">(<b>hpl 2</b>: Refer to right section in decay book for prefix discussion.)</font>
-<!-- end inline comment -->
-
-<p>
 A function for plotting the numerical and the exact solution is also
 convenient to have:
 
@@ -782,12 +770,6 @@ I, w, dt, num_periods = a.I, a.w, a.dt, a.num_periods
 Such parsing of the command line is explained in more detailed in
  the
 "section on user interfaces": "..." in <a href="._vib-solarized003.html#Langtangen_decay">[1]</a>.
-
-<p>
-
-<!-- begin inline comment -->
-<font color="red">(<b>hpl 3</b>: Fix reference to web document.)</font>
-<!-- end inline comment -->
 
 <p>
 A typical execution goes like
@@ -993,12 +975,6 @@ goes like
 The complete code appears in the file <code>vib_undamped.py</code>.
 
 <h2 id="___sec17">Scaled model </h2>
-
-<p>
-
-<!-- begin inline comment -->
-<font color="red">(<b>hpl 4</b>: Need reference to scaling book and maybe also decay book.)</font>
-<!-- end inline comment -->
 
 <p>
 It is advantageous to use dimensionless variables in simulations, because
@@ -1306,13 +1282,9 @@ Note, however, that in this particular example
 with \( \Delta t=0.05 \) and 40 periods,
 making an animated GIF file out of
 the large number of PNG files is a very heavy process and not
-considered feasible.
-
-<p>
-
-<!-- begin inline comment -->
-<font color="red">(<b>hpl 5</b>: Combine two simulations side by side!)</font>
-<!-- end inline comment -->
+considered feasible. Animated GIFs are best suited for animations with
+not so many frames and where you want to see each frame and play them
+slowly.
 
 <h2 id="___sec24">Using Bokeh to compare graphs </h2>
 
@@ -1369,6 +1341,100 @@ the mouse inside one of the plots to scroll into the future!
         </script>
 <div class="plotdiv" id="0f25ebfd-72b7-4caf-8bae-1aa3afbfcd89"></div></p>
 </center>
+
+<p>
+A function for creating a Bokeh plot, given a list of <code>u</code> arrays
+and corresponding <code>t</code> arrays, from different simulations, described
+compactly in a list of strings <code>legends</code>, takes the following form:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">bokeh_plot</span>(u, t, legends, I, w, t_range, filename):
+    <span style="color: #CD5555">&quot;&quot;&quot;</span>
+<span style="color: #CD5555">    Make plots for u vs t using the Bokeh library.</span>
+<span style="color: #CD5555">    u and t are lists (several experiments can be compared).</span>
+<span style="color: #CD5555">    legens contain legend strings for the various u,t pairs.</span>
+<span style="color: #CD5555">    &quot;&quot;&quot;</span>
+    <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">isinstance</span>(u, (<span style="color: #658b00">list</span>,<span style="color: #658b00">tuple</span>)):
+        u = [u]  <span style="color: #228B22"># wrap in list</span>
+    <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">isinstance</span>(t, (<span style="color: #658b00">list</span>,<span style="color: #658b00">tuple</span>)):
+        t = [t]  <span style="color: #228B22"># wrap in list</span>
+    <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">isinstance</span>(legends, (<span style="color: #658b00">list</span>,<span style="color: #658b00">tuple</span>)):
+        legends = [legends]  <span style="color: #228B22"># wrap in list</span>
+
+    <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">bokeh.plotting</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">plt</span>
+    plt.output_file(filename, mode=<span style="color: #CD5555">&#39;cdn&#39;</span>, title=<span style="color: #CD5555">&#39;Comparison&#39;</span>)
+    <span style="color: #228B22"># Assume that all t arrays have the same range</span>
+    t_fine = np.linspace(<span style="color: #B452CD">0</span>, t[<span style="color: #B452CD">0</span>][-<span style="color: #B452CD">1</span>], <span style="color: #B452CD">1001</span>)  <span style="color: #228B22"># fine mesh for u_e</span>
+    tools = <span style="color: #CD5555">&#39;pan,wheel_zoom,box_zoom,reset,&#39;</span>\ 
+            <span style="color: #CD5555">&#39;save,box_select,lasso_select&#39;</span>
+    u_range = [-<span style="color: #B452CD">1.2</span>*I, <span style="color: #B452CD">1.2</span>*I]
+    font_size = <span style="color: #CD5555">&#39;8pt&#39;</span>
+    p = []  <span style="color: #228B22"># list of plot objects</span>
+    <span style="color: #228B22"># Make the first figure</span>
+    p_ = plt.figure(
+        width=<span style="color: #B452CD">300</span>, plot_height=<span style="color: #B452CD">250</span>, title=legends[<span style="color: #B452CD">0</span>],
+        x_axis_label=<span style="color: #CD5555">&#39;t&#39;</span>, y_axis_label=<span style="color: #CD5555">&#39;u&#39;</span>,
+        x_range=t_range, y_range=u_range, tools=tools,
+        title_text_font_size=font_size)
+    p_.xaxis.axis_label_text_font_size=font_size
+    p_.yaxis.axis_label_text_font_size=font_size
+    p_.line(t[<span style="color: #B452CD">0</span>], u[<span style="color: #B452CD">0</span>], line_color=<span style="color: #CD5555">&#39;blue&#39;</span>)
+    <span style="color: #228B22"># Add exact solution</span>
+    u_e = u_exact(t_fine, I, w)
+    p_.line(t_fine, u_e, line_color=<span style="color: #CD5555">&#39;red&#39;</span>, line_dash=<span style="color: #CD5555">&#39;4 4&#39;</span>)
+    p.append(p_)
+    <span style="color: #228B22"># Make the rest of the figures and attach their axes to</span>
+    <span style="color: #228B22"># the first figure&#39;s axes</span>
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #B452CD">1</span>, <span style="color: #658b00">len</span>(t)):
+        p_ = plt.figure(
+            width=<span style="color: #B452CD">300</span>, plot_height=<span style="color: #B452CD">250</span>, title=legends[i],
+            x_axis_label=<span style="color: #CD5555">&#39;t&#39;</span>, y_axis_label=<span style="color: #CD5555">&#39;u&#39;</span>,
+            x_range=p[<span style="color: #B452CD">0</span>].x_range, y_range=p[<span style="color: #B452CD">0</span>].y_range, tools=tools,
+            title_text_font_size=font_size)
+        p_.xaxis.axis_label_text_font_size = font_size
+        p_.yaxis.axis_label_text_font_size = font_size
+        p_.line(t[i], u[i], line_color=<span style="color: #CD5555">&#39;blue&#39;</span>)
+        p_.line(t_fine, u_e, line_color=<span style="color: #CD5555">&#39;red&#39;</span>, line_dash=<span style="color: #CD5555">&#39;4 4&#39;</span>)
+        p.append(p_)
+
+    <span style="color: #228B22"># Arrange all plots in a grid with 3 plots per row</span>
+    grid = [[]]
+    <span style="color: #8B008B; font-weight: bold">for</span> i, p_ <span style="color: #8B008B">in</span> <span style="color: #658b00">enumerate</span>(p):
+        grid[-<span style="color: #B452CD">1</span>].append(p_)
+        <span style="color: #8B008B; font-weight: bold">if</span> (i+<span style="color: #B452CD">1</span>) % <span style="color: #B452CD">3</span> == <span style="color: #B452CD">0</span>:
+            <span style="color: #228B22"># New row</span>
+            grid.append([])
+    plot = plt.gridplot(grid, toolbar_location=<span style="color: #CD5555">&#39;left&#39;</span>)
+    plt.save(plot)
+    plt.show(plot)
+</pre></div>
+<p>
+A particular example using the <code>bokeh_plot</code> function appears below.
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">demo_bokeh</span>():
+    <span style="color: #CD5555">&quot;&quot;&quot;Solve a scaled ODE u&#39;&#39; + u = 0.&quot;&quot;&quot;</span>
+    <span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">math</span> <span style="color: #8B008B; font-weight: bold">import</span> pi
+    w = <span style="color: #B452CD">1.0</span>        <span style="color: #228B22"># Scaled problem (frequency)</span>
+    P = <span style="color: #B452CD">2</span>*np.pi/w  <span style="color: #228B22"># Period</span>
+    num_steps_per_period = [<span style="color: #B452CD">5</span>, <span style="color: #B452CD">10</span>, <span style="color: #B452CD">20</span>, <span style="color: #B452CD">40</span>, <span style="color: #B452CD">80</span>]
+    T = <span style="color: #B452CD">40</span>*P       <span style="color: #228B22"># Simulation time: 40 periods</span>
+    u = []         <span style="color: #228B22"># List of numerical solutions</span>
+    t = []         <span style="color: #228B22"># List of corresponding meshes</span>
+    legends = []
+    <span style="color: #8B008B; font-weight: bold">for</span> n <span style="color: #8B008B">in</span> num_steps_per_period:
+        dt = P/n
+        u_, t_ = solver(I=<span style="color: #B452CD">1</span>, w=w, dt=dt, T=T)
+        u.append(u_)
+        t.append(t_)
+        legends.append(<span style="color: #CD5555">&#39;# time steps per period: %d&#39;</span> % n)
+    bokeh_plot(u, t, legends, I=<span style="color: #B452CD">1</span>, w=w, t_range=[<span style="color: #B452CD">0</span>, <span style="color: #B452CD">4</span>*P],
+               filename=<span style="color: #CD5555">&#39;tmp.html&#39;</span>)
+</pre></div>
 
 <h2 id="___sec25">Using a line-by-line ascii plotter </h2>
 
@@ -2703,12 +2769,6 @@ and Backward Euler schemes.
 </tbody>
 </table>
 <p>
-
-<!-- begin inline comment -->
-<font color="red">(<b>hpl 6</b>: The error reductions are not directly in accordance with the order of the schemes, probably caused by \( \Delta t \) not being in the asympotic regime.)</font>
-<!-- end inline comment -->
-
-<p>
 <!-- Should build a verification test on the energy error. -->
 
 <p>
@@ -2966,12 +3026,6 @@ Another function, <code>demo</code>,
 visualizes the difference between Euler-Cromer scheme and the scheme
 <a href="#mjx-eqn-7">(7)</a>
 for the second-oder ODE, arising from the mismatch in the first time level.
-
-<p>
-
-<!-- begin inline comment -->
-<font color="red">(<b>hpl 7</b>: Odespy's Euler-Cromer, but it needs more work with the example code.)</font>
-<!-- end inline comment -->
 
 <p>
 <!-- is anything gained? is v of higher order than D_2t u from the -->

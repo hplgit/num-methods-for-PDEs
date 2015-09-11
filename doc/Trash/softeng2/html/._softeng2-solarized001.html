@@ -177,28 +177,6 @@ $$
 <p>
 <!-- !split -->
 
-<ul>
- <li> Define some wave project, e.g., earthquake induced waves where
-   a quite flat bottom has a discontinuity point/line and some part
-   to the right lifts up suddenly and falls back?</li>
- <li> Start with <code>wave1D_dn_vc.py</code> and <code>wave2D_u0.py</code></li>
- <li> Storing solutions with joblib, XDMF
-   <a href="http://www.xdmf.org/index.php/Write_Xdmf" target="_self"><tt>http://www.xdmf.org/index.php/Write_Xdmf</tt></a>
-   <a href="http://www.xdmf.org/index.php/Xdmf3_Python_API" target="_self"><tt>http://www.xdmf.org/index.php/Xdmf3_Python_API</tt></a>
-   OBS: both a post on the fenics list and here,
-   <a href="http://fenicsproject.org/qa/6513/time-series-of-many-function-instances-in-a-single-file" target="_self"><tt>http://fenicsproject.org/qa/6513/time-series-of-many-function-instances-in-a-single-file</tt></a>, suggests that paraview cannot view xdmf files will more
-   than one field/function - should store in separate files...
-   See the dolfin function that writes xdmf files before trying too much...
-   FiPy applies <a href="https://matforge.org/fipy/browser/fipy/fipy/io/xdmf/time.py?rev=517630187125d4aee390fd251ba42324b9aacce0" target="_self">xdmf</a>
-   joblib vs <a href="http://stackoverflow.com/questions/28311141/decorators-for-selective-caching-memoization" target="_self">klepto</a></li>
- <li> Problem and Solver classes</li>
- <li> Profiling</li>
- <li> Fortran, Cython, C, C++</li>
- <li> Viz here? Movie making?</li>
- <li> DrawFunction for drawing bottom and surface, build app for this :-)</li>
- <li> Parampool with full pool ("menu")</li>
-</ul>
-
 <h1 id="___sec0">A 1D wave equation simulator </h1>
 
 <h2 id="___sec1">Mathematical model </h2>
@@ -271,7 +249,7 @@ constructs that will be commented upon later.
            stability_safety_factor=<span style="color: #B452CD">1.0</span>):
     <span style="color: #CD5555">&quot;&quot;&quot;Solve u_tt=(c^2*u_x)_x + f on (0,L)x(0,T].&quot;&quot;&quot;</span>
     Nt = <span style="color: #658b00">int</span>(<span style="color: #658b00">round</span>(T/dt))
-    t = linspace(<span style="color: #B452CD">0</span>, Nt*dt, Nt+<span style="color: #B452CD">1</span>)      <span style="color: #228B22"># Mesh points in time</span>
+    t = np.linspace(<span style="color: #B452CD">0</span>, Nt*dt, Nt+<span style="color: #B452CD">1</span>)      <span style="color: #228B22"># Mesh points in time</span>
 
     <span style="color: #228B22"># Find max(c) using a fake mesh and adapt dx to C and dt</span>
     <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">isinstance</span>(c, (<span style="color: #658b00">float</span>,<span style="color: #658b00">int</span>)):
@@ -280,31 +258,31 @@ constructs that will be commented upon later.
         c_max = <span style="color: #658b00">max</span>([c(x_) <span style="color: #8B008B; font-weight: bold">for</span> x_ <span style="color: #8B008B">in</span> linspace(<span style="color: #B452CD">0</span>, L, <span style="color: #B452CD">101</span>)])
     dx = dt*c_max/(stability_safety_factor*C)
     Nx = <span style="color: #658b00">int</span>(<span style="color: #658b00">round</span>(L/dx))
-    x = linspace(<span style="color: #B452CD">0</span>, L, Nx+<span style="color: #B452CD">1</span>)          <span style="color: #228B22"># Mesh points in space</span>
+    x = np.linspace(<span style="color: #B452CD">0</span>, L, Nx+<span style="color: #B452CD">1</span>)          <span style="color: #228B22"># Mesh points in space</span>
 
     <span style="color: #228B22"># Treat c(x) as array</span>
     <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">isinstance</span>(c, (<span style="color: #658b00">float</span>,<span style="color: #658b00">int</span>)):
-        c = zeros(x.shape) + c
+        c = np.zeros(x.shape) + c
     <span style="color: #8B008B; font-weight: bold">elif</span> <span style="color: #658b00">callable</span>(c):
         <span style="color: #228B22"># Call c(x) and fill array c</span>
-        c_ = zeros(x.shape)
+        c_ = np.zeros(x.shape)
         <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(Nx+<span style="color: #B452CD">1</span>):
             c_[i] = c(x[i])
         c = c_
 
     q = c**<span style="color: #B452CD">2</span>
-    C2 = (dt/dx)**<span style="color: #B452CD">2</span>; dt2 = dt*dt      <span style="color: #228B22"># Help variables in the scheme</span>
+    C2 = (dt/dx)**<span style="color: #B452CD">2</span>; dt2 = dt*dt    <span style="color: #228B22"># Help variables in the scheme</span>
 
     <span style="color: #228B22"># Wrap user-given f, I, V, U_0, U_L if None or 0</span>
     <span style="color: #8B008B; font-weight: bold">if</span> f <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">or</span> f == <span style="color: #B452CD">0</span>:
         f = (<span style="color: #8B008B; font-weight: bold">lambda</span> x, t: <span style="color: #B452CD">0</span>) <span style="color: #8B008B; font-weight: bold">if</span> version == <span style="color: #CD5555">&#39;scalar&#39;</span> <span style="color: #8B008B; font-weight: bold">else</span> \ 
-            <span style="color: #8B008B; font-weight: bold">lambda</span> x, t: zeros(x.shape)
+            <span style="color: #8B008B; font-weight: bold">lambda</span> x, t: np.zeros(x.shape)
     <span style="color: #8B008B; font-weight: bold">if</span> I <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">or</span> I == <span style="color: #B452CD">0</span>:
         I = (<span style="color: #8B008B; font-weight: bold">lambda</span> x: <span style="color: #B452CD">0</span>) <span style="color: #8B008B; font-weight: bold">if</span> version == <span style="color: #CD5555">&#39;scalar&#39;</span> <span style="color: #8B008B; font-weight: bold">else</span> \ 
-            <span style="color: #8B008B; font-weight: bold">lambda</span> x: zeros(x.shape)
+            <span style="color: #8B008B; font-weight: bold">lambda</span> x: np.zeros(x.shape)
     <span style="color: #8B008B; font-weight: bold">if</span> V <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">or</span> V == <span style="color: #B452CD">0</span>:
         V = (<span style="color: #8B008B; font-weight: bold">lambda</span> x: <span style="color: #B452CD">0</span>) <span style="color: #8B008B; font-weight: bold">if</span> version == <span style="color: #CD5555">&#39;scalar&#39;</span> <span style="color: #8B008B; font-weight: bold">else</span> \ 
-            <span style="color: #8B008B; font-weight: bold">lambda</span> x: zeros(x.shape)
+            <span style="color: #8B008B; font-weight: bold">lambda</span> x: np.zeros(x.shape)
     <span style="color: #8B008B; font-weight: bold">if</span> U_0 <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
         <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">isinstance</span>(U_0, (<span style="color: #658b00">float</span>,<span style="color: #658b00">int</span>)) <span style="color: #8B008B">and</span> U_0 == <span style="color: #B452CD">0</span>:
             U_0 = <span style="color: #8B008B; font-weight: bold">lambda</span> t: <span style="color: #B452CD">0</span>
@@ -325,9 +303,9 @@ constructs that will be commented upon later.
         <span style="color: #228B22"># Simulation is already run</span>
         <span style="color: #8B008B; font-weight: bold">return</span> -<span style="color: #B452CD">1</span>, hashed_input
 
-    u   = zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution array at new time level</span>
-    u_1 = zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution at 1 time level back</span>
-    u_2 = zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution at 2 time levels back</span>
+    u   = np.zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution array at new time level</span>
+    u_1 = np.zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution at 1 time level back</span>
+    u_2 = np.zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution at 2 time levels back</span>
 
     <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">time</span>;  t0 = time.clock()  <span style="color: #228B22"># CPU time measurement</span>
 
@@ -1209,12 +1187,6 @@ should explain the functionality.
 <p>
 With the <code>Mesh</code> and <code>Function</code> classes in place, we can rewrite
 the <code>solver</code> function, but we put it as a method in class <code>Solver</code>:
-
-<p>
-
-<!-- begin inline comment -->
-<font color="red">(<b>hpl 1</b>: Rewrite solver!)</font>
-<!-- end inline comment -->
 
 <h1 id="wave2D3D:impl:Cython">Migrating loops to Cython</h1>
 

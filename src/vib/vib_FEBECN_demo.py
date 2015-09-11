@@ -1,5 +1,6 @@
 import odespy
-from vib_odespy import run_solvers_and_plot, RHS, OdespyWrapper, plt
+from vib_odespy import run_solvers_and_plot, RHS, \
+     VibSolverWrapper4Odespy, plt
 from numpy import pi, sin
 
 # Primary ODE: m=1, s(u)=(2*pi)**2*u, such that the period is 1.
@@ -29,7 +30,7 @@ for rhs, title in ODEs:
         # Implicit methods must use Newton solver to converge
         odespy.BackwardEuler(rhs, nonlinear_solver='Newton'),
         odespy.CrankNicolson(rhs, nonlinear_solver='Newton'),
-        OdespyWrapper(rhs),
+        VibSolverWrapper4Odespy(rhs),
         ]
 
     T = 20          # Period is 1

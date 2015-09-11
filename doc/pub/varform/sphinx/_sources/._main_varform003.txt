@@ -16,6 +16,8 @@ with variational formulation
 .. math::
          (u',v') = (2,v)\quad\forall v\in V{\thinspace .}  
 
+Any :math:`v\in V` must obey :math:`v(0)=v(L)=0` because of the Dirichlet conditions
+on :math:`u`.
 The variational formulation is derived in
 the section :ref:`fem:deq:1D:varform`.
 
@@ -30,22 +32,23 @@ nodes per cell, and the coordinates of the nodes become
 
 .. math::
         
-        x_{i} = i h,\quad h=L/N_e,\quad i=0,\ldots,N_n-1=N_e,
+        x_{i} = i h,\quad h=L/N_e,\quad i=0,\ldots,N_n-1=N_e{\thinspace .}
         
 
-provided we number the nodes from left to right.
-
-Each of the nodes, :math:`i`, is associated a finite element basis function
+Any node :math:`i` is associated with a finite element basis function
 :math:`{\varphi}_i(x)`.  When approximating a given function :math:`f` by a finite
 element function :math:`u`, we expand :math:`u` using finite element basis
 functions associated with *all* nodes in the mesh. The parameter
-:math:`N`, which counts the unknowns from 0 to :math:`N` then equations :math:`N_n-1`.
+:math:`N`, which counts the unknowns from 0 to :math:`N`, is then equal to
+:math:`N_n-1` such that the total number of unknowns, :math:`N+1`, is the
+total number of nodes.
 However, when solving differential equations we will often have
-:math:`N<N_n-1` because of Dirichlet boundary conditions. Why this is the case
-will now be explained in detail.
+:math:`N<N_n-1` because of Dirichlet boundary conditions. The reason is
+simple: we know what :math:`u` are at some (here two) nodes, and the number of
+unknown parameters is naturally reduced.
 
-In our case with homogeneous Dirichlet boundary conditions we do not
-need any boundary function :math:`B(x)` and can work with the expansion
+In our case with homogeneous Dirichlet boundary conditions, we do not
+need any boundary function :math:`B(x)`, so we can work with the expansion
 
 .. _Eq:fem:deq:1D:fem1:ex:u:
 
@@ -59,7 +62,7 @@ need any boundary function :math:`B(x)` and can work with the expansion
 Because of the boundary conditions, we must demand
 :math:`{\psi}_i(0)={\psi}_i(L)=0`, :math:`i\in{\mathcal{I}_s}`. When :math:`{\psi}_i` for all
 :math:`i=0,\ldots,N` is to be selected among the finite element basis
-functions :math:`{\varphi}_j`, :math:`i=0,\ldots,N_n-1`, we have to avoid using
+functions :math:`{\varphi}_j`, :math:`j=0,\ldots,N_n-1`, we have to avoid using
 :math:`{\varphi}_j` functions that do not vanish at :math:`x_{0}=0` and
 :math:`x_{N_n-1}=L`. However, all :math:`{\varphi}_j` vanish at these two nodes for
 :math:`j=1,\ldots,N_n-2`.  Only basis functions associated with the end nodes,
@@ -178,7 +181,8 @@ therefore
 for :math:`i=1,\ldots,N+1`, but for :math:`i=1`, :math:`A_{i-1,i-2}` is not defined,
 and for :math:`i=N+1`, :math:`A_{i-1,i}` is not defined.
 
-We see that :math:`{\varphi}_{i-1}'(x)` and :math:`{\varphi}_i'(x)` have overlap of one
+From Figure :ref:`fem:approx:fe:fig:dP1`,
+we see that :math:`{\varphi}_{i-1}'(x)` and :math:`{\varphi}_i'(x)` have overlap of one
 cell :math:`\Omega^{(i-1)}=[x_{i-1},x_{i}]` and that their product
 then is :math:`-1/h^{2}`. The integrand is constant and therefore
 :math:`A_{i-1,i-2}=-h^{-2}h=-h^{-1}`.
@@ -206,7 +210,7 @@ we can write
 The equation system to be solved only involves the unknowns
 :math:`c_i` for :math:`i\in{\mathcal{I}_s}`. With our numbering of unknowns and
 nodes, we have that :math:`c_i` equals :math:`u(x_{i+1})`.
-The complete matrix system that takes the following form:
+The complete matrix system then takes the following form:
 
 .. _Eq:fem:deq:1D:ex1:Ab:glob:
 
@@ -260,10 +264,13 @@ The complete matrix system that takes the following form:
         
         
 
+.. _fem:deq:1D:fdm_vs_fem:
+
 Comparison with a finite difference discretization
 --------------------------------------------------
 
-A typical row in the matrix system can be written as
+A typical row in the matrix system :eq:`fem:deq:1D:ex1:Ab:glob`
+can be written as
 
 .. _Eq:fem:deq:1D:fem:ex1:c:
 
@@ -275,7 +282,7 @@ A typical row in the matrix system can be written as
         
 
 Let us introduce the notation :math:`u_j` for the value of :math:`u` at node :math:`j`:
-:math:`u_j=u(x_{j})` since we have the interpretation
+:math:`u_j=u(x_{j})`, since we have the interpretation
 :math:`u(x_{j})=\sum_jc_j{\varphi}(x_{j})=\sum_j c_j\delta_{ij}=c_j`.
 The unknowns :math:`c_0,\ldots,c_N` are :math:`u_1,\ldots,u_{N_n-2}`.
 Shifting :math:`i` with :math:`i+1` in :eq:`fem:deq:1D:fem:ex1:c` and inserting
@@ -310,6 +317,9 @@ equations on a uniform mesh, and sometimes the finite element method
 generates equations that are different.  The differences are modest,
 but may influence the numerical quality of the solution significantly,
 especially in time-dependent problems.
+It depends on the problem at hand
+whether a finite element discretization is more or less accurate than
+a corresponding finite difference discretization.
 
 .. There will be many examples illustrating this point.
 
@@ -318,9 +328,12 @@ especially in time-dependent problems.
 Cellwise computations  (1)
 --------------------------
 
-We now employ the cell by cell computational procedure where
+Software for finite element computations normally employs
+the cell by cell computational procedure where
 an element matrix and vector are calculated for each cell and
 assembled in the global linear system.
+Let us go through the details of this type of algorithm.
+
 All integrals are mapped to the local reference coordinate system
 :math:`X\in [-1,1]`.
 In the present case, the matrix entries contain derivatives
@@ -520,11 +533,11 @@ The general case with ``N_e`` P1 elements of length ``h`` has
         dof_map = [[0]] + [[e-1, e] for i in range(1, N_e)] + [[N_n-2]]
 
 Carrying out the assembly results in a linear system that is identical
-to :eq:`fem:deq:1D:ex1:Ab:glob`, which is not surprising since
+to :eq:`fem:deq:1D:ex1:Ab:glob`, which is not surprising, since
 the procedures is mathematically equivalent to the calculations
 in the physical domain.
 
-A fundamental problem with the matrix system we have assembled is that
-the boundary conditions are not incorporated if :math:`u(0)` or :math:`u(L)`
-are different from zero. The next sections deals with this issue.
+So far, our technique for computing the matrix system have assumed
+that :math:`u(0)=u(L)=0`. The next section deals with the extension to
+nonzero Dirichlet conditions.
 

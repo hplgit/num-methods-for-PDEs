@@ -27,7 +27,7 @@ Function viz::
 calls solver with a user_action function that can plot the
 solution on the screen (as an animation).
 """
-from scitools.std import *
+import numpy as np
 
 def solver(I, V, f, c, L, dt, C, T, user_action=None):
     """
@@ -35,11 +35,11 @@ def solver(I, V, f, c, L, dt, C, T, user_action=None):
     u(0,t)=U_0(t) or du/dn=0 (U_0=None), u(L,t)=U_L(t) or du/dn=0 (u_L=None).
     """
     Nt = int(round(T/dt))
-    t = linspace(0, Nt*dt, Nt+1)   # Mesh points in time
+    t = np.linspace(0, Nt*dt, Nt+1)   # Mesh points in time
     dx = dt*c/float(C)
     Nx = int(round(L/dx))
-    x = linspace(0, L, Nx+1)       # Mesh points in space
-    C2 = C**2; dt2 = dt*dt         # Help variables in the scheme
+    x = np.linspace(0, L, Nx+1)       # Mesh points in space
+    C2 = C**2; dt2 = dt*dt            # Help variables in the scheme
 
     # Wrap user-given f, V
     if f is None or f == 0:
@@ -47,9 +47,9 @@ def solver(I, V, f, c, L, dt, C, T, user_action=None):
     if V is None or V == 0:
         V = (lambda x: 0)
 
-    u   = zeros(Nx+1)   # Solution array at new time level
-    u_1 = zeros(Nx+1)   # Solution at 1 time level back
-    u_2 = zeros(Nx+1)   # Solution at 2 time levels back
+    u   = np.zeros(Nx+1)   # Solution array at new time level
+    u_1 = np.zeros(Nx+1)   # Solution at 1 time level back
+    u_2 = np.zeros(Nx+1)   # Solution at 2 time levels back
 
     import time;  t0 = time.clock()  # CPU time measurement
 
@@ -96,33 +96,7 @@ def solver(I, V, f, c, L, dt, C, T, user_action=None):
     cpu_time = t0 - time.clock()
     return u, x, t, cpu_time
 
-
-def viz(I, V, f, c, L, dt, C, T, umin, umax, animate=True):
-    """Run solver and visualize u at each time level."""
-    import scitools.std as plt, time, glob, os
-
-    def plot_u(u, x, t, n):
-        """user_action function for solver."""
-        plt.plot(x, u, 'r-',
-                 xlabel='x', ylabel='u',
-                 axis=[0, L, umin, umax],
-                 title='t=%f' % t[n])
-        # Let the initial condition stay on the screen for 2
-        # seconds, else insert a pause of 0.2 s between each plot
-        time.sleep(2) if t[n] == 0 else time.sleep(0.2)
-        plt.savefig('frame_%04d.png' % n)  # for movie making
-
-    # Clean up old movie frames
-    for filename in glob.glob('frame_*.png'):
-        os.remove(filename)
-
-    user_action = plot_u if animate else None
-    u, x, t, cpu = solver(I, V, f, c, L, dt, C, T, user_action)
-    if animate:
-        plt.movie('frame_*.png', encoder='html', fps=4,
-                  output_file='movie.html')
-    return cpu
-
+from wave1D_u0 import viz
 
 def plug(C=1, Nx=50, animate=True, T=2):
     """Plug profile as initial condition."""
@@ -137,9 +111,6 @@ def plug(C=1, Nx=50, animate=True, T=2):
     dt = (L/Nx)/c  # choose the stability limit with given Nx
     cpu = viz(I, None, None, c, L, dt, C, T,
               umin=-1.1, umax=1.1, animate=animate)
-
-
-import nose.tools as nt
 
 def test_plug():
     """
@@ -158,10 +129,10 @@ def test_plug():
     u, x, t, cpu = solver(
         I=I, V=None, f=None, c=c, L=L,
         dt=dt, C=C, T=T, user_action=None)
-    u_0 = array([I(x_) for x_ in x])
-    diff = abs(u - u_0).max()
-    nt.assert_almost_equal(diff, 0, places=13)
-
+    u_0 = np.array([I(x_) for x_ in x])
+    diff = np.abs(u - u_0).max()
+    tol = 1E-13
+    assert diff < tol
 
 if __name__ == '__main__':
-    pass
+    test_plug()

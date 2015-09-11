@@ -394,6 +394,7 @@ MathJax.Hub.Config({
 <!-- newcommands_keep.tex -->
 $$
 \newcommand{\half}{\frac{1}{2}}
+\newcommand{\tp}{\thinspace .}
 \newcommand{\uex}{{u_{\small\mbox{e}}}}
 \newcommand{\x}{\boldsymbol{x}}
 \newcommand{\X}{\boldsymbol{X}}
@@ -434,8 +435,10 @@ $$
 
 <center>[1] <b>Center for Biomedical Computing, Simula Research Laboratory</b></center>
 <center>[2] <b>Department of Informatics, University of Oslo</b></center>
+<br>
 <p>
-<center><h4>Jun 7, 2015</h4></center> <!-- date -->
+<center><h4>Sep 10, 2015</h4></center> <!-- date -->
+<br>
 <p>
 <!-- !split --><br><br><br><br><br><br><br><br>
 
@@ -2248,8 +2251,8 @@ $$
 for \( i,j = 1,\ldots,N+1=N_n-1 \).
 
 <p>
-New boundary terms from \( -\int B'\basphi_i'\dx \): \( C/2 \) for \( i=1 \)
-and \( -D/2 \) for \( i=N_n-2 \)
+New boundary terms from \( -\int B'\basphi_i'\dx \): add \( C/h \) to \( b_0 \)
+and \( D/h \) to \( b_N \)
 
 <p>
 <!-- !split --><br><br><br><br><br><br><br><br>
@@ -2261,30 +2264,26 @@ and \( -D/2 \) for \( i=N_n-2 \)
  <p><li> New element vector in the first and last cell</li>
 </ul>
 
-From the last cell:
-
-$$
-\tilde b_0^{(N_e)} = \int_{-1}^1 \left(f\refphi_0 - D\frac{2}{h}
-\frac{d\refphi_1}{dX}\frac{2}{h}\frac{d\refphi_0}{dX}\right)
-\frac{h}{2} \dX
-=  h + \frac{D}{h}
-$$
-
-<p>
 From the first cell:
 
 $$
-\tilde b_0^{(0)} = \int_{-1}^1 \left(f\refphi_1 - C\frac{2}{h}
-\frac{d\refphi_0}{dX}\frac{2}{h}\frac{\refphi_1}{dX}\right)
-\frac{h}{2} \dX
-= h + \frac{C}{h}
+\tilde b_0^{(1)} = \int_{-1}^1 \left(f\refphi_1 -
+C\frac{2}{h}\frac{d\refphi_0}{dX}\frac{2}{h}\frac{d\refphi_1}{dX}\right)
+\frac{h}{2} \dX = \frac{h}{2} 2\int_{-1}^1 \refphi_1  \dX
+- C\frac{2}{h}(-\frac{1}{2})\frac{2}{h}\frac{1}{2}\frac{h}{2}\cdot 2
+= h + C\frac{1}{h}\tp
 $$
 
 <p>
+From the last cell:
 
-<!-- begin inline comment -->
-<font color="red">(<b>hpl 1</b>: These calculations had some errors - redo them in detail!)</font>
-<!-- end inline comment -->
+$$
+\tilde b_0^{N_e} = \int_{-1}^1 \left(f\refphi_0 -
+D\frac{2}{h}\frac{d\refphi_1}{dX}\frac{2}{h}\frac{d\refphi_0}{dX}\right)
+\frac{h}{2} \dX = \frac{h}{2} 2\int_{-1}^1 \refphi_0  \dX
+- D\frac{2}{h}\frac{1}{2}\frac{2}{h}(-\frac{1}{2})\frac{h}{2}\cdot 2
+= h + D\frac{1}{h}\tp
+$$
 
 <p>
 <!-- !split --><br><br><br><br><br><br><br><br>
@@ -2823,10 +2822,13 @@ Must also have a mesh with <code>vertices</code>, <code>cells</code>, and <code>
 
 <p>
 <div class="alert alert-block alert-block alert-text-normal">
-<b></b>
+<b>Major differences when going from 1D to 2D/3D.</b>
 <p>
-How to do integration by parts is the major difference when moving to
-2D and 3D.
+
+<ul>
+ <p><li> The integration by part formula is different</li>
+ <p><li> Cells have different geometry</li>
+</ul>
 </div>
 
 
@@ -2842,8 +2844,8 @@ How to do integration by parts is the major difference when moving to
 
 $$
 \begin{equation*}
--\int_{\Omega} \nabla\cdot (a(\x)\nabla u) v\dx =
-\int_{\Omega} a(\x)\nabla u\cdot\nabla v \dx -
+-\int_{\Omega} \nabla\cdot (\dfc(\x)\nabla u) v\dx =
+\int_{\Omega} \dfc(\x)\nabla u\cdot\nabla v \dx -
 \int_{\partial\Omega} a\frac{\partial u}{\partial n} v \ds
 \end{equation*}
 $$
@@ -2870,21 +2872,22 @@ $$
 
 $$
 \begin{align*}
-\v\cdot\nabla u + \alpha u &= \nabla\cdot\left( a\nabla u\right) + f,
+\v\cdot\nabla u + \\beta u &= \nabla\cdot\left( \dfc\nabla u\right) + f,
 \quad & \x\in\Omega\\ 
 u &= u_0,\quad &\x\in\partial\Omega_D\\ 
--a\frac{\partial u}{\partial n} &= g,\quad &\x\in\partial\Omega_N
+-\dfc\frac{\partial u}{\partial n} &= g,\quad &\x\in\partial\Omega_N
 \end{align*}
 $$
 
 
 <ul>
- <p><li> Known: \( a \), \( \alpha \), \( f \), \( u_0 \), and \( g \).</li>
+ <p><li> Known: \( \dfc \), \( \beta \), \( f \), \( u_0 \), and \( g \).</li>
  <p><li> Second-order PDE: must have <em>exactly one boundary condition at each
    point of the boundary</em></li>
 </ul>
 
-Method 1 with boundary function and \( \baspsi_i=0 \) on \( \partial\Omega_D \):
+Method 1 with boundary function and \( \baspsi_i=0 \) on \( \partial\Omega_D \)
+(ensures \( u=u_0 \) condition):
 
 $$ u(\x) = B(\x) + \sum_{j\in\If} c_j\baspsi_j(\x),\quad B(\x)=u_0(\x)  $$
 
@@ -2897,26 +2900,26 @@ $$ u(\x) = B(\x) + \sum_{j\in\If} c_j\baspsi_j(\x),\quad B(\x)=u_0(\x)  $$
 Galerkin's method: multiply by \( v\in V \) and integrate over \( \Omega \),
 
 $$
-\int_{\Omega} (\v\cdot\nabla u + \alpha u)v\dx =
-\int_{\Omega} \nabla\cdot\left( a\nabla u\right)v\dx + \int_{\Omega}fv \dx
+\int_{\Omega} (\v\cdot\nabla u + \beta u)v\dx =
+\int_{\Omega} \nabla\cdot\left( \dfc\nabla u\right)v\dx + \int_{\Omega}fv \dx
 $$
 
 <p>
-Integrate the second-order term by parts:
+Integrate the second-order term by parts according to the formula:
 
 $$
-\int_{\Omega} \nabla\cdot\left( a\nabla u\right) v \dx =
--\int_{\Omega} a\nabla u\cdot\nabla v\dx
-+ \int_{\partial\Omega} a\frac{\partial u}{\partial n} v\ds,
+\int_{\Omega} \nabla\cdot\left( \dfc\nabla u\right) v \dx =
+-\int_{\Omega} \dfc\nabla u\cdot\nabla v\dx
++ \int_{\partial\Omega} \dfc\frac{\partial u}{\partial n} v\ds,
 $$
 
 <p>
-Result:
+Galerkin's method then gives
 
 $$
-\int_{\Omega} (\v\cdot\nabla u + \alpha u)v\dx =
--\int_{\Omega} a\nabla u\cdot\nabla v\dx
-+ \int_{\partial\Omega} a\frac{\partial u}{\partial n} v\ds
+\int_{\Omega} (\v\cdot\nabla u + \beta u)v\dx =
+-\int_{\Omega} \dfc\nabla u\cdot\nabla v\dx
++ \int_{\partial\Omega} \dfc\frac{\partial u}{\partial n} v\ds
 + \int_{\Omega} fv \dx
 $$
 
@@ -2928,8 +2931,8 @@ $$
 <p>
 Note: \( v\neq 0 \) only on \( \partial\Omega_N \) (since \( v=0 \) on \( \partial\Omega_D \)):
 
-$$ \int_{\partial\Omega} a\frac{\partial u}{\partial n} v\ds
-= \int_{\partial\Omega_N} \underbrace{a\frac{\partial u}{\partial n}}_{-g} v\ds
+$$ \int_{\partial\Omega} \dfc\frac{\partial u}{\partial n} v\ds
+= \int_{\partial\Omega_N} \underbrace{\dfc\frac{\partial u}{\partial n}}_{-g} v\ds
 = -\int_{\partial\Omega_N} gv\ds
 $$
 
@@ -2937,8 +2940,8 @@ $$
 The final variational form:
 
 $$
-\int_{\Omega} (\v\cdot\nabla u + \alpha u)v\dx =
--\int_{\Omega} a\nabla u\cdot\nabla v \dx
+\int_{\Omega} (\v\cdot\nabla u + \beta u)v\dx =
+-\int_{\Omega} \dfc\nabla u\cdot\nabla v \dx
 - \int_{\partial\Omega_N} g v\ds
 + \int_{\Omega} fv \dx
 $$
@@ -2947,8 +2950,8 @@ $$
 Or with inner product notation:
 
 $$
-(\v\cdot\nabla u, v) + (\alpha u,v) =
-- (a\nabla u,\nabla v) - (g,v)_{N} + (f,v)
+(\v\cdot\nabla u, v) + (\beta u,v) =
+- (\dfc\nabla u,\nabla v) - (g,v)_{N} + (f,v)
 $$
 
 <p>
@@ -2969,14 +2972,14 @@ $$
 
 $$
 A_{i,j} = (\v\cdot\nabla \baspsi_j, \baspsi_i) +
-(\alpha \baspsi_j ,\baspsi_i) + (a\nabla \baspsi_j,\nabla \baspsi_i)
+(\beta \baspsi_j ,\baspsi_i) + (\dfc\nabla \baspsi_j,\nabla \baspsi_i)
 $$
 
 
 $$
 b_i = (g,\baspsi_i)_{N} + (f,\baspsi_i) -
-(\v\cdot\nabla u_0, \baspsi_i) + (\alpha u_0 ,\baspsi_i) +
-(a\nabla u_0,\nabla \baspsi_i)
+(\v\cdot\nabla u_0, \baspsi_i) + (\beta u_0 ,\baspsi_i) +
+(\dfc\nabla u_0,\nabla \baspsi_i)
 $$
 
 <p>
@@ -2995,7 +2998,7 @@ by integrating over the reference cell.
 
 $$
 \begin{equation*}
-\int_{{\Omega}^{(e)}} a(\x)\nabla\basphi_i\cdot\nabla\basphi_j\dx
+\int_{{\Omega}^{(e)}} \dfc(\x)\nabla\basphi_i\cdot\nabla\basphi_j\dx
 \end{equation*}
 $$
 
@@ -3042,8 +3045,8 @@ Integral transformation from physical to reference coordinates:
 
 $$
 \begin{equation*}
-\int_{\Omega^{(e)}} a(\x)\nabla_{\x}\basphi_i\cdot\nabla_{\x}\basphi_j\dx =
-\int_{\tilde\Omega^r} a(\x(\X))(J^{-1}\cdot\nabla_{\X}\refphi_r)\cdot
+\int_{\Omega^{(e)}} \dfc(\x)\nabla_{\x}\basphi_i\cdot\nabla_{\x}\basphi_j\dx =
+\int_{\tilde\Omega^r} \dfc(\x(\X))(J^{-1}\cdot\nabla_{\X}\refphi_r)\cdot
 (J^{-1}\cdot\nabla\refphi_s)\det J\dX
 \end{equation*}
 $$
@@ -3059,7 +3062,7 @@ Numerical integration over reference cell triangles and tetrahedra:
 $$ \int_{\tilde\Omega^r} g\dX = \sum_{j=0}^{n-1} w_j g(\bar\X_j)$$
 
 <p>
-Module <a href="http://tinyurl.com/nm5587k/fem/numint.py" target="_self"><tt>numint.py</tt></a> contains different rules:
+Module <a href="http://tinyurl.com/nm5587k/approx/numint.py" target="_self"><tt>numint.py</tt></a> contains different rules:
 
 <p>
 

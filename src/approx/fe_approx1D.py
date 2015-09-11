@@ -1,8 +1,6 @@
 import numpy as np
 import sympy as sym
 import sys
-import scitools.std as plt
-#import matplotlib.pyplot as plt
 
 def mesh_uniform(N_e, d, Omega=[0,1], symbolic=False):
     """
@@ -23,7 +21,7 @@ def mesh_uniform(N_e, d, Omega=[0,1], symbolic=False):
     return nodes, elements
 
 
-from Lagrange import Lagrange_polynomial, Lagrange_polynomials
+from Lagrange import Lagrange_polynomial, Chebyshev_nodes, Lagrange_polynomials
 
 def phi_r(r, X, d):
     """
@@ -43,61 +41,35 @@ def phi_r(r, X, d):
         nodes = np.linspace(-1, 1, d+1)
     return Lagrange_polynomial(X, r, nodes)
 
-def phi_r(r, X, d, point_distribution='uniform'):
-    """
-    Return local basis function phi_r at local point X in
-    a 1D element with d+1 nodes.
-    point_distribution can be 'uniform' or 'Chebyshev'.
-    """
-    if d == 0:
-        return np.ones_like(X)
 
-    if point_distribution == 'uniform':
-        if isinstance(X, sym.Symbol):
-            # Use sym.Rational and integers for nodes
-            # (to maximize nice-looking output)
-            h = sym.Rational(1, d)
-            nodes = [2*i*h - 1 for i in range(d+1)]
-        else:
-            # X is numeric: use floats for nodes
-            nodes = np.linspace(-1, 1, d+1)
-    elif point_distribution == 'Chebyshev':
-        # assue X is not sym.Symbol, just numeric
-        nodes = Chebyshev_nodes(-1, 1, d)
-    return Lagrange_polynomial(X, r, nodes)
-
-def dphi_r(r, X, d, point_distribution='uniform'):
+def basis(d, point_distribution='uniform', symbolic=False):
     """
-    Return the derivative of local basis function phi_r at
+    Return all local basis function phi as functions of the
     local point X in a 1D element with d+1 nodes.
+    If symbolic=True, return symbolic expressions, else
+    return Python functions of X.
     point_distribution can be 'uniform' or 'Chebyshev'.
     """
-    if isinstance(X, np.ndarray):
-        z = np.zeros(len(X))
+    X = sym.symbols('X')
     if d == 0:
-        return 0 + z
-    elif d == 1:
-        if r == 0:
-            return -0.5 + z
-        elif r == 1:
-            return 0.5 + z
-    elif d == 2:
-        if r == 0:
-            return X - 0.5
-        elif r == 1:
-            return -2*X
-        elif r == 2:
-            return X + 0.5
+        phi_sym = [1]
     else:
-        print 'dphi_r only supports d=0,1,2, not %d' % d
-        return None
+        if point_distribution == 'uniform':
+            if symbolic:
+                h = sym.Rational(1, d)  # node spacing
+                nodes = [2*i*h - 1 for i in range(d+1)]
+            else:
+                nodes = np.linspace(-1, 1, d+1)
+        elif point_distribution == 'Chebyshev':
+            # Just numeric nodes
+            nodes = Chebyshev_nodes(-1, 1, d)
 
+        phi_sym = [Lagrange_polynomial(X, r, nodes)
+                   for r in range(d+1)]
+    # Transform to Python functions
+    phi_num = [sym.lambdify([X], phi_sym[r]) for r in range(d+1)]
+    return phi_sym if symbolic else phi_num
 
-def basis(d=1):
-    """Return the finite element basis in 1D of degree d."""
-    X = sym.Symbol('X')
-    phi = [phi_r(r, X, d) for r in range(d+1)]
-    return phi
 
 def affine_mapping(X, Omega_e):
     x_L, x_R = Omega_e
@@ -119,40 +91,6 @@ def locate_element_vectorized(x, elements, nodes):
 # vectorized version for locating elements: numpy.searchsorted
 #http://www.astropython.org/snippet/2010/11/Interpolation-without-SciPy
 
-def phi_glob(i, elements, nodes, resolution_per_element=41,
-             derivative=0):
-    """
-    Compute (x, y) coordinates of the curve y = phi_i(x),
-    where i is a global node number (used for plotting, e.g.).
-    Method: Run through each element and compute the pieces
-    of phi_i(x) on this element in the reference coordinate
-    system. Adding up the patches yields the complete phi_i(x).
-    """
-    x_patches = []
-    phi_patches = []
-    for e in range(len(elements)):
-        Omega_e = [nodes[elements[e][0]], nodes[elements[e][-1]]]
-        local_nodes = elements[e]
-        d = len(local_nodes) - 1
-        X = np.linspace(-1, 1, resolution_per_element)
-        if i in local_nodes:
-            r = local_nodes.index(i)
-            if derivative == 0:
-                phi = phi_r(r, X, d)
-            elif derivative == 1:
-                phi = dphi_r(r, X, d)
-                if phi is None:
-                    return None, None
-            phi_patches.append(phi)
-            x = affine_mapping(X, Omega_e)
-            x_patches.append(x)
-        else:
-            # i is not a node in the element, phi_i(x)=0
-            x_patches.append(Omega_e)
-            phi_patches.append([0, 0])
-    x = np.concatenate(x_patches)
-    phi = np.concatenate(phi_patches)
-    return x, phi
 
 def u_glob(U, elements, nodes, resolution_per_element=51):
     """
@@ -163,6 +101,7 @@ def u_glob(U, elements, nodes, resolution_per_element=51):
     """
     x_patches = []
     u_patches = []
+    phi = basis(d)
     for e in range(len(elements)):
         Omega_e = (nodes[elements[e][0]], nodes[elements[e][-1]])
         local_nodes = elements[e]
@@ -173,7 +112,7 @@ def u_glob(U, elements, nodes, resolution_per_element=51):
         u_element = 0
         for r in range(len(local_nodes)):
             i = local_nodes[r]  # global node number
-            u_element += U[i]*phi_r(r, X, d)
+            u_element += U[i]*phi[r](X)
         u_patches.append(u_element)
     x = np.concatenate(x_patches)
     u = np.concatenate(u_patches)
@@ -287,11 +226,86 @@ def approximate(f, symbolic=False, d=1, N_e=4,
         xf = np.linspace(Omega[0], Omega[1], 10001)
         U = np.asarray(c)
         xu, u = u_glob(U, elements, nodes)
+        import scitools.std as plt
+        #import matplotlib.pyplot as plt
         plt.plot(xu, u, '-',
                  xf, f(xf), '--')
         plt.legend(['u', 'f'])
         plt.savefig(filename + '.pdf')
         plt.savefig(filename + '.png')
+
+def phi_glob(i, elements, nodes, resolution_per_element=41,
+             derivative=0):
+    """
+    Compute (x, y) coordinates of the curve y = phi_i(x),
+    where i is a global node number (used for plotting, e.g.).
+    Method: Run through each element and compute the pieces
+    of phi_i(x) on this element in the reference coordinate
+    system. Adding up the patches yields the complete phi_i(x).
+    """
+    x_patches = []
+    phi_patches = []
+    for e in range(len(elements)):
+        Omega_e = [nodes[elements[e][0]], nodes[elements[e][-1]]]
+        local_nodes = elements[e]
+        d = len(local_nodes) - 1
+        X = np.linspace(-1, 1, resolution_per_element)
+        if i in local_nodes:
+            r = local_nodes.index(i)
+            if derivative == 0:
+                phi = phi_r(r, X, d)
+            elif derivative == 1:
+                phi = dphi_r(r, X, d)
+                if phi is None:
+                    return None, None
+            phi_patches.append(phi)
+            x = affine_mapping(X, Omega_e)
+            x_patches.append(x)
+        else:
+            # i is not a node in the element, phi_i(x)=0
+            x_patches.append(Omega_e)
+            phi_patches.append([0, 0])
+    x = np.concatenate(x_patches)
+    phi = np.concatenate(phi_patches)
+    return x, phi
+
+def phi_r(r, X, d):
+    """
+    Return local basis function phi_r at local point X in
+    a 1D element with d+1 nodes.
+    """
+    if d == 0:
+        return np.ones_like(X)
+    nodes = np.linspace(-1, 1, d+1)
+    return Lagrange_polynomial(X, r, nodes)
+
+def dphi_r(r, X, d, point_distribution='uniform'):
+    """
+    Return the derivative of local basis function phi_r at
+    local point X in a 1D element with d+1 nodes.
+    point_distribution can be 'uniform' or 'Chebyshev'.
+    """
+    # Strange function....
+    if isinstance(X, np.ndarray):
+        z = np.zeros(len(X))
+    if d == 0:
+        return 0 + z
+    elif d == 1:
+        if r == 0:
+            return -0.5 + z
+        elif r == 1:
+            return 0.5 + z
+    elif d == 2:
+        if r == 0:
+            return X - 0.5
+        elif r == 1:
+            return -2*X
+        elif r == 2:
+            return X + 0.5
+    else:
+        print 'dphi_r only supports d=0,1,2, not %d' % d
+        return None
+
 
 if __name__ == '__main__':
     import sys
@@ -302,4 +316,3 @@ if __name__ == '__main__':
         sys.argv)
     x = sym.Symbol('x')  # needed in eval when expression f contains x
     eval(cmd)
-

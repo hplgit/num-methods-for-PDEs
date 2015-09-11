@@ -20,24 +20,24 @@ user_action is a function of (u, x, t, n) where the calling
 code can add visualization, error computations, etc.
 """
 
-from numpy import *
+import numpy as np
 
 def solver(I, V, f, c, L, dt, C, T, user_action=None):
     """Solve u_tt=c^2*u_xx + f on (0,L)x(0,T]."""
     Nt = int(round(T/dt))
-    t = linspace(0, Nt*dt, Nt+1)   # Mesh points in time
+    t = np.linspace(0, Nt*dt, Nt+1)   # Mesh points in time
     dx = dt*c/float(C)
     Nx = int(round(L/dx))
-    x = linspace(0, L, Nx+1)       # Mesh points in space
+    x = np.linspace(0, L, Nx+1)       # Mesh points in space
     C2 = C**2                      # Help variable in the scheme
     if f is None or f == 0 :
         f = lambda x, t: 0
     if V is None or V == 0:
         V = lambda x: 0
 
-    u   = zeros(Nx+1)   # Solution array at new time level
-    u_1 = zeros(Nx+1)   # Solution at 1 time level back
-    u_2 = zeros(Nx+1)   # Solution at 2 time levels back
+    u   = np.zeros(Nx+1)   # Solution array at new time level
+    u_1 = np.zeros(Nx+1)   # Solution at 1 time level back
+    u_2 = np.zeros(Nx+1)   # Solution at 2 time levels back
 
     import time;  t0 = time.clock()  # for measuring CPU time
 
@@ -81,10 +81,9 @@ def solver(I, V, f, c, L, dt, C, T, user_action=None):
     cpu_time = t0 - time.clock()
     return u, x, t, cpu_time
 
-import nose.tools as nt
-
 def test_quadratic():
     """Check that u(x,t)=x(L-x)(1+t/2) is exactly reproduced."""
+
     def u_exact(x, t):
         return x*(L-x)*(1 + 0.5*t)
 
@@ -100,32 +99,40 @@ def test_quadratic():
     L = 2.5
     c = 1.5
     C = 0.75
-    Nx = 3  # Very coarse mesh for this exact test
+    Nx = 6  # Very coarse mesh for this exact test
     dt = C*(L/Nx)/c
     T = 18
 
-    u, x, t, cpu = solver(I, V, f, c, L, dt, C, T)
-    u_e = u_exact(x, t[-1])
-    diff = abs(u - u_e).max()
-    nt.assert_almost_equal(diff, 0, places=14)
+    def assert_no_error(u, x, t, n):
+        u_e = u_exact(x, t[n])
+        diff = np.abs(u - u_e).max()
+        tol = 1E-13
+        assert diff < tol
+
+    solver(I, V, f, c, L, dt, C, T,
+           user_action=assert_no_error)
 
 def test_constant():
     """Check that u(x,t)=Q=0 is exactly reproduced."""
-    Q = 0  # Require 0 because of the boundary conditions
+    u_const = 0  # Require 0 because of the boundary conditions
     C = 0.75
     dt = C # Very coarse mesh
     u, x, t, cpu = solver(I=lambda x:
                           0, V=0, f=0, c=1.5, L=2.5,
                           dt=dt, C=C, T=18)
-    nt.assert_almost_equal(abs(u).max(), Q, places=14)
+    tol = 1E-14
+    assert np.abs(u - u_const).max() < tol
 
-
-def viz(I, V, f, c, L, dt, C, T, umin, umax, animate=True):
+def viz(
+    I, V, f, c, L, dt, C, T,  # PDE paramteres
+    umin, umax,               # Interval for u in plots
+    animate=True,             # Simulation with animation?
+    tool='matplotlib',        # 'matplotlib' or 'scitools'
+    solver_function=solver,   # Function with numerical algorithm
+    ):
     """Run solver and visualize u at each time level."""
-    import scitools.std as plt
-    import time, glob, os
 
-    def plot_u(u, x, t, n):
+    def plot_u_st(u, x, t, n):
         """user_action function for solver."""
         plt.plot(x, u, 'r-',
                  xlabel='x', ylabel='u',
@@ -136,27 +143,56 @@ def viz(I, V, f, c, L, dt, C, T, umin, umax, animate=True):
         time.sleep(2) if t[n] == 0 else time.sleep(0.2)
         plt.savefig('frame_%04d.png' % n)  # for movie making
 
+    class PlotMatplotlib:
+        def __call__(self, u, x, t, n):
+            """user_action function for solver."""
+            if n == 0:
+                plt.ion()
+                self.lines = plt.plot(x, u, 'r-')
+                plt.xlabel('x');  plt.ylabel('u')
+                plt.axis([0, L, umin, umax])
+                plt.legend(['t=%f' % t[n]], loc='lower left')
+            else:
+                self.lines[0].set_ydata(u)
+                plt.legend(['t=%f' % t[n]], loc='lower left')
+                plt.draw()
+            time.sleep(2) if t[n] == 0 else time.sleep(0.2)
+            plt.savefig('tmp_%04d.png' % n)  # for movie making
+
+    if tool == 'matplotlib':
+        import matplotlib.pyplot as plt
+        plot_u = PlotMatplotlib()
+    elif tool == 'scitools':
+        import scitools.std as plt  # scitools.easyviz interface
+        plot_u = plot_u_st
+    import time, glob, os
+
     # Clean up old movie frames
-    for filename in glob.glob('frame_*.png'):
+    for filename in glob.glob('tmp_*.png'):
         os.remove(filename)
 
+    # Call solver and do the simulaton
     user_action = plot_u if animate else None
-    u, x, t, cpu = solver(I, V, f, c, L, dt, C, T, user_action)
+    u, x, t, cpu = solver_function(
+        I, V, f, c, L, dt, C, T, user_action)
 
-    # Make movie files
-    fps = 4  # Frames per second
-    plt.movie('frame_*.png', encoder='html', fps=fps,
-              output_file='movie.html')
+    # Make video files
+    fps = 4  # frames per second
     codec2ext = dict(flv='flv', libx264='mp4', libvpx='webm',
-                     libtheora='ogg')
-    filespec = 'frame_%04d.png'
-    movie_program = 'avconv'  # or 'ffmpeg'
+                     libtheora='ogg')  # video formats
+    filespec = 'tmp_%04d.png'
+    movie_program = 'ffmpeg'  # or 'avconv'
     for codec in codec2ext:
         ext = codec2ext[codec]
         cmd = '%(movie_program)s -r %(fps)d -i %(filespec)s '\
               '-vcodec %(codec)s movie.%(ext)s' % vars()
         os.system(cmd)
 
+    if tool == 'scitools':
+        # Make an HTML play for showing the animation in a browser
+        plt.movie('tmp_*.png', encoder='html', fps=fps,
+                  output_file='movie.html')
+    return cpu
 
 def guitar(C):
     """Triangular wave (pulled guitar string)."""
@@ -176,7 +212,8 @@ def guitar(C):
         return a*x/x0 if x < x0 else a/(L-x0)*(L-x)
 
     umin = -1.2*a;  umax = -umin
-    cpu = viz(I, 0, 0, c, L, dt, C, T, umin, umax, animate=True)
+    cpu = viz(I, 0, 0, c, L, dt, C, T, umin, umax,
+              animate=True, tool='scitools')
 
 
 if __name__ == '__main__':

@@ -73,24 +73,24 @@ A first attempt at a solver function is listed below.
 
 .. code-block:: python
 
-        from numpy import *
+        import numpy as np
         
         def solver(I, V, f, c, L, dt, C, T, user_action=None):
             """Solve u_tt=c^2*u_xx + f on (0,L)x(0,T]."""
             Nt = int(round(T/dt))
-            t = linspace(0, Nt*dt, Nt+1)   # Mesh points in time
+            t = np.linspace(0, Nt*dt, Nt+1)   # Mesh points in time
             dx = dt*c/float(C)
             Nx = int(round(L/dx))
-            x = linspace(0, L, Nx+1)       # Mesh points in space
+            x = np.linspace(0, L, Nx+1)       # Mesh points in space
             C2 = C**2                      # Help variable in the scheme
             if f is None or f == 0 :
                 f = lambda x, t: 0
             if V is None or V == 0:
                 V = lambda x: 0
         
-            u   = zeros(Nx+1)   # Solution array at new time level
-            u_1 = zeros(Nx+1)   # Solution at 1 time level back
-            u_2 = zeros(Nx+1)   # Solution at 2 time levels back
+            u   = np.zeros(Nx+1)   # Solution array at new time level
+            u_1 = np.zeros(Nx+1)   # Solution at 1 time level back
+            u_2 = np.zeros(Nx+1)   # Solution at 2 time levels back
         
             import time;  t0 = time.clock()  # for measuring CPU time
         
@@ -172,6 +172,7 @@ frameworks nose or pytest).
 
         def test_quadratic():
             """Check that u(x,t)=x(L-x)(1+t/2) is exactly reproduced."""
+        
             def u_exact(x, t):
                 return x*(L-x)*(1 + 0.5*t)
         
@@ -187,15 +188,18 @@ frameworks nose or pytest).
             L = 2.5
             c = 1.5
             C = 0.75
-            Nx = 3  # Very coarse mesh for this exact test
+            Nx = 6  # Very coarse mesh for this exact test
             dt = C*(L/Nx)/c
             T = 18
         
-            u, x, t, cpu = solver(I, V, f, c, L, dt, C, T)
-            u_e = u_exact(x, t[-1])
-            tol = 1E-14
-            diff = abs(u - u_e).max()
-            assert diff < tol
+            def assert_no_error(u, x, t, n):
+                u_e = u_exact(x, t[n])
+                diff = np.abs(u - u_e).max()
+                tol = 1E-13
+                assert diff < tol
+        
+            solver(I, V, f, c, L, dt, C, T,
+                   user_action=assert_no_error)
 
 When this function resides in the file ``wave1D_u0.py``, one can execute
 ``py.test -s -v wave1D_u0.py`` or ``nosetests -s -v wave1D_u0.py`` to automatically
@@ -512,8 +516,6 @@ calling ``viz`` in this application goes as follows:
 
 The associated program has the name `wave1D_u0.py <http://tinyurl.com/nm5587k/wave/wave1D/wave1D_u0.py>`__. Run
 the program and watch the `movie of the vibrating string <http://tinyurl.com/opdfafk/pub/mov-wave/guitar_C0.8/index.html>`__.
-
-[**hpl 1**: Must recompute these movies as :math:`\Delta t` is different when :math:`C<1`.]
 
 Working with a scaled PDE model
 -------------------------------
@@ -886,7 +888,7 @@ solution at each time level and performs a test:
             I = lambda x: u_exact(x, 0)
             V = lambda x: 0.5*u_exact(x, 0)
             # f is a scalar (zeros_like(x) works for scalar x too)
-            f = lambda x, t: zeros_like(x) + 2*c**2*(1 + 0.5*t)
+            f = lambda x, t: np.zeros_like(x) + 2*c**2*(1 + 0.5*t)
         
             L = 2.5
             c = 1.5
@@ -898,7 +900,7 @@ solution at each time level and performs a test:
             def assert_no_error(u, x, t, n):
                 u_e = u_exact(x, t[n])
                 tol = 1E-13
-                diff = abs(u - u_e).max()
+                diff = np.abs(u - u_e).max()
                 assert diff < tol
         
             solver(I, V, f, c, L, dt, C, T,

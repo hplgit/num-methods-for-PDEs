@@ -35,7 +35,8 @@ Function viz::
 calls solver with a user_action function that can plot the
 solution on the screen (as an animation).
 """
-from scitools.std import *
+import numpy as np
+import scitools.std as plt
 
 def solver(I, V, f, c, U_0, U_L, L, dt, C, T,
            user_action=None, version='scalar'):
@@ -44,22 +45,22 @@ def solver(I, V, f, c, U_0, U_L, L, dt, C, T,
     u(0,t)=U_0(t) or du/dn=0 (U_0=None), u(L,t)=U_L(t) or du/dn=0 (u_L=None).
     """
     Nt = int(round(T/dt))
-    t = linspace(0, Nt*dt, Nt+1)   # Mesh points in time
+    t = np.linspace(0, Nt*dt, Nt+1)   # Mesh points in time
     dx = dt*c/float(C)
     Nx = int(round(L/dx))
-    x = linspace(0, L, Nx+1)       # Mesh points in space
-    C2 = C**2; dt2 = dt*dt         # Help variables in the scheme
+    x = np.linspace(0, L, Nx+1)       # Mesh points in space
+    C2 = C**2; dt2 = dt*dt            # Help variables in the scheme
 
     # Wrap user-given f, I, V, U_0, U_L if None or 0
     if f is None or f == 0:
         f = (lambda x, t: 0) if version == 'scalar' else \
-            lambda x, t: zeros(x.shape)
+            lambda x, t: np.zeros(x.shape)
     if I is None or I == 0:
         I = (lambda x: 0) if version == 'scalar' else \
-            lambda x: zeros(x.shape)
+            lambda x: np.zeros(x.shape)
     if V is None or V == 0:
         V = (lambda x: 0) if version == 'scalar' else \
-            lambda x: zeros(x.shape)
+            lambda x: np.zeros(x.shape)
     if U_0 is not None:
         if isinstance(U_0, (float,int)) and U_0 == 0:
             U_0 = lambda t: 0
@@ -69,9 +70,9 @@ def solver(I, V, f, c, U_0, U_L, L, dt, C, T,
             U_L = lambda t: 0
         # else: U_L(t) is a function
 
-    u   = zeros(Nx+1)   # Solution array at new time level
-    u_1 = zeros(Nx+1)   # Solution at 1 time level back
-    u_2 = zeros(Nx+1)   # Solution at 2 time levels back
+    u   = np.zeros(Nx+1)   # Solution array at new time level
+    u_1 = np.zeros(Nx+1)   # Solution at 1 time level back
+    u_2 = np.zeros(Nx+1)   # Solution at 2 time levels back
 
     Ix = range(0, Nx+1)
     It = range(0, Nt+1)
@@ -178,7 +179,7 @@ def solver(I, V, f, c, U_0, U_L, L, dt, C, T,
 def viz(I, V, f, c, U_0, U_L, L, dt, C, T, umin, umax,
         version='scalar', animate=True):
     """Run solver and visualize u at each time level."""
-    import scitools.std as plt, time, glob, os
+    import time, glob, os
     if callable(U_0):
         bc_left = 'u(0,t)=U_0(t)'
     elif U_0 is None:
@@ -194,6 +195,7 @@ def viz(I, V, f, c, U_0, U_L, L, dt, C, T, umin, umax,
 
     def plot_u(u, x, t, n):
         """user_action function for solver."""
+        # Works only with scitools, see wave1D_u0.py for matplotlib versions
         plt.plot(x, u, 'r-',
                  xlabel='x', ylabel='u',
                  axis=[0, L, umin, umax],
@@ -218,7 +220,7 @@ def viz(I, V, f, c, U_0, U_L, L, dt, C, T, umin, umax,
                          libtheora='ogg')
         fps = 6
         filespec = 'frame_%04d.png'
-        movie_program = 'avconv'  # or 'ffmpeg'
+        movie_program = 'ffmpeg'  # or 'avconv'
         for codec in codec2ext:
             ext = codec2ext[codec]
             cmd = '%(movie_program)s -r %(fps)d -i %(filespec)s '\
@@ -227,14 +229,50 @@ def viz(I, V, f, c, U_0, U_L, L, dt, C, T, umin, umax,
             os.system(cmd)
     return cpu
 
-import nose.tools as nt
+def test_constant():
+    """
+    Check the scalar and vectorized versions work for
+    a constant u(x,t). We simulate in [0, L] and apply
+    Neumann and Dirichlet conditions at both ends.
+    """
+    u_const = 0.45
+    u_exact = lambda x, t: u_const
+    I = lambda x: u_exact(x, 0)
+    V = lambda x: 0
+    f = lambda x, t: 0
+
+    def assert_no_error(u, x, t, n):
+        u_e = u_exact(x, t[n])
+        diff = np.abs(u - u_e).max()
+        msg = 'diff=%E, t_%d=%g' % (diff, n, t[n])
+        tol = 1E-13
+        assert diff < tol, msg
+
+    for U_0 in (None, lambda t: u_const):
+        for U_L in (None, lambda t: u_const):
+            L = 2.5
+            c = 1.5
+            C = 0.75
+            Nx = 3  # Very coarse mesh for this exact test
+            dt = C*(L/Nx)/c
+            T = 18  # long time integration
+
+            solver(I, V, f, c, U_0, U_L, L, dt, C, T,
+                   user_action=assert_no_error,
+                   version='scalar')
+            solver(I, V, f, c, U_0, U_L, L, dt, C, T,
+                   user_action=assert_no_error,
+                   version='vectorized')
+            print U_0, U_L
 
 def test_quadratic():
     """
     Check the scalar and vectorized versions work for
     a quadratic u(x,t)=x(L-x)(1+t/2) that is exactly reproduced.
-    We simulate in [0, L/2] and apply a symmetry condition
-    at the end x=L/2.
+    We simulate in [0, L].
+    Note: applying a symmetry condition at the end x=L/2
+    (U_0=None, L=L/2 in call to solver) is *not* exactly reproduced
+    because of the numerics in the boundary condition implementation.
     """
     u_exact = lambda x, t: x*(L-x)*(1+0.5*t)
     I = lambda x: u_exact(x, 0)
@@ -242,6 +280,7 @@ def test_quadratic():
     f = lambda x, t: 2*(1+0.5*t)*c**2
     U_0 = lambda t: u_exact(0, t)
     U_L = None
+    U_L = 0
     L = 2.5
     c = 1.5
     C = 0.75
@@ -251,12 +290,14 @@ def test_quadratic():
 
     def assert_no_error(u, x, t, n):
         u_e = u_exact(x, t[n])
-        diff = abs(u - u_e).max()
-        nt.assert_almost_equal(diff, 0, places=13)
+        diff = np.abs(u - u_e).max()
+        msg = 'diff=%E, t_%d=%g' % (diff, n, t[n])
+        tol = 1E-13
+        assert diff < tol, msg
 
-    solver(I, V, f, c, U_0, U_L, L/2, dt, C, T,
+    solver(I, V, f, c, U_0, U_L, L, dt, C, T,
            user_action=assert_no_error, version='scalar')
-    solver(I, V, f, c, U_0, U_L, L/2, dt, C, T,
+    solver(I, V, f, c, U_0, U_L, L, dt, C, T,
            user_action=assert_no_error, version='vectorized')
 
 
@@ -309,7 +350,7 @@ def gaussian(C=1, Nx=50, animate=True, version='scalar', T=1, loc=5,
 
 def test_plug():
     """Check that an initial plug is correct back after one period."""
-    L = 1
+    L = 1.0
     c = 0.5
     dt = (L/10)/c  # Nx=10
     I = lambda x: 0 if abs(x-L/2.0) > 0.1 else 1
@@ -322,11 +363,12 @@ def test_plug():
         I=I,
         V=None, f=None, c=0.5, U_0=None, U_L=None, L=L,
         dt=dt, C=1, T=4, user_action=None, version='vectorized')
+    tol = 1E-13
     diff = abs(u_s - u_v).max()
-    nt.assert_almost_equal(diff, 0, places=13)
-    u_0 = array([I(x_) for x_ in x])
-    diff = abs(u_s - u_0).max()
-    nt.assert_almost_equal(diff, 0, places=13)
+    assert diff < tol
+    u_0 = np.array([I(x_) for x_ in x])
+    diff = np.abs(u_s - u_0).max()
+    assert diff < tol
 
 def guitar(C=1, Nx=50, animate=True, version='scalar', T=2):
     """Triangular initial condition for simulating a guitar string."""
@@ -354,7 +396,11 @@ def moving_end(C=1, Nx=50, reflecting_right_boundary=True, T=2,
     I = lambda x: 0
 
     def U_0(t):
-        return (0.25*sin(6*pi*t) if ((t < 1./6) or (0.5 + 3./12 <= t <= 0.5 + 4./12 + 0.0001) or (1.5 <= t <= 1.5 + 1./3 + 0.0001)) else 0)
+        return (0.25*sin(6*pi*t) \
+                if ((t < 1./6) or \
+                    (0.5 + 3./12 <= t <= 0.5 + 4./12 + 0.0001) or \
+                    (1.5 <= t <= 1.5 + 1./3 + 0.0001)) \
+                else 0)
 
     if reflecting_right_boundary:
         U_L = None
@@ -387,7 +433,7 @@ def sincos(C=1):
 
     # Convergence study
     def action(u, x, t, n):
-        e = abs(u - exact(x, t[n])).max()
+        e = np.abs(u - exact(x, t[n])).max()
         errors_in_time.append(e)
 
     E = []
@@ -406,4 +452,6 @@ def sincos(C=1):
     return dt, E
 
 if __name__ == '__main__':
-    pass
+    test_constant()
+    test_quadratic()
+    test_plug()

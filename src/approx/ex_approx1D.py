@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import sympy as sym
 import sys
 x = sym.Symbol('x')
+np.random.seed(2)
 
 
 def sines(x, N):
@@ -28,14 +29,14 @@ def taylor(x, N):
 
 # ----------------------------------------------------------------------
 
-def run_linear_leastsq_parabola():
+def run_parabola_by_linear_leastsq():
     f = 10*(x-1)**2 - 1
     psi = [1, x]
     Omega = [1, 2]
     u, c = least_squares(f, psi, Omega)
     comparison_plot(f, u, Omega, 'parabola_ls_linear')
 
-def run_taylor_leastsq_parabola_illconditioning(N=2):
+def run_parabola_by_taylor_leastsq_illconditioning(N=2):
     """
     Test Taylor approx to a parabola and exact symbolics vs
     ill-conditioned numerical approaches.
@@ -48,7 +49,7 @@ def run_taylor_leastsq_parabola_illconditioning(N=2):
     print 'u:', sym.expand(u)
     comparison_plot(f, u, [1, 2], 'parabola_ls_taylor%d' % N)
 
-def run_sines_leastsq_parabola(boundary_term=False):
+def run_parabola_by_sines_leastsq(boundary_term=False):
     for N in (4, 12):
         f = 10*(x-1)**2 - 1
         psi = sines(x, N)
@@ -65,11 +66,11 @@ def run_sines_leastsq_parabola(boundary_term=False):
                         (N, '_wfterm' if boundary_term else ''))
 
 
-def run_sine_by_powers(N):
+def run_sin_by_powers(N):
     f = sym.sin(x)
     psi = taylor(x, N)
     Omega=[0, 2*sym.pi]
-    u = least_squares(f, psi, Omega)
+    u, c = least_squares(f, psi, Omega)
     comparison_plot(f, u, Omega)
 
 def run_Lagrange_poly(N):
@@ -83,88 +84,145 @@ def run_Lagrange_poly(N):
     print points
 
 
-def run_Lagrange_leastsq_sin(N, ymin=-1.2, ymax=1.2):
+def run_sin_by_Lagrange_leastsq(N, ymin=-1.2, ymax=1.2):
     # Least-squares use of Lagrange polynomials
     f = sym.sin(2*sym.pi*x)
     psi, points = Lagrange_polynomials_01(x, N)
     Omega=[0, 1]
-    u = least_squares(f, psi, Omega)
+    u, c = least_squares(f, psi, Omega)
     comparison_plot(f, u, Omega, filename='Lagrange_ls_sin_%d' % (N+1),
                     plot_title='Least squares approximation by '\
                     'Lagrange polynomials of degree %d' % N,
                     ymin=ymin, ymax=ymax)
 
-def run_Lagrange_leastsq_abs(N):
+def run_abs_by_Lagrange_leastsq(N):
     """Least-squares with of Lagrange polynomials for |1-2x|."""
     f = sym.abs(1-2*x)
     # This f will lead to failure of sympy integrate, fallback on numerical int.
     psi, points = Lagrange_polynomials_01(x, N)
     Omega=[0, 1]
-    u = least_squares(f, psi, Omega)
+    u, c = least_squares(f, psi, Omega)
     comparison_plot(f, u, Omega, filename='Lagrange_ls_abs_%d' % (N+1),
                     plot_title='Least squares approximation by '\
                     'Lagrange polynomials of degree %d' % N)
 
-def run_linear_interp1_parabola():
+def run_parabola_by_linear_interp1():
     f = 10*(x-1)**2 - 1
     psi = [1, x]
     Omega = [1, 2]
     points = [1 + sym.Rational(1,3), 1 + sym.Rational(2,3)]
-    u = interpolation(f, psi, points)
+    u, c = interpolation(f, psi, points)
     comparison_plot(f, u, Omega, 'parabola_interp1_linear')
 
 
-def run_linear_interp2_parabola():
-    # as run_linear_interp1_parabola, but other interpolation points
+def run_parabola_by_linear_interp2():
+    # as run_parabola_by_linear_interp1, but other interpolation points
     f = 10*(x-1)**2 - 1
     psi = [1, x]
     Omega = [1, 2]
     points = [1, 2]
-    u = interpolation(f, psi, points)
+    u, c = interpolation(f, psi, points)
     comparison_plot(f, u, Omega, 'parabola_interp2_linear')
 
-def run_quadratic_interp_parabola():
+def run_parabola_by_quadratic_interp():
     f = 10*(x-1)**2 - 1
     psi = [1, x, x**2]
     Omega = [1, 2]
     points = [1, 1.2, 2]
-    u = interpolation(f, psi, points)
+    u, c = interpolation(f, psi, points)
     comparison_plot(f, u, Omega, 'parabola_interp3_quadratic')
 
 
-def run_poly_interp_sin(N):
+def run_sin_by_poly_interp(N):
     f = sym.sin(sym.pi*x)
     psi = taylor(x, N)
     Omega = [1, 2]
-    import numpy as np
     points = np.linspace(1, 2, N+1)
-    u = interpolation(f, psi, points)
+    u, c = interpolation(f, psi, points)
     comparison_plot(f, u, Omega, 'sin_interp_poly%d' % N)
 
+def run_parabola_by_linear_regression():
+    f = 10*(x-1)**2 - 1
+    psi = [1, x]
+    Omega = [1, 2]
+    mp1_values = [2, 8, 32]  # values of m+1
+    # Create m+3 points and use the inner m+1 points
+    for mp1 in mp1_values:
+        points = np.linspace(Omega[0], Omega[1], mp1+2)[1:-1]
+        u, c = regression(f, psi, points)
+        comparison_plot(
+            f, u, Omega,
+            filename='parabola_by_regression_%d' % mp1,
+            points=points,
+            points_legend='%d interpolation points' % mp1,
+            legend_loc='upper left')
 
-def run_Lagrange_interp_sin(N, ymin=-1.2, ymax=1.2):
+def run_noisy_parabola_by_linear_regression():
+    """Demonstrate standard statistical linear regression with noise data."""
+    f_formula = 10*(x-1)**2 - 1
+    f_func = sym.lambdify([x], f_formula, modules='numpy')
+    sigma = 0.6  # Add normal noise with this std to f
+    psi = [1, x]
+    Omega = [1, 2]
+    mp1_values = [4, 8, 32]  # values of m+1
+    # Create m+3 points and use the inner m+1 points
+    for mp1 in mp1_values:
+        points = np.linspace(Omega[0], Omega[1], mp1+2)[1:-1]
+        f_data = f_func(points) + \
+                 np.random.normal(0, sigma, points.size)
+        u, c = regression_with_noise(f_data, psi, points)
+        comparison_plot(
+            f_formula, u, Omega,
+            filename='parabola_by_regression_%d' % mp1,
+            points=points, point_values=f_data,
+            points_legend='%d data points' % mp1,
+            legend_loc='upper left')
+
+def run_noisy_parabola_by_quadratic_regression():
+    """Demonstrate standard statistical linear regression with noise data."""
+    f_formula = 10*(x-1)**2 - 1
+    f_func = sym.lambdify([x], f_formula, modules='numpy')
+    sigma = 0.6  # Add normal noise with this std to f
+    psi = [1, x, x**2]
+    Omega = [1, 2]
+    mp1_values = [4, 8, 32]  # values of m+1
+    # Create m+3 points and use the inner m+1 points
+    for mp1 in mp1_values:
+        points = np.linspace(Omega[0], Omega[1], mp1+2)[1:-1]
+        f_data = f_func(points) + \
+                 np.random.normal(0, sigma, points.size)
+        u, c = regression_with_noise(f_data, psi, points)
+        comparison_plot(
+            f_formula, u, Omega,
+            filename='parabola_by_regression_%d' % mp1,
+            points=points, point_values=f_data,
+            points_legend='%d data points' % mp1,
+            legend_loc='upper left')
+
+
+def run_sin_by_Lagrange_interp_(N, ymin=-1.2, ymax=1.2):
     f = sym.sin(2*sym.pi*x)
     psi, points = Lagrange_polynomials_01(x, N)
-    u = interpolation(f, psi, points)
+    u, c = interpolation(f, psi, points)
     comparison_plot(f, u, Omega=[0, 1],
                     filename='Lagrange_interp_sin_%d' % (N+1),
                     plot_title='Interpolation by Lagrange polynomials '\
                     'of degree %d' % N,
                     ymin=ymin, ymax=ymax)
 
-def run_Lagrange_interp_poly(n, N):
+def run_poly_by_Lagrange_interp_(n, N):
     f = x**n
     psi, points = Lagrange_polynomials_01(x, N)
-    u = interpolation(f, psi, points)
+    u, c = interpolation(f, psi, points)
     comparison_plot(f, u, Omega=[0, 1],
                     filename='Lagrange_interp_p%d_%d' % (n, N+1),
                     plot_title='Interpolation by Lagrange polynomials '\
                     'of degree %d' % N)
 
-def run_Lagrange_interp_abs(N, ymin=None, ymax=None):
+def run_abs_by_Lagrange_interp_(N, ymin=None, ymax=None):
     f = abs(1-2*x)
     psi, points = Lagrange_polynomials_01(x, N)
-    u = interpolation(f, psi, points)
+    u, c = interpolation(f, psi, points)
     comparison_plot(f, u, Omega=[0, 1],
                     filename='Lagrange_interp_abs_%d' % (N+1),
                     plot_title='Interpolation by Lagrange polynomials '\
@@ -186,12 +244,12 @@ def run_Lagrange_interp_abs(N, ymin=None, ymax=None):
     plt.savefig('Lagrange_basis_%d.pdf' % (N+1))
     plt.savefig('Lagrange_basis_%d.png' % (N+1))
 
-def run_Lagrange_interp_abs_Cheb(N, ymin=None, ymax=None):
+def run_abs_by_Lagrange_interp__Cheb(N, ymin=None, ymax=None):
     f = sym.Abs(1-2*x)
     fn = sym.lambdify([x], f)
     psi, points= Lagrange_polynomials(x, N, [0, 1],
                                       point_distribution='Chebyshev')
-    u = interpolation(f, psi, points)
+    u, c = interpolation(f, psi, points)
     comparison_plot(f, u, Omega=[0, 1],
                     filename='Lagrange_interp_abs_Cheb_%d' % (N+1),
                     plot_title='Interpolation by Lagrange polynomials '\
@@ -215,12 +273,11 @@ def run_Lagrange_interp_abs_Cheb(N, ymin=None, ymax=None):
     plt.savefig('Lagrange_basis_Cheb_%d.pdf' % (N+1))
     plt.savefig('Lagrange_basis_Cheb_%d.png' % (N+1))
 
-def run_Lagrange_interp_abs_conv(N=[3, 6, 12, 24]):
+def run_abs_by_Lagrange_interp__conv(N=[3, 6, 12, 24]):
     f = sym.abs(1-2*x)
     f = sym.sin(2*sym.pi*x)
     fn = sym.lambdify([x], f, modules='numpy')
     resolution = 50001
-    import numpy as np
     xcoor = np.linspace(0, 1, resolution)
     fcoor = fn(xcoor)
     Einf = []
@@ -228,7 +285,7 @@ def run_Lagrange_interp_abs_conv(N=[3, 6, 12, 24]):
     h = []
     for _N in N:
         psi, points = Lagrange_polynomials_01(x, _N)
-        u = interpolation(f, psi, points)
+        u, c = interpolation(f, psi, points)
         un = sym.lambdify([x], u, modules='numpy')
         ucoor = un(xcoor)
         e = fcoor - ucoor
@@ -249,8 +306,7 @@ def run_Lagrange_interp_abs_conv(N=[3, 6, 12, 24]):
 
 
 if __name__ == '__main__':
-    functions = \
-        [eval(fname) for fname in dir() if fname.startswith('run_')]
-    from scitools.misc import function_UI
-    cmd = function_UI(functions, sys.argv)
-    eval(cmd)
+    # Run from command line:
+    # python ex_approx1D.py run_parabola_by_linear_regression
+    cmd = sys.argv[1]
+    eval(cmd + '()')

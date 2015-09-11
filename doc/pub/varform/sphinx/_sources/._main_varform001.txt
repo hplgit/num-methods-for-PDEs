@@ -20,16 +20,23 @@ Basic principles for approximating differential equations
 The finite element method is a very flexible approach for solving partial
 differential equations. Its two most attractive features are the ease
 of handling domains of complex shape in two and three dimensions and
-the ease of constructing higher-order discretization methods. The
-finite element method is usually applied for discretization in space,
-and therefore spatial problems will be our focus in the coming sections.
-Extensions to time-dependent problems may, for instance, use finite difference
-approximations in time.
+the ease of using higher-degree polynomials in the approximations.
+The latter feature typically leads to errors proportional to
+:math:`h^{d+1}`, where :math:`h` is the element length and :math:`d` is the polynomial
+degree. When the solution is sufficiently smooth, the ability to use
+larger :math:`d` creates methods that are much more computationally efficient
+than standard finite difference methods (and equally efficient finite
+difference methods are technically much harder to construct).
 
-Before studying how finite element methods are used to tackle differential
-equation, we first look at how global basis functions and the
-least squares, Galerkin, and collocation principles can be used to solve
-differential equations.
+The finite element method is usually applied for discretization in
+space, and therefore spatial problems will be our focus in the coming
+sections.  Extensions to time-dependent problems usually employs
+finite difference approximations in time.
+
+Before studying how finite element methods are used to tackle
+differential equations, we first look at how global basis functions
+and the least squares, Galerkin, and collocation principles can be
+used to solve differential equations.
 
 .. _fem:deq:1D:models:
 
@@ -86,11 +93,12 @@ increasing complexity:
 Both :math:`{\alpha}(x)` and :math:`f(x)` are considered as specified functions,
 while :math:`a` is a prescribed parameter.  Differential equations
 corresponding to :eq:`fem:deq:1D:L1`-:eq:`fem:deq:1D:L2` arise in
-diffusion phenomena, such as steady transport of heat in solids and
+diffusion phenomena, such as stationary (time-independent)
+transport of heat in solids and
 flow of viscous fluids between flat plates. The form
 :eq:`fem:deq:1D:L3` arises when transient diffusion or wave
-phenomenon are discretized in time by finite differences. The equation
-:eq:`fem:deq:1D:L4` appear in chemical models when diffusion of a
+phenomena are discretized in time by finite differences. The equation
+:eq:`fem:deq:1D:L4` appears in chemical models when diffusion of a
 substance is combined with chemical reactions. Also in biology,
 :eq:`fem:deq:1D:L4` plays an important role, both for spreading of
 species and in models involving generation and
@@ -100,7 +108,7 @@ Let :math:`\Omega =[0,L]` be the domain in one space dimension.
 In addition to the differential equation, :math:`u` must fulfill
 boundary conditions at the boundaries of the domain, :math:`x=0` and :math:`x=L`.
 When :math:`\mathcal{L}` contains up to second-order derivatives, as in the
-examples above, :math:`m=1`, we need one boundary condition at each of
+examples above, we need one boundary condition at each of
 the (two) boundary points, here abstractly specified as
 
 .. math::
@@ -122,10 +130,10 @@ There are three common choices of boundary conditions:
 
 .. math::
           
-        \mathcal{B}_i(u) = -{\alpha} \frac{du}{dx} - h(u-g),\quad \hbox{Robin condition}
+        \mathcal{B}_i(u) = -{\alpha} \frac{du}{dx} - H(u-g),\quad \hbox{Robin condition}
         
 
-Here, :math:`g` and :math:`a` are specified quantities.
+Here, :math:`g` and :math:`H` are specified quantities.
 
 From now on we shall use :math:`{u_{\small\mbox{e}}}(x)` as symbol for the *exact* solution,
 fulfilling
@@ -142,7 +150,7 @@ equation.
 .. admonition:: Remark on notation
 
    In the literature about the finite element method,
-   is common to use :math:`u` as the exact solution and :math:`u_h` as the
+   it is common to use :math:`u` as the exact solution and :math:`u_h` as the
    approximate solution, where :math:`h` is a discretization parameter. However,
    the vast part of the present text is about the approximate solutions,
    and having a subscript :math:`h` attached all the time
@@ -150,17 +158,24 @@ equation.
    implementation and mathematics that we strive to achieve in this text:
    when it is natural to use ``u`` and not ``u_h`` in
    code, we let the mathematical notation be dictated by the code's
-   preferred notation. After all, it is the powerful computer implementations
-   of the finite element method that justifies studying the mathematical
-   formulation and aspects of the method.
+   preferred notation. In the relatively few cases where we need to work
+   with the exact solution of the PDE problem we call it :math:`{u_{\small\mbox{e}}}` in
+   mathematics and ``u_e`` in the code (the function for computing
+   ``u_e`` is named ``u_exact``).
+   
+   .. After all, it is the powerful computer implementations
+   
+   .. of the finite element method that justifies studying the mathematical
+   
+   .. formulation and aspects of the method.
 
 
 
 
 .. _fem:deq:1D:models:simple:
 
-Simple model problems
----------------------
+Simple model problems and their solutions
+-----------------------------------------
 
 A common model problem used much in the forthcoming examples is
 
@@ -197,16 +212,30 @@ A third variant has a variable coefficient,
         
         
 
-We can easily solve these using ``sympy``. For :eq:`fem:deq:1D:model1`
-we can write the function
+We can easily solve these model problems
+using ``sympy``. Some common code is defined first:
+
+.. code-block:: python
+
+        import sympy as sym
+        x, L, C, D, c_0, c_1, = sym.symbols('x L C D c_0 c_1')
+
+The following function computes the solution
+symbolically for the model problem :eq:`fem:deq:1D:model1`:
 
 .. code-block:: python
 
         def model1(f, L, D):
             """Solve -u'' = f(x), u(0)=0, u(L)=D."""
+            # Integrate twice
             u_x = - sym.integrate(f, (x, 0, x)) + c_0
             u = sym.integrate(u_x, (x, 0, x)) + c_1
-            r = sym.solve([u.subs(x, 0)-0, u.subs(x,L)-D], [c_0, c_1])
+            # Set up 2 equations from the 2 boundary conditions and solve
+            # with respect to the integration constants c_0, c_1
+            r = sym.solve([u.subs(x, 0)-0,  # x=0 condition
+                           u.subs(x,L)-D],  # x=L condition
+                          [c_0, c_1])       # unknowns
+            # Substitute the integration constants in the solution
             u = u.subs(c_0, r[c_0]).subs(c_1, r[c_1])
             u = sym.simplify(sym.expand(u))
             return u
@@ -222,7 +251,7 @@ Calling ``model1(2, L, D)`` results in the solution
         
         
 
-Model :eq:`fem:deq:1D:model2` can be solved by
+The model problem :eq:`fem:deq:1D:model2` can be solved by
 
 .. code-block:: python
 
@@ -230,7 +259,9 @@ Model :eq:`fem:deq:1D:model2` can be solved by
             """Solve -u'' = f(x), u'(0)=C, u(L)=D."""
             u_x = - sym.integrate(f, (x, 0, x)) + c_0
             u = sym.integrate(u_x, (x, 0, x)) + c_1
-            r = sym.solve([sym.diff(u,x).subs(x, 0)-C, u.subs(x,L)-D], [c_0, c_1])
+            r = sym.solve([sym.diff(u,x).subs(x, 0)-C,  # x=0 cond.
+                           u.subs(x,L)-D],              # x=L cond.
+                          [c_0, c_1])
             u = u.subs(c_0, r[c_0]).subs(c_1, r[c_1])
             u = sym.simplify(sym.expand(u))
             return u
@@ -255,16 +286,36 @@ code,
             """Solve -(a*u')' = f(x), u(0)=C, u(L)=D."""
             au_x = - sym.integrate(f, (x, 0, x)) + c_0
             u = sym.integrate(au_x/a, (x, 0, x)) + c_1
-            r = sym.solve([u.subs(x, 0)-C, u.subs(x,L)-D], [c_0, c_1])
+            r = sym.solve([u.subs(x, 0)-C,
+                           u.subs(x,L)-D],
+                          [c_0, c_1])
             u = u.subs(c_0, r[c_0]).subs(c_1, r[c_1])
             u = sym.simplify(sym.expand(u))
             return u
+        
+        
+        def demo():
+            f = 2
+            u = model1(f, L, D)
+            print 'model1:', u, u.subs(x, 0), u.subs(x, L)
+            print sym.latex(u, mode='plain')
+            u = model2(f, L, C, D)
+            f = x
+            u = model2(f, L, C, D)
+            print 'model2:', u, sym.diff(u, x).subs(x, 0), u.subs(x, L)
+            print sym.latex(u, mode='plain')
+            u = model3(0, 1+x**2, L, C, D)
+            print 'model3:', u, u.subs(x, 0), u.subs(x, L)
+            print sym.latex(u, mode='plain')
+        
+        if __name__ == '__main__':
+            demo()
 
 With :math:`f(x)=0` and :math:`{\alpha}(x)=1+x^2` we get
 
 .. math::
          u(x) =
-        \frac{C \operatorname{atan}{\left (L \right )} - C \operatorname{atan}{\left (x \right )} + D \operatorname{atan}{\left (x \right )}}{\operatorname{atan}{\left (L \right )}}
+        \frac{C \tan^{-1}\left (L \right ) - C \tan^{-1}\left (x \right ) + D \tan^{-1}\left (x \right )}{\tan^{-1}\left (L \right )}
         
 
 .. _fem:deq:1D:residual:min:
@@ -281,13 +332,13 @@ The fundamental idea is to seek an approximate solution
         
 
 which means that :math:`u` can always be expressed as a linear combination
-of the basis functions :math:`\left\{ {{\varphi}}_i \right\}_{i\in{\mathcal{I}_s}}`, with :math:`{\mathcal{I}_s}` as
+of the basis functions :math:`\left\{ {{\psi}}_j \right\}_{j\in{\mathcal{I}_s}}`, with :math:`{\mathcal{I}_s}` as
 the index set :math:`\{0,\ldots,N\}`:
 
 .. math::
          u(x) = \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x){\thinspace .}
 
-The coefficients :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` are unknowns to be computed.
+The coefficients :math:`\left\{ {c}_j \right\}_{j\in{\mathcal{I}_s}}` are unknowns to be computed.
 
 (Later, in the section :ref:`fem:deq:1D:essBC`, we will see that if we specify boundary values of :math:`u` different
 from zero, we must look for an approximate solution
@@ -319,9 +370,9 @@ The nonzero result,
 is called the *residual* and measures the
 error in fulfilling the governing equation.
 
-Various principles for determining :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` try to minimize
+Various principles for determining :math:`\left\{ {c}_j \right\}_{j\in{\mathcal{I}_s}}` try to minimize
 :math:`R` in some sense. Note that :math:`R` varies with :math:`x` and
-the :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` parameters. We may write this dependence
+the :math:`\left\{ {c}_j \right\}_{j\in{\mathcal{I}_s}}` parameters. We may write this dependence
 explicitly as
 
 .. math::
@@ -413,10 +464,14 @@ resulting in :math:`N+1` equations for determining :math:`\left\{ {c}_i \right\}
 The Method of Weighted Residuals
 --------------------------------
 
+.. index:: weighted residuals
+
+.. index:: method of weighted residuals
+
 A generalization of the Galerkin method is to demand that :math:`R`
 is orthogonal to some space :math:`W`, but not necessarily the same
 space as :math:`V` where we seek the unknown function.
-This generalization is naturally called the *method of weighted residuals*:
+This generalization is called the *method of weighted residuals*:
 
 .. _Eq:fem:deq:1D:WRM0:
 
@@ -446,21 +501,56 @@ method with :math:`w_i = \partial R/\partial c_i`.
 
 .. index:: variational formulation
 
+.. index:: weak formulation
+
 
 .. admonition:: Variational formulation of the continuous problem
 
-   Formulations like :eq:`fem:deq:1D:WRM0` (or
-   :eq:`fem:deq:1D:WRM`) and :eq:`fem:deq:1D:Galerkin0`
-   (or :eq:`fem:deq:1D:Galerkin`) are known as
-   *variational formulations*.
+   Statements like :eq:`fem:deq:1D:Galerkin0`, :eq:`fem:deq:1D:Galerkin`,
+   :eq:`fem:deq:1D:WRM0`, or
+   :eq:`fem:deq:1D:WRM`)
+   are known as
+   `weak formulations <https://en.wikipedia.org/wiki/Weak_formulation>`__
+   or *variational formulations*. (Other terms are weak and variational forms.)
    These equations are in this text primarily used for a numerical approximation
    :math:`u\in V`, where :math:`V` is a *finite-dimensional* space with dimension
-   :math:`N+1`. However, we may also let :math:`V` be an *infinite-dimensional* space
-   containing the exact solution :math:`{u_{\small\mbox{e}}}(x)` such that also :math:`{u_{\small\mbox{e}}}`
-   fulfills the same variational formulation. The variational formulation is in
-   that case a mathematical way of stating the problem and acts as an
+   :math:`N+1`. However, we may also let the exact solution :math:`{u_{\small\mbox{e}}}` fulfill a
+   variational formulation :math:`(\mathcal{L}({u_{\small\mbox{e}}}),v)=0` $\forall v\in V$,
+   but the exact solution lies in general in a space with infinite
+   dimensions (because an infinite number of parameters are needed to
+   specify the solution). The variational formulation for :math:`{u_{\small\mbox{e}}}`
+   in an infinite-dimensional space :math:`V` is
+   a mathematical way of stating the problem and acts as an
    alternative to the usual formulation of a differential equation with
    initial and/or boundary conditions.
+   
+   Much of the literature on finite
+   element methods takes a differential equation problem and first
+   transforms it to a variational formulation in an infinite-dimensional space
+   :math:`V`, before searching for an approximate solution in a finite-dimensional
+   subspace of :math:`V`. However, we prefer the more intuitive approach with an
+   approximate solution :math:`u` in a finite-dimensional space :math:`V` inserted in
+   the differential equation, and then the resulting residual is demanded to be
+   orthogonal to :math:`V`.
+
+
+
+
+
+.. admonition:: Remark on terminology
+
+   The terms weak or variational formulations often refer to a statement like
+   :eq:`fem:deq:1D:Galerkin0` or :eq:`fem:deq:1D:WRM0`
+   after *integration by parts* has been performed (the integration by
+   parts technique is
+   explained in the section :ref:`fem:deq:1D:varform`).
+   The result after
+   integration by parts is what is obtained after taking the *first
+   variation* of a minimization problem (see
+   the section :ref:`fem:deq:1D:optimization`).
+   However, in this text we use variational formulation as a common term for
+   formulations which, in contrast to the differential equation :math:`R=0`,
+   instead demand that an average of :math:`R` is zero: :math:`(R,v)=0` for all :math:`v` in some space.
 
 
 
@@ -502,21 +592,6 @@ In the Galerkin method the test and trial spaces are the same (so far).
 
 .. in the Galerkin method.
 
-
-.. admonition:: Remark
-
-   It may be subject to debate whether
-   it is only the form of :eq:`fem:deq:1D:WRM0` or :eq:`fem:deq:1D:Galerkin0`
-   after integration by parts, as explained in the section :ref:`fem:deq:1D:varform`,
-   that qualifies for the term variational formulation. The result after
-   integration by parts is what is obtained after taking the *first
-   variation* of an optimization problem, see the section :ref:`fem:deq:1D:optimization`. However, here we use variational formulation as a common term for
-   formulations which, in contrast to the differential equation :math:`R=0`,
-   instead demand that an average of :math:`R` is zero: :math:`(R,v)=0` for all :math:`v` in some space.
-
-
-
-
 The collocation method  (1)
 ---------------------------
 
@@ -549,8 +624,11 @@ and
         
 
 Intuitively, we may think of :math:`\delta (x-x_{i})` as a very peak-shaped
-function around :math:`x=x_{i}` with integral 1, roughly visualized
-in Figure :ref:`fem:deq:1D:fig:Dirac`.
+function around :math:`x=x_{i}` with an integral :math:`\int_{-\infty}^\infty delta(x-x_{i})dx` that evaluates to unity. Mathematically, it can be shown that
+:math:`\delta (x-x_{i})` is the limit of a Gaussian function centered at
+:math:`x=x_{i}` with a standard deviation that approaches zero.
+Using this latter model, we can roughly visualize delta functions as
+done in Figure :ref:`fem:deq:1D:fig:Dirac`.
 Because of :eq:`fem:deq:1D:Dirac`, we can let :math:`w_i=\delta(x-x_{i})`
 be weighting functions in the method of weighted residuals,
 and :eq:`fem:deq:1D:WRM` becomes equivalent to
@@ -586,8 +664,8 @@ where :math:`w_i=1` for :math:`x\in\Omega_i` and :math:`w_i=0` otherwise.
 Examples on using the principles
 --------------------------------
 
-Let us now apply global basis functions to illustrate the principles
-for minimizing :math:`R`.
+Let us now apply global basis functions to illustrate the different
+principles for making the residual :math:`R` small.
 
 The model problem
 ~~~~~~~~~~~~~~~~~
@@ -691,7 +769,7 @@ in the least squares method require an expression for
         = \sum_{j\in{\mathcal{I}_s}} \frac{\partial c_j}{\partial c_i}{\psi}_j''(x)
         = {\psi}_i''(x){\thinspace .}  
 
-The governing equations for :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` are then
+The governing equations for the unknown parameters :math:`\left\{ {c}_j \right\}_{j\in{\mathcal{I}_s}}` are then
 
 .. math::
         
@@ -751,18 +829,18 @@ Since the coefficient matrix is diagonal we can easily solve for
         
         
 
-With the special choice of :math:`f(x)=2` can be calculated in ``sympy`` by
+With the special choice of :math:`f(x)=2`, the coefficients
+can be calculated in ``sympy`` by
 
 .. code-block:: python
 
-        from sympy import *
-        import sys
+        import sympy as sym
         
-        i, j = symbols('i j', integer=True)
-        x, L = symbols('x L')
+        i, j = sym.symbols('i j', integer=True)
+        x, L = sym.symbols('x L')
         f = 2
-        a = 2*L/(pi**2*(i+1)**2)
-        c_i = a*integrate(f*sin((i+1)*pi*x/L), (x, 0, L))
+        a = 2*L/(sym.pi**2*(i+1)**2)
+        c_i = a*sym.integrate(f*sym.sin((i+1)*sym.pi*x/L), (x, 0, L))
         c_i = simplify(c_i)
         print c_i
 
@@ -820,7 +898,7 @@ We therefore have
         (\sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j'', {\psi}_i)=-(f,{\psi}_i),\quad i\in{\mathcal{I}_s}{\thinspace .}  
 
 This equation can be rearranged to a form that explicitly shows
-that we get a linear system for the unknowns :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}`:
+that we get a linear system for the unknowns :math:`\left\{ {c}_j \right\}_{j\in{\mathcal{I}_s}}`:
 
 .. math::
         
@@ -830,6 +908,8 @@ For the particular choice of the basis functions :eq:`fem:deq:1D:ex:sines:psi`
 we get in fact the same linear system
 as in the least squares method
 because :math:`{\psi}''= -(i+1)^2\pi^2L^{-2}{\psi}`.
+Consequently, the solution :math:`u(x)` becomes identical to the one produced
+by the least squares method.
 
 The collocation method  (2)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -875,7 +955,8 @@ In the present model problem, with :math:`f(x)=2`, the exact solution is
 result in :math:`u(x)=8L^2\pi^{-3}\sin (\pi x/L)` and the
 collocation method leads to :math:`u(x)=2L^2\pi^{-2}\sin (\pi x/L)`.
 We can quickly use ``sympy`` to verify that the maximum error
-occurs at the midpoint :math:`x=L/2` and find what the errors are:
+occurs at the midpoint :math:`x=L/2` and find what the errors are.
+First we set up the error expressions:
 
 .. code-block:: python
 
@@ -884,16 +965,24 @@ occurs at the midpoint :math:`x=L/2` and find what the errors are:
         >>> x, L = sym.symbols('x L')
         >>> e_Galerkin = x*(L-x) - 8*L**2*sym.pi**(-3)*sym.sin(sym.pi*x/L)
         >>> e_colloc = x*(L-x) - 2*L**2*sym.pi**(-2)*sym.sin(sym.pi*x/L)
-        
-        >>> # Verify max error for x=L/2
+
+If the derivative of the errors vanish at :math:`x=L/2`, the errors reach
+their maximum values here (the errors vanish at the boundary points).
+
+.. code-block:: python
+
         >>> dedx_Galerkin = sym.diff(e_Galerkin, x)
         >>> dedx_Galerkin.subs(x, L/2)
         0
         >>> dedx_colloc = sym.diff(e_colloc, x)
         >>> dedx_colloc.subs(x, L/2)
         0
-        
-        # Compute max error: x=L/2, evaluate numerical, and simplify
+
+Finally, we can compute the maximum error at :math:`x=L/2` and evaluate
+the expressions numerically with three decimals:
+
+.. code-block:: python
+
         >>> sym.simplify(e_Galerkin.subs(x, L/2).evalf(n=3))
         -0.00812*L**2
         >>> sym.simplify(e_colloc.subs(x, L/2).evalf(n=3))
@@ -904,8 +993,8 @@ the error in the Galerkin or least squares method.
 
 .. _fem:deq:1D:varform:
 
-Integration by parts
---------------------
+Integration by parts  (1)
+-------------------------
 
 .. index:: integration by parts
 
@@ -933,7 +1022,7 @@ Galerkin formulation
          -(u'',v) = (f,v)\quad\forall v\in V{\thinspace .}  
 
 Using integration by parts in the Galerkin method,
-we can move a derivative of :math:`u` onto :math:`v`:
+we can "move" a derivative of :math:`u` onto :math:`v`:
 
 .. math::
         
@@ -983,7 +1072,8 @@ integration by parts also provides a method for implementing
 boundary conditions involving :math:`u'`.
 
 With the choice :eq:`fem:deq:1D:ex:sines:psi` of basis functions we see
-that the "boundary terms" :math:`{\psi}_i(L){\psi}_j'(L)` and :math:`{\psi}_i(0){\psi}_j'(0)`
+that the "boundary terms"
+:math:`{\psi}_i(L){\psi}_j'(L)` and :math:`{\psi}_i(0){\psi}_j'(0)`
 vanish since :math:`{\psi}_i(0)={\psi}_i(L)=0`.
 
 .. A boundary term associated with
@@ -991,6 +1081,11 @@ vanish since :math:`{\psi}_i(0)={\psi}_i(L)=0`.
 .. a location at the boundary where we have Dirichlet conditions will always
 
 .. vanish because :math:`{\psi}_i=0` at such locations.
+
+We therefore end up with the following alternative Galerkin formulation:
+
+.. math::
+         -(u'',v) = (u', v') = (f,v)\quad \forall v\in V{\thinspace .}
 
 .. index:: weak form
 
@@ -1041,8 +1136,9 @@ This :math:`u` gets the right value at :math:`x=L`:
 
 The idea is that for any boundary where :math:`u` is known we demand :math:`{\psi}_i` to
 vanish and construct a function :math:`B(x)` to attain the boundary value of :math:`u`.
-There are no restrictions how :math:`B(x)` varies with :math:`x` in the interior of the
-domain, so this variation needs to be constructed in some way.
+There are no restrictions on how :math:`B(x)` varies with :math:`x` in the interior of the
+domain, so this variation needs to be constructed in some way. Exactly how
+we decide the variation to be, is not important.
 
 For example, with :math:`u(0)=0` and
 :math:`u(L)=D`, we can choose :math:`B(x)=x D/L`, since this form ensures that
@@ -1060,11 +1156,13 @@ The unknown function is then sought on the form
 
 with :math:`{\psi}_i(0)={\psi}_i(L)=0`.
 
-The :math:`B(x)` function can be chosen in many ways as long as its boundary
+The particular shape of the :math:`B(x)` function is not important
+as long as its boundary
 values are correct. For example, :math:`B(x)=D(x/L)^p` for any power :math:`p`
-will work fine in the above example.
+will work fine in the above example. Another choice could be
+:math:`B(x)=D\sin (\pi x/(2L))`.
 
-As another example, consider a domain :math:`\Omega = [a,b]`
+As a more general example, consider a domain :math:`\Omega = [a,b]`
 where the boundary conditions are :math:`u(a)=U_a` and :math:`u(b)=U_b`.  A class
 of possible :math:`B(x)` functions is
 
@@ -1078,11 +1176,13 @@ of possible :math:`B(x)` functions is
         
 
 Real applications will most likely use the simplest version, :math:`p=1`,
-but here such a :math:`p` parameter was included to demonstrate the
-ambiguity in the construction of :math:`B(x)`.
+but here such a :math:`p` parameter was included to demonstrate that there
+are many choices of :math:`B(x)` in a problem. Fortunately, there is a general, unique
+technique for constructing :math:`B(x)` when we use finite element basis functions for
+:math:`V`.
 
 
-.. admonition:: Summary
+.. admonition:: How to deal with nonzero Dirichlet conditions
 
    The general procedure of incorporating Dirichlet boundary
    conditions goes as follows.
@@ -1127,7 +1227,11 @@ Abstract notation for variational formulations
 We have seen that variational formulations end up with a formula involving
 :math:`u` and :math:`v`, such as :math:`(u',v')` and a formula involving :math:`v` and known
 functions, such as :math:`(f,v)`. A widely used notation is to introduce an abstract
-variational statement written as :math:`a(u,v)=L(v)`,
+variational statement written as
+
+.. math::
+         a(u,v)=L(v)\quad\forall v\in V,
+
 where :math:`a(u,v)` is a so-called *bilinear form* involving all the terms
 that contain both the test and trial
 function, while :math:`L(v)` is a *linear form* containing all the terms without
@@ -1148,8 +1252,12 @@ where we have the definitions
 .. math::
          a(u,v) = (u',v'),\quad L(v) = (f,v){\thinspace .}  
 
-The term *linear* means that :math:`L(\alpha_1 v_1 + \alpha_2 v_2)
-=\alpha_1 L(v_1) + \alpha_2 L(v_2)` for two test functions :math:`v_1` and :math:`v_2`, and
+The term *linear* means that
+
+.. math::
+         L(\alpha_1 v_1 + \alpha_2 v_2) =\alpha_1 L(v_1) + \alpha_2 L(v_2)
+
+for two test functions :math:`v_1` and :math:`v_2`, and
 scalar parameters :math:`\alpha_1` and :math:`\alpha_2`. Similarly, the term *bilinear*
 means that :math:`a(u,v)` is linear in both its arguments:
 
@@ -1162,7 +1270,10 @@ means that :math:`a(u,v)` is linear in both its arguments:
         
 
 In nonlinear problems these linearity properties do not hold in general
-and the abstract notation is then :math:`F(u;v)=0`.
+and the abstract notation is then
+
+.. math::
+         F(u;v)=0\quad\forall v\in V{\thinspace .}
 
 The matrix system associated with :math:`a(u,v)=L(v)` can also be written in
 an abstract form by inserting :math:`v={\psi}_i` and :math:`u=\sum_j c_j{\psi}_j`
@@ -1186,7 +1297,8 @@ In many problems, :math:`a(u,v)` is symmetric such that
 :math:`a({\psi}_j,{\psi}_i) = a({\psi}_i,{\psi}_j)`. In those cases the
 coefficient matrix becomes symmetric, :math:`A_{i,j}=A_{j,i}`, a property
 that can simplify solution algorithms for linear systems
-and make them more stable in addition to saving memory and computations.
+and make them more stable. The property also reduces memory
+requirements and the computational work.
 
 The abstract notation :math:`a(u,v)=L(v)` for linear differential equation problems
 is much used in the literature and
@@ -1196,10 +1308,48 @@ frequently summarize variational forms using this notation.
 
 .. _fem:deq:1D:optimization:
 
-Variational problems and optimization of functionals
+Variational problems and minimization of functionals
 ----------------------------------------------------
 
-If :math:`a(u,v)=a(v,u)`, it can be shown that the variational statement
+Example
+~~~~~~~
+
+Many physical problems can be modeled as partial differential equation
+and as a minimization problem. For example, the deflection :math:`u(x)` of an
+elastic string subject to a transversal force :math:`f(x)`
+is governed by the differential equation problem
+
+.. math::
+         -u''(x) = f(x),\quad x\in (0,L),\quad x(0)=x(L)=0{\thinspace .}
+
+Equivalently, the deflection :math:`u(x)` is the function :math:`v` that minimizes
+the potential energy :math:`F(v)` in a string,
+
+.. math::
+         F(v) = \frac{1}{2}\int_0^L \left((v')^2 - fv\right){\, \mathrm{d}x}{\thinspace .}
+
+That is, :math:`F(u) = \min_{v\in V}F(v)`. The quantity :math:`F(v)` is called a
+functional: a function of a function. Functionals very often involve
+integral expressions as above.
+
+A range of physical problems can be formulated either as a differential
+equation or as a minimization of some functional. Quite often, the differential
+equation arises from Newton's 2nd law of motion while the functional
+expresses a certain kind of energy.
+
+Many traditional applications of the finite element method, especially
+in solid mechanics and constructions with beams and plates, start with
+formulating :math:`F(v)` from physical principles, such as minimization of
+elastic energy, and then proceeds with deriving :math:`a(u,v)=L(v)`, which
+is the formulation usually desired in software implementations.
+
+The general minimization problem
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The relation between a differential equation and minimization of a functional
+can be expressed in a general mathematical way using our abstract
+notation for a variational form: :math:`a(u,v)=L(v)`.
+It can be shown that the variational statement
 
 .. math::
          a(u,v)=L(v)\quad\forall v\in V,
@@ -1214,8 +1364,61 @@ over all functions :math:`v\in V`. That is,
 .. math::
          F(u)\leq F(v)\quad \forall v\in V{\thinspace .} 
 
-Inserting a :math:`v=\sum_j c_j{\psi}_j` turns minimization of :math:`F(v)` into
-minimization of a quadratic function
+Derivation
+~~~~~~~~~~
+
+To see this, we write :math:`F(u)\leq F(\eta)`, :math:`\forall\eta\in V` instead
+and set :math:`\eta=u + \epsilon v`, where :math:`v\in V` is an
+arbitrary function in :math:`V`.
+For any given arbitrary :math:`v`, we can view :math:`F(v)` as a function :math:`g(\epsilon)`
+and find the extrema of :math:`g`, which is a function of one variable.
+We have
+
+.. math::
+         F(\eta) = F(u+\epsilon v) = \frac{1}{2} a(u+\epsilon v,u + \epsilon v) - L(u + \epsilon v){\thinspace .}
+
+From the linearity of :math:`a` and :math:`L` we get
+
+.. math::
+        
+        g(\epsilon) &= F(u+\epsilon u)\\ 
+        &= \frac{1}{2} a(u + \epsilon v, u+\epsilon v) - L(u + \epsilon v)\\ 
+        &= \frac{1}{2} a(u, u+\epsilon v) + \frac{1}{2} \epsilon a(v, u+\epsilon u) - L(u) - \epsilon L(v)\\ 
+        &= \frac{1}{2} a(u, u) + \frac{1}{2} \epsilon a(u,v) + \frac{1}{2}\epsilon a(v, u) +
+        \frac{1}{2}\epsilon^2 a(v,v) - L(u) - \epsilon L(v){\thinspace .}
+        
+
+If we now assume that :math:`a` is symmetric, :math:`a(u,v)=a(v,u)`, we can write
+
+.. math::
+         g(\epsilon) = \frac{1}{2} a(u,u) + \epsilon a(u,v) + \frac{1}{2}\epsilon^2 a(v,v) -
+        L(u) -\epsilon L(v){\thinspace .}
+
+The extrema of :math:`g` is found by searching for :math:`\epsilon` such that
+:math:`g'(\epsilon)=0`:
+
+.. math::
+         g'(\epsilon) = a(u,v) - L(v) + \epsilon a(v,v) = 0{\thinspace .}
+
+This linear equation in :math:`\epsilon` has a solution :math:`\epsilon = (a(u,v) - L(u))/a(v,v)` if :math:`a(v,v) > 0`. But recall that :math:`a(u,v)=L(v)` for any :math:`v`, so
+we must have :math:`\epsilon =0`. Since the reasoning above holds for any :math:`v\in V`,
+the function :math:`\eta = u+\epsilon v` that makes :math:`F(\eta)` extreme must have
+:math:`\epsilon=0`, i.e., :math:`\eta = u`, the solution of :math:`a(u,v)=L(v)` for any :math:`v` in
+:math:`V`.
+
+Looking at :math:`g''(\epsilon) = a(v,v)`, we realize that :math:`\epsilon=0` corresponds
+to a unique minimum if :math:`a(v,v)>0`.
+
+The equivalence of a variational form :math:`a(u,v)=L(v)\ \forall v\in V` and
+the minimization problem :math:`F(u)\leq F(v)\ \forall v\in V` requires that
+1) :math:`a` is bilinear and :math:`L` is linear, 2) :math:`a(u,v)` is symmetric:
+:math:`a(u,v)=a(v,u)`, and 3) that :math:`a(v,v)>0`.
+
+Minimization of the discretized functional
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Inserting :math:`v=\sum_j c_j{\psi}_j` turns minimization of :math:`F(v)` into
+minimization of a quadratic function of the parameters :math:`c_0,\ldots,c_N`:
 
 .. math::
          \bar F(c_0,\ldots,c_N) = \sum_{j\in{\mathcal{I}_s}}\sum_{i\in{\mathcal{I}_s}} a({\psi}_i,{\psi}_j)c_ic_j - \sum_{j\in{\mathcal{I}_s}} L({\psi}_j)c_j
@@ -1228,16 +1431,20 @@ Minimization of :math:`\bar F` implies
 .. math::
          \frac{\partial\bar F}{\partial c_i}=0,\quad i\in{\mathcal{I}_s}{\thinspace .}
 
-After some algebra one finds
+After quite some algebra one finds
 
 .. math::
          \sum_{j\in{\mathcal{I}_s}} a({\psi}_i,{\psi}_j)c_j = L({\psi}_i),\quad i\in{\mathcal{I}_s},
 
-which is the same system as that arising from :math:`a(u,v)=L(v)`.
+which is the same system as the one arising from :math:`a(u,v)=L(v)`.
 
-Many traditional applications of the finite element method, especially
-in solid mechanics and structural analysis, start with formulating :math:`F(v)`
-from physical principles, such as minimization of energy, and then
-proceeds with deriving :math:`a(u,v)=L(v)`, which is the equation usually desired
-in implementations.
+Calculus of variations
+~~~~~~~~~~~~~~~~~~~~~~
+
+A branch of applied mathematics, called `calculus of variations <https://en.wikipedia.org/wiki/Calculus_of_variations>`__, deals
+with the technique of minimizing functionals to derive differential
+equations. The technique involves taking the *variation* (a kind of
+derivative) of functionals, which have given name to
+terms like variational form, variational
+problem, and variational formulation.
 

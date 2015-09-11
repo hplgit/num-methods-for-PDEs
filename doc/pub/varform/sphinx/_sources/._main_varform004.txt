@@ -5,7 +5,8 @@
 Boundary conditions: specified nonzero value
 ============================================
 
-We have to take special actions to incorporate Dirichlet conditions,
+We have to take special actions to incorporate nonzero
+Dirichlet conditions,
 such as :math:`u(L)=D`, into the computational procedures. The present
 section outlines alternative, yet mathematically equivalent, methods.
 
@@ -14,7 +15,7 @@ section outlines alternative, yet mathematically equivalent, methods.
 General construction of a boundary function
 -------------------------------------------
 
-In the section :ref:`fem:deq:1D:essBC:Bfunc` we introduce a boundary function :math:`B(x)`
+In the section :ref:`fem:deq:1D:essBC:Bfunc` we introduced a boundary function :math:`B(x)`
 to deal with nonzero Dirichlet boundary conditions for :math:`u`. The
 construction of such a function is not always trivial, especially not
 in multiple dimensions. However, a simple and general construction
@@ -57,13 +58,16 @@ The unknown function can then be written as
         
 
 where :math:`\nu(j)` maps unknown number :math:`j` in the equation system to
-node :math:`\nu(j)`. We can easily show that with this :math:`u`, a Dirichlet
+node :math:`\nu(j)`, :math:`{I_b}` is the set of indices corresponding to basis functions
+associated with nodes where Dirichlet conditions apply, and :math:`{\mathcal{I}_s}` is the
+set of indices used to number the unknowns from zero to :math:`N`.
+We can easily show that with this :math:`u`, a Dirichlet
 condition :math:`u(x_{k})=U_k` is fulfilled:
 
 .. math::
         
-        u(x_{k}) = \sum_{j\in{I_b}} U_j\underbrace{{\varphi}_j(x)}_{\neq 0
-        \hbox{ only for }j=k} +
+        u(x_{k}) = \sum_{j\in{I_b}} U_j\underbrace{{\varphi}_j(x_k)}_{\neq 0\,
+        \Leftrightarrow\,j=k} +
         \sum_{j\in{\mathcal{I}_s}} c_j\underbrace{{\varphi}_{\nu(j)}(x_{k})}_{=0,\ k\not\in{\mathcal{I}_s}}
         = U_k 
 
@@ -71,27 +75,40 @@ Some examples will further clarify the notation. With a regular
 left-to-right numbering of nodes in a mesh with P1 elements,
 and Dirichlet conditions at :math:`x=0`, we use finite element basis
 functions associated with the nodes :math:`1, 2, \ldots, N_n-1`, implying
-that  :math:`\nu(j)=j+1`, :math:`j=0,\ldots,N`, where :math:`N=N_n-2`. For the particular mesh
-below the expansion becomes
+that  :math:`\nu(j)=j+1`, :math:`j=0,\ldots,N`, where :math:`N=N_n-2`. Consider
+a particular mesh:
+
+.. figure:: fe_mesh1D_P1.png
+   :width: 500
+
+The expansion associated with this mesh becomes
 
 .. math::
          u(x) = U_0{\varphi}_0(x) + c_0{\varphi}_1(x) +
         c_1{\varphi}_2(x) + \cdots + c_4{\varphi}_5(x){\thinspace .}
         
 
-.. figure:: fe_mesh1D.png
-   :width: 500
+Switching to the more standard case of left-to-right numbering and
+boundary conditions :math:`u(0)=C`, :math:`u(L)=D`, we have :math:`N=N_n-3` and
 
-Here is a mesh with an irregular cell and node numbering:
+.. math::
+        
+        u(x) &= C{\varphi}_0 + D{\varphi}_{N_n-1} + \sum_{j\in{\mathcal{I}_s}} c_j{\varphi}_{j+1}\\ 
+        &= C{\varphi}_0 + D{\varphi}_{N_n} + c_0{\varphi}_1 + c_1{\varphi}_2 +\cdots
+        + c_N{\varphi}_{N_n-2}{\thinspace .}
+        
+
+Finite element meshes in non-trivial 2D and 3D geometries usually leads
+to an irregular cell and node numbering. Let us therefore take a look
+at an irregular numbering in 1D:
 
 .. figure:: fe_mesh1D_random_numbering.png
    :width: 500
 
-Say we in this latter mesh
-have Dirichlet conditions on the left-most and right-most
-node, with numbers 3 and 1, respectively. Then
-we can number the unknowns at the interior nodes from left
-to right, giving :math:`\nu(0)=0`, :math:`\nu(1)=4`, :math:`\nu(2)=5`, :math:`\nu(3)=2`.
+Say we in this mesh have Dirichlet conditions on the left-most and
+right-most node, with numbers 3 and 1, respectively.  We can number
+the unknowns at the interior nodes as we want, e.g., from left to
+right, resulting in :math:`\nu(0)=0`, :math:`\nu(1)=4`, :math:`\nu(2)=5`, :math:`\nu(3)=2`.
 This gives
 
 .. math::
@@ -104,22 +121,12 @@ and
         = U_3{\varphi}_3 + U_1{\varphi}_1 + c_0{\varphi}_0 + c_1{\varphi}_4
         + c_2{\varphi}_5 + c_3{\varphi}_2{\thinspace .}
 
-Switching to the more standard case of left-to-right numbering and
-boundary conditions :math:`u(0)=C`, :math:`u(L)=D`, we have :math:`N=N_n-3` and
-
-.. math::
-        
-        u(x) &= C{\varphi}_0 + D{\varphi}_{N_n-1} + \sum_{j\in{\mathcal{I}_s}} c_j{\varphi}_{j+1}\\ 
-        &= C{\varphi}_0 + D{\varphi}_{N_n} + c_0{\varphi}_1 + c_1{\varphi}_2 +\cdots
-        + c_N{\varphi}_{N_n-2}{\thinspace .}
-        
-
-The idea of constructing :math:`B` described here generalizes almost
+The idea of constructing :math:`B`, described here, generalizes almost
 trivially to 2D and 3D problems: :math:`B=\sum_{j\in{I_b}}U_j{\varphi}_j`,
 where :math:`{I_b}` is the index set containing the numbers of all the
 nodes on the boundaries where Dirichlet values are prescribed.
 
-Example on computing with finite element-based a boundary function
+Example on computing with a finite element-based boundary function
 ------------------------------------------------------------------
 
 Let us see how the model problem :math:`-u''=2`, :math:`u(0)=C`, :math:`u(L)=D`,
@@ -140,7 +147,7 @@ integrating by parts results in a linear system with
 
 We choose :math:`{\psi}_i={\varphi}_{i+1}`, :math:`i=0,\ldots,N=N_n-3`
 if the node numbering is from left
-to right. (Later we also need the assumption that the cells too
+to right. (Later we also need the assumption that cells too
 are numbered from left to right.)
 The boundary function becomes
 
@@ -156,8 +163,9 @@ We can write the matrix and right-hand side entries as
 
 .. math::
         
-        A_{i-1,j-1} = \int_0^L {\varphi}_i'(x){\varphi}_j'(x) {\, \mathrm{d}x},\quad
-        b_{i-1} = \int_0^L (f(x) - C{\varphi}_{0}'(x) - D{\varphi}_{N_n-1}'(x)){\varphi}_i'(x) {\, \mathrm{d}x},
+        A_{i-1,j-1} &= \int_0^L {\varphi}_i'(x){\varphi}_j'(x) {\, \mathrm{d}x},\\ 
+        b_{i-1} &=
+        \int_0^L (f(x){\varphi}_i'(x) - (C{\varphi}_{0}'(x) + D{\varphi}_{N_n-1}'(x)){\varphi}_i'(x) ){\, \mathrm{d}x},
         
 
 for :math:`i,j = 1,\ldots,N+1=N_n-2`. Note that we have here used
@@ -173,61 +181,79 @@ a nonzero contribution from the first cell,
 :math:`\Omega^{(0)}=[x_{0},x_{1}]`
 since :math:`{\varphi}_{0}'(x)=0` on all other cells. Moreover,
 :math:`{\varphi}_{0}'(x){\varphi}_i'(x) {\, \mathrm{d}x} \neq 0` only for :math:`i=0` and :math:`i=1`
-(but :math:`i=0` is excluded),
+(but node :math:`i=0` is excluded from the formulation),
 since :math:`{\varphi}_{i}=0` on the first cell if :math:`i>1`.
 With a similar reasoning we realize that
 :math:`D\int_0^L {\varphi}_{N_n-1}'(x)){\varphi}_i'(x) {\, \mathrm{d}x}` can only get
 a nonzero contribution from the last cell.
 From the explanations of the
-calculations in the document `Approximation of functions <http://tinyurl.com/k3sdbuv/pub>`__ [Ref1]_ we then find that
+calculations in the document `Approximation of functions <http://tinyurl.com/k3sdbuv/pub/approx>`__ [Ref1]_ we then find that
 
 .. math::
-         \int_0^L {\varphi}_{0}'(x){\varphi}_{1}'(x) {\, \mathrm{d}x} =
-        (-\frac{1}{h})\cdot\frac{1}{h}\cdot h = -\frac{1}{h},\quad
-        \int_0^L {\varphi}_{N_n-1}'(x){\varphi}_{N_n-2}'(x) {\, \mathrm{d}x} =
-        \frac{1}{h}\cdot(-\frac{1}{h})\cdot h = -\frac{1}{2}{\thinspace .}
+        
+        \int_0^L {\varphi}_{0}'(x){\varphi}_{1}'(x) {\, \mathrm{d}x} &=
+        (-\frac{1}{h})\cdot\frac{1}{h}\cdot h = -\frac{1}{h},\\ 
+        \int_0^L {\varphi}_{N_n-1}'(x){\varphi}_{N_n-2}'(x) {\, \mathrm{d}x} &=
+        \frac{1}{h}\cdot(-\frac{1}{h})\cdot h = -\frac{1}{h}{\thinspace .}
+        
 
-The extra boundary term because of :math:`B(x)` boils down to adding
-:math:`C/h` to :math:`b_{0}` and :math:`D/h` to :math:`b_{N}`.
-[**hpl 1**: These calculations had some errors - redo them in detail!]
+With these expressions we get
+
+.. math::
+         b_0 = \int_0^Lf(x){\varphi}_1{\, \mathrm{d}x} - C(-\frac{1}{h}),\quad
+        b_N = \int_0^L f(x){\varphi}_{N_n-2}{\, \mathrm{d}x} - D(-\frac{1}{h}){\thinspace .}
 
 Cellwise computations on the reference element
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 As an equivalent alternative, we now turn to cellwise computations.
-The element matrices and vectors are calculated as the section :ref:`fem:deq:1D:comp:elmwise`, so we concentrate on the impact of
-the new term involving :math:`B(x)`.
-We observe that :math:`C{\varphi}_0'=0` on all cells except :math:`e=0`,
-and :math:`D{\varphi}_{N_n-1}'=0` on all cells except :math:`e=N_e`.
-In this case there is only one unknown in these cells
-since :math:`u(0)` and :math:`u(L)` are prescribed, so
-the element vector has only one entry. The entry for the
-last cell, :math:`e=N_e`, becomes
+The element matrices and vectors are calculated as in the section :ref:`fem:deq:1D:comp:elmwise`, so we concentrate on the impact of
+the new term involving :math:`B(x)`. This new term,
+:math:`B'=C{\varphi}_0' + D{\varphi}_{N_n-1}'`, vanishes on all cells except
+for :math:`e=0` and :math:`e=N_e`. Over the first cell (:math:`e=0`) the :math:`B'(x)` function
+in local coordinates reads
+
+.. math::
+         \frac{dB}{dx} = C\frac{2}{h}\frac{d{\tilde{\varphi}}_0}{dX},
+
+while over the last cell (:math:`e=N_e`) it looks like
+
+.. math::
+         \frac{dB}{dx} = D\frac{2}{h}\frac{d{\tilde{\varphi}}_1}{dX}{\thinspace .}
+
+For an arbitrary interior cell, we have the formula
+
+.. math::
+         \tilde b_r^{(e)} = \int_{-1}^1 f(x(X)){\tilde{\varphi}}_r(X)\frac{h}{2}{\, \mathrm{d}X},
+
+for an entry in the local element vector.
+In the first cell, the value at local node 0 is known so only the value
+at local node 1 is unknown. The associated element vector entry becomes
 
 .. math::
         
-        \tilde b_0^{(e)} = \int_{-1}^1 \left(
-        f - D\frac{2}{h}\frac{d{\tilde{\varphi}}_1}{dX}\right)
-        {\tilde{\varphi}}_0\frac{h}{2} {\, \mathrm{d}X}
-        = (\frac{h}{2}(2 - D\frac{2}{h}\frac{1}{2})
-        \int_{-1}^1 {\tilde{\varphi}}_0 {\, \mathrm{d}X} =  h - D/2{\thinspace .}
+        \tilde b_0^{(1)} = \int_{-1}^1 \left(f{\tilde{\varphi}}_1 -
+        C\frac{2}{h}\frac{d{\tilde{\varphi}}_0}{dX}\frac{2}{h}\frac{d{\tilde{\varphi}}_1}{dX}\right)
+        \frac{h}{2} {\, \mathrm{d}X} = \frac{h}{2} 2\int_{-1}^1 {\tilde{\varphi}}_1  {\, \mathrm{d}X}
+        - C\frac{2}{h}(-\frac{1}{2})\frac{2}{h}\frac{1}{2}\frac{h}{2}\cdot 2
+        = h + C\frac{1}{h}{\thinspace .}
         
 
-Similar computations on the first cell yield
+The value at local node 1 in the last cell is known so the
+element vector here is
 
 .. math::
         
-        \tilde b_0^{(0)} = \int_{-1}^1 \left(f - C\frac{2}{h}
-        \frac{d{\tilde{\varphi}}_0}{dX}\right)
-        {\tilde{\varphi}}_1\frac{h}{2} {\, \mathrm{d}X}
-        = (\frac{h}{2}(2 + C\frac{2}{h}\frac{1}{2})
-        \int_{-1}^1 {\tilde{\varphi}}_1 {\, \mathrm{d}X} =  h + C/2{\thinspace .}
+        \tilde b_0^{N_e} = \int_{-1}^1 \left(f{\tilde{\varphi}}_0 -
+        D\frac{2}{h}\frac{d{\tilde{\varphi}}_1}{dX}\frac{2}{h}\frac{d{\tilde{\varphi}}_0}{dX}\right)
+        \frac{h}{2} {\, \mathrm{d}X} = \frac{h}{2} 2\int_{-1}^1 {\tilde{\varphi}}_0  {\, \mathrm{d}X}
+        - D\frac{2}{h}\frac{1}{2}\frac{2}{h}(-\frac{1}{2})\frac{h}{2}\cdot 2
+        = h + D\frac{1}{h}{\thinspace .}
         
 
-When assembling these contributions, we see that :math:`b_0` gets
-right-hand side of the linear system gets an extra term
-:math:`C/2` and :math:`b_{N}` gets
-:math:`-D/2`, as in the computations in the physical domain.
+The contributions from the :math:`B(x)` function to the global right-hand side
+vector becomes :math:`C/h` for :math:`b_0` and :math:`D/h` for :math:`b_N`, exactly as we
+computed in the physical domain.
 
 .. _fem:deq:1D:fem:essBC:Bfunc:modsys:
 
@@ -263,13 +289,17 @@ values:
 
 Note that the collections of unknowns
 :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}` in :eq:`fem:deq:1D:fem:essBC:Bfunc:modsys:utrad`
-and :eq:`fem:deq:1D:fem:essBC:Bfunc:modsys:uall` are different:
+and :eq:`fem:deq:1D:fem:essBC:Bfunc:modsys:uall` are different.
+The index set :math:`{\mathcal{I}_s}=\{0,\ldots,N\}` always goes to :math:`N`, and the
+number of unknowns is :math:`N+1`, but
 in :eq:`fem:deq:1D:fem:essBC:Bfunc:modsys:utrad` the unknowns
-correspond to
-nodes where :math:`u` is not known, while
-in :eq:`fem:deq:1D:fem:essBC:Bfunc:modsys:utrad` the unknowns
-cover :math:`u` values at all the
-nodes.
+correspond to nodes where :math:`u` is not known, while
+in :eq:`fem:deq:1D:fem:essBC:Bfunc:modsys:uall` the unknowns
+cover :math:`u` values at all the nodes. So, if the index set
+:math:`{I_b}` contains :math:`N_b` node numbers where :math:`u` is prescribed,
+we have that :math:`N=N_n-N_b` in
+:eq:`fem:deq:1D:fem:essBC:Bfunc:modsys:utrad` and
+:math:`N=N_n` in :eq:`fem:deq:1D:fem:essBC:Bfunc:modsys:uall`.
 
 The idea is to compute the entries in the linear system as if no
 Dirichlet values are prescribed. Afterwards, we modify the linear system
@@ -383,7 +413,10 @@ The complete matrix system, involving all degrees of freedom, takes the form
 
 Incorporation of Dirichlet values can now be done by replacing
 the first and last equation by
-:math:`c_0=0` and :math:`c_N=D`. This action changes the system to
+the very simple equations :math:`c_0=0` and :math:`c_N=D`, respectively.
+Note that the factor :math:`1/h` in front of the matrix then requires
+a factor :math:`h` to be introduce appropriately on the diagonal in the first and last
+row of the matrix.
 
 .. _Eq:fem:deq:1D:ex1:Ab:glob3:
 
@@ -438,8 +471,9 @@ the first and last equation by
         
 
 Note that because we do not require :math:`{\varphi}_i(0)=0` and
-:math:`{\varphi}_i(L)`, :math:`i\in{\mathcal{I}_s}`, the boundary term :math:`[u'v]_0^L` gives in
-principle contributions :math:`u'(0){\varphi}_0(0)` to :math:`b_0` and
+:math:`{\varphi}_i(L)=0`, :math:`i\in{\mathcal{I}_s}`, the boundary term :math:`[u'v]_0^L`,
+in principle, gives
+contributions :math:`u'(0){\varphi}_0(0)` to :math:`b_0` and
 :math:`u'(L){\varphi}_N(L)` to :math:`b_N` (:math:`u'{\varphi}_i` vanishes for :math:`x=0` or
 :math:`x=L` for :math:`i=1,\ldots,N-1`).  Nevertheless, we erase these
 contributions in :math:`b_0` and :math:`b_N` and insert boundary values instead. This
@@ -453,16 +487,19 @@ Symmetric modification of the linear system
 -------------------------------------------
 
 The original matrix system :ref:`(4.3) <Eq:fem:deq:1D:ex1:Ab:glob>` is symmetric,
-but the modifications in :eq:`fem:deq:1D:ex1:Ab:glob3` destroy the
+but the modifications in :eq:`fem:deq:1D:ex1:Ab:glob3` destroy this
 symmetry. Our described modification will in general destroy an
 initial symmetry in the matrix system. This is not a particular
 computational disadvantage for tridiagonal systems arising in 1D
 problems, but may be more serious in 2D and 3D problems when the
 systems are large and exploiting symmetry can be important for halving
-the storage demands, speeding up computations, and/or making the
-solution algorithm more robust.  Therefore, an alternative
-modification which preserves symmetry is frequently applied.
+the storage demands and speeding up computations. Methods for solving
+symmetric matrix are also usually more stable and efficient than those
+for non-symmetric systems.  Therefore, an alternative modification
+which preserves symmetry is attractive.
 
+One can formulate a general algorithm for incorporating a Dirichlet
+condition in a symmetric way.
 Let :math:`c_k` be a coefficient corresponding to a known value
 :math:`u(x_{k}) = U_k`.
 We want to replace equation :math:`k` in the system by :math:`c_k=U_k`, i.e.,
@@ -550,16 +587,14 @@ Modification of the element matrix and vector
 ---------------------------------------------
 
 The modifications of the global linear system can alternatively
-be done for the element matrix and vector. (The assembled
-system will get the value :math:`n` on the main diagonal if :math:`n` elements contribute
-to the same unknown, but the factor :math:`n` will also appear on the
-right-hand side and hence cancel out.)
-
-We have, in the present computational example, the element matrix and vector
+be done for the element matrix and vector. Let us perform the
+associated calculations in the computational example where
+the element matrix and vector is given by
 :ref:`(4.6) <Eq:fem:deq:1D:ex1:Ab:elm>`. The modifications are needed in
-cells where one of the degrees of freedom is known. Here, this means
+cells where one of the degrees of freedom is known. In the
+present example, this means
 the first and last cell. We compute the element matrix
-and vector as there are no Dirichlet conditions. The boundary term
+and vector as if there were no Dirichlet conditions. The boundary term
 :math:`[u'v]_0^L` is simply forgotten at nodes that have Dirichlet conditions
 because the modification of the element vector will anyway erase the
 contribution from the boundary term. In the first cell,

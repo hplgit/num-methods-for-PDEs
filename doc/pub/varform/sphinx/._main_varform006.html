@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -57,8 +56,8 @@
        </style>
       </head>
     
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -70,18 +69,18 @@
         <li class="right" >
           <a href="._main_varform005.html" title="Boundary conditions: specified derivative"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">Stationary variational forms</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Stationary variational forms</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="implementation">
 <span id="fem-deq-1d-code-global"></span><h1>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h1>
-<p>It is tempting to create a
+<p>At this point, it is sensible to create a
 program with symbolic calculations to perform all the steps in the
 computational machinery,
 both for automating the work and for documenting the complete algorithms.
@@ -92,7 +91,9 @@ An implementation will also act as a structured summary of all these details.</p
 <h2>Global basis functions<a class="headerlink" href="#global-basis-functions" title="Permalink to this headline">¶</a></h2>
 <p>We first consider implementations when <span class="math">\({\psi}_i\)</span> are global functions
 are hence different from zero on most of <span class="math">\(\Omega =[0,L]\)</span> so all integrals
-need integration over the entire domain. Since the expressions for
+need integration over the entire domain. (Finite element basis functions,
+where we utilize their local support and perform integrations over
+cells, will be treated later.) Since the expressions for
 the entries in the linear system depend on the differential equation
 problem being solved, the user must supply the necessary formulas via
 Python functions. The implementations here attempt to perform symbolic
@@ -109,13 +110,13 @@ functions and their derivatives in symbolic form. More precisely,
 {\thinspace .}\]</div>
 <p>Similarly, <code class="docutils literal"><span class="pre">integrand_rhs(psi,</span> <span class="pre">i)</span></code> returns the integrand
 for entry number <span class="math">\(i\)</span> in the right-hand side vector.</p>
-<p>Since we also have contributions to the right-hand side vector,
-and potentially also the
-matrix, from boundary terms without any integral, we introduce two
+<p>Since we also have contributions to the right-hand side vector
+(and potentially also the
+matrix) from boundary terms without any integral, we introduce two
 additional functions, <code class="docutils literal"><span class="pre">boundary_lhs(psi,</span> <span class="pre">i,</span> <span class="pre">j)</span></code> and
 <code class="docutils literal"><span class="pre">boundary_rhs(psi,</span> <span class="pre">i)</span></code> for returning terms in the variational
 formulation that are not to be integrated over the domain <span class="math">\(\Omega\)</span>.
-Examples shown later will explain in more detail how these
+Examples, to be shown later, will explain in more detail how these
 user-supplied function may look like.</p>
 <p>The linear system can be computed and solved symbolically by
 the following function:</p>
@@ -163,7 +164,7 @@ in <code class="docutils literal"><span class="pre">sympy</span></code>).</p>
 numerical integration, symbolic expressions must be converted to
 Python functions (using <code class="docutils literal"><span class="pre">lambdify</span></code>), and the expressions cannot contain
 other symbols than <code class="docutils literal"><span class="pre">x</span></code>. The real <code class="docutils literal"><span class="pre">solve</span></code> routine in the
-<a class="reference external" href="http://tinyurl.com/nm5587k/fem/varform1D.py">varform1D.py</a>
+<a class="reference external" href="http://tinyurl.com/nm5587k/varform/varform1D.py">varform1D.py</a>
 file has error checking and meaningful error messages in such cases.
 The <code class="docutils literal"><span class="pre">solve</span></code> code below is a condensed version of the real one, with
 the purpose of showing how to automate the Galerkin or least squares
@@ -220,7 +221,7 @@ is <span class="math">\(B(x)=1-x^3\)</span>. The unknown function is then writte
 \[u(x) = B(x) + \sum_{j\in{\mathcal{I}_s}} c_j{\psi}_j(x){\thinspace .}\]</div>
 <p>Let us use the Galerkin method to derive the variational formulation.
 Multiplying the differential
-equation by <span class="math">\(v\)</span> and integrate by parts yield</p>
+equation by <span class="math">\(v\)</span> and integrating by parts yield</p>
 <div class="math">
 \[\int_0^1 u'v' {\, \mathrm{d}x} = \int_0^1 fv {\, \mathrm{d}x}\quad\forall v\in V,\]</div>
 <p>and with <span class="math">\(u=B + \sum_jc_j{\psi}_j\)</span> we get the linear system</p>
@@ -228,7 +229,7 @@ equation by <span class="math">\(v\)</span> and integrate by parts yield</p>
 \[\sum_{j\in{\mathcal{I}_s}}\left(\int_0^1{\psi}_i'{\psi}_j' {\, \mathrm{d}x}\right)c_j =
 \int_0^1(f{\psi}_i-B'{\psi}_i') {\, \mathrm{d}x},
 \quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
-<p>The application can be coded as follows in <code class="docutils literal"><span class="pre">sympy</span></code>:</p>
+<p>The application can be coded as follows with <code class="docutils literal"><span class="pre">sympy</span></code>:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">x</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s">&#39;x b&#39;</span><span class="p">)</span>
 <span class="n">f</span> <span class="o">=</span> <span class="n">b</span>
 <span class="n">B</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">x</span><span class="o">**</span><span class="mi">3</span>
@@ -254,13 +255,16 @@ equation by <span class="math">\(v\)</span> and integrate by parts yield</p>
 </pre></div>
 </div>
 <p>The printout of <code class="docutils literal"><span class="pre">u</span></code> reads <code class="docutils literal"><span class="pre">-b*x**2/2</span> <span class="pre">+</span> <span class="pre">b*x/2</span> <span class="pre">-</span> <span class="pre">x</span> <span class="pre">+</span> <span class="pre">1</span></code>.
-Note that expanding <code class="docutils literal"><span class="pre">u</span></code> and then simplifying is in the present case
-necessary to get a compact, final expression with <code class="docutils literal"><span class="pre">sympy</span></code>.
-A non-expanded <code class="docutils literal"><span class="pre">u</span></code> might be preferable in other cases - this depends on
+Note that expanding <code class="docutils literal"><span class="pre">u</span></code>, before simplifying, is necessary
+in the present case
+to get a compact, final expression with <code class="docutils literal"><span class="pre">sympy</span></code>. Doing <code class="docutils literal"><span class="pre">expand</span></code> before
+<code class="docutils literal"><span class="pre">simplify</span></code> is a common strategy for simplifying expressions in
+<code class="docutils literal"><span class="pre">sympy</span></code>. However,
+a non-expanded <code class="docutils literal"><span class="pre">u</span></code> might be preferable in other cases - this depends on
 the problem in question.</p>
 <p>The exact solution <span class="math">\({u_{\small\mbox{e}}}(x)\)</span> can be derived by
 some <code class="docutils literal"><span class="pre">sympy</span></code> code that closely follows the examples in
-the section <a class="reference internal" href="._main_varform001.html#fem-deq-1d-models-simple"><span>Simple model problems</span></a>. The idea is to integrate
+the section <a class="reference internal" href="._main_varform001.html#fem-deq-1d-models-simple"><span class="std std-ref">Simple model problems and their solutions</span></a>. The idea is to integrate
 <span class="math">\(-u''=b\)</span> twice and determine the integration constants from
 the boundary conditions:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">C1</span><span class="p">,</span> <span class="n">C2</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s">&#39;C1 C2&#39;</span><span class="p">)</span>    <span class="c"># integration constants</span>
@@ -278,7 +282,8 @@ the boundary conditions:</p>
 <span class="math">\({u_{\small\mbox{e}}}(x)\)</span> is a parabola and our approximate <span class="math">\(u\)</span> contains polynomials up to
 degree 4. It suffices to have <span class="math">\(N=1\)</span>, i.e., polynomials of degree
 2, to recover the exact solution.</p>
-<p>We can play around with the code and test that with <span class="math">\(f\sim x^p\)</span>,
+<p>We can play around with the code and test that with <span class="math">\(f=Kx^p\)</span>, for
+some constants <span class="math">\(K\)</span> and <span class="math">\(p\)</span>,
 the solution is a polynomial of degree <span class="math">\(p+2\)</span>, and <span class="math">\(N=p+1\)</span> guarantees
 that the approximate solution is exact.</p>
 <p>Although the symbolic code is capable of integrating many choices of <span class="math">\(f(x)\)</span>,
@@ -301,17 +306,25 @@ boundary conditions</li>
 <p>Point 1 and 2 can be taken care of by letting the user supply
 functions defining the integrands and boundary terms on the
 left- and right-hand side of the equation system:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">integrand_lhs</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
-<span class="n">boundary_lhs</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
-<span class="n">integrand_rhs</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
-<span class="n">boundary_rhs</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Here, <code class="docutils literal"><span class="pre">phi</span></code> is a dictionary where <code class="docutils literal"><span class="pre">phi[q]</span></code> holds a list of
-the derivatives of order <code class="docutils literal"><span class="pre">q</span></code> of the basis functions at the
-an evaluation point; <code class="docutils literal"><span class="pre">r</span></code> and <code class="docutils literal"><span class="pre">s</span></code> are indices for the corresponding
-entries in the element matrix and vector, and <code class="docutils literal"><span class="pre">x</span></code> is the global
-coordinate value corresponding to the current evaluation point.</p>
+<blockquote>
+<div><ul class="simple">
+<li>Integrand on the left-hand side: <code class="docutils literal"><span class="pre">ilhs(e,</span> <span class="pre">phi,</span> <span class="pre">r,</span> <span class="pre">s,</span> <span class="pre">X,</span> <span class="pre">x,</span> <span class="pre">h)</span></code></li>
+<li>Integrand on the right-hand side: <code class="docutils literal"><span class="pre">irhs(e,</span> <span class="pre">phi,</span> <span class="pre">r,</span> <span class="pre">X,</span> <span class="pre">x,</span> <span class="pre">h)</span></code></li>
+<li>Boundary term on the left-hand side: <code class="docutils literal"><span class="pre">blhs</span> <span class="pre">(e,</span> <span class="pre">phi,</span> <span class="pre">r,</span> <span class="pre">s,</span> <span class="pre">X,</span> <span class="pre">x,</span> <span class="pre">h)</span></code></li>
+<li>Boundary term on the right-hand side: <code class="docutils literal"><span class="pre">brhs</span> <span class="pre">(e,</span> <span class="pre">phi,</span> <span class="pre">r,</span> <span class="pre">s,</span> <span class="pre">X,</span> <span class="pre">x,</span> <span class="pre">h)</span></code></li>
+</ul>
+</div></blockquote>
+<p>Here, <code class="docutils literal"><span class="pre">phi</span></code> is a dictionary where <code class="docutils literal"><span class="pre">phi[q]</span></code> holds a list of the
+derivatives of order <code class="docutils literal"><span class="pre">q</span></code> of the basis functions with respect to the
+physical coordinate <span class="math">\(x\)</span>.  The derivatives are available as Python
+functions of <code class="docutils literal"><span class="pre">X</span></code>.  For example, <code class="docutils literal"><span class="pre">phi[0][r](X)</span></code> means <span class="math">\({\tilde{\varphi}}_r(X)\)</span>,
+and <code class="docutils literal"><span class="pre">phi[1][s](X,</span> <span class="pre">h)</span></code> means <span class="math">\(d{\tilde{\varphi}}_s (X)/dx\)</span>.  The <code class="docutils literal"><span class="pre">r</span></code> and <code class="docutils literal"><span class="pre">s</span></code>
+arguments in the above functions correspond to the index in the
+integrand contribution from an integration point to <span class="math">\(\tilde
+A^{(e)}_{r,s}\)</span> and <span class="math">\(\tilde b^{(e)}_r\)</span>. The variables <code class="docutils literal"><span class="pre">e</span></code> and <code class="docutils literal"><span class="pre">h</span></code> are
+the current element number and the length of the cell, respectively.
+Specific examples below will make it clear how to construction these
+Python functions.</p>
 <p>Given a mesh represented by <code class="docutils literal"><span class="pre">vertices</span></code>, <code class="docutils literal"><span class="pre">cells</span></code>, and <code class="docutils literal"><span class="pre">dof_map</span></code> as
 explained before, we can write a pseudo Python code to list all
 the steps in the computational algorithm for finite element solution
@@ -323,31 +336,33 @@ of a differential equation.</p>
     <span class="c"># Compute element matrix and vector</span>
     <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">])</span>  <span class="c"># no of dofs in this element</span>
     <span class="n">h</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="n">cells</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">1</span><span class="p">]]</span> <span class="o">-</span> <span class="n">vertices</span><span class="p">[</span><span class="n">cells</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">1</span><span class="p">]]</span>
-    <span class="o">&lt;</span><span class="n">Declare</span> <span class="n">element</span> <span class="n">matrix</span> <span class="ow">and</span> <span class="n">vector</span><span class="p">:</span> <span class="n">A_e</span><span class="p">,</span> <span class="n">b_e</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">Initialize</span> <span class="n">element</span> <span class="n">matrix</span> <span class="ow">and</span> <span class="n">vector</span><span class="p">:</span> <span class="n">A_e</span><span class="p">,</span> <span class="n">b_e</span><span class="o">&gt;</span>
 
     <span class="c"># Integrate over the reference cell</span>
     <span class="n">points</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">numerical</span> <span class="n">integration</span> <span class="n">rule</span><span class="o">&gt;</span>
     <span class="k">for</span> <span class="n">X</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
         <span class="n">phi</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">basis</span> <span class="n">functions</span> <span class="ow">and</span> <span class="n">derivatives</span> <span class="n">at</span> <span class="n">X</span><span class="o">&gt;</span>
         <span class="n">detJ</span> <span class="o">=</span> <span class="n">h</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">dX</span> <span class="o">=</span> <span class="n">detJ</span><span class="o">*</span><span class="n">w</span>
+
         <span class="n">x</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">affine</span> <span class="n">mapping</span> <span class="kn">from</span> <span class="nn">X</span><span class="o">&gt;</span>
         <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
             <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
-                <span class="n">A_e</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="o">+=</span> <span class="n">integrand_lhs</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">detJ</span><span class="o">*</span><span class="n">w</span>
-            <span class="n">b_e</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">+=</span> <span class="n">integrand_rhs</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">detJ</span><span class="o">*</span><span class="n">w</span>
+                <span class="n">A_e</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ilhs</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span><span class="o">*</span><span class="n">dX</span>
+            <span class="n">b_e</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">+=</span> <span class="n">irhs</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span><span class="o">*</span><span class="n">dX</span>
 
     <span class="c"># Add boundary terms</span>
     <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
-            <span class="n">A_e</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="o">+=</span> <span class="n">boundary_lhs</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">detJ</span><span class="o">*</span><span class="n">w</span>
-        <span class="n">b_e</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">+=</span> <span class="n">boundary_rhs</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">detJ</span><span class="o">*</span><span class="n">w</span>
+            <span class="n">A_e</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="o">+=</span> <span class="n">blhs</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">dX</span>
+        <span class="n">b_e</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">+=</span> <span class="n">brhs</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span><span class="o">*</span><span class="n">dX</span>
 
     <span class="c"># Incorporate essential boundary conditions</span>
     <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
         <span class="n">global_dof</span> <span class="o">=</span> <span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">r</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">global_dof</span> <span class="ow">in</span> <span class="n">essbc_dofs</span><span class="p">:</span>
-            <span class="c"># dof r is subject to an essential condition</span>
-            <span class="n">value</span> <span class="o">=</span> <span class="n">essbc_docs</span><span class="p">[</span><span class="n">global_dof</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">global_dof</span> <span class="ow">in</span> <span class="n">essbc</span><span class="p">:</span>
+            <span class="c"># local dof r is subject to an essential condition</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">essbc</span><span class="p">[</span><span class="n">global_dof</span><span class="p">]</span>
             <span class="c"># Symmetric modification</span>
             <span class="n">b_e</span> <span class="o">-=</span> <span class="n">value</span><span class="o">*</span><span class="n">A_e</span><span class="p">[:,</span><span class="n">r</span><span class="p">]</span>
             <span class="n">A_e</span><span class="p">[</span><span class="n">r</span><span class="p">,:]</span> <span class="o">=</span> <span class="mi">0</span>
@@ -358,12 +373,103 @@ of a differential equation.</p>
     <span class="c"># Assemble</span>
     <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
-            <span class="n">A</span><span class="p">[</span><span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">r</span><span class="p">],</span> <span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">r</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">A_e</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">s</span><span class="p">]</span>
+            <span class="n">A</span><span class="p">[</span><span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">r</span><span class="p">],</span> <span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">s</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">A_e</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">s</span><span class="p">]</span>
         <span class="n">b</span><span class="p">[</span><span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">r</span><span class="p">]</span> <span class="o">+=</span> <span class="n">b_e</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
 
 <span class="o">&lt;</span><span class="n">solve</span> <span class="n">linear</span> <span class="n">system</span><span class="o">&gt;</span>
 </pre></div>
 </div>
+<p>A complete function <code class="docutils literal"><span class="pre">finite_element1D_naive</span></code>
+for the 1D finite algorithm above, is found in the file
+<a class="reference external" href="http://tinyurl.com/nm5587k/varform/fe1D.py">fe1D.py</a>. The term &#8220;naive&#8221; refers
+to a version of the algorithm where we use a standard dense square matrix
+as global matrix <code class="docutils literal"><span class="pre">A</span></code>. The implementation also has a verbose mode for
+printing out the element matrices and vectors as they are computed.
+Below is the complete function without the print statements.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">finite_element1D_naive</span><span class="p">(</span>
+    <span class="n">vertices</span><span class="p">,</span> <span class="n">cells</span><span class="p">,</span> <span class="n">dof_map</span><span class="p">,</span>     <span class="c"># mesh</span>
+    <span class="n">essbc</span><span class="p">,</span>                        <span class="c"># essbc[globdof]=value</span>
+    <span class="n">ilhs</span><span class="p">,</span>                         <span class="c"># integrand left-hand side</span>
+    <span class="n">irhs</span><span class="p">,</span>                         <span class="c"># integrand right-hand side</span>
+    <span class="n">blhs</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">brhs</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">intrule</span><span class="o">=</span><span class="s">&#39;GaussLegendre&#39;</span><span class="p">,</span>      <span class="c"># integration rule class</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>                <span class="c"># print intermediate results?</span>
+    <span class="p">):</span>
+    <span class="n">N_e</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cells</span><span class="p">)</span>
+    <span class="n">N_n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dof_map</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N_n</span><span class="p">,</span> <span class="n">N_n</span><span class="p">))</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N_n</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_e</span><span class="p">):</span>
+        <span class="n">Omega_e</span> <span class="o">=</span> <span class="p">[</span><span class="n">vertices</span><span class="p">[</span><span class="n">cells</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">0</span><span class="p">]],</span> <span class="n">vertices</span><span class="p">[</span><span class="n">cells</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">1</span><span class="p">]]]</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">Omega_e</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">Omega_e</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c"># Polynomial degree</span>
+        <span class="c"># Compute all element basis functions and their derivatives</span>
+        <span class="n">phi</span> <span class="o">=</span> <span class="n">basis</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+        <span class="c"># Element matrix and vector</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">d</span><span class="o">+</span><span class="mi">1</span>  <span class="c"># No of dofs per element</span>
+        <span class="n">A_e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+        <span class="n">b_e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+        <span class="c"># Integrate over the reference cell</span>
+        <span class="k">if</span> <span class="n">intrule</span> <span class="o">==</span> <span class="s">&#39;GaussLegendre&#39;</span><span class="p">:</span>
+            <span class="n">points</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">GaussLegendre</span><span class="p">(</span><span class="n">d</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">intrule</span> <span class="o">==</span> <span class="s">&#39;NewtonCotes&#39;</span><span class="p">:</span>
+            <span class="n">points</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">NewtonCotes</span><span class="p">(</span><span class="n">d</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">X</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
+            <span class="n">detJ</span> <span class="o">=</span> <span class="n">h</span><span class="o">/</span><span class="mi">2</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">affine_mapping</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Omega_e</span><span class="p">)</span>
+            <span class="n">dX</span> <span class="o">=</span> <span class="n">detJ</span><span class="o">*</span><span class="n">w</span>
+
+            <span class="c"># Compute contribution to element matrix and vector</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                    <span class="n">A_e</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ilhs</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span><span class="o">*</span><span class="n">dX</span>
+                <span class="n">b_e</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">+=</span> <span class="n">irhs</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span><span class="o">*</span><span class="n">dX</span>
+
+        <span class="c"># Add boundary terms</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="n">A_e</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="o">+=</span> <span class="n">blhs</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+            <span class="n">b_e</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">+=</span> <span class="n">brhs</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+
+        <span class="c"># Incorporate essential boundary conditions</span>
+        <span class="n">modified</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">global_dof</span> <span class="o">=</span> <span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">r</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">global_dof</span> <span class="ow">in</span> <span class="n">essbc</span><span class="p">:</span>
+                <span class="c"># dof r is subject to an essential condition</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">essbc</span><span class="p">[</span><span class="n">global_dof</span><span class="p">]</span>
+                <span class="c"># Symmetric modification</span>
+                <span class="n">b_e</span> <span class="o">-=</span> <span class="n">value</span><span class="o">*</span><span class="n">A_e</span><span class="p">[:,</span><span class="n">r</span><span class="p">]</span>
+                <span class="n">A_e</span><span class="p">[</span><span class="n">r</span><span class="p">,:]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">A_e</span><span class="p">[:,</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">A_e</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">b_e</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+                <span class="n">modified</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c"># Assemble</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="n">A</span><span class="p">[</span><span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">r</span><span class="p">],</span> <span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">s</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">A_e</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">s</span><span class="p">]</span>
+            <span class="n">b</span><span class="p">[</span><span class="n">dof_map</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="n">r</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">b_e</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
+
+    <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">c</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">timing</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">timing</span></code> object is a dictionary holding the CPU spent on computing
+<code class="docutils literal"><span class="pre">A</span></code> and the CPU time spent on solving the linear system. (We have
+left out the timing statements.)</p>
+<p><code class="docutils literal"><span class="pre">model2</span></code> function from the section <a class="reference internal" href="._main_varform001.html#fem-deq-1d-models-simple"><span class="std std-ref">Simple model problems and their solutions</span></a> can
+readily solve the problem: <code class="docutils literal"><span class="pre">model2(x,</span> <span class="pre">L,</span> <span class="pre">C,</span> <span class="pre">D)</span></code>.</p>
+<div class="math">
+\[u(x) = D + C(x-L) + \frac{1}{6}(L^3 - x^3)\]</div>
 </div>
 </div>
 
@@ -371,7 +477,7 @@ of a differential equation.</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
             <center>
             <p class="logo"><a href="http://cbc.simula.no/" title="Go to Center for Biomedical Computing">
@@ -394,15 +500,17 @@ of a differential equation.</p>
   <h4>Next topic</h4>
   <p class="topless"><a href="._main_varform007.html"
                         title="next chapter">Variational formulations in 2D and 3D</a></p>
-  <h3>This Page</h3>
-  <ul class="this-page-menu">
-    <li><a href="_sources/._main_varform006.txt"
-           rel="nofollow">Show Source</a></li>
-  </ul>
-<div id="searchbox" style="display: none">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/._main_varform006.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" size="18" />
+      <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
@@ -416,7 +524,7 @@ of a differential equation.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -428,12 +536,15 @@ of a differential equation.</p>
         <li class="right" >
           <a href="._main_varform005.html" title="Boundary conditions: specified derivative"
              >previous</a> |</li>
-        <li><a href="index.html">Stationary variational forms</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Stationary variational forms</a> &raquo;</li> 
       </ul>
     </div>
 <div class="wrapper">
   <div class="footer">
-  <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+    <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
+    <br />
+    <br />
+      &copy;2015, No author.
   </div>
 </div>
 

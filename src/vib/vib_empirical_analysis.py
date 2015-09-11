@@ -35,8 +35,6 @@ def amplitudes(minima, maxima):
          for n in range(min(len(minima),len(maxima)))]
     return np.array(a)
 
-import nose.tools as nt
-
 def test_empirical_analysis():
     t = np.linspace(0, 6*np.pi, 1181)
     # Modulated amplitude and period
@@ -68,10 +66,10 @@ def test_empirical_analysis():
         0.96007725,  0.42076411,  0.08626735,  0.0203696 ,  0.00312785])
     p_diff = np.abs(p - p_ref).max()
     a_diff = np.abs(a - a_ref).max()
-    nt.assert_almost_equal(p_diff, 0, places=7)
-    nt.assert_almost_equal(a_diff, 0, places=7)
+    tol = 1E-7
+    assert p_diff < tol
+    assert a_diff < tol
 
 if __name__ == '__main__':
     test_empirical_analysis()
     plt.show()
-

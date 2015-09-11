@@ -22,8 +22,6 @@ specific building blocks introduced in the forthcoming text can be
 reused to construct sound methods for partial differential equations
 of wave nature in multiple spatial dimensions.
 
-[**hpl 1**: Need to discuss errors also for the damped and nonlinear models. At least the frequency errors must be illustrated here as well and investigated numerically, either in text or exercises.]
-
 .. _vib:model1:
 
 Finite difference discretization
@@ -358,8 +356,6 @@ possible to MATLAB, although good programming habits would prefix
 the ``numpy`` and ``matplotlib`` calls by (abbreviations of) the module
 name.
 
-[**hpl 2**: Refer to right section in decay book for prefix discussion.]
-
 A function for plotting the numerical and the exact solution is also
 convenient to have:
 
@@ -416,8 +412,6 @@ pairs on the command line:
 Such parsing of the command line is explained in more detailed in
  the
 "section on user interfaces": "..." in [Ref1]_.
-
-[**hpl 3**: Fix reference to web document.]
 
 A typical execution goes like
 
@@ -609,8 +603,6 @@ The complete code appears in the file ``vib_undamped.py``.
 
 Scaled model
 ------------
-
-[**hpl 4**: Need reference to scaling book and maybe also decay book.]
 
 It is advantageous to use dimensionless variables in simulations, because
 fewer parameters need to be set. The present problem is made dimensionless
@@ -919,9 +911,9 @@ Note, however, that in this particular example
 with :math:`\Delta t=0.05` and 40 periods,
 making an animated GIF file out of
 the large number of PNG files is a very heavy process and not
-considered feasible.
-
-[**hpl 5**: Combine two simulations side by side!]
+considered feasible. Animated GIFs are best suited for animations with
+not so many frames and where you want to see each frame and play them
+slowly.
 
 Using Bokeh to compare graphs
 -----------------------------
@@ -947,6 +939,95 @@ displaced :math:`t` axes!):
 
 .. figure:: bokeh_gridplot2.png
    :width: 800
+
+A function for creating a Bokeh plot, given a list of ``u`` arrays
+and corresponding ``t`` arrays, from different simulations, described
+compactly in a list of strings ``legends``, takes the following form:
+
+.. code-block:: python
+
+        def bokeh_plot(u, t, legends, I, w, t_range, filename):
+            """
+            Make plots for u vs t using the Bokeh library.
+            u and t are lists (several experiments can be compared).
+            legens contain legend strings for the various u,t pairs.
+            """
+            if not isinstance(u, (list,tuple)):
+                u = [u]  # wrap in list
+            if not isinstance(t, (list,tuple)):
+                t = [t]  # wrap in list
+            if not isinstance(legends, (list,tuple)):
+                legends = [legends]  # wrap in list
+        
+            import bokeh.plotting as plt
+            plt.output_file(filename, mode='cdn', title='Comparison')
+            # Assume that all t arrays have the same range
+            t_fine = np.linspace(0, t[0][-1], 1001)  # fine mesh for u_e
+            tools = 'pan,wheel_zoom,box_zoom,reset,'\ 
+                    'save,box_select,lasso_select'
+            u_range = [-1.2*I, 1.2*I]
+            font_size = '8pt'
+            p = []  # list of plot objects
+            # Make the first figure
+            p_ = plt.figure(
+                width=300, plot_height=250, title=legends[0],
+                x_axis_label='t', y_axis_label='u',
+                x_range=t_range, y_range=u_range, tools=tools,
+                title_text_font_size=font_size)
+            p_.xaxis.axis_label_text_font_size=font_size
+            p_.yaxis.axis_label_text_font_size=font_size
+            p_.line(t[0], u[0], line_color='blue')
+            # Add exact solution
+            u_e = u_exact(t_fine, I, w)
+            p_.line(t_fine, u_e, line_color='red', line_dash='4 4')
+            p.append(p_)
+            # Make the rest of the figures and attach their axes to
+            # the first figure's axes
+            for i in range(1, len(t)):
+                p_ = plt.figure(
+                    width=300, plot_height=250, title=legends[i],
+                    x_axis_label='t', y_axis_label='u',
+                    x_range=p[0].x_range, y_range=p[0].y_range, tools=tools,
+                    title_text_font_size=font_size)
+                p_.xaxis.axis_label_text_font_size = font_size
+                p_.yaxis.axis_label_text_font_size = font_size
+                p_.line(t[i], u[i], line_color='blue')
+                p_.line(t_fine, u_e, line_color='red', line_dash='4 4')
+                p.append(p_)
+        
+            # Arrange all plots in a grid with 3 plots per row
+            grid = [[]]
+            for i, p_ in enumerate(p):
+                grid[-1].append(p_)
+                if (i+1) % 3 == 0:
+                    # New row
+                    grid.append([])
+            plot = plt.gridplot(grid, toolbar_location='left')
+            plt.save(plot)
+            plt.show(plot)
+
+A particular example using the ``bokeh_plot`` function appears below.
+
+.. code-block:: python
+
+        def demo_bokeh():
+            """Solve a scaled ODE u'' + u = 0."""
+            from math import pi
+            w = 1.0        # Scaled problem (frequency)
+            P = 2*np.pi/w  # Period
+            num_steps_per_period = [5, 10, 20, 40, 80]
+            T = 40*P       # Simulation time: 40 periods
+            u = []         # List of numerical solutions
+            t = []         # List of corresponding meshes
+            legends = []
+            for n in num_steps_per_period:
+                dt = P/n
+                u_, t_ = solver(I=1, w=w, dt=dt, T=T)
+                u.append(u_)
+                t.append(t_)
+                legends.append('# time steps per period: %d' % n)
+            bokeh_plot(u, t, legends, I=1, w=w, t_range=[0, 4*P],
+                       filename='tmp.html')
 
 Using a line-by-line ascii plotter
 ----------------------------------
@@ -2338,8 +2419,6 @@ Runge-Kutta 4th-order  :math:`10`  :math:`0.1`       :math:`3.686`
 Runge-Kutta 4th-order  :math:`10`  :math:`0.05`      :math:`6.928\cdot 10^{-1}`                
 =====================  ==========  ================  ========================================  
 
-[**hpl 6**: The error reductions are not directly in accordance with the order of the schemes, probably caused by :math:`\Delta t` not being in the asympotic regime.]
-
 .. Should build a verification test on the energy error.
 
 .. Link phase plane plot to energy
@@ -2622,8 +2701,6 @@ Another function, ``demo``,
 visualizes the difference between Euler-Cromer scheme and the scheme
 :eq:`vib:ode1:step4`
 for the second-oder ODE, arising from the mismatch in the first time level.
-
-[**hpl 7**: Odespy's Euler-Cromer, but it needs more work with the example code.]
 
 .. is anything gained? is v of higher order than D_2t u from the
 

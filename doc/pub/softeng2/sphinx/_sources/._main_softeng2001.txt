@@ -1,33 +1,5 @@
 .. !split
 
- * Define some wave project, e.g., earthquake induced waves where
-   a quite flat bottom has a discontinuity point/line and some part
-   to the right lifts up suddenly and falls back?
-
- * Start with ``wave1D_dn_vc.py`` and ``wave2D_u0.py``
-
- * Storing solutions with joblib, XDMF
-   `<http://www.xdmf.org/index.php/Write_Xdmf>`_
-   `<http://www.xdmf.org/index.php/Xdmf3_Python_API>`_
-   OBS: both a post on the fenics list and here,
-   `<http://fenicsproject.org/qa/6513/time-series-of-many-function-instances-in-a-single-file>`_, suggests that paraview cannot view xdmf files will more
-   than one field/function - should store in separate files...
-   See the dolfin function that writes xdmf files before trying too much...
-   FiPy applies `xdmf <https://matforge.org/fipy/browser/fipy/fipy/io/xdmf/time.py?rev=517630187125d4aee390fd251ba42324b9aacce0>`__
-   joblib vs `klepto <http://stackoverflow.com/questions/28311141/decorators-for-selective-caching-memoization>`__
-
- * Problem and Solver classes
-
- * Profiling
-
- * Fortran, Cython, C, C++
-
- * Viz here? Movie making?
-
- * DrawFunction for drawing bottom and surface, build app for this :-)
-
- * Parampool with full pool ("menu")
-
 A 1D wave equation simulator
 ============================
 
@@ -121,7 +93,7 @@ constructs that will be commented upon later.
                    stability_safety_factor=1.0):
             """Solve u_tt=(c^2*u_x)_x + f on (0,L)x(0,T]."""
             Nt = int(round(T/dt))
-            t = linspace(0, Nt*dt, Nt+1)      # Mesh points in time
+            t = np.linspace(0, Nt*dt, Nt+1)      # Mesh points in time
         
             # Find max(c) using a fake mesh and adapt dx to C and dt
             if isinstance(c, (float,int)):
@@ -130,31 +102,31 @@ constructs that will be commented upon later.
                 c_max = max([c(x_) for x_ in linspace(0, L, 101)])
             dx = dt*c_max/(stability_safety_factor*C)
             Nx = int(round(L/dx))
-            x = linspace(0, L, Nx+1)          # Mesh points in space
+            x = np.linspace(0, L, Nx+1)          # Mesh points in space
         
             # Treat c(x) as array
             if isinstance(c, (float,int)):
-                c = zeros(x.shape) + c
+                c = np.zeros(x.shape) + c
             elif callable(c):
                 # Call c(x) and fill array c
-                c_ = zeros(x.shape)
+                c_ = np.zeros(x.shape)
                 for i in range(Nx+1):
                     c_[i] = c(x[i])
                 c = c_
         
             q = c**2
-            C2 = (dt/dx)**2; dt2 = dt*dt      # Help variables in the scheme
+            C2 = (dt/dx)**2; dt2 = dt*dt    # Help variables in the scheme
         
             # Wrap user-given f, I, V, U_0, U_L if None or 0
             if f is None or f == 0:
                 f = (lambda x, t: 0) if version == 'scalar' else \ 
-                    lambda x, t: zeros(x.shape)
+                    lambda x, t: np.zeros(x.shape)
             if I is None or I == 0:
                 I = (lambda x: 0) if version == 'scalar' else \ 
-                    lambda x: zeros(x.shape)
+                    lambda x: np.zeros(x.shape)
             if V is None or V == 0:
                 V = (lambda x: 0) if version == 'scalar' else \ 
-                    lambda x: zeros(x.shape)
+                    lambda x: np.zeros(x.shape)
             if U_0 is not None:
                 if isinstance(U_0, (float,int)) and U_0 == 0:
                     U_0 = lambda t: 0
@@ -175,9 +147,9 @@ constructs that will be commented upon later.
                 # Simulation is already run
                 return -1, hashed_input
         
-            u   = zeros(Nx+1)   # Solution array at new time level
-            u_1 = zeros(Nx+1)   # Solution at 1 time level back
-            u_2 = zeros(Nx+1)   # Solution at 2 time levels back
+            u   = np.zeros(Nx+1)   # Solution array at new time level
+            u_1 = np.zeros(Nx+1)   # Solution at 1 time level back
+            u_2 = np.zeros(Nx+1)   # Solution at 2 time levels back
         
             import time;  t0 = time.clock()  # CPU time measurement
         
@@ -1039,8 +1011,6 @@ Class Solver
 
 With the ``Mesh`` and ``Function`` classes in place, we can rewrite
 the ``solver`` function, but we put it as a method in class ``Solver``:
-
-[**hpl 1**: Rewrite solver!]
 
 .. _wave2D3D:impl:Cython:
 

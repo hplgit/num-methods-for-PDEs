@@ -7,7 +7,6 @@ import scitools.std as plt
 import sys
 import numpy as np
 from scitools.std import StringFunction
-from numpy import *  # handy for StringFunction with pi, cos, sin, etc.
 import odespy
 import vib
 
@@ -52,7 +51,6 @@ def run_solvers_and_plot(solvers, rhs, T, dt, title='', filename='tmp'):
     t_fine = np.linspace(0, T, 8*Nt+1)  # used for very accurate solution
 
     legends = []
-    solver_exact = odespy.RK4(rhs)
 
     for solver in solvers:
         solver.set_initial_condition([rhs.I, 0])
@@ -69,6 +67,7 @@ def run_solvers_and_plot(solvers, rhs, T, dt, title='', filename='tmp'):
         legends.append(solver_name)
 
     # Compare with RK4 on a much finer mesh
+    solver_exact = odespy.RK4(rhs)
     solver_exact.set_initial_condition([rhs.I, 0])
     u_e, t_e = solver_exact.solve(t_fine)
 
@@ -81,10 +80,11 @@ def run_solvers_and_plot(solvers, rhs, T, dt, title='', filename='tmp'):
     plt.savefig('%s.png' % filename)
     plt.savefig('%s.pdf' % filename)
 
-class OdespyWrapper:
+class VibSolverWrapper4Odespy:
     """
     Wrapper for vib.solver so that it has the same API as
-    solvers in odespy.
+    required by solvers in odespy. Then it can be used
+    together with the odespy solvers.
     """
     def __init__(self, f, *args, **kwargs):
         self.rhs = f

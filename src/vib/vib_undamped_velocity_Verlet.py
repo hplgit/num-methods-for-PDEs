@@ -1,7 +1,5 @@
-from vib_undamped import (
-    zeros, linspace,
-    convergence_rates,
-    main)
+import numpy as np
+from vib_undamped import convergence_rates, main
 
 def solver(I, w, dt, T, return_v=False):
     """
@@ -10,9 +8,9 @@ def solver(I, w, dt, T, return_v=False):
     """
     dt = float(dt)
     Nt = int(round(T/dt))
-    u = zeros(Nt+1)
-    v = zeros(Nt+1)
-    t = linspace(0, Nt*dt, Nt+1)
+    u = np.zeros(Nt+1)
+    v = np.zeros(Nt+1)
+    t = np.linspace(0, Nt*dt, Nt+1)
 
     u[0] = I
     v[0] = 0

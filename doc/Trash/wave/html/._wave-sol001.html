@@ -1,0 +1,1340 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Finite difference methods for wave motion">
+<meta name="keywords" content="waves on a string,wave equation 1D,wave equation 1D, finite difference method,mesh finite differences,stencil 1D wave equation,mesh function,wave equation 1D, implementation,callback function,nose test,pytest test,unit testing,software testing nose,software testing pytest,closure,vectorization,scalar code,vectorization,array computing,array slices,slice,lambda function (Python),Neumann conditions,Dirichlet conditions,homogeneous Neumann conditions,homogeneous Dirichlet conditions,boundary conditions Neumann,boundary conditions Dirichlet,stencil Neumann boundary,index set notation,geometric mean,arithmetic mean,harmonic average,averaging geometric,averaging arithmetic,averaging harmonic,radiation condition,open boundary condition,boundary condition open (radiation),periodic boundary conditions,boundary conditions periodic,wave equation 1D, analytical properties,Fourier series,Fourier transform,discrete Fourier transform,wave equation 1D, exact numerical solution,Courant number,stability criterion,wave equation 1D, stability,wave equation 2D, implementation,index set notation">
+
+<title>Finite difference methods for wave motion</title>
+
+<!-- Bootstrap style: bootswatch_journal -->
+<link href="http://netdna.bootstrapcdn.com/bootswatch/3.1.1/journal/bootstrap.min.css" rel="stylesheet">
+<!-- not necessary
+<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+-->
+
+<style type="text/css">
+/* Let inline verbatim have the same color as the surroundings */
+code { color: inherit; background-color: transparent; }
+</style>
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('Simulation of waves on a string',
+               1,
+               'wave:string',
+               'wave:string'),
+              ('Discretizing the domain',
+               2,
+               'wave:string:mesh',
+               'wave:string:mesh'),
+              ('Uniform meshes', 3, None, '___sec2'),
+              ('The discrete solution',
+               2,
+               'wave:string:numerical:sol',
+               'wave:string:numerical:sol'),
+              ('Fulfilling the equation at the mesh points',
+               2,
+               'wave:string:samplingPDE',
+               'wave:string:samplingPDE'),
+              ('Replacing derivatives by finite differences',
+               2,
+               'wave:string:fd',
+               'wave:string:fd'),
+              ('Algebraic version of the PDE', 3, None, '___sec6'),
+              ('Interpretation of the equation as a stencil',
+               3,
+               None,
+               '___sec7'),
+              ('Algebraic version of the initial conditions',
+               3,
+               None,
+               '___sec8'),
+              ('Formulating a recursive algorithm',
+               2,
+               'wave:string:alg',
+               'wave:string:alg'),
+              ('Sketch of an implementation',
+               2,
+               'wave:string:impl',
+               'wave:string:impl'),
+              ('Verification', 1, None, '___sec11'),
+              ('A slightly generalized model problem',
+               2,
+               'wave:pde2:fd',
+               'wave:pde2:fd'),
+              ('Using an analytical solution of physical significance',
+               2,
+               'wave:pde2:fd:standing:waves',
+               'wave:pde2:fd:standing:waves'),
+              ('Manufactured solution',
+               2,
+               'wave:pde2:fd:MMS',
+               'wave:pde2:fd:MMS'),
+              ('Constructing an exact solution of the discrete equations',
+               2,
+               'wave:pde2:fd:verify:quadratic',
+               'wave:pde2:fd:verify:quadratic'),
+              ('Implementation', 1, 'wave:pde1:impl', 'wave:pde1:impl'),
+              ('Callback function for user-specific actions',
+               2,
+               None,
+               '___sec17'),
+              ('The solver function',
+               2,
+               'wave:pde1:impl:solver',
+               'wave:pde1:impl:solver'),
+              ('Verification: exact quadratic solution',
+               2,
+               'wave:pde1:impl:verify:quadratic',
+               'wave:pde1:impl:verify:quadratic'),
+              ('Visualization: animating the solution',
+               2,
+               'wave:pde1:impl:animate',
+               'wave:pde1:impl:animate'),
+              ('Function for administering the simulation',
+               3,
+               None,
+               '___sec21'),
+              ('Dissection of the code', 3, None, '___sec22'),
+              ('Making movie files', 3, None, '___sec23'),
+              ('Skipping frames for animation speed', 3, None, '___sec24'),
+              ('Running a case',
+               2,
+               'wave:pde1:guitar:data',
+               'wave:pde1:guitar:data'),
+              ('Working with a scaled PDE model', 2, None, '___sec26'),
+              ('Vectorization',
+               1,
+               'wave:pde1:impl:vec',
+               'wave:pde1:impl:vec'),
+              ('Operations on slices of arrays',
+               2,
+               'wave:pde1:impl:vec:slices:basics',
+               'wave:pde1:impl:vec:slices:basics'),
+              ('Finite difference schemes expressed as slices',
+               2,
+               'wave:pde1:impl:vec:slices:fdm',
+               'wave:pde1:impl:vec:slices:fdm'),
+              ('Verification',
+               2,
+               'wave:pde1:impl:vec:verify:quadratic',
+               'wave:pde1:impl:vec:verify:quadratic'),
+              ('Efficiency measurements', 2, None, '___sec31'),
+              ('Solution 1', 3, None, '___sec32'),
+              ('Solution 2', 3, None, '___sec33'),
+              ('Efficiency experiments', 3, None, '___sec34'),
+              ('Remark on the updating of arrays',
+               2,
+               'wave:pde1:impl:ref:switch',
+               'wave:pde1:impl:ref:switch'),
+              ('Exercises', 1, None, '___sec36'),
+              ('Exercise 1: Simulate a standing wave',
+               2,
+               'wave:exer:standingwave',
+               'wave:exer:standingwave'),
+              ('Remarks', 3, None, '___sec38'),
+              ('Exercise 2: Add storage of solution in a user action function',
+               2,
+               'wave:exer:store:list',
+               'wave:exer:store:list'),
+              ('Exercise 3: Use a class for the user action function',
+               2,
+               'wave:exer:store:list:class',
+               'wave:exer:store:list:class'),
+              ('Exercise 4: Compare several Courant numbers in one movie',
+               2,
+               'wave:exer:multiple:C',
+               'wave:exer:multiple:C'),
+              ('Project 5: Calculus with 1D mesh functions',
+               2,
+               'wave:exer:mesh1D:calculus',
+               'wave:exer:mesh1D:calculus'),
+              ('Generalization: reflecting boundaries',
+               1,
+               'wave:pde2:Neumann',
+               'wave:pde2:Neumann'),
+              ('Neumann boundary condition',
+               2,
+               'wave:pde2:Neumann:bc',
+               'wave:pde2:Neumann:bc'),
+              ('Discretization of derivatives at the boundary',
+               2,
+               'wave:pde2:Neumann:discr',
+               'wave:pde2:Neumann:discr'),
+              ('Implementation of Neumann conditions',
+               2,
+               'wave:pde2:Neumann:impl',
+               'wave:pde2:Neumann:impl'),
+              ('Index set notation', 2, 'wave:indexset', 'wave:indexset'),
+              ('Verifying the implementation of Neumann conditions',
+               2,
+               'wave:pde1:verify',
+               'wave:pde1:verify'),
+              ('Alternative implementation via ghost cells',
+               2,
+               'wave:pde1:Neumann:ghost',
+               'wave:pde1:Neumann:ghost'),
+              ('Idea', 3, None, '___sec50'),
+              ('Implementation', 3, None, '___sec51'),
+              ('Generalization: variable wave velocity',
+               1,
+               'wave:pde2:var:c',
+               'wave:pde2:var:c'),
+              ('The model PDE with a variable coefficient',
+               2,
+               None,
+               '___sec53'),
+              ('Discretizing the variable coefficient',
+               2,
+               'wave:pde2:var:c:ideas',
+               'wave:pde2:var:c:ideas'),
+              ('Computing the coefficient between mesh points',
+               2,
+               'wave:pde2:var:c:means',
+               'wave:pde2:var:c:means'),
+              ('How a variable coefficient affects the stability',
+               2,
+               'wave:pde2:var:c:stability',
+               'wave:pde2:var:c:stability'),
+              ('Neumann condition and a variable coefficient',
+               2,
+               'wave:pde2:var:c:Neumann',
+               'wave:pde2:var:c:Neumann'),
+              ('Implementation of variable coefficients',
+               2,
+               'wave:pde2:var:c:impl',
+               'wave:pde2:var:c:impl'),
+              ('A more general PDE model with variable coefficients',
+               2,
+               None,
+               '___sec59'),
+              ('Generalization: damping', 2, None, '___sec60'),
+              ('Building a general 1D wave equation solver',
+               1,
+               'wave:pde2:software',
+               'wave:pde2:software'),
+              ('User action function as a class', 2, None, '___sec62'),
+              ('The code', 3, None, '___sec63'),
+              ('Dissection', 3, None, '___sec64'),
+              ('Pulse propagation in two media', 2, None, '___sec65'),
+              ('Exercises', 1, None, '___sec66'),
+              ('Exercise 6: Find the analytical solution to a damped wave equation',
+               2,
+               'wave:exer:standingwave:damped:uex',
+               'wave:exer:standingwave:damped:uex'),
+              ('Problem 7: Explore symmetry boundary conditions',
+               2,
+               'wave:exer:symmetry:bc',
+               'wave:exer:symmetry:bc'),
+              ('Exercise 8: Send pulse waves through a layered medium',
+               2,
+               'wave:app:exer:pulse1D',
+               'wave:app:exer:pulse1D'),
+              ('Exercise 9: Explain why numerical noise occurs',
+               2,
+               'wave:app:exer:pulse1D:analysis',
+               'wave:app:exer:pulse1D:analysis'),
+              ('Exercise 10: Investigate harmonic averaging in a 1D model',
+               2,
+               'wave:app:exer:pulse1D:harmonic',
+               'wave:app:exer:pulse1D:harmonic'),
+              ('Problem 11: Implement open boundary conditions',
+               2,
+               'wave:app:exer:radiationBC',
+               'wave:app:exer:radiationBC'),
+              ('Remarks', 3, None, '___sec73'),
+              ('Exercise 12: Implement periodic boundary conditions',
+               2,
+               'wave:exer:periodic',
+               'wave:exer:periodic'),
+              ('Exercise 13: Compare discretizations of a Neumann condition',
+               2,
+               None,
+               '___sec75'),
+              ('Exercise 14: Verification by a cubic polynomial in space',
+               2,
+               'wave:fd2:exer:verify:cubic',
+               'wave:fd2:exer:verify:cubic'),
+              ('Analysis of the difference equations',
+               1,
+               'wave:pde1:analysis',
+               'wave:pde1:analysis'),
+              ('Properties of the solution of the wave equation',
+               2,
+               'wave:pde1:properties',
+               'wave:pde1:properties'),
+              ('More precise definition of Fourier representations',
+               2,
+               'wave:pde1:Fourier',
+               'wave:pde1:Fourier'),
+              ('Stability', 2, 'wave:pde1:stability', 'wave:pde1:stability'),
+              ('Preliminary results', 3, None, '___sec81'),
+              ('Numerical wave propagation', 3, None, '___sec82'),
+              ('Numerical dispersion relation',
+               2,
+               'wave:pde1:num:dispersion',
+               'wave:pde1:num:dispersion'),
+              ('Extending the analysis to 2D and 3D',
+               2,
+               'wave:pde1:analysis:2D3D',
+               'wave:pde1:analysis:2D3D'),
+              ('Finite difference methods for 2D and 3D wave equations',
+               1,
+               'wave:2D3D',
+               'wave:2D3D'),
+              ('Multi-dimensional wave equations',
+               2,
+               'wave:2D3D:models',
+               'wave:2D3D:models'),
+              ('Mesh', 2, 'wave:2D3D:mesh', 'wave:2D3D:mesh'),
+              ('Discretization', 2, 'wave:2D3D:models', 'wave:2D3D:models'),
+              ('Discretizing the PDEs', 3, None, '___sec89'),
+              ('Handling boundary conditions where $u$ is known',
+               3,
+               None,
+               '___sec90'),
+              ('Discretizing the Neumann condition', 3, None, '___sec91'),
+              ('Implementation', 1, 'wave:2D3D:impl', 'wave:2D3D:impl'),
+              ('Scalar computations',
+               2,
+               'wave2D3D:impl:scalar',
+               'wave2D3D:impl:scalar'),
+              ('Domain and mesh', 3, None, '___sec94'),
+              ('Solution arrays', 3, None, '___sec95'),
+              ('Index sets', 3, None, '___sec96'),
+              ('Computing the solution', 3, None, '___sec97'),
+              ('Vectorized computations',
+               2,
+               'wave2D3D:impl:vectorized',
+               'wave2D3D:impl:vectorized'),
+              ('Verification',
+               2,
+               'wave2D3D:impl:verify',
+               'wave2D3D:impl:verify'),
+              ('Testing a quadratic solution', 3, None, '___sec100'),
+              ('Using classes to implement a simulator',
+               1,
+               None,
+               '___sec101'),
+              ('Exercises', 1, None, '___sec102'),
+              ('Exercise 15: Check that a solution fulfills the discrete model',
+               2,
+               'wave:exer:quadratic:2D',
+               'wave:exer:quadratic:2D'),
+              ('Project 16: Calculus with 2D mesh functions',
+               2,
+               'wave:exer:mesh3D:calculus',
+               'wave:exer:mesh3D:calculus'),
+              ('Exercise 17: Implement Neumann conditions in 2D',
+               2,
+               'wave:app:exer:wave2D:Neumann',
+               'wave:app:exer:wave2D:Neumann'),
+              ('Exercise 18: Test the efficiency of compiled loops in 3D',
+               2,
+               'wave:exer:3D:f77:cy:efficiency',
+               'wave:exer:3D:f77:cy:efficiency'),
+              ('Applications of wave equations', 1, 'wave:app', 'wave:app'),
+              ('Waves on a string', 2, 'wave:app:string', 'wave:app:string'),
+              ('Damping', 3, None, '___sec109'),
+              ('External forcing', 3, None, '___sec110'),
+              ('Modeling the tension via springs', 3, None, '___sec111'),
+              ('Waves on a membrane',
+               2,
+               'wave:app:membrane',
+               'wave:app:membrane'),
+              ('Elastic waves in a rod',
+               2,
+               'wave:app:elastic:rod',
+               'wave:app:elastic:rod'),
+              ('The acoustic model for seismic waves',
+               2,
+               'wave:app:acoustic:seismic',
+               'wave:app:acoustic:seismic'),
+              ('Anisotropy', 3, None, '___sec115'),
+              ('Sound waves in liquids and gases',
+               2,
+               'wave:app:sound',
+               'wave:app:sound'),
+              ('Spherical waves',
+               2,
+               'wave:app:spherical',
+               'wave:app:spherical'),
+              ('The linear shallow water equations',
+               2,
+               'wave:app:sw:2D',
+               'wave:app:sw:2D'),
+              ('Wind drag on the surface', 3, None, '___sec119'),
+              ('Bottom drag', 3, None, '___sec120'),
+              ("Effect of the Earth's rotation", 3, None, '___sec121'),
+              ('Waves in blood vessels',
+               2,
+               'wave:app:blood',
+               'wave:app:blood'),
+              ('Electromagnetic waves',
+               2,
+               'wave:app:light',
+               'wave:app:light'),
+              ('Exercises', 1, 'wave:app:exer', 'wave:app:exer'),
+              ('Exercise 19: Simulate waves on a non-homogeneous string',
+               2,
+               'wave:app:exer:string:discont',
+               'wave:app:exer:string:discont'),
+              ('Exercise 20: Simulate damped waves on a string',
+               2,
+               'wave:app:exer:string:damping',
+               'wave:app:exer:string:damping'),
+              ('Exercise 21: Simulate elastic waves in a rod',
+               2,
+               'wave:app:exer:rod',
+               'wave:app:exer:rod'),
+              ('Exercise 22: Simulate spherical waves',
+               2,
+               'wave:app:exer:spherical',
+               'wave:app:exer:spherical'),
+              ('Problem 23: Earthquake-generated tsunami over a subsea hill',
+               2,
+               'wave:app:exer:tsunami1D:hill',
+               'wave:app:exer:tsunami1D:hill'),
+              ('Problem 24: Earthquake-generated tsunami over a 3D hill',
+               2,
+               'wave:app:exer:tsunami2D:hill',
+               'wave:app:exer:tsunami2D:hill'),
+              ('Problem 25: Investigate Matplotlib for visualization',
+               2,
+               'wave:app:exer:tsunami:hill:viz:matplotlib',
+               'wave:app:exer:tsunami:hill:viz:matplotlib'),
+              ('Problem 26: Investigate visualization packages',
+               2,
+               'wave:app:exer:tsunami:hill:viz:packages',
+               'wave:app:exer:tsunami:hill:viz:packages'),
+              ('Problem 27: Implement loops in compiled languages',
+               2,
+               'wave:app:exer:tsunami2D:hill:compiled',
+               'wave:app:exer:tsunami2D:hill:compiled'),
+              ('Exercise 28: Simulate seismic waves in 2D',
+               2,
+               'wave:app:exer:seismic2D',
+               'wave:app:exer:seismic2D'),
+              ('Project 29: Model 3D acoustic waves in a room',
+               2,
+               'wave:app:exer:acoustics',
+               'wave:app:exer:acoustics'),
+              ('Project 30: Solve a 1D transport equation',
+               2,
+               'wave:app:exer:advec1D',
+               'wave:app:exer:advec1D'),
+              ('Problem 31: General analytical solution of a 1D damped wave equation',
+               2,
+               'wave:app:exer:anal:damped:wave1D',
+               'wave:app:exer:anal:damped:wave1D'),
+              ('Problem 32: General analytical solution of a 2D damped wave equation',
+               2,
+               'wave:app:exer:anal:damped:wave2D',
+               'wave:app:exer:anal:damped:wave2D'),
+              ('References', 1, None, '___sec139')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\halfi}{{1/2}}
+\newcommand{\tp}{\thinspace .}
+\newcommand{\uex}{{u_{\small\mbox{e}}}}
+\newcommand{\xpoint}{\boldsymbol{x}}
+\newcommand{\normalvec}{\boldsymbol{n}}
+\newcommand{\Oof}[1]{\mathcal{O}(#1)}
+\renewcommand{\u}{\boldsymbol{u}}
+\newcommand{\f}{\boldsymbol{f}}
+\newcommand{\stress}{\boldsymbol{\sigma}}
+\newcommand{\I}{\boldsymbol{I}}
+\newcommand{\T}{\boldsymbol{T}}
+\newcommand{\ii}{\boldsymbol{i}}
+\newcommand{\jj}{\boldsymbol{j}}
+\newcommand{\kk}{\boldsymbol{k}}
+\newcommand{\Ix}{\mathcal{I}_x}
+\newcommand{\Iy}{\mathcal{I}_y}
+\newcommand{\Iz}{\mathcal{I}_z}
+\newcommand{\It}{\mathcal{I}_t}
+\newcommand{\setb}[1]{#1^0}    % set begin
+\newcommand{\sete}[1]{#1^{-1}} % set end
+\newcommand{\setl}[1]{#1^-}
+\newcommand{\setr}[1]{#1^+}
+\newcommand{\seti}[1]{#1^i}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Integer}{\mathbb{Z}}
+$$
+
+
+
+
+    
+<!-- Bootstrap navigation bar -->
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="wave-sol.html">Finite difference methods for wave motion</a>
+  </div>
+  <div class="navbar-collapse collapse navbar-responsive-collapse">
+    <ul class="nav navbar-nav navbar-right">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Contents <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+     <!-- navigation toc: --> <li><a href="#wave:string" style="font-size: 80%;">Simulation of waves on a string</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec11" style="font-size: 80%;">Verification</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol002.html#wave:pde1:impl" style="font-size: 80%;">Implementation</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol002.html#wave:pde1:impl:vec" style="font-size: 80%;">Vectorization</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol002.html#___sec36" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol003.html#wave:pde2:Neumann" style="font-size: 80%;">Generalization: reflecting boundaries</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol003.html#wave:pde2:var:c" style="font-size: 80%;">Generalization: variable wave velocity</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol003.html#wave:pde2:software" style="font-size: 80%;">Building a general 1D wave equation solver</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol003.html#___sec66" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol004.html#wave:pde1:analysis" style="font-size: 80%;">Analysis of the difference equations</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol005.html#wave:2D3D" style="font-size: 80%;">Finite difference methods for 2D and 3D wave equations</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol006.html#wave:2D3D:impl" style="font-size: 80%;">Implementation</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol006.html#___sec101" style="font-size: 80%;">Using classes to implement a simulator</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol006.html#___sec102" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol007.html#wave:app" style="font-size: 80%;">Applications of wave equations</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol010.html#wave:app:exer" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol010.html#___sec139" style="font-size: 80%;">References</a></li>
+
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+</div> <!-- end of navigation bar -->
+
+<div class="container">
+
+<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p> <!-- add vertical space -->
+
+<a name="part0001"></a>
+<!-- !split -->
+
+<p>
+A very wide range of physical processes lead to wave motion, where
+signals are propagated through a medium in space and time, normally
+with little or no permanent movement of the medium itself.
+The shape of the signals may undergo changes as they travel through
+matter, but usually not so much that the signals cannot be recognized
+at some later point in space and time.
+Many types of wave motion can be described by the equation
+\( u_{tt}=\nabla\cdot (c^2\nabla u) + f \), which we will solve
+in the forthcoming text by finite difference methods.
+
+<h1 id="wave:string">Simulation of waves on a string</h1>
+
+<p>
+We begin our study of wave equations by simulating one-dimensional
+waves on a string, say on a guitar or violin.
+Let the string in the deformed state
+coincide with the interval
+\( [0,L] \) on the \( x \) axis, and let \( u(x,t) \) be the displacement at
+time \( t \) in the \( y \) direction of a point initially at \( x \).
+The displacement function \( u \) is governed by the mathematical model
+
+$$
+\begin{align}
+\frac{\partial^2 u}{\partial t^2} &=
+c^2 \frac{\partial^2 u}{\partial x^2}, \quad &x\in (0,L),\ t\in (0,T]
+\tag{1}\\ 
+u(x,0) &= I(x), \quad &x\in [0,L]
+\tag{2}\\ 
+\frac{\partial}{\partial t}u(x,0) &= 0, \quad &x\in [0,L]
+\tag{3}\\ 
+u(0,t) & = 0, \quad  &t\in (0,T]
+\tag{4}\\ 
+u(L,t) & = 0, \quad  &t\in (0,T]
+\tag{5}
+\end{align}
+$$
+
+The constant \( c \) and the function \( I(x) \) must be prescribed.
+
+<p>
+Equation <a href="#mjx-eqn-1">(1)</a> is known as the one-dimensional
+<em>wave equation</em>. Since this PDE contains a second-order derivative
+in time, we need <em>two initial conditions</em>. The condition
+<a href="#mjx-eqn-2">(2)</a> specifies
+the initial shape of the string, \( I(x) \), and
+<a href="#mjx-eqn-3">(3)</a> expresses that the initial velocity of the
+string is zero. In addition, PDEs need <em>boundary conditions</em>, give here as
+<a href="#mjx-eqn-4">(4)</a> and <a href="#mjx-eqn-5">(5)</a>. These two
+conditions specify that
+the string is fixed at the ends, i.e., that the displacement \( u \) is zero.
+
+<p>
+The solution \( u(x,t) \) varies in space and time and describes waves that
+move with velocity \( c \) to the left and right.
+
+<p>
+
+<div>
+<video  loop controls width='640' height='365' preload='none'>
+    <source src='mov-wave/guitar_C0.8/movie.webm' type='video/webm; codecs="vp8, vorbis"'>
+    <source src='mov-wave/guitar_C0.8/movie.ogg'  type='video/ogg;  codecs="theora, vorbis"'>
+</video>
+</div>
+<p><em>Example of waves on a string.</em></p>
+
+<p>
+Sometimes we will use a more compact notation for the partial derivatives
+to save space:
+
+$$
+\begin{equation}
+u_t = \frac{\partial u}{\partial t}, \quad
+u_{tt} = \frac{\partial^2 u}{\partial t^2},
+\end{equation}
+$$
+
+and similar expressions
+for derivatives with respect to other variables. Then the
+wave equation can be written compactly as \( u_{tt} = c^2u_{xx} \).
+
+<p>
+The PDE problem <a href="#mjx-eqn-1">(1)</a>-<a href="#mjx-eqn-5">(5)</a> will now be
+discretized in space and time by a finite difference method.
+
+<h2 id="wave:string:mesh">Discretizing the domain</h2>
+
+<p>
+The temporal domain \( [0,T] \) is represented by a finite number of mesh points
+
+$$
+\begin{equation}
+0 = t_0 < t_1 < t_2 < \cdots < t_{N_t-1} < t_{N_t} = T \tp  \end{equation}
+$$
+
+Similarly, the spatial domain \( [0,L] \) is replaced by a set of mesh points
+
+$$
+\begin{equation}
+0 = x_0 < x_1 < x_2 < \cdots < x_{N_x-1} < x_{N_x} = L \tp  \end{equation}
+$$
+
+One may view the mesh as two-dimensional in the \( x,t \) plane, consisting
+of points \( (x_i, t_n) \), with \( i=0,\ldots,N_x \) and \( n=0,\ldots,N_t \).
+
+<h3 id="___sec2">Uniform meshes </h3>
+
+<p>
+For uniformly distributed mesh points we can introduce the constant
+mesh spacings \( \Delta t \) and \( \Delta x \). We have that
+
+$$
+\begin{equation}
+x_i = i\Delta x,\ i=0,\ldots,N_x,\quad
+t_n = n\Delta t,\ n=0,\ldots,N_t\tp
+\end{equation}
+$$
+
+We also have that \( \Delta x = x_i-x_{i-1} \), \( i=1,\ldots,N_x \), and
+\( \Delta t = t_n - t_{n-1} \), \( n=1,\ldots,N_t \). Figure <a href="#wave:pde1:fig:mesh">1</a>
+displays a mesh in the \( x,t \) plane with \( N_t=5 \), \( N_x=5 \), and constant
+mesh spacings.
+
+<h2 id="wave:string:numerical:sol">The discrete solution</h2>
+
+<p>
+The solution \( u(x,t) \) is sought at the mesh points. We introduce
+the mesh function \( u_i^n \), which approximates the exact
+solution at the
+mesh point \( (x_i,t_n) \) for \( i=0,\ldots,N_x \) and \( n=0,\ldots,N_t \).
+Using the finite difference method, we shall
+develop algebraic equations for computing the mesh function.
+
+<h2 id="wave:string:samplingPDE">Fulfilling the equation at the mesh points</h2>
+
+<p>
+In the finite difference method, we relax
+the condition that <a href="#mjx-eqn-1">(1)</a> holds at all points in
+the space-time domain \( (0,L)\times (0,T] \) to the requirement that the PDE is
+fulfilled at the <em>interior</em> mesh points only:
+
+$$
+\begin{equation}
+\frac{\partial^2}{\partial t^2} u(x_i, t_n) =
+c^2\frac{\partial^2}{\partial x^2} u(x_i, t_n),
+\tag{6}
+\end{equation}
+$$
+
+for \( i=1,\ldots,N_x-1 \) and \( n=1,\ldots,N_t-1 \). For \( n=0 \) we have
+the initial conditions \( u=I(x) \) and \( u_t=0 \),
+and at the boundaries \( i=0,N_x \) we
+have the boundary condition \( u=0 \).
+
+<h2 id="wave:string:fd">Replacing derivatives by finite differences</h2>
+
+<p>
+The second-order derivatives can be replaced by central
+differences. The most widely used difference approximation of
+the second-order derivative is
+
+$$ \frac{\partial^2}{\partial t^2}u(x_i,t_n)\approx
+\frac{u_i^{n+1} - 2u_i^n + u^{n-1}_i}{\Delta t^2}\tp$$
+
+It is convenient to introduce the finite difference operator notation
+
+$$ [D_tD_t u]^n_i = \frac{u_i^{n+1} - 2u_i^n + u^{n-1}_i}{\Delta t^2}\tp$$
+
+A similar approximation of the second-order derivative in the \( x \)
+direction reads
+$$ \frac{\partial^2}{\partial x^2}u(x_i,t_n)\approx
+\frac{u_{i+1}^{n} - 2u_i^n + u^{n}_{i-1}}{\Delta x^2} = [D_xD_x u]^n_i
+\tp
+$$
+
+<h3 id="___sec6">Algebraic version of the PDE </h3>
+
+<p>
+We can now replace the derivatives in <a href="#mjx-eqn-6">(6)</a>
+and get
+
+$$
+\begin{equation}
+\frac{u_i^{n+1} - 2u_i^n + u^{n-1}_i}{\Delta t^2} =
+c^2\frac{u_{i+1}^{n} - 2u_i^n + u^{n}_{i-1}}{\Delta x^2},
+\tag{7}
+\end{equation}
+$$
+
+or written more compactly using the operator notation:
+
+$$
+\begin{equation}
+[D_tD_t u = c^2 D_xD_x]^{n}_i
+\tp
+\tag{8}
+\end{equation}
+$$
+
+<h3 id="___sec7">Interpretation of the equation as a stencil </h3>
+
+<p>
+A typical feature of <a href="#mjx-eqn-7">(7)</a> is that it involves
+\( u \) values from neighboring points only:
+\( u_i^{n+1} \), \( u^n_{i\pm 1} \), \( u^n_i \), and \( u^{n-1}_i \).
+The circles in Figure
+<a href="#wave:pde1:fig:mesh">1</a> illustrate such neighboring mesh points that
+contributes to an algebraic equation. In this
+particular case, we have sampled the PDE at the point \( (2,2) \)
+and constructed <a href="#mjx-eqn-7">(7)</a>, which then
+involves a coupling of \( u_2^1 \), \( u_1^2 \), \( u_2^2 \), \( u_3^2 \), and \( u_2^3 \).
+The term <em>stencil</em> is often used about the algebraic equation
+at a mesh point, and the geometry of a typical stencil is
+illustrated in Figure <a href="#wave:pde1:fig:mesh">1</a>. One also often refers
+to the algebraic equations as <em>discrete equations</em>,
+<em>(finite) difference equations</em> or a <em>finite difference
+scheme</em>.
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 1:  Mesh in space and time. The circles show points connected in a finite difference equation. <div id="wave:pde1:fig:mesh"></div> </p></center>
+<p><img src="mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/stencil_n_interior.png" align="bottom" width=500></p>
+</center>
+
+<h3 id="___sec8">Algebraic version of the initial conditions </h3>
+
+<p>
+We also need to replace the derivative in the initial condition
+<a href="#mjx-eqn-3">(3)</a> by a finite difference approximation.
+A centered difference of the type
+$$
+\frac{\partial}{\partial t} u(x_i,t_n)\approx
+\frac{u^1_i - u^{-1}_i}{2\Delta t} = [D_{2t} u]^0_i,
+$$
+
+seems appropriate. In operator notation the initial condition is
+written as
+$$ [D_{2t} u]^n_i = 0,\quad n=0 \tp  $$
+
+Writing out this equation and ordering the terms give
+$$
+\begin{equation}
+u^{n-1}_i=u^{n+1}_i,\quad i=0,\ldots,N_x,\ n=0\tp
+\tag{9}
+\end{equation}
+$$
+
+The other initial condition can be computed by
+
+$$ u_i^0 = I(x_i),\quad i=0,\ldots,N_x\tp$$
+
+<h2 id="wave:string:alg">Formulating a recursive algorithm</h2>
+
+<p>
+We assume that \( u^n_i \) and
+\( u^{n-1}_i \) are already computed for \( i=0,\ldots,N_x \).
+The only unknown quantity in <a href="#mjx-eqn-7">(7)</a> is
+therefore \( u^{n+1}_i \), which we can solve for:
+
+$$
+\begin{equation}
+u^{n+1}_i = -u^{n-1}_i + 2u^n_i + C^2
+\left(u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}\right),
+\tag{10}
+\end{equation}
+$$
+
+where we have introduced the parameter
+$$
+\begin{equation}
+C = c\frac{\Delta t}{\Delta x},
+\end{equation}
+$$
+
+known as the <em>Courant number</em>.
+
+<p>
+<div class="alert alert-block alert-success alert-text-normal"><b>\( C \) is the key parameter in the discrete wave equation.</b>
+We see that the
+discrete version of the PDE features only one parameter, \( C \),
+which is therefore the key parameter that governs the
+quality of the numerical solution (see the section <a href="._wave-sol004.html#wave:pde1:analysis">Analysis of the difference equations</a>
+for details). Both the primary
+physical parameter \( c \) and the numerical parameters \( \Delta x \) and \( \Delta t \)
+are lumped together in \( C \). Note that \( C \) is a dimensionless
+parameter.
+</div>
+
+
+<p>
+Given that \( u^{n-1}_i \) and \( u^n_i \) are computed for \( i=0,\ldots,N_x \),
+we find new values at the next time level by applying the formula
+<a href="#mjx-eqn-10">(10)</a> for \( i=1,\ldots,N_x-1 \). Figure
+<a href="#wave:pde1:fig:mesh">1</a> illustrates the points that are used to
+compute \( u^3_2 \). For the boundary points, \( i=0 \) and \( i=N_x \), we apply
+the boundary conditions \( u_i^{n+1}=0 \).
+
+<p>
+A problem with <a href="#mjx-eqn-10">(10)</a> arises when \( n=0 \) since the
+formula for \( u^1_i \) involves \( u^{-1}_i \), which is an undefined
+quantity outside the time mesh (and the time domain). However, we can
+use the initial condition <a href="#mjx-eqn-9">(9)</a> in combination with
+<a href="#mjx-eqn-10">(10)</a> when \( n=0 \) to eliminate \( u^{-1}_i \) and
+arrive at a special formula for \( u_i^1 \):
+
+$$
+\begin{equation}
+u_i^1 = u^0_i - \half
+C^2\left(u^{0}_{i+1}-2u^{0}_{i} + u^{0}_{i-1}\right)
+\tp
+\tag{11}
+\end{equation}
+$$
+
+Figure <a href="#wave:pde1:fig:stencil:u1">2</a> illustrates how <a href="#mjx-eqn-11">(11)</a>
+connects four instead of five points: \( u^1_2 \), \( u_1^0 \), \( u_2^0 \), and \( u_3^0 \).
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 2:  Modified stencil for the first time step. <div id="wave:pde1:fig:stencil:u1"></div> </p></center>
+<p><img src="mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/stencil_n0_interior.png" align="bottom" width=500></p>
+</center>
+
+<p>
+We can now summarize the computational algorithm:
+
+<ol>
+<li> Compute \( u^0_i=I(x_i) \) for \( i=0,\ldots,N_x \)</li>
+<li> Compute \( u^1_i \) by <a href="#mjx-eqn-11">(11)</a> and set \( u_i^1=0 \)
+   for the boundary points \( i=0 \) and \( i=N_x \), for \( n=1,2,\ldots,N-1 \),</li>
+<li> For each time level \( n=1,2,\ldots,N_t-1 \)</li>
+
+<ol>
+  <li> apply <a href="#mjx-eqn-10">(10)</a> to find \( u^{n+1}_i \) for \( i=1,\ldots,N_x-1 \)</li>
+  <li> set \( u^{n+1}_i=0 \) for the boundary points \( i=0 \), \( i=N_x \).</li>
+</ol>
+
+</ol>
+
+The algorithm essentially consists of moving
+a finite difference stencil through all the mesh points, which can be
+seen as an animation in a <a href="http://tinyurl.com/opdfafk/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/index.html" target="_self">web page</a>
+or a <a href="http://tinyurl.com/opdfafk/pub/mov-wave/wave1D_PDE_Dirichlet_stencil_gpl/movie.ogg" target="_self">movie file</a>.
+
+<h2 id="wave:string:impl">Sketch of an implementation</h2>
+
+<p>
+In a Python implementation of this algorithm, we use the array
+elements <code>u[i]</code> to store \( u^{n+1}_i \), <code>u_1[i]</code> to store \( u^n_i \), and
+<code>u_2[i]</code> to store \( u^{n-1}_i \). Our naming convention is use <code>u</code> for the
+unknown new spatial field to be computed, <code>u_1</code> as the solution at
+one time step back in time, <code>u_2</code> as the solution two time steps back
+in time and so forth.
+
+<p>
+The algorithm only involves the three most recent time levels, so we
+need only three arrays for \( u_i^{n+1} \), \( u_i^n \), and \( u_i^{n-1} \),
+\( i=0,\ldots,N_x \).  Storing all the solutions in a two-dimensional
+array of size \( (N_x+1)\times (N_t+1) \) would be possible in this simple
+one-dimensional PDE problem, but is normally out of the question in
+three-dimensional (3D) and large two-dimensional (2D) problems. We
+shall therefore, in all our PDE solving programs, have the unknown in
+memory at as few time levels as possible.
+
+<p>
+The following Python snippet realizes the steps in the computational
+algorithm.
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #408080; font-style: italic"># Given mesh points as arrays x and t (x[i], t[n])</span>
+dx <span style="color: #666666">=</span> x[<span style="color: #666666">1</span>] <span style="color: #666666">-</span> x[<span style="color: #666666">0</span>]
+dt <span style="color: #666666">=</span> t[<span style="color: #666666">1</span>] <span style="color: #666666">-</span> t[<span style="color: #666666">0</span>]
+C <span style="color: #666666">=</span> c<span style="color: #666666">*</span>dt<span style="color: #666666">/</span>dx            <span style="color: #408080; font-style: italic"># Courant number</span>
+Nt <span style="color: #666666">=</span> <span style="color: #008000">len</span>(t)<span style="color: #666666">-1</span>
+C2 <span style="color: #666666">=</span> C<span style="color: #666666">**2</span>              <span style="color: #408080; font-style: italic"># Help variable in the scheme</span>
+
+<span style="color: #408080; font-style: italic"># Set initial condition u(x,0) = I(x)</span>
+<span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">0</span>, Nx<span style="color: #666666">+1</span>):
+    u_1[i] <span style="color: #666666">=</span> I(x[i])
+
+<span style="color: #408080; font-style: italic"># Apply special formula for first step, incorporating du/dt=0</span>
+<span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">1</span>, Nx):
+    u[i] <span style="color: #666666">=</span> u_1[i] <span style="color: #666666">-</span> <span style="color: #666666">0.5*</span>C<span style="color: #666666">**2</span>(u_1[i<span style="color: #666666">+1</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u_1[i] <span style="color: #666666">+</span> u_1[i<span style="color: #666666">-1</span>])
+u[<span style="color: #666666">0</span>] <span style="color: #666666">=</span> <span style="color: #666666">0</span>;  u[Nx] <span style="color: #666666">=</span> <span style="color: #666666">0</span>   <span style="color: #408080; font-style: italic"># Enforce boundary conditions</span>
+
+<span style="color: #408080; font-style: italic"># Switch variables before next step</span>
+u_2[:], u_1[:] <span style="color: #666666">=</span> u_1, u
+
+<span style="color: #008000; font-weight: bold">for</span> n <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">1</span>, Nt):
+    <span style="color: #408080; font-style: italic"># Update all inner mesh points at time t[n+1]</span>
+    <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">1</span>, Nx):
+        u[i] <span style="color: #666666">=</span> <span style="color: #666666">2</span>u_1[i] <span style="color: #666666">-</span> u_2[i] <span style="color: #666666">-</span> \ 
+               C<span style="color: #666666">**2</span>(u_1[i<span style="color: #666666">+1</span>] <span style="color: #666666">-</span> <span style="color: #666666">2*</span>u_1[i] <span style="color: #666666">+</span> u_1[i<span style="color: #666666">-1</span>])
+
+    <span style="color: #408080; font-style: italic"># Insert boundary conditions</span>
+    u[<span style="color: #666666">0</span>] <span style="color: #666666">=</span> <span style="color: #666666">0</span>;  u[Nx] <span style="color: #666666">=</span> <span style="color: #666666">0</span>
+
+    <span style="color: #408080; font-style: italic"># Switch variables before next step</span>
+    u_2[:], u_1[:] <span style="color: #666666">=</span> u_1, u
+</pre></div>
+
+<h1 id="___sec11">Verification </h1>
+
+<p>
+Before implementing the algorithm, it is convenient to add a source
+term to the PDE <a href="#mjx-eqn-1">(1)</a>
+since it gives us more freedom in finding test problems for
+verification. Physically, a source term acts as a generation of waves
+in the interior of the domain.
+
+<h2 id="wave:pde2:fd">A slightly generalized model problem</h2>
+
+<p>
+We now address the following extended initial-boundary value problem
+for one-dimensional wave phenomena:
+
+$$
+\begin{align}
+u_{tt} &= c^2 u_{xx} + f(x,t), \quad &x\in (0,L),\ t\in (0,T]
+\tag{12}\\ 
+u(x,0) &= I(x), \quad &x\in [0,L]
+\tag{13}\\ 
+u_t(x,0) &= V(x), \quad &x\in [0,L]
+\tag{14}\\ 
+u(0,t) & = 0, \quad  &t>0
+\tag{15}\\ 
+u(L,t) & = 0, \quad  &t>0
+\tag{16}
+\end{align}
+$$
+
+<p>
+Sampling the PDE at \( (x_i,t_n) \) and using the same finite difference
+approximations as above, yields
+
+$$
+\begin{equation}
+[D_tD_t u = c^2 D_xD_x u + f]^{n}_i
+\tp
+\tag{17}
+\end{equation}
+$$
+
+Writing this out and solving for the unknown \( u^{n+1}_i \) results in
+
+$$
+\begin{equation}
+u^{n+1}_i = -u^{n-1}_i + 2u^n_i + C^2
+(u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}) + \Delta t^2 f^n_i
+\tag{18}
+\tp
+\end{equation}
+$$
+
+<p>
+The equation for the first time step must be rederived. The discretization
+of the initial condition \( u_t = V(x) \) at \( t=0 \)
+becomes
+
+$$ [D_{2t}u = V]^0_i\quad\Rightarrow\quad u^{-1}_i = u^{1}_i - 2\Delta t V_i,$$
+
+which, when inserted in <a href="#mjx-eqn-18">(18)</a> for \( n=0 \), gives
+the special formula
+
+$$
+\begin{equation}
+u^{1}_i = u^0_i - \Delta t V_i + {\half}
+C^2
+\left(u^{0}_{i+1}-2u^{0}_{i} + u^{0}_{i-1}\right) + \half\Delta t^2 f^0_i
+\tag{19}
+\tp
+\end{equation}
+$$
+
+<h2 id="wave:pde2:fd:standing:waves">Using an analytical solution of physical significance</h2>
+
+<p>
+Many wave problems feature sinusoidal oscillations in time
+and space. For example, the original PDE problem
+<a href="#mjx-eqn-1">(1)</a>-<a href="#mjx-eqn-5">(5)</a> allows an exact solution
+
+$$
+\begin{equation}
+\uex(x,t)) = A\sin\left(\frac{\pi}{L}x\right)
+\cos\left(\frac{\pi}{L}ct\right)\tp
+\tag{20}
+\end{equation}
+$$
+
+This \( \uex \) fulfills the PDE with \( f=0 \), boundary conditions
+\( \uex(0,t)=\uex(L,0)=0 \), as well as initial
+conditions \( I(x)=A\sin\left(\frac{\pi}{L}x\right) \) and \( V=0 \).
+
+<p>
+It is common to use such exact solutions of physical interest
+to verify implementations. However, the numerical
+solution \( u^n_i \) will only be an approximation to \( \uex(x_i,t_n) \).
+We have no knowledge of the precise size of the error in
+this approximation, and therefore we can never know if discrepancies
+between \( u^n_i \) and \( \uex(x_i,t_n) \) are caused
+by mathematical approximations or programming errors.
+In particular, if a plot of the computed solution \( u^n_i \) and
+the exact one <a href="#mjx-eqn-20">(20)</a> looks similar, many
+are tempted to claim that the implementation works. However,
+even if color plots look nice and the accuracy is &quot;deemed good&quot;,
+there can still be serious programming errors present!
+
+<p>
+The only way to use exact physical solutions like
+<a href="#mjx-eqn-20">(20)</a> for serious and thorough verification is to
+run a series of finer and finer meshes, measure the integrated error
+in each mesh, and from this information estimate the empirical convergence
+rate of the method.
+An introduction to the computing convergence rates is given in
+the section
+on <a href="http://hplgit.github.io/decay-book/doc/pub/book/sphinx/._book007.html#computing-convergence-rates" target="_self">convergence rates</a> in <a href="._wave-sol010.html#Langtangen_decay">[1]</a>.
+
+<p>
+In the present problem, one expects the method to have a convergence rate
+of 2 (see the section <a href="._wave-sol004.html#wave:pde1:analysis">Analysis of the difference equations</a>), so if the computed rates
+are close to 2 on a sufficiently mesh, we have good evidence that
+the implementation is free of programming mistakes.
+
+<h2 id="wave:pde2:fd:MMS">Manufactured solution</h2>
+
+<p>
+One problem with the exact solution <a href="#mjx-eqn-20">(20)</a> is
+that it requires a simplification (\( V=0, f=0 \)) of the implemented problem
+<a href="#mjx-eqn-12">(12)</a>-<a href="#mjx-eqn-16">(16)</a>. An advantage of using
+a <em>manufactured solution</em> is that we can test all terms in the
+PDE problem. The idea of this approach is to set up some chosen
+solution and fit the source term, boundary conditions, and initial
+conditions to be compatible with the chosen solution.
+Given that our boundary conditions in the implementation are
+\( u(0,t)=u(L,t)=0 \), we must choose a solution that fulfills these
+conditions. One example is
+
+$$ \uex(x,t) = x(L-x)\sin t\tp$$
+
+Inserted in the PDE \( u_{tt}=c^2u_{xx}+f \) we get
+
+$$ -x(L-x)\sin t = -c^2 2\sin t + f\quad\Rightarrow f = (2c^2 - x(L-x))\sin t\tp$$
+
+The initial conditions become
+
+$$
+\begin{align*}
+u(x,0) =& I(x) = 0,\\ 
+u_t(x,0) &= V(x) = x(L-x)\tp
+\end{align*}
+$$
+
+<p>
+To verify the code, we compute the convergence rates in a series of
+simulations, letting each simulation use a finer mesh than the
+previous one. Such empirical estimation of convergence rates
+tests rely on an assumption that some
+measure \( E \) of the numerical error is related to the discretization
+parameters through
+
+$$ E = C_t\Delta t^r + C_x\Delta x^p,$$
+
+where \( C_t \), \( C_x \), \( r \), and \( p \) are constants. The constants
+\( r \) and \( p \) are known as the <em>convergence rates</em> in time and space,
+respectively.
+From the
+accuracy in the finite difference approximations, we expect \( r=p=2 \),
+since the error terms are of order \( \Delta t^2 \) and \( \Delta x^2 \).
+This is confirmed by truncation error analysis and other types of analysis.
+
+<p>
+By using an exact solution of the PDE problem, we will next compute
+the error measure \( E \) on a sequence of refined meshes and see if
+the rates \( r=p=2 \) are obtained. We will not be concerned with estimating
+the constants \( C_t \) and \( C_x \).
+
+<p>
+It is advantageous to introduce a single discretization parameter
+\( h=\Delta t=\hat c \Delta x \) for some constant \( \hat c \).
+Since \( \Delta t \) and \( \Delta x \)
+are related through the Courant number, \( \Delta t = C\Delta x/c \), we
+set \( h=\Delta t \), and then \( \Delta x = hc/C \).
+Now the expression for the error measure is greatly simplified:
+
+$$ E = C_t\Delta t^r + C_x\Delta x^r = C_t h^r + C_x\left(\frac{c}{C}\right)^r h^r
+= Dh^r,\quad D = C_t+C_x\left(\frac{c}{C}\right)^r \tp$$
+
+<p>
+We choose an initial discretization parameter \( h_0 \) and run
+experiments with decreasing \( h \): \( h_i=2^{-i}h_0 \), \( i=1,2,\ldots,m \).
+Halving \( h \) in each experiment is not necessary, but it is a common choice.
+For each experiment we must record \( E \) and \( h \).
+A standard choice of error measure
+is the \( \ell^2 \) or \( \ell^\infty \) norm of
+the error mesh function \( e^n_i \):
+
+$$
+\begin{align}
+E &= ||e^n_i||_{\ell^2} = \left( \Delta t\Delta x\sum_{n=0}^{N_t}\sum_{i=0}^{N_x}
+(e^n_i)^2\right)^{\half},\quad e^n_i = \uex(x_i,t_n)-u^n_i,
+\\ 
+E &= ||e^n_i||_{\ell^\infty} = \max_{i,n} |e^i_n|\tp
+\end{align}
+$$
+
+In Python, one can compute \( \sum_{i}(e^{n}_i)^2 \) at each time step
+and accumulate the value in some sum variable, say <code>e2_sum</code>.  At the
+final time step one can do <code>sqrt(dt*dx*e2_sum)</code>.  For the
+\( \ell^\infty \) norm one must compare the maximum error at a time level
+(<code>e.max()</code>) with the global maximum over the time domain: <code>e_max =
+max(e_max, e.max())</code>.
+
+<p>
+An alternative error measure
+is to use a spatial norm at one time step only, e.g.,
+the end time \( T \) (\( n=N_t \)):
+
+$$
+\begin{align}
+E &= ||e^n_i||_{\ell^2} = \left( \Delta x\sum_{i=0}^{N_x}
+(e^n_i)^2\right)^{\half},\quad e^n_i = \uex(x_i,t_n)-u^n_i,
+\\ 
+E &= ||e^n_i||_{\ell^\infty} = \max_{0\leq i\leq N_x} |e^{n}_i|\tp
+\end{align}
+$$
+
+The important issue is that our error measure \( E \) must be one number
+that represents the error in the simulation.
+
+<p>
+Let \( E_i \) be the error measure in experiment (mesh) number \( i \) and
+let \( h_i \) be the corresponding discretization parameter (\( h \)).
+With the error model \( E_i = Dh_i^r \), we can
+estimate \( r \) by comparing two consecutive
+experiments:
+
+$$
+\begin{align*}
+E_{i+1}& =D h_{i+1}^{r},\\ 
+E_{i}& =D h_{i}^{r}\tp
+\end{align*}
+$$
+
+Dividing the two equations eliminates the (uninteresting) constant \( D \).
+Thereafter, solving for \( r \) yields
+
+$$ r = \frac{\ln E_{i+1}/E_{i}}{\ln h_{i+1}/h_{i}}\tp
+$$
+
+Since \( r \) depends on \( i \), i.e., which simulations we compare,
+we add an index to \( r \): \( r_i \), where \( i=0,\ldots,m-2 \), if we
+have \( m \) experiments: \( (h_0,E_0),\ldots,(h_{m-1}, E_{m-1}) \).
+
+<p>
+In our present discretization of the wave equation we expect \( r=2 \), and
+hence the \( r_i \) values should converge to 2 as \( i \) increases.
+
+<h2 id="wave:pde2:fd:verify:quadratic">Constructing an exact solution of the discrete equations</h2>
+
+<p>
+With a manufactured or known analytical solution, as outlined above,
+we can estimate convergence rates and see if they have the correct
+asymptotic behavior. Experience shows that this is a quite good
+verification technique in that many common bugs will destroy the
+convergence rates. A significantly better test though,
+would be to check that the
+numerical solution is exactly what it should be. This will in general
+require exact knowledge of the numerical error, which we do not normally have
+(although we in the section <a href="._wave-sol004.html#wave:pde1:analysis">Analysis of the difference equations</a> establish such knowledge
+in simple cases).
+However, it is possible to look for solutions where we can show that
+the numerical error vanishes, i.e., the solution of the original continuous
+PDE problem is
+also a solution of the discrete equations. This property often arises
+if the exact solution of the PDE
+is a lower-order polynomial. (Truncation error
+analysis leads to error measures that involve derivatives of the
+exact solution. In the present problem, the truncation error involves
+4th-order derivatives of \( u \) in space and time. Choosing \( u \)
+as a polynomial of degree three or less
+will therefore lead to vanishing error.)
+
+<p>
+We shall now illustrate the construction of an exact solution to both the
+PDE itself and the discrete equations.
+Our chosen manufactured solution is quadratic in space
+and linear in time. More specifically, we set
+
+$$
+\begin{equation}
+\uex (x,t) = x(L-x)(1+{\half}t),
+\tag{21}
+\end{equation}
+$$
+
+which by insertion in the PDE leads to \( f(x,t)=2(1+t)c^2 \). This \( \uex \)
+fulfills the boundary conditions \( u=0 \) and demands \( I(x)=x(L-x) \)
+and \( V(x)={\half}x(L-x) \).
+
+<p>
+To realize that the chosen \( \uex \) is also an exact
+solution of the discrete equations,
+we first remind ourselves that \( t_n=n\Delta t \) before we
+establish that
+
+$$
+\begin{align}
+\lbrack D_tD_t t^2\rbrack^n &= \frac{t_{n+1}^2 - 2t_n^2 + t_{n-1}^2}{\Delta t^2}
+= (n+1)^2 -2n^2 + (n-1)^2 = 2,\\ 
+\lbrack D_tD_t t\rbrack^n &= \frac{t_{n+1} - 2t_n + t_{n-1}}{\Delta t^2}
+= \frac{((n+1) -2n + (n-1))\Delta t}{\Delta t^2} = 0
+\tp
+\end{align}
+$$
+
+Hence,
+$$ [D_tD_t \uex]^n_i = x_i(L-x_i)[D_tD_t (1+{\half}t)]^n =
+x_i(L-x_i){\half}[D_tD_t t]^n = 0\tp$$
+
+Similarly, we get that
+
+$$
+\begin{align*}
+\lbrack D_xD_x \uex\rbrack^n_i &=
+(1+{\half}t_n)\lbrack D_xD_x (xL-x^2)\rbrack_i =
+(1+{\half}t_n)\lbrack LD_xD_x x - D_xD_x x^2\rbrack_i \\ 
+&= -2(1+{\half}t_n)
+\tp
+\end{align*}
+$$
+
+Now, \( f^n_i = 2(1+{\half}t_n)c^2 \), which results in
+
+$$ [D_tD_t \uex - c^2D_xD_x\uex - f]^n_i = 0 - c^2(-1)2(1 + {\half}t_n
++ 2(1+{\half}t_n)c^2 = 0\tp$$
+
+<p>
+Moreover, \( \uex(x_i,0)=I(x_i) \),
+\( \partial \uex/\partial t = V(x_i) \) at \( t=0 \), and
+\( \uex(x_0,t)=\uex(x_{N_x},0)=0 \). Also the modified scheme for the
+first time step is fulfilled by \( \uex(x_i,t_n) \).
+
+<p>
+Therefore, the exact solution \( \uex(x,t)=x(L-x)(1+t/2) \)
+of the PDE problem is also an exact solution of the discrete problem.
+We can use this result to check that the computed \( u^n_i \) values from
+an implementation equals \( \uex(x_i,t_n) \) within machine precision,
+<em>regardless of the mesh spacings</em> \( \Delta x \) and \( \Delta t \)!
+Nevertheless, there might be stability
+restrictions on \( \Delta x \) and \( \Delta t \), so the test can only be
+run for a mesh that is compatible with the stability criterion (which
+in the present case is \( C\leq 1 \), to be derived later).
+
+<p>
+<div class="alert alert-block alert-success alert-text-normal"><b>Notice.</b>
+A product of quadratic or linear expressions in the various
+independent variables, as shown above, will often fulfill both the
+PDE problem and the discrete equations, and can therefore be very useful
+solutions for verifying implementations.  However, for 1D wave
+equations of the type \( u_t=c^2u_{xx} \) we shall see that there is always
+another much more powerful way of generating exact
+solutions (which consists in just setting \( C=1 \) (!), as shown in
+the section <a href="._wave-sol004.html#wave:pde1:analysis">Analysis of the difference equations</a>).
+</div>
+
+
+<p>
+<p>
+<!-- navigation buttons at the bottom of the page -->
+<ul class="pager">
+  <li class="previous">
+    <a href="._wave-sol000.html">&larr; Prev</a>
+  </li>
+  <li class="next">
+    <a href="._wave-sol002.html">Next &rarr;</a>
+  </li>
+</ul>
+<!-- ------------------- end of main content --------------- -->
+
+</div>  <!-- end container -->
+<!-- include javascript, jQuery *first* -->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+<!-- Bootstrap footer
+<footer>
+<a href="http://..."><img width="250" align=right src="http://..."></a>
+</footer>
+-->
+
+
+</body>
+</html>
+    
+

@@ -1,0 +1,800 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Finite difference methods for wave motion">
+<meta name="keywords" content="waves on a string,wave equation 1D,wave equation 1D, finite difference method,mesh finite differences,stencil 1D wave equation,mesh function,wave equation 1D, implementation,callback function,nose test,pytest test,unit testing,software testing nose,software testing pytest,closure,vectorization,scalar code,vectorization,array computing,array slices,slice,lambda function (Python),Neumann conditions,Dirichlet conditions,homogeneous Neumann conditions,homogeneous Dirichlet conditions,boundary conditions Neumann,boundary conditions Dirichlet,stencil Neumann boundary,index set notation,geometric mean,arithmetic mean,harmonic average,averaging geometric,averaging arithmetic,averaging harmonic,radiation condition,open boundary condition,boundary condition open (radiation),periodic boundary conditions,boundary conditions periodic,wave equation 1D, analytical properties,Fourier series,Fourier transform,discrete Fourier transform,wave equation 1D, exact numerical solution,Courant number,stability criterion,wave equation 1D, stability,wave equation 2D, implementation,index set notation">
+
+<title>Finite difference methods for wave motion</title>
+
+
+<link href="https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_styles/style_solarized_box/css/solarized_light_code.css" rel="stylesheet" type="text/css" title="light"/>
+<script src="https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_styles/style_solarized_box/js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<link href="http://thomasf.github.io/solarized-css/solarized-light.min.css" rel="stylesheet">
+<style type="text/css">
+h1 {color: #b58900;}  /* yellow */
+/* h1 {color: #cb4b16;}  orange */
+/* h1 {color: #d33682;}  magenta, the original choice of thomasf */
+code { padding: 0px; background-color: inherit; }
+pre {
+  border: 0pt solid #93a1a1;
+  box-shadow: none;
+}
+.alert-text-small   { font-size: 80%;  }
+.alert-text-large   { font-size: 130%; }
+.alert-text-normal  { font-size: 90%;  }
+.alert {
+  padding:8px 35px 8px 14px; margin-bottom:18px;
+  text-shadow:0 1px 0 rgba(255,255,255,0.5);
+  border:1px solid #93a1a1;
+  border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  color: #555;
+  background-color: #eee8d5;
+  background-position: 10px 5px;
+  background-repeat: no-repeat;
+  background-size: 38px;
+  padding-left: 55px;
+  width: 75%;
+ }
+.alert-block {padding-top:14px; padding-bottom:14px}
+.alert-block > p, .alert-block > ul {margin-bottom:1em}
+.alert li {margin-top: 1em}
+.alert-block p+p {margin-top:5px}
+.alert-notice { background-image: url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_notice.png); }
+.alert-summary  { background-image:url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_summary.png); }
+.alert-warning { background-image: url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_warning.png); }
+.alert-question {background-image:url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_question.png); }
+
+div { text-align: justify; text-justify: inter-word; }
+</style>
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('Simulation of waves on a string',
+               1,
+               'wave:string',
+               'wave:string'),
+              ('Discretizing the domain',
+               2,
+               'wave:string:mesh',
+               'wave:string:mesh'),
+              ('Uniform meshes', 3, None, '___sec2'),
+              ('The discrete solution',
+               2,
+               'wave:string:numerical:sol',
+               'wave:string:numerical:sol'),
+              ('Fulfilling the equation at the mesh points',
+               2,
+               'wave:string:samplingPDE',
+               'wave:string:samplingPDE'),
+              ('Replacing derivatives by finite differences',
+               2,
+               'wave:string:fd',
+               'wave:string:fd'),
+              ('Algebraic version of the PDE', 3, None, '___sec6'),
+              ('Interpretation of the equation as a stencil',
+               3,
+               None,
+               '___sec7'),
+              ('Algebraic version of the initial conditions',
+               3,
+               None,
+               '___sec8'),
+              ('Formulating a recursive algorithm',
+               2,
+               'wave:string:alg',
+               'wave:string:alg'),
+              ('Sketch of an implementation',
+               2,
+               'wave:string:impl',
+               'wave:string:impl'),
+              ('Verification', 1, None, '___sec11'),
+              ('A slightly generalized model problem',
+               2,
+               'wave:pde2:fd',
+               'wave:pde2:fd'),
+              ('Using an analytical solution of physical significance',
+               2,
+               'wave:pde2:fd:standing:waves',
+               'wave:pde2:fd:standing:waves'),
+              ('Manufactured solution',
+               2,
+               'wave:pde2:fd:MMS',
+               'wave:pde2:fd:MMS'),
+              ('Constructing an exact solution of the discrete equations',
+               2,
+               'wave:pde2:fd:verify:quadratic',
+               'wave:pde2:fd:verify:quadratic'),
+              ('Implementation', 1, 'wave:pde1:impl', 'wave:pde1:impl'),
+              ('Callback function for user-specific actions',
+               2,
+               None,
+               '___sec17'),
+              ('The solver function',
+               2,
+               'wave:pde1:impl:solver',
+               'wave:pde1:impl:solver'),
+              ('Verification: exact quadratic solution',
+               2,
+               'wave:pde1:impl:verify:quadratic',
+               'wave:pde1:impl:verify:quadratic'),
+              ('Visualization: animating the solution',
+               2,
+               'wave:pde1:impl:animate',
+               'wave:pde1:impl:animate'),
+              ('Function for administering the simulation',
+               3,
+               None,
+               '___sec21'),
+              ('Dissection of the code', 3, None, '___sec22'),
+              ('Making movie files', 3, None, '___sec23'),
+              ('Skipping frames for animation speed', 3, None, '___sec24'),
+              ('Running a case',
+               2,
+               'wave:pde1:guitar:data',
+               'wave:pde1:guitar:data'),
+              ('Working with a scaled PDE model', 2, None, '___sec26'),
+              ('Vectorization',
+               1,
+               'wave:pde1:impl:vec',
+               'wave:pde1:impl:vec'),
+              ('Operations on slices of arrays',
+               2,
+               'wave:pde1:impl:vec:slices:basics',
+               'wave:pde1:impl:vec:slices:basics'),
+              ('Finite difference schemes expressed as slices',
+               2,
+               'wave:pde1:impl:vec:slices:fdm',
+               'wave:pde1:impl:vec:slices:fdm'),
+              ('Verification',
+               2,
+               'wave:pde1:impl:vec:verify:quadratic',
+               'wave:pde1:impl:vec:verify:quadratic'),
+              ('Efficiency measurements', 2, None, '___sec31'),
+              ('Solution 1', 3, None, '___sec32'),
+              ('Solution 2', 3, None, '___sec33'),
+              ('Efficiency experiments', 3, None, '___sec34'),
+              ('Remark on the updating of arrays',
+               2,
+               'wave:pde1:impl:ref:switch',
+               'wave:pde1:impl:ref:switch'),
+              ('Exercises', 1, None, '___sec36'),
+              ('Exercise 1: Simulate a standing wave',
+               2,
+               'wave:exer:standingwave',
+               'wave:exer:standingwave'),
+              ('Remarks', 3, None, '___sec38'),
+              ('Exercise 2: Add storage of solution in a user action function',
+               2,
+               'wave:exer:store:list',
+               'wave:exer:store:list'),
+              ('Exercise 3: Use a class for the user action function',
+               2,
+               'wave:exer:store:list:class',
+               'wave:exer:store:list:class'),
+              ('Exercise 4: Compare several Courant numbers in one movie',
+               2,
+               'wave:exer:multiple:C',
+               'wave:exer:multiple:C'),
+              ('Project 5: Calculus with 1D mesh functions',
+               2,
+               'wave:exer:mesh1D:calculus',
+               'wave:exer:mesh1D:calculus'),
+              ('Generalization: reflecting boundaries',
+               1,
+               'wave:pde2:Neumann',
+               'wave:pde2:Neumann'),
+              ('Neumann boundary condition',
+               2,
+               'wave:pde2:Neumann:bc',
+               'wave:pde2:Neumann:bc'),
+              ('Discretization of derivatives at the boundary',
+               2,
+               'wave:pde2:Neumann:discr',
+               'wave:pde2:Neumann:discr'),
+              ('Implementation of Neumann conditions',
+               2,
+               'wave:pde2:Neumann:impl',
+               'wave:pde2:Neumann:impl'),
+              ('Index set notation', 2, 'wave:indexset', 'wave:indexset'),
+              ('Verifying the implementation of Neumann conditions',
+               2,
+               'wave:pde1:verify',
+               'wave:pde1:verify'),
+              ('Alternative implementation via ghost cells',
+               2,
+               'wave:pde1:Neumann:ghost',
+               'wave:pde1:Neumann:ghost'),
+              ('Idea', 3, None, '___sec50'),
+              ('Implementation', 3, None, '___sec51'),
+              ('Generalization: variable wave velocity',
+               1,
+               'wave:pde2:var:c',
+               'wave:pde2:var:c'),
+              ('The model PDE with a variable coefficient',
+               2,
+               None,
+               '___sec53'),
+              ('Discretizing the variable coefficient',
+               2,
+               'wave:pde2:var:c:ideas',
+               'wave:pde2:var:c:ideas'),
+              ('Computing the coefficient between mesh points',
+               2,
+               'wave:pde2:var:c:means',
+               'wave:pde2:var:c:means'),
+              ('How a variable coefficient affects the stability',
+               2,
+               'wave:pde2:var:c:stability',
+               'wave:pde2:var:c:stability'),
+              ('Neumann condition and a variable coefficient',
+               2,
+               'wave:pde2:var:c:Neumann',
+               'wave:pde2:var:c:Neumann'),
+              ('Implementation of variable coefficients',
+               2,
+               'wave:pde2:var:c:impl',
+               'wave:pde2:var:c:impl'),
+              ('A more general PDE model with variable coefficients',
+               2,
+               None,
+               '___sec59'),
+              ('Generalization: damping', 2, None, '___sec60'),
+              ('Building a general 1D wave equation solver',
+               1,
+               'wave:pde2:software',
+               'wave:pde2:software'),
+              ('User action function as a class', 2, None, '___sec62'),
+              ('The code', 3, None, '___sec63'),
+              ('Dissection', 3, None, '___sec64'),
+              ('Pulse propagation in two media', 2, None, '___sec65'),
+              ('Exercises', 1, None, '___sec66'),
+              ('Exercise 6: Find the analytical solution to a damped wave equation',
+               2,
+               'wave:exer:standingwave:damped:uex',
+               'wave:exer:standingwave:damped:uex'),
+              ('Problem 7: Explore symmetry boundary conditions',
+               2,
+               'wave:exer:symmetry:bc',
+               'wave:exer:symmetry:bc'),
+              ('Exercise 8: Send pulse waves through a layered medium',
+               2,
+               'wave:app:exer:pulse1D',
+               'wave:app:exer:pulse1D'),
+              ('Exercise 9: Explain why numerical noise occurs',
+               2,
+               'wave:app:exer:pulse1D:analysis',
+               'wave:app:exer:pulse1D:analysis'),
+              ('Exercise 10: Investigate harmonic averaging in a 1D model',
+               2,
+               'wave:app:exer:pulse1D:harmonic',
+               'wave:app:exer:pulse1D:harmonic'),
+              ('Problem 11: Implement open boundary conditions',
+               2,
+               'wave:app:exer:radiationBC',
+               'wave:app:exer:radiationBC'),
+              ('Remarks', 3, None, '___sec73'),
+              ('Exercise 12: Implement periodic boundary conditions',
+               2,
+               'wave:exer:periodic',
+               'wave:exer:periodic'),
+              ('Exercise 13: Compare discretizations of a Neumann condition',
+               2,
+               None,
+               '___sec75'),
+              ('Exercise 14: Verification by a cubic polynomial in space',
+               2,
+               'wave:fd2:exer:verify:cubic',
+               'wave:fd2:exer:verify:cubic'),
+              ('Analysis of the difference equations',
+               1,
+               'wave:pde1:analysis',
+               'wave:pde1:analysis'),
+              ('Properties of the solution of the wave equation',
+               2,
+               'wave:pde1:properties',
+               'wave:pde1:properties'),
+              ('More precise definition of Fourier representations',
+               2,
+               'wave:pde1:Fourier',
+               'wave:pde1:Fourier'),
+              ('Stability', 2, 'wave:pde1:stability', 'wave:pde1:stability'),
+              ('Preliminary results', 3, None, '___sec81'),
+              ('Numerical wave propagation', 3, None, '___sec82'),
+              ('Numerical dispersion relation',
+               2,
+               'wave:pde1:num:dispersion',
+               'wave:pde1:num:dispersion'),
+              ('Extending the analysis to 2D and 3D',
+               2,
+               'wave:pde1:analysis:2D3D',
+               'wave:pde1:analysis:2D3D'),
+              ('Finite difference methods for 2D and 3D wave equations',
+               1,
+               'wave:2D3D',
+               'wave:2D3D'),
+              ('Multi-dimensional wave equations',
+               2,
+               'wave:2D3D:models',
+               'wave:2D3D:models'),
+              ('Mesh', 2, 'wave:2D3D:mesh', 'wave:2D3D:mesh'),
+              ('Discretization', 2, 'wave:2D3D:models', 'wave:2D3D:models'),
+              ('Discretizing the PDEs', 3, None, '___sec89'),
+              ('Handling boundary conditions where $u$ is known',
+               3,
+               None,
+               '___sec90'),
+              ('Discretizing the Neumann condition', 3, None, '___sec91'),
+              ('Implementation', 1, 'wave:2D3D:impl', 'wave:2D3D:impl'),
+              ('Scalar computations',
+               2,
+               'wave2D3D:impl:scalar',
+               'wave2D3D:impl:scalar'),
+              ('Domain and mesh', 3, None, '___sec94'),
+              ('Solution arrays', 3, None, '___sec95'),
+              ('Index sets', 3, None, '___sec96'),
+              ('Computing the solution', 3, None, '___sec97'),
+              ('Vectorized computations',
+               2,
+               'wave2D3D:impl:vectorized',
+               'wave2D3D:impl:vectorized'),
+              ('Verification',
+               2,
+               'wave2D3D:impl:verify',
+               'wave2D3D:impl:verify'),
+              ('Testing a quadratic solution', 3, None, '___sec100'),
+              ('Using classes to implement a simulator',
+               1,
+               None,
+               '___sec101'),
+              ('Exercises', 1, None, '___sec102'),
+              ('Exercise 15: Check that a solution fulfills the discrete model',
+               2,
+               'wave:exer:quadratic:2D',
+               'wave:exer:quadratic:2D'),
+              ('Project 16: Calculus with 2D mesh functions',
+               2,
+               'wave:exer:mesh3D:calculus',
+               'wave:exer:mesh3D:calculus'),
+              ('Exercise 17: Implement Neumann conditions in 2D',
+               2,
+               'wave:app:exer:wave2D:Neumann',
+               'wave:app:exer:wave2D:Neumann'),
+              ('Exercise 18: Test the efficiency of compiled loops in 3D',
+               2,
+               'wave:exer:3D:f77:cy:efficiency',
+               'wave:exer:3D:f77:cy:efficiency'),
+              ('Applications of wave equations', 1, 'wave:app', 'wave:app'),
+              ('Waves on a string', 2, 'wave:app:string', 'wave:app:string'),
+              ('Damping', 3, None, '___sec109'),
+              ('External forcing', 3, None, '___sec110'),
+              ('Modeling the tension via springs', 3, None, '___sec111'),
+              ('Waves on a membrane',
+               2,
+               'wave:app:membrane',
+               'wave:app:membrane'),
+              ('Elastic waves in a rod',
+               2,
+               'wave:app:elastic:rod',
+               'wave:app:elastic:rod'),
+              ('The acoustic model for seismic waves',
+               2,
+               'wave:app:acoustic:seismic',
+               'wave:app:acoustic:seismic'),
+              ('Anisotropy', 3, None, '___sec115'),
+              ('Sound waves in liquids and gases',
+               2,
+               'wave:app:sound',
+               'wave:app:sound'),
+              ('Spherical waves',
+               2,
+               'wave:app:spherical',
+               'wave:app:spherical'),
+              ('The linear shallow water equations',
+               2,
+               'wave:app:sw:2D',
+               'wave:app:sw:2D'),
+              ('Wind drag on the surface', 3, None, '___sec119'),
+              ('Bottom drag', 3, None, '___sec120'),
+              ("Effect of the Earth's rotation", 3, None, '___sec121'),
+              ('Waves in blood vessels',
+               2,
+               'wave:app:blood',
+               'wave:app:blood'),
+              ('Electromagnetic waves',
+               2,
+               'wave:app:light',
+               'wave:app:light'),
+              ('Exercises', 1, 'wave:app:exer', 'wave:app:exer'),
+              ('Exercise 19: Simulate waves on a non-homogeneous string',
+               2,
+               'wave:app:exer:string:discont',
+               'wave:app:exer:string:discont'),
+              ('Exercise 20: Simulate damped waves on a string',
+               2,
+               'wave:app:exer:string:damping',
+               'wave:app:exer:string:damping'),
+              ('Exercise 21: Simulate elastic waves in a rod',
+               2,
+               'wave:app:exer:rod',
+               'wave:app:exer:rod'),
+              ('Exercise 22: Simulate spherical waves',
+               2,
+               'wave:app:exer:spherical',
+               'wave:app:exer:spherical'),
+              ('Problem 23: Earthquake-generated tsunami over a subsea hill',
+               2,
+               'wave:app:exer:tsunami1D:hill',
+               'wave:app:exer:tsunami1D:hill'),
+              ('Problem 24: Earthquake-generated tsunami over a 3D hill',
+               2,
+               'wave:app:exer:tsunami2D:hill',
+               'wave:app:exer:tsunami2D:hill'),
+              ('Problem 25: Investigate Matplotlib for visualization',
+               2,
+               'wave:app:exer:tsunami:hill:viz:matplotlib',
+               'wave:app:exer:tsunami:hill:viz:matplotlib'),
+              ('Problem 26: Investigate visualization packages',
+               2,
+               'wave:app:exer:tsunami:hill:viz:packages',
+               'wave:app:exer:tsunami:hill:viz:packages'),
+              ('Problem 27: Implement loops in compiled languages',
+               2,
+               'wave:app:exer:tsunami2D:hill:compiled',
+               'wave:app:exer:tsunami2D:hill:compiled'),
+              ('Exercise 28: Simulate seismic waves in 2D',
+               2,
+               'wave:app:exer:seismic2D',
+               'wave:app:exer:seismic2D'),
+              ('Project 29: Model 3D acoustic waves in a room',
+               2,
+               'wave:app:exer:acoustics',
+               'wave:app:exer:acoustics'),
+              ('Project 30: Solve a 1D transport equation',
+               2,
+               'wave:app:exer:advec1D',
+               'wave:app:exer:advec1D'),
+              ('Problem 31: General analytical solution of a 1D damped wave equation',
+               2,
+               'wave:app:exer:anal:damped:wave1D',
+               'wave:app:exer:anal:damped:wave1D'),
+              ('Problem 32: General analytical solution of a 2D damped wave equation',
+               2,
+               'wave:app:exer:anal:damped:wave2D',
+               'wave:app:exer:anal:damped:wave2D'),
+              ('References', 1, None, '___sec139')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\halfi}{{1/2}}
+\newcommand{\tp}{\thinspace .}
+\newcommand{\uex}{{u_{\small\mbox{e}}}}
+\newcommand{\xpoint}{\boldsymbol{x}}
+\newcommand{\normalvec}{\boldsymbol{n}}
+\newcommand{\Oof}[1]{\mathcal{O}(#1)}
+\renewcommand{\u}{\boldsymbol{u}}
+\newcommand{\f}{\boldsymbol{f}}
+\newcommand{\stress}{\boldsymbol{\sigma}}
+\newcommand{\I}{\boldsymbol{I}}
+\newcommand{\T}{\boldsymbol{T}}
+\newcommand{\ii}{\boldsymbol{i}}
+\newcommand{\jj}{\boldsymbol{j}}
+\newcommand{\kk}{\boldsymbol{k}}
+\newcommand{\Ix}{\mathcal{I}_x}
+\newcommand{\Iy}{\mathcal{I}_y}
+\newcommand{\Iz}{\mathcal{I}_z}
+\newcommand{\It}{\mathcal{I}_t}
+\newcommand{\setb}[1]{#1^0}    % set begin
+\newcommand{\sete}[1]{#1^{-1}} % set end
+\newcommand{\setl}[1]{#1^-}
+\newcommand{\setr}[1]{#1^+}
+\newcommand{\seti}[1]{#1^i}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Integer}{\mathbb{Z}}
+$$
+
+
+
+
+    
+<a name="part0008"></a>
+<p>
+<!-- begin top navigation -->
+<table style="width: 100%"><tr><td>
+<div style="text-align: left;"><a href="._wave-solarized007.html">&laquo; Previous</a></div>
+</td><td>
+<div style="text-align: right;"><a href="._wave-solarized009.html">Next &raquo;</a></div>
+</td></tr></table>
+<!-- end top navigation -->
+</p>
+
+<p>
+<!-- !split -->
+
+<h2 id="wave:app:spherical">Spherical waves</h2>
+
+<p>
+Spherically symmetric three-dimensional
+waves propagate in the radial direction \( r \) only so that
+\( u = u(r,t) \). The fully three-dimensional wave equation
+
+$$ \frac{\partial^2u}{\partial t^2}=\nabla\cdot (c^2\nabla u) + f $$
+
+then reduces to the spherically symmetric wave equation
+
+$$
+\begin{equation}
+\frac{\partial^2u}{\partial t^2}=\frac{1}{r^2}\frac{\partial}{\partial r}
+\left(c^2(r)r^2\frac{\partial u}{\partial t}\right)
++ f(r,t),\quad r\in (0,R),\ t>0
+\tp
+\end{equation}
+$$
+
+One can easily show
+that the function \( v(r,t) = ru(r,t) \) fulfills a standard wave equation
+in Cartesian coordinates if \( c \) is constant. To this end, insert \( u=v/r \) in
+
+$$ \frac{1}{r^2}\frac{\partial}{\partial r}
+\left(c^2(r)r^2\frac{\partial u}{\partial t}\right) $$
+
+to obtain
+
+$$ r\left(\frac{d c^2}{dr}\frac{\partial v}{\partial r} +
+c^2\frac{\partial^2 v}{\partial r^2}\right) - \frac{d c^2}{dr}v
+\tp
+$$
+
+The two terms in the parenthesis can be combined to
+$$ r\frac{\partial}{\partial r}\left( c^2\frac{\partial v}{\partial r}\right),
+$$
+
+which is recognized as the variable-coefficient Laplace operator in
+one Cartesian coordinate. The spherically symmetric wave equation in
+terms of \( v(r,t) \) now becomes
+
+$$
+\begin{equation}
+\frac{\partial^2v}{\partial t^2}=
+\frac{\partial}{\partial r}
+\left(c^2(r)\frac{\partial v}{\partial r}\right)
+-\frac{1}{r}\frac{d c^2}{dr}v + rf(r,t),\quad r\in (0,R),\ t>0
+\tp
+\end{equation}
+$$
+
+In the case of constant wave velocity \( c \), this equation reduces to
+the wave equation in a single Cartesian coordinate called \( r \):
+
+$$
+\begin{equation}
+\frac{\partial^2v}{\partial t^2}=
+c^2 \frac{\partial^2 v}{\partial r^2}
++ rf(r,t),\quad r\in (0,R),\ t>0
+\tp
+\tag{98}
+\end{equation}
+$$
+
+That is, any program for solving the one-dimensional wave equation
+in a Cartesian coordinate system can be used to
+solve <a href="#mjx-eqn-98">(98)</a>, provided the source term is
+multiplied by the coordinate, and that we divide the Cartesian mesh
+solution by \( r \) to get the spherically symmetric solution.
+Moreover, if \( r=0 \) is included in the
+domain, spherical symmetry demands that \( \partial u/\partial r=0 \) at
+\( r=0 \), which means that
+
+$$ \frac{\partial u}{\partial r} = \frac{1}{r^2}\left(
+r\frac{\partial v}{\partial r} - v\right) = 0,\quad r=0,
+$$
+
+implying \( v(0,t)=0 \) as a necessary condition. For practical applications,
+we exclude \( r=0 \) from the domain and assume that some boundary
+condition is assigned at \( r=\epsilon \), for some \( \epsilon >0 \).
+
+<h2 id="wave:app:sw:2D">The linear shallow water equations</h2>
+
+<p>
+The next example considers water waves whose wavelengths are much
+lager than the depth and whose wave amplitudes are small. This class
+of waves may be generated by catastrophic geophysical events, such as
+earthquakes at the sea bottom, landslides moving into water, or
+underwater slides (or a combination, as earthquakes frequently release
+avalanches of masses). For example, a subsea earthquake will normally
+have an extension of many kilometers but lift the water only a few
+meters. The wave length will have a size dictated by the earthquake
+area, which is much lager than the water depth, and compared to this
+wave length, an amplitude of a few meters is very small.
+The water is essentially a thin film, and mathematically we can average
+the problem in the vertical direction and approximate the 3D
+wave phenomenon by 2D PDEs. Instead of a moving water domain in three
+space dimensions, we get a horizontal 2D domain with an unknown function
+for the surface elevation and the water depth as a variable coefficient
+in the PDEs.
+
+<p>
+Let \( \eta(x,y,t) \) be the elevation of
+the water surface, \( H(x,y) \) the water depth corresponding to a flat
+surface (\( \eta =0 \)), \( u(x,y,t) \) and \( v(x,y,t) \) the
+depth-averaged horizontal velocities of the water. Mass and momentum
+balance of the water volume give rise to the PDEs involving these
+quantities:
+
+$$
+\begin{align}
+\eta_t &= - (Hu)_x - (Hv)_x
+\tag{99}\\ 
+u_t &= -g\eta_x,
+\tag{100}\\ 
+v_t &= -g\eta_y,
+\tag{101}
+\end{align}
+$$
+
+where \( g \) is the acceleration of gravity. Equation <a href="#mjx-eqn-99">(99)</a>
+corresponds to mass balance while the other two are derived from momentum
+balance (Newton's second law).
+
+<p>
+The initial conditions associated with
+<a href="#mjx-eqn-99">(99)</a>-<a href="#mjx-eqn-101">(101)</a> are \( \eta \), \( u \),
+and \( v \) prescribed at \( t=0 \). A common condition is to have some water
+elevation \( \eta =I(x,y) \) and assume that the surface is at rest:
+\( u=v=0 \). A subsea earthquake usually means a sufficiently rapid motion
+of the bottom and the water volume to say that the bottom
+deformation is mirrored at the water surface as an initial lift \( I(x,y) \)
+and that \( u=v=0 \).
+
+<p>
+Boundary conditions may be \( \eta \) prescribed for incoming, known
+waves, or zero normal velocity at reflecting boundaries (steep
+mountains, for instance): \( un_x + vn_y =0 \), where \( (n_x,n_y) \) is the
+outward unit normal to the boundary.  More sophisticated boundary
+conditions are needed when waves run up at the shore, and at open
+boundaries where we want the waves to leave the computational domain
+undisturbed.
+
+<p>
+Equations <a href="#mjx-eqn-99">(99)</a>, <a href="#mjx-eqn-100">(100)</a>, and
+<a href="#mjx-eqn-101">(101)</a> can be transformed to a standard, linear
+wave equation. First, multiply <a href="#mjx-eqn-100">(100)</a> and
+<a href="#mjx-eqn-101">(101)</a> by \( H \), differentiate <a href="#mjx-eqn-100">(100)</a>)
+with respect to \( x \) and <a href="#mjx-eqn-101">(101)</a> with respect to \( y \).
+Second, differentiate <a href="#mjx-eqn-99">(99)</a> with respect to \( t \)
+and use that \( (Hu)_{xt}=(Hu_t)_x \) and \( (Hv)_{yt}=(Hv_t)_y \) when \( H \)
+is independent of \( t \). Third, eliminate \( (Hu_t)_x \) and \( (Hv_t)_y \)
+with the aid of the other two differentiated equations. These manipulations
+results in a standard, linear wave equation for \( \eta \):
+
+$$
+\begin{equation}
+\eta_{tt} = (gH\eta_x)_x + (gH\eta_y)_y = \nabla\cdot (gH\nabla\eta)
+\tag{102}
+\tp
+\end{equation}
+$$
+
+<p>
+In the case we have an initial non-flat water surface at rest, the
+initial conditions become \( \eta =I(x,y) \) and \( \eta_t=0 \).
+The latter follows from <a href="#mjx-eqn-99">(99)</a> if \( u=v=0 \), or
+simply from the fact that the vertical velocity of the surface
+is \( \eta_t \), which is zero for a surface at rest.
+
+<p>
+The system <a href="#mjx-eqn-99">(99)</a>-<a href="#mjx-eqn-101">(101)</a>
+can be extended to handle a time-varying bottom topography, which is
+relevant for modeling long waves generated by underwater slides.
+In such cases the water depth function \( H \) is also a function of \( t \),
+due to the moving slide,
+and one must add a time-derivative term \( H_t \) to the left-hand side
+of <a href="#mjx-eqn-99">(99)</a>. A moving bottom is best described by
+introducing \( z=H_0 \) as the still-water level, \( z=B(x,y,t) \) as
+the time- and space-varying bottom topography, so that \( H=H_0-B(x,y,t) \).
+In the elimination of \( u \) and \( v \) one may assume that the dependence of
+\( H \) on \( t \) can be neglected in the terms \( (Hu)_{xt} \) and \( (Hv)_{yt} \).
+We then end up with a source term in <a href="#mjx-eqn-102">(102)</a>,
+because of the moving (accelerating) bottom:
+
+$$
+\begin{equation}
+\eta_{tt} = \nabla\cdot(gH\nabla\eta) + B_{tt}
+\tag{103}
+\tp
+\end{equation}
+$$
+
+<p>
+The reduction of <a href="#mjx-eqn-103">(103)</a> to 1D, for long waves
+in a straight channel, or for approximately plane waves in the ocean, is
+trivial by assuming no change in \( y \) direction (\( \partial/\partial y=0 \)):
+
+$$
+\begin{equation}
+\eta_{tt} = (gH\eta_x)_x + B_{tt}
+\tag{104}
+\tp
+\end{equation}
+$$
+
+<h3 id="___sec119">Wind drag on the surface </h3>
+
+<p>
+Surface waves are influenced by the drag of the wind, and if the
+wind velocity some meters above the surface is \( (U,V) \),
+the wind drag gives contributions
+\( C_V\sqrt{U^2+V^2}U \) and \( C_V\sqrt{U^2+V^2}V \) to
+<a href="#mjx-eqn-100">(100)</a> and <a href="#mjx-eqn-101">(101)</a>, respectively,
+on the right-hand sides.
+
+<h3 id="___sec120">Bottom drag </h3>
+
+<p>
+The waves will experience a drag from the bottom, often roughly modeled
+by a term similar to the wind drag:
+\( C_B\sqrt{u^2+v^2}u \) on the right-hand side of <a href="#mjx-eqn-100">(100)</a> and
+\( C_B\sqrt{u^2+v^2}v \) on the right-hand side of <a href="#mjx-eqn-101">(101)</a>.
+Note that in this case the PDEs <a href="#mjx-eqn-100">(100)</a> and
+<a href="#mjx-eqn-101">(101)</a> become nonlinear and the elimination of \( u \) and \( v \)
+to arrive at a 2nd-order wave equation for \( \eta \) is not possible anymore.
+
+<h3 id="___sec121">Effect of the Earth's rotation </h3>
+
+<p>
+Long geophysical waves will often be affected by the rotation of the
+Earth because of the Coriolis force. This force gives rise to a
+term \( fv \) on the right-hand side of <a href="#mjx-eqn-100">(100)</a> and
+\( -fu \) on the right-hand side of <a href="#mjx-eqn-101">(101)</a>.
+Also in this case one cannot eliminate \( u \) and \( v \) to work with a single
+equation for \( \eta \). The Coriolis parameter is \( f=2\Omega\sin\phi \),
+where \( \Omega \) is the angular velocity of the earth and \( \phi \) is
+the latitude.
+
+<p>
+<p>
+<!-- begin bottom navigation -->
+<table style="width: 100%"><tr><td>
+<div style="text-align: left;"><a href="._wave-solarized007.html">&laquo; Previous</a></div>
+</td><td>
+<div style="text-align: right;"><a href="._wave-solarized009.html">Next &raquo;</a></div>
+</td></tr></table>
+<!-- end bottom navigation -->
+</p>
+
+<!-- ------------------- end of main content --------------- -->
+
+
+</body>
+</html>
+    
+

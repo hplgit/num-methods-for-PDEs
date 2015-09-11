@@ -1,0 +1,2764 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Finite difference methods for wave motion">
+<meta name="keywords" content="waves on a string,wave equation 1D,wave equation 1D, finite difference method,mesh finite differences,stencil 1D wave equation,mesh function,wave equation 1D, implementation,callback function,nose test,pytest test,unit testing,software testing nose,software testing pytest,closure,vectorization,scalar code,vectorization,array computing,array slices,slice,lambda function (Python),Neumann conditions,Dirichlet conditions,homogeneous Neumann conditions,homogeneous Dirichlet conditions,boundary conditions Neumann,boundary conditions Dirichlet,stencil Neumann boundary,index set notation,geometric mean,arithmetic mean,harmonic average,averaging geometric,averaging arithmetic,averaging harmonic,radiation condition,open boundary condition,boundary condition open (radiation),periodic boundary conditions,boundary conditions periodic,wave equation 1D, analytical properties,Fourier series,Fourier transform,discrete Fourier transform,wave equation 1D, exact numerical solution,Courant number,stability criterion,wave equation 1D, stability,wave equation 2D, implementation,index set notation">
+
+<title>Finite difference methods for wave motion</title>
+
+
+<link href="https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_styles/style_solarized_box/css/solarized_light_code.css" rel="stylesheet" type="text/css" title="light"/>
+<script src="https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_styles/style_solarized_box/js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<link href="http://thomasf.github.io/solarized-css/solarized-light.min.css" rel="stylesheet">
+<style type="text/css">
+h1 {color: #b58900;}  /* yellow */
+/* h1 {color: #cb4b16;}  orange */
+/* h1 {color: #d33682;}  magenta, the original choice of thomasf */
+code { padding: 0px; background-color: inherit; }
+pre {
+  border: 0pt solid #93a1a1;
+  box-shadow: none;
+}
+.alert-text-small   { font-size: 80%;  }
+.alert-text-large   { font-size: 130%; }
+.alert-text-normal  { font-size: 90%;  }
+.alert {
+  padding:8px 35px 8px 14px; margin-bottom:18px;
+  text-shadow:0 1px 0 rgba(255,255,255,0.5);
+  border:1px solid #93a1a1;
+  border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  color: #555;
+  background-color: #eee8d5;
+  background-position: 10px 5px;
+  background-repeat: no-repeat;
+  background-size: 38px;
+  padding-left: 55px;
+  width: 75%;
+ }
+.alert-block {padding-top:14px; padding-bottom:14px}
+.alert-block > p, .alert-block > ul {margin-bottom:1em}
+.alert li {margin-top: 1em}
+.alert-block p+p {margin-top:5px}
+.alert-notice { background-image: url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_notice.png); }
+.alert-summary  { background-image:url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_summary.png); }
+.alert-warning { background-image: url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_warning.png); }
+.alert-question {background-image:url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_question.png); }
+
+div { text-align: justify; text-justify: inter-word; }
+</style>
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('Simulation of waves on a string',
+               1,
+               'wave:string',
+               'wave:string'),
+              ('Discretizing the domain',
+               2,
+               'wave:string:mesh',
+               'wave:string:mesh'),
+              ('Uniform meshes', 3, None, '___sec2'),
+              ('The discrete solution',
+               2,
+               'wave:string:numerical:sol',
+               'wave:string:numerical:sol'),
+              ('Fulfilling the equation at the mesh points',
+               2,
+               'wave:string:samplingPDE',
+               'wave:string:samplingPDE'),
+              ('Replacing derivatives by finite differences',
+               2,
+               'wave:string:fd',
+               'wave:string:fd'),
+              ('Algebraic version of the PDE', 3, None, '___sec6'),
+              ('Interpretation of the equation as a stencil',
+               3,
+               None,
+               '___sec7'),
+              ('Algebraic version of the initial conditions',
+               3,
+               None,
+               '___sec8'),
+              ('Formulating a recursive algorithm',
+               2,
+               'wave:string:alg',
+               'wave:string:alg'),
+              ('Sketch of an implementation',
+               2,
+               'wave:string:impl',
+               'wave:string:impl'),
+              ('Verification', 1, None, '___sec11'),
+              ('A slightly generalized model problem',
+               2,
+               'wave:pde2:fd',
+               'wave:pde2:fd'),
+              ('Using an analytical solution of physical significance',
+               2,
+               'wave:pde2:fd:standing:waves',
+               'wave:pde2:fd:standing:waves'),
+              ('Manufactured solution',
+               2,
+               'wave:pde2:fd:MMS',
+               'wave:pde2:fd:MMS'),
+              ('Constructing an exact solution of the discrete equations',
+               2,
+               'wave:pde2:fd:verify:quadratic',
+               'wave:pde2:fd:verify:quadratic'),
+              ('Implementation', 1, 'wave:pde1:impl', 'wave:pde1:impl'),
+              ('Callback function for user-specific actions',
+               2,
+               None,
+               '___sec17'),
+              ('The solver function',
+               2,
+               'wave:pde1:impl:solver',
+               'wave:pde1:impl:solver'),
+              ('Verification: exact quadratic solution',
+               2,
+               'wave:pde1:impl:verify:quadratic',
+               'wave:pde1:impl:verify:quadratic'),
+              ('Visualization: animating the solution',
+               2,
+               'wave:pde1:impl:animate',
+               'wave:pde1:impl:animate'),
+              ('Function for administering the simulation',
+               3,
+               None,
+               '___sec21'),
+              ('Dissection of the code', 3, None, '___sec22'),
+              ('Making movie files', 3, None, '___sec23'),
+              ('Skipping frames for animation speed', 3, None, '___sec24'),
+              ('Running a case',
+               2,
+               'wave:pde1:guitar:data',
+               'wave:pde1:guitar:data'),
+              ('Working with a scaled PDE model', 2, None, '___sec26'),
+              ('Vectorization',
+               1,
+               'wave:pde1:impl:vec',
+               'wave:pde1:impl:vec'),
+              ('Operations on slices of arrays',
+               2,
+               'wave:pde1:impl:vec:slices:basics',
+               'wave:pde1:impl:vec:slices:basics'),
+              ('Finite difference schemes expressed as slices',
+               2,
+               'wave:pde1:impl:vec:slices:fdm',
+               'wave:pde1:impl:vec:slices:fdm'),
+              ('Verification',
+               2,
+               'wave:pde1:impl:vec:verify:quadratic',
+               'wave:pde1:impl:vec:verify:quadratic'),
+              ('Efficiency measurements', 2, None, '___sec31'),
+              ('Solution 1', 3, None, '___sec32'),
+              ('Solution 2', 3, None, '___sec33'),
+              ('Efficiency experiments', 3, None, '___sec34'),
+              ('Remark on the updating of arrays',
+               2,
+               'wave:pde1:impl:ref:switch',
+               'wave:pde1:impl:ref:switch'),
+              ('Exercises', 1, None, '___sec36'),
+              ('Exercise 1: Simulate a standing wave',
+               2,
+               'wave:exer:standingwave',
+               'wave:exer:standingwave'),
+              ('Remarks', 3, None, '___sec38'),
+              ('Exercise 2: Add storage of solution in a user action function',
+               2,
+               'wave:exer:store:list',
+               'wave:exer:store:list'),
+              ('Exercise 3: Use a class for the user action function',
+               2,
+               'wave:exer:store:list:class',
+               'wave:exer:store:list:class'),
+              ('Exercise 4: Compare several Courant numbers in one movie',
+               2,
+               'wave:exer:multiple:C',
+               'wave:exer:multiple:C'),
+              ('Project 5: Calculus with 1D mesh functions',
+               2,
+               'wave:exer:mesh1D:calculus',
+               'wave:exer:mesh1D:calculus'),
+              ('Generalization: reflecting boundaries',
+               1,
+               'wave:pde2:Neumann',
+               'wave:pde2:Neumann'),
+              ('Neumann boundary condition',
+               2,
+               'wave:pde2:Neumann:bc',
+               'wave:pde2:Neumann:bc'),
+              ('Discretization of derivatives at the boundary',
+               2,
+               'wave:pde2:Neumann:discr',
+               'wave:pde2:Neumann:discr'),
+              ('Implementation of Neumann conditions',
+               2,
+               'wave:pde2:Neumann:impl',
+               'wave:pde2:Neumann:impl'),
+              ('Index set notation', 2, 'wave:indexset', 'wave:indexset'),
+              ('Verifying the implementation of Neumann conditions',
+               2,
+               'wave:pde1:verify',
+               'wave:pde1:verify'),
+              ('Alternative implementation via ghost cells',
+               2,
+               'wave:pde1:Neumann:ghost',
+               'wave:pde1:Neumann:ghost'),
+              ('Idea', 3, None, '___sec50'),
+              ('Implementation', 3, None, '___sec51'),
+              ('Generalization: variable wave velocity',
+               1,
+               'wave:pde2:var:c',
+               'wave:pde2:var:c'),
+              ('The model PDE with a variable coefficient',
+               2,
+               None,
+               '___sec53'),
+              ('Discretizing the variable coefficient',
+               2,
+               'wave:pde2:var:c:ideas',
+               'wave:pde2:var:c:ideas'),
+              ('Computing the coefficient between mesh points',
+               2,
+               'wave:pde2:var:c:means',
+               'wave:pde2:var:c:means'),
+              ('How a variable coefficient affects the stability',
+               2,
+               'wave:pde2:var:c:stability',
+               'wave:pde2:var:c:stability'),
+              ('Neumann condition and a variable coefficient',
+               2,
+               'wave:pde2:var:c:Neumann',
+               'wave:pde2:var:c:Neumann'),
+              ('Implementation of variable coefficients',
+               2,
+               'wave:pde2:var:c:impl',
+               'wave:pde2:var:c:impl'),
+              ('A more general PDE model with variable coefficients',
+               2,
+               None,
+               '___sec59'),
+              ('Generalization: damping', 2, None, '___sec60'),
+              ('Building a general 1D wave equation solver',
+               1,
+               'wave:pde2:software',
+               'wave:pde2:software'),
+              ('User action function as a class', 2, None, '___sec62'),
+              ('The code', 3, None, '___sec63'),
+              ('Dissection', 3, None, '___sec64'),
+              ('Pulse propagation in two media', 2, None, '___sec65'),
+              ('Exercises', 1, None, '___sec66'),
+              ('Exercise 6: Find the analytical solution to a damped wave equation',
+               2,
+               'wave:exer:standingwave:damped:uex',
+               'wave:exer:standingwave:damped:uex'),
+              ('Problem 7: Explore symmetry boundary conditions',
+               2,
+               'wave:exer:symmetry:bc',
+               'wave:exer:symmetry:bc'),
+              ('Exercise 8: Send pulse waves through a layered medium',
+               2,
+               'wave:app:exer:pulse1D',
+               'wave:app:exer:pulse1D'),
+              ('Exercise 9: Explain why numerical noise occurs',
+               2,
+               'wave:app:exer:pulse1D:analysis',
+               'wave:app:exer:pulse1D:analysis'),
+              ('Exercise 10: Investigate harmonic averaging in a 1D model',
+               2,
+               'wave:app:exer:pulse1D:harmonic',
+               'wave:app:exer:pulse1D:harmonic'),
+              ('Problem 11: Implement open boundary conditions',
+               2,
+               'wave:app:exer:radiationBC',
+               'wave:app:exer:radiationBC'),
+              ('Remarks', 3, None, '___sec73'),
+              ('Exercise 12: Implement periodic boundary conditions',
+               2,
+               'wave:exer:periodic',
+               'wave:exer:periodic'),
+              ('Exercise 13: Compare discretizations of a Neumann condition',
+               2,
+               None,
+               '___sec75'),
+              ('Exercise 14: Verification by a cubic polynomial in space',
+               2,
+               'wave:fd2:exer:verify:cubic',
+               'wave:fd2:exer:verify:cubic'),
+              ('Analysis of the difference equations',
+               1,
+               'wave:pde1:analysis',
+               'wave:pde1:analysis'),
+              ('Properties of the solution of the wave equation',
+               2,
+               'wave:pde1:properties',
+               'wave:pde1:properties'),
+              ('More precise definition of Fourier representations',
+               2,
+               'wave:pde1:Fourier',
+               'wave:pde1:Fourier'),
+              ('Stability', 2, 'wave:pde1:stability', 'wave:pde1:stability'),
+              ('Preliminary results', 3, None, '___sec81'),
+              ('Numerical wave propagation', 3, None, '___sec82'),
+              ('Numerical dispersion relation',
+               2,
+               'wave:pde1:num:dispersion',
+               'wave:pde1:num:dispersion'),
+              ('Extending the analysis to 2D and 3D',
+               2,
+               'wave:pde1:analysis:2D3D',
+               'wave:pde1:analysis:2D3D'),
+              ('Finite difference methods for 2D and 3D wave equations',
+               1,
+               'wave:2D3D',
+               'wave:2D3D'),
+              ('Multi-dimensional wave equations',
+               2,
+               'wave:2D3D:models',
+               'wave:2D3D:models'),
+              ('Mesh', 2, 'wave:2D3D:mesh', 'wave:2D3D:mesh'),
+              ('Discretization', 2, 'wave:2D3D:models', 'wave:2D3D:models'),
+              ('Discretizing the PDEs', 3, None, '___sec89'),
+              ('Handling boundary conditions where $u$ is known',
+               3,
+               None,
+               '___sec90'),
+              ('Discretizing the Neumann condition', 3, None, '___sec91'),
+              ('Implementation', 1, 'wave:2D3D:impl', 'wave:2D3D:impl'),
+              ('Scalar computations',
+               2,
+               'wave2D3D:impl:scalar',
+               'wave2D3D:impl:scalar'),
+              ('Domain and mesh', 3, None, '___sec94'),
+              ('Solution arrays', 3, None, '___sec95'),
+              ('Index sets', 3, None, '___sec96'),
+              ('Computing the solution', 3, None, '___sec97'),
+              ('Vectorized computations',
+               2,
+               'wave2D3D:impl:vectorized',
+               'wave2D3D:impl:vectorized'),
+              ('Verification',
+               2,
+               'wave2D3D:impl:verify',
+               'wave2D3D:impl:verify'),
+              ('Testing a quadratic solution', 3, None, '___sec100'),
+              ('Using classes to implement a simulator',
+               1,
+               None,
+               '___sec101'),
+              ('Exercises', 1, None, '___sec102'),
+              ('Exercise 15: Check that a solution fulfills the discrete model',
+               2,
+               'wave:exer:quadratic:2D',
+               'wave:exer:quadratic:2D'),
+              ('Project 16: Calculus with 2D mesh functions',
+               2,
+               'wave:exer:mesh3D:calculus',
+               'wave:exer:mesh3D:calculus'),
+              ('Exercise 17: Implement Neumann conditions in 2D',
+               2,
+               'wave:app:exer:wave2D:Neumann',
+               'wave:app:exer:wave2D:Neumann'),
+              ('Exercise 18: Test the efficiency of compiled loops in 3D',
+               2,
+               'wave:exer:3D:f77:cy:efficiency',
+               'wave:exer:3D:f77:cy:efficiency'),
+              ('Applications of wave equations', 1, 'wave:app', 'wave:app'),
+              ('Waves on a string', 2, 'wave:app:string', 'wave:app:string'),
+              ('Damping', 3, None, '___sec109'),
+              ('External forcing', 3, None, '___sec110'),
+              ('Modeling the tension via springs', 3, None, '___sec111'),
+              ('Waves on a membrane',
+               2,
+               'wave:app:membrane',
+               'wave:app:membrane'),
+              ('Elastic waves in a rod',
+               2,
+               'wave:app:elastic:rod',
+               'wave:app:elastic:rod'),
+              ('The acoustic model for seismic waves',
+               2,
+               'wave:app:acoustic:seismic',
+               'wave:app:acoustic:seismic'),
+              ('Anisotropy', 3, None, '___sec115'),
+              ('Sound waves in liquids and gases',
+               2,
+               'wave:app:sound',
+               'wave:app:sound'),
+              ('Spherical waves',
+               2,
+               'wave:app:spherical',
+               'wave:app:spherical'),
+              ('The linear shallow water equations',
+               2,
+               'wave:app:sw:2D',
+               'wave:app:sw:2D'),
+              ('Wind drag on the surface', 3, None, '___sec119'),
+              ('Bottom drag', 3, None, '___sec120'),
+              ("Effect of the Earth's rotation", 3, None, '___sec121'),
+              ('Waves in blood vessels',
+               2,
+               'wave:app:blood',
+               'wave:app:blood'),
+              ('Electromagnetic waves',
+               2,
+               'wave:app:light',
+               'wave:app:light'),
+              ('Exercises', 1, 'wave:app:exer', 'wave:app:exer'),
+              ('Exercise 19: Simulate waves on a non-homogeneous string',
+               2,
+               'wave:app:exer:string:discont',
+               'wave:app:exer:string:discont'),
+              ('Exercise 20: Simulate damped waves on a string',
+               2,
+               'wave:app:exer:string:damping',
+               'wave:app:exer:string:damping'),
+              ('Exercise 21: Simulate elastic waves in a rod',
+               2,
+               'wave:app:exer:rod',
+               'wave:app:exer:rod'),
+              ('Exercise 22: Simulate spherical waves',
+               2,
+               'wave:app:exer:spherical',
+               'wave:app:exer:spherical'),
+              ('Problem 23: Earthquake-generated tsunami over a subsea hill',
+               2,
+               'wave:app:exer:tsunami1D:hill',
+               'wave:app:exer:tsunami1D:hill'),
+              ('Problem 24: Earthquake-generated tsunami over a 3D hill',
+               2,
+               'wave:app:exer:tsunami2D:hill',
+               'wave:app:exer:tsunami2D:hill'),
+              ('Problem 25: Investigate Matplotlib for visualization',
+               2,
+               'wave:app:exer:tsunami:hill:viz:matplotlib',
+               'wave:app:exer:tsunami:hill:viz:matplotlib'),
+              ('Problem 26: Investigate visualization packages',
+               2,
+               'wave:app:exer:tsunami:hill:viz:packages',
+               'wave:app:exer:tsunami:hill:viz:packages'),
+              ('Problem 27: Implement loops in compiled languages',
+               2,
+               'wave:app:exer:tsunami2D:hill:compiled',
+               'wave:app:exer:tsunami2D:hill:compiled'),
+              ('Exercise 28: Simulate seismic waves in 2D',
+               2,
+               'wave:app:exer:seismic2D',
+               'wave:app:exer:seismic2D'),
+              ('Project 29: Model 3D acoustic waves in a room',
+               2,
+               'wave:app:exer:acoustics',
+               'wave:app:exer:acoustics'),
+              ('Project 30: Solve a 1D transport equation',
+               2,
+               'wave:app:exer:advec1D',
+               'wave:app:exer:advec1D'),
+              ('Problem 31: General analytical solution of a 1D damped wave equation',
+               2,
+               'wave:app:exer:anal:damped:wave1D',
+               'wave:app:exer:anal:damped:wave1D'),
+              ('Problem 32: General analytical solution of a 2D damped wave equation',
+               2,
+               'wave:app:exer:anal:damped:wave2D',
+               'wave:app:exer:anal:damped:wave2D'),
+              ('References', 1, None, '___sec139')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\halfi}{{1/2}}
+\newcommand{\tp}{\thinspace .}
+\newcommand{\uex}{{u_{\small\mbox{e}}}}
+\newcommand{\xpoint}{\boldsymbol{x}}
+\newcommand{\normalvec}{\boldsymbol{n}}
+\newcommand{\Oof}[1]{\mathcal{O}(#1)}
+\renewcommand{\u}{\boldsymbol{u}}
+\newcommand{\f}{\boldsymbol{f}}
+\newcommand{\stress}{\boldsymbol{\sigma}}
+\newcommand{\I}{\boldsymbol{I}}
+\newcommand{\T}{\boldsymbol{T}}
+\newcommand{\ii}{\boldsymbol{i}}
+\newcommand{\jj}{\boldsymbol{j}}
+\newcommand{\kk}{\boldsymbol{k}}
+\newcommand{\Ix}{\mathcal{I}_x}
+\newcommand{\Iy}{\mathcal{I}_y}
+\newcommand{\Iz}{\mathcal{I}_z}
+\newcommand{\It}{\mathcal{I}_t}
+\newcommand{\setb}[1]{#1^0}    % set begin
+\newcommand{\sete}[1]{#1^{-1}} % set end
+\newcommand{\setl}[1]{#1^-}
+\newcommand{\setr}[1]{#1^+}
+\newcommand{\seti}[1]{#1^i}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Integer}{\mathbb{Z}}
+$$
+
+
+
+
+    
+<a name="part0003"></a>
+<p>
+<!-- begin top navigation -->
+<table style="width: 100%"><tr><td>
+<div style="text-align: left;"><a href="._wave-solarized002.html">&laquo; Previous</a></div>
+</td><td>
+<div style="text-align: right;"><a href="._wave-solarized004.html">Next &raquo;</a></div>
+</td></tr></table>
+<!-- end top navigation -->
+</p>
+
+<p>
+<!-- !split -->
+
+<h1 id="wave:pde2:Neumann">Generalization: reflecting boundaries</h1>
+
+<p>
+The boundary condition \( u=0 \) in a wave equation
+reflects the wave, but \( u \) changes sign at the boundary,
+while the condition \( u_x=0 \) reflects the wave as a mirror and preserves
+the sign, see
+a <a href="http://tinyurl.com/opdfafk/pub/mov-wave/demo_BC_gaussian/index.html" target="_self">web page</a>
+or a <a href="http://tinyurl.com/opdfafk/pub/mov-wave/demo_BC_gaussian/movie.flv" target="_self">movie file</a>
+for demonstration.
+
+<p>
+Our next task is to explain how to implement the boundary
+condition \( u_x=0 \), which is
+more complicated to express numerically and also to implement than
+a given value of \( u \).
+We shall present two methods for implementing \( u_x=0 \)
+in a finite difference scheme, one based on deriving a modified
+stencil at the boundary, and another one based on extending the mesh
+with ghost cells and ghost points.
+
+<h2 id="wave:pde2:Neumann:bc">Neumann boundary condition</h2>
+
+<p>
+When a wave hits a boundary and is to be reflected back, one applies
+the condition
+
+$$
+\begin{equation}
+ \frac{\partial u}{\partial n} \equiv \normalvec\cdot\nabla u = 0
+\tag{23}
+\tp
+\end{equation}
+$$
+
+The derivative \( \partial /\partial n \) is in the
+outward normal direction from a general boundary.
+For a 1D domain \( [0,L] \),
+we have that
+
+$$
+\left.\frac{\partial}{\partial n}\right\vert_{x=L} =
+\frac{\partial}{\partial x},\quad
+\left.\frac{\partial}{\partial n}\right\vert_{x=0} = -
+\frac{\partial}{\partial x}\tp
+$$
+
+<p>
+<div class="alert alert-block alert-notice alert-text-normal">
+<b>Boundary condition terminology.</b>
+<p>
+Boundary conditions
+that specify the value of \( \partial u/\partial n \),
+or shorter \( u_n \), are known as
+<a href="http://en.wikipedia.org/wiki/Neumann_boundary_condition" target="_self">Neumann</a> conditions, while <a href="http://en.wikipedia.org/wiki/Dirichlet_conditions" target="_self">Dirichlet conditions</a>
+refer to specifications of \( u \).
+When the values are zero (\( \partial u/\partial n=0 \) or \( u=0 \)) we speak
+about <em>homogeneous</em> Neumann or Dirichlet conditions.
+</div>
+
+
+<h2 id="wave:pde2:Neumann:discr">Discretization of derivatives at the boundary</h2>
+
+<p>
+How can we incorporate the condition <a href="#mjx-eqn-23">(23)</a>
+in the finite difference scheme?  Since we have used central
+differences in all the other approximations to derivatives in the
+scheme, it is tempting to implement <a href="#mjx-eqn-23">(23)</a> at
+\( x=0 \) and \( t=t_n \) by the difference
+
+$$
+\begin{equation}
+[D_{2x} u]^n_0 = \frac{u_{-1}^n - u_1^n}{2\Delta x} = 0
+\tp
+\tag{24}
+\end{equation}
+$$
+
+The problem is that \( u_{-1}^n \) is not a \( u \) value that is being
+computed since the point is outside the mesh. However, if we combine
+<a href="#mjx-eqn-24">(24)</a> with the scheme
+<!-- <a href="._wave-solarized001.html#mjx-eqn-10">(10)</a> -->
+for \( i=0 \),
+
+$$
+\begin{equation}
+u^{n+1}_i = -u^{n-1}_i + 2u^n_i + C^2
+\left(u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}\right),
+\tag{25}
+\end{equation}
+$$
+
+we can eliminate the fictitious value \( u_{-1}^n \). We see that
+\( u_{-1}^n=u_1^n \) from <a href="#mjx-eqn-24">(24)</a>, which
+can be used in <a href="#mjx-eqn-25">(25)</a> to
+arrive at a modified scheme for the boundary point \( u_0^{n+1} \):
+
+$$
+\begin{equation}
+u^{n+1}_i = -u^{n-1}_i  + 2u^n_i + 2C^2
+\left(u^{n}_{i+1}-u^{n}_{i}\right),\quad i=0 \tp  \end{equation}
+$$
+
+Figure <a href="#wave:pde1:fig:Neumann:stencil">4</a> visualizes this equation
+for computing \( u^3_0 \) in terms of \( u^2_0 \), \( u^1_0 \), and
+\( u^2_1 \).
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 4:  Modified stencil at a boundary with a Neumann condition. <div id="wave:pde1:fig:Neumann:stencil"></div> </p></center>
+<p><img src="mov-wave/wave1D_PDE_Neumann_stencil_gpl/stencil_n_left.png" align="bottom" width=500></p>
+</center>
+
+<p>
+Similarly, <a href="#mjx-eqn-23">(23)</a> applied at \( x=L \)
+is discretized by a central difference
+
+$$
+\begin{equation}
+\frac{u_{N_x+1}^n - u_{N_x-1}^n}{2\Delta x} = 0
+\tp
+\tag{26}
+\end{equation}
+$$
+
+Combined with the scheme for \( i=N_x \) we get a modified scheme for
+the boundary value \( u_{N_x}^{n+1} \):
+
+$$
+\begin{equation}
+u^{n+1}_i = -u^{n-1}_i + 2u^n_i + 2C^2
+\left(u^{n}_{i-1}-u^{n}_{i}\right),\quad i=N_x \tp  \end{equation}
+$$
+
+<p>
+The modification of the scheme at the boundary is also required for
+the special formula for the first time step. How the stencil moves
+through the mesh and is modified at the boundary can be illustrated
+by an animation
+in a <a href="http://tinyurl.com/opdfafk/pub/mov-wave/wave1D_PDE_Neumann_stencil_gpl/index.html" target="_self">web page</a>
+or a <a href="http://tinyurl.com/opdfafk/pub/mov-wave/wave1D_PDE_Neumann_stencil_gpl/movie.ogg" target="_self">movie file</a>.
+
+<h2 id="wave:pde2:Neumann:impl">Implementation of Neumann conditions</h2>
+
+<p>
+We have seen in the preceding section
+that the special formulas for the boundary points
+arise from replacing \( u_{i-1}^n \) by \( u_{i+1}^n \) when computing
+\( u_i^{n+1} \) from the stencil formula for \( i=0 \). Similarly, we
+replace \( u_{i+1}^n \) by \( u_{i-1}^n \) in the stencil formula
+for \( i=N_x \). This observation can conveniently
+be used in the coding: we just work with the general stencil formula,
+but write the code such that it is easy to replace <code>u[i-1]</code> by
+<code>u[i+1]</code> and vice versa. This is achieved by
+having the indices <code>i+1</code> and <code>i-1</code> as variables <code>ip1</code> (<code>i</code> plus 1)
+and <code>im1</code> (<code>i</code> minus 1), respectively.
+At the boundary we can easily define <code>im1=i+1</code> while we use
+<code>im1=i-1</code> in the internal parts of the mesh. Here are the details
+of the implementation (note that the updating formula for <code>u[i]</code>
+is the general stencil formula):
+
+<p>
+
+<!-- code=text (!bc cod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">i = 0
+ip1 = i+1
+im1 = ip1  # i-1 -&gt; i+1
+u[i] = u_1[i] + C2*(u_1[im1] - 2*u_1[i] + u_1[ip1])
+
+i = Nx
+im1 = i-1
+ip1 = im1  # i+1 -&gt; i-1
+u[i] = u_1[i] + C2*(u_1[im1] - 2*u_1[i] + u_1[ip1])
+</pre></div>
+<p>
+We can in fact create one loop over both the internal and boundary
+points and use only one updating formula:
+
+<p>
+
+<!-- code=text (!bc cod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">for i in range(0, Nx+1):
+    ip1 = i+1 if i &lt; Nx else i-1
+    im1 = i-1 if i &gt; 0  else i+1
+    u[i] = u_1[i] + C2*(u_1[im1] - 2*u_1[i] + u_1[ip1])
+</pre></div>
+<p>
+The program <a href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_n0.py" target="_self"><tt>wave1D_n0.py</tt></a>
+contains a complete implementation of the 1D wave equation with
+boundary conditions \( u_x = 0 \) at \( x=0 \) and \( x=L \).
+
+<p>
+It would be nice to modify the <code>test_quadratic</code> test case from the
+<code>wave1D_u0.py</code> with Dirichlet conditions, described in the section <a href="._wave-solarized002.html#wave:pde1:impl:vec:verify:quadratic">Verification</a>. However, the Neumann
+conditions requires the polynomial variation in \( x \) direction to
+be of third degree, which causes challenging problems when
+designing a test where the numerical solution is known exactly.
+<a href="#wave:fd2:exer:verify:cubic">Exercise 14: Verification by a cubic polynomial in space</a> outlines ideas and code
+for this purpose. The only test in <code>wave1D_n0.py</code> is to start
+with a plug wave at rest and see that the initial condition is
+reached again perfectly after one period of motion, but such
+a test requires \( C=1 \) (so the numerical solution coincides with
+the exact solution of the PDE, see the section <a href="._wave-solarized004.html#wave:pde1:num:dispersion">Numerical dispersion relation</a>).
+
+<h2 id="wave:indexset">Index set notation</h2>
+
+<p>
+To improve our mathematical writing and our implementations,
+it is wise to introduce a special notation for index sets. This means
+that we write
+\( x_i \), \( i\in\Ix \), instead of \( i=0,\ldots,N_x \).
+Obviously, \( \Ix \) must be the index set \( \Ix =\{0,\ldots,N_x\} \), but it
+is often advantageous to have a symbol for this set rather than
+specifying all its elements (all the time, as we have done up to
+now). This new notation saves writing and makes
+specifications of algorithms and their implementation of computer code
+simpler.
+
+<p>
+The first index in the set will be denoted \( \setb{\Ix} \)
+and the last \( \sete{\Ix} \). When we need to skip the first element of
+the set, we use \( \setr{\Ix} \) for the remaining subset
+\( \setr{\Ix}=\{1,\ldots,N_x\} \). Similarly, if the last element is
+to be dropped, we write \( \setl{\Ix}=\{0,\ldots,N_x-1\} \) for the
+remaining indices.
+All the
+indices corresponding to inner grid points are specified by
+\( \seti{\Ix}=\{1,\ldots,N_x-1\} \).  For the time domain we find it
+natural to explicitly use 0 as the first index, so we will usually
+write \( n=0 \) and \( t_0 \) rather than \( n=\It^0 \). We also avoid notation
+like \( x_{\sete{\Ix}} \) and will instead use \( x_i \), \( i=\sete{\Ix} \).
+
+<p>
+The Python code associated with index sets applies the following
+conventions:
+
+<p>
+<table border="1">
+<thead>
+<tr><th align="center">    Notation    </th> <th align="center">        Python       </th> </tr>
+</thead>
+<tbody>
+<tr><td align="left">   \( \Ix \)           </td> <td align="left">   <code>Ix</code>          </td> </tr>
+<tr><td align="left">   \( \setb{\Ix} \)    </td> <td align="left">   <code>Ix[0]</code>       </td> </tr>
+<tr><td align="left">   \( \sete{\Ix} \)    </td> <td align="left">   <code>Ix[-1]</code>      </td> </tr>
+<tr><td align="left">   \( \setl{\Ix} \)    </td> <td align="left">   <code>Ix[:-1]</code>     </td> </tr>
+<tr><td align="left">   \( \setr{\Ix} \)    </td> <td align="left">   <code>Ix[1:]</code>      </td> </tr>
+<tr><td align="left">   \( \seti{\Ix} \)    </td> <td align="left">   <code>Ix[1:-1]</code>    </td> </tr>
+</tbody>
+</table>
+<p>
+<div class="alert alert-block alert-notice alert-text-normal">
+<b>Why index sets are useful.</b>
+<p>
+An important feature of the index set notation is that it
+keeps our formulas and code independent of how
+we count mesh points. For example, the notation \( i\in\Ix \) or \( i=\setb{\Ix} \)
+remains the same whether \( \Ix \) is defined as above or as starting at 1,
+i.e., \( \Ix=\{1,\ldots,Q\} \). Similarly, we can in the code define
+<code>Ix=range(Nx+1)</code> or <code>Ix=range(1,Q)</code>, and expressions
+like <code>Ix[0]</code> and <code>Ix[1:-1]</code> remain correct. One application where
+the index set notation is convenient is
+conversion of code from a language where arrays has base index 0 (e.g.,
+Python and C) to languages where the base index is 1 (e.g., MATLAB and
+Fortran). Another important application is implementation of
+Neumann conditions via ghost points (see next section).
+</div>
+
+
+<p>
+For the current problem setting in the \( x,t \) plane, we work with
+the index sets
+
+$$
+\begin{equation}
+\Ix = \{0,\ldots,N_x\},\quad \It = \{0,\ldots,N_t\},
+\end{equation}
+$$
+
+defined in Python as
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Ix = <span style="color: #658b00">range</span>(<span style="color: #B452CD">0</span>, Nx+<span style="color: #B452CD">1</span>)
+It = <span style="color: #658b00">range</span>(<span style="color: #B452CD">0</span>, Nt+<span style="color: #B452CD">1</span>)
+</pre></div>
+<p>
+A finite difference scheme can with the index set notation be specified as
+
+$$
+\begin{align*}
+u_i^{n+1} = u^n_i - \half
+C^2\left(u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}\right),\quad,
+i\in\seti{\Ix},\ n=0,\\ 
+u^{n+1}_i &= -u^{n-1}_i  + 2u^n_i + C^2
+\left(u^{n}_{i+1}-2u^{n}_{i}+u^{n}_{i-1}\right),
+\quad i\in\seti{\Ix},\ n\in\seti{\It},\\ 
+u_i^{n+1} &= 0,
+\quad i=\setb{\Ix},\ n\in\setl{\It},\\ 
+u_i^{n+1} &= 0,
+\quad i=\sete{\Ix},\ n\in\setl{\It}\tp
+\end{align*}
+$$
+
+The corresponding implementation becomes
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #228B22"># Initial condition</span>
+<span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]:
+    u[i] = u_1[i] - <span style="color: #B452CD">0.5</span>*C2*(u_1[i-<span style="color: #B452CD">1</span>] - <span style="color: #B452CD">2</span>*u_1[i] + u_1[i+<span style="color: #B452CD">1</span>])
+
+<span style="color: #228B22"># Time loop</span>
+<span style="color: #8B008B; font-weight: bold">for</span> n <span style="color: #8B008B">in</span> It[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]:
+    <span style="color: #228B22"># Compute internal points</span>
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]:
+        u[i] = - u_2[i] + <span style="color: #B452CD">2</span>*u_1[i] + \ 
+               C2*(u_1[i-<span style="color: #B452CD">1</span>] - <span style="color: #B452CD">2</span>*u_1[i] + u_1[i+<span style="color: #B452CD">1</span>])
+    <span style="color: #228B22"># Compute boundary conditions</span>
+    i = Ix[<span style="color: #B452CD">0</span>];  u[i] = <span style="color: #B452CD">0</span>
+    i = Ix[-<span style="color: #B452CD">1</span>]; u[i] = <span style="color: #B452CD">0</span>
+</pre></div>
+<p>
+<div class="alert alert-block alert-notice alert-text-normal">
+<b>Notice.</b>
+<p>
+The program <a href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_dn.py" target="_self"><tt>wave1D_dn.py</tt></a>
+applies the index set notation and
+solves the 1D wave equation \( u_{tt}=c^2u_{xx}+f(x,t) \) with
+quite general boundary and initial conditions:
+
+<ul>
+  <li> \( x=0 \): \( u=U_0(t) \) or \( u_x=0 \)</li>
+  <li> \( x=L \): \( u=U_L(t) \) or \( u_x=0 \)</li>
+  <li> \( t=0 \): \( u=I(x) \)</li>
+  <li> \( t=0 \): \( u_t=I(x) \)</li>
+</ul>
+
+The program combines Dirichlet and Neumann conditions, scalar and vectorized
+implementation of schemes, and the index notation into one piece of code.
+A lot of test examples are also included in the program:
+
+<ul>
+ <li> A rectangular plug-shaped initial condition. (For \( C=1 \) the solution
+   will be a rectangle that jumps one cell per time step, making the case
+   well suited for verification.)</li>
+ <li> A Gaussian function as initial condition.</li>
+ <li> A triangular profile as initial condition, which resembles the
+   typical initial shape of a guitar string.</li>
+ <li> A sinusoidal variation of \( u \) at \( x=0 \) and either \( u=0 \) or
+   \( u_x=0 \) at \( x=L \).</li>
+ <li> An exact analytical solution \( u(x,t)=\cos(m\pi t/L)\sin({\half}m\pi x/L) \), which can be used for convergence rate tests.</li>
+</ul>
+</div>
+
+
+<h2 id="wave:pde1:verify">Verifying the implementation of Neumann conditions</h2>
+
+<p>
+How can we test that the Neumann conditions are correctly implemented?
+The <code>solver</code> function in the <code>wave1D_dn.py</code> program described in the
+box above accepts Dirichlet and Neumann conditions at \( x=0 \) and \( x=L \).
+It is tempting to apply a quadratic solution as described in
+the sections <a href="._wave-solarized001.html#wave:pde2:fd">A slightly generalized model problem</a> and <a href="._wave-solarized002.html#wave:pde1:impl:verify:quadratic">Verification: exact quadratic solution</a>,
+but it turns out that this solution is no longer an exact solution
+of the discrete equations if a Neumann condition is implemented on
+the boundary. A linear solution does not help since we only have
+homogeneous Neumann conditions in <code>wave1D_dn.py</code>, and we are
+consequently left with testing just a constant solution: \( u=\hbox{const} \).
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">test_constant</span>():
+    <span style="color: #CD5555">&quot;&quot;&quot;</span>
+<span style="color: #CD5555">    Check the scalar and vectorized versions work for</span>
+<span style="color: #CD5555">    a constant u(x,t). We simulate in [0, L] and apply</span>
+<span style="color: #CD5555">    Neumann and Dirichlet conditions at both ends.</span>
+<span style="color: #CD5555">    &quot;&quot;&quot;</span>
+    u_const = <span style="color: #B452CD">0.45</span>
+    u_exact = <span style="color: #8B008B; font-weight: bold">lambda</span> x, t: u_const
+    I = <span style="color: #8B008B; font-weight: bold">lambda</span> x: u_exact(x, <span style="color: #B452CD">0</span>)
+    V = <span style="color: #8B008B; font-weight: bold">lambda</span> x: <span style="color: #B452CD">0</span>
+    f = <span style="color: #8B008B; font-weight: bold">lambda</span> x, t: <span style="color: #B452CD">0</span>
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">assert_no_error</span>(u, x, t, n):
+        u_e = u_exact(x, t[n])
+        diff = np.abs(u - u_e).max()
+        msg = <span style="color: #CD5555">&#39;diff=%E, t_%d=%g&#39;</span> % (diff, n, t[n])
+        tol = <span style="color: #B452CD">1E-13</span>
+        <span style="color: #8B008B; font-weight: bold">assert</span> diff &lt; tol, msg
+
+    <span style="color: #8B008B; font-weight: bold">for</span> U_0 <span style="color: #8B008B">in</span> (<span style="color: #658b00">None</span>, <span style="color: #8B008B; font-weight: bold">lambda</span> t: u_const):
+        <span style="color: #8B008B; font-weight: bold">for</span> U_L <span style="color: #8B008B">in</span> (<span style="color: #658b00">None</span>, <span style="color: #8B008B; font-weight: bold">lambda</span> t: u_const):
+            L = <span style="color: #B452CD">2.5</span>
+            c = <span style="color: #B452CD">1.5</span>
+            C = <span style="color: #B452CD">0.75</span>
+            Nx = <span style="color: #B452CD">3</span>  <span style="color: #228B22"># Very coarse mesh for this exact test</span>
+            dt = C*(L/Nx)/c
+            T = <span style="color: #B452CD">18</span>  <span style="color: #228B22"># long time integration</span>
+
+            solver(I, V, f, c, U_0, U_L, L, dt, C, T,
+                   user_action=assert_no_error,
+                   version=<span style="color: #CD5555">&#39;scalar&#39;</span>)
+            solver(I, V, f, c, U_0, U_L, L, dt, C, T,
+                   user_action=assert_no_error,
+                   version=<span style="color: #CD5555">&#39;vectorized&#39;</span>)
+            <span style="color: #8B008B; font-weight: bold">print</span> U_0, U_L
+</pre></div>
+<p>
+The quadratic solution is very useful for testing though, but it requires
+Dirichlet conditions at both ends.
+
+<p>
+Another test may utilize the fact that the approximation error vanishes
+when the Courant number is unity. We can, for example, start with a
+plug profile as initial condition, let this wave split into two plug waves,
+one in each direction, and check that the two plug waves come back and
+form the initial condition again after &quot;one period&quot; of the solution
+process. Neumann conditions can be applied at both ends. A proper
+test function reads
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">test_plug</span>():
+    <span style="color: #CD5555">&quot;&quot;&quot;Check that an initial plug is correct back after one period.&quot;&quot;&quot;</span>
+    L = <span style="color: #B452CD">1.0</span>
+    c = <span style="color: #B452CD">0.5</span>
+    dt = (L/<span style="color: #B452CD">10</span>)/c  <span style="color: #228B22"># Nx=10</span>
+    I = <span style="color: #8B008B; font-weight: bold">lambda</span> x: <span style="color: #B452CD">0</span> <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">abs</span>(x-L/<span style="color: #B452CD">2.0</span>) &gt; <span style="color: #B452CD">0.1</span> <span style="color: #8B008B; font-weight: bold">else</span> <span style="color: #B452CD">1</span>
+
+    u_s, x, t, cpu = solver(
+        I=I,
+        V=<span style="color: #658b00">None</span>, f=<span style="color: #658b00">None</span>, c=<span style="color: #B452CD">0.5</span>, U_0=<span style="color: #658b00">None</span>, U_L=<span style="color: #658b00">None</span>, L=L,
+        dt=dt, C=<span style="color: #B452CD">1</span>, T=<span style="color: #B452CD">4</span>, user_action=<span style="color: #658b00">None</span>, version=<span style="color: #CD5555">&#39;scalar&#39;</span>)
+    u_v, x, t, cpu = solver(
+        I=I,
+        V=<span style="color: #658b00">None</span>, f=<span style="color: #658b00">None</span>, c=<span style="color: #B452CD">0.5</span>, U_0=<span style="color: #658b00">None</span>, U_L=<span style="color: #658b00">None</span>, L=L,
+        dt=dt, C=<span style="color: #B452CD">1</span>, T=<span style="color: #B452CD">4</span>, user_action=<span style="color: #658b00">None</span>, version=<span style="color: #CD5555">&#39;vectorized&#39;</span>)
+    tol = <span style="color: #B452CD">1E-13</span>
+    diff = <span style="color: #658b00">abs</span>(u_s - u_v).max()
+    <span style="color: #8B008B; font-weight: bold">assert</span> diff &lt; tol
+    u_0 = np.array([I(x_) <span style="color: #8B008B; font-weight: bold">for</span> x_ <span style="color: #8B008B">in</span> x])
+    diff = np.abs(u_s - u_0).max()
+    <span style="color: #8B008B; font-weight: bold">assert</span> diff &lt; tol
+</pre></div>
+<p>
+Other tests must rely on an unknown approximation error, so effectively
+we are left with tests on the convergence rate.
+
+<h2 id="wave:pde1:Neumann:ghost">Alternative implementation via ghost cells</h2>
+
+<h3 id="___sec50">Idea </h3>
+
+<p>
+Instead of modifying the scheme at the boundary, we can introduce
+extra points outside the domain such that the fictitious values
+\( u_{-1}^n \) and \( u_{N_x+1}^n \)
+are defined in the mesh.
+Adding the intervals \( [-\Delta x,0] \) and \( [L, L+\Delta x] \),
+often referred to as <em>ghost cells</em>, to the mesh gives us all the
+needed mesh points, corresponding to \( i=-1,0,\ldots,N_x,N_x+1 \).
+The extra points \( i=-1 \) and \( i=N_x+1 \) are known as <em>ghost points</em>,
+and values at these points, \( u_{-1}^n \) and \( u_{N_x+1}^n \), are
+called <em>ghost values</em>.
+
+<p>
+The important idea is
+to ensure that we always have
+$$ u_{-1}^n = u_{1}^n\hbox{ and } u_{N_x+1}^n = u_{N_x-1}^n,$$
+
+because then
+the application of the standard scheme at a boundary point \( i=0 \) or \( i=N_x \)
+will be correct and guarantee that the solution is compatible with the
+boundary condition \( u_x=0 \).
+
+<h3 id="___sec51">Implementation </h3>
+
+<p>
+The <code>u</code> array now needs extra elements corresponding to the ghost
+points. Two new point values are needed:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">u   = zeros(Nx+<span style="color: #B452CD">3</span>)
+</pre></div>
+<p>
+The arrays <code>u_1</code> and <code>u_2</code> must be defined accordingly.
+
+<p>
+Unfortunately, a major indexing problem arises with ghost cells.
+The reason is that Python indices <em>must</em> start
+at 0 and <code>u[-1]</code> will always mean the last element in <code>u</code>.
+This fact gives, apparently, a mismatch between the mathematical
+indices \( i=-1,0,\ldots,N_x+1 \) and the Python indices running over
+<code>u</code>: <code>0,..,Nx+2</code>. One remedy is to change the mathematical indexing
+of \( i \) in the scheme and write
+
+$$ u^{n+1}_i = \cdots,\quad i=1,\ldots,N_x+1,$$
+
+instead of \( i=0,\ldots,N_x \) as we have previously used. The ghost
+points now correspond to \( i=0 \) and \( i=N_x+1 \).
+A better solution is to use the ideas of the section <a href="#wave:indexset">Index set notation</a>:
+we hide the specific index value in an index set and operate with
+inner and boundary points using the index set notation.
+
+<p>
+To this end, we define <code>u</code> with proper length and <code>Ix</code> to be the corresponding
+indices for the real physical mesh points (\( 1,2,\ldots,N_x+1 \)):
+
+<p>
+
+<!-- code=text (!bc cod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">u = zeros(Nx+3)
+Ix = range(1, u.shape[0]-1)
+</pre></div>
+<p>
+That is, the boundary points have indices <code>Ix[0]</code> and <code>Ix[-1]</code> (as before).
+We first update the solution at all physical mesh points (i.e., interior
+points in the mesh):
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix:
+    u[i] = - u_2[i] + <span style="color: #B452CD">2</span>*u_1[i] + \ 
+           C2*(u_1[i-<span style="color: #B452CD">1</span>] - <span style="color: #B452CD">2</span>*u_1[i] + u_1[i+<span style="color: #B452CD">1</span>])
+</pre></div>
+<p>
+The indexing becomes a bit more complicated when we call functions like
+<code>V(x)</code> and <code>f(x, t)</code>, as we must remember that the appropriate
+\( x \) coordinate is given as <code>x[i-Ix[0]]</code>:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix:
+    u[i] = u_1[i] + dt*V(x[i-Ix[<span style="color: #B452CD">0</span>]]) + \ 
+           <span style="color: #B452CD">0.5</span>*C2*(u_1[i-<span style="color: #B452CD">1</span>] - <span style="color: #B452CD">2</span>*u_1[i] + u_1[i+<span style="color: #B452CD">1</span>]) + \ 
+           <span style="color: #B452CD">0.5</span>*dt2*f(x[i-Ix[<span style="color: #B452CD">0</span>]], t[<span style="color: #B452CD">0</span>])
+</pre></div>
+<p>
+It remains to update the solution at ghost points, i.e, <code>u[0]</code>
+and <code>u[-1]</code> (or <code>u[Nx+2]</code>). For a boundary condition \( u_x=0 \),
+the ghost value must equal the value at the associated inner mesh
+point. Computer code makes this statement precise:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">i = Ix[<span style="color: #B452CD">0</span>]          <span style="color: #228B22"># x=0 boundary</span>
+u[i-<span style="color: #B452CD">1</span>] = u[i+<span style="color: #B452CD">1</span>]
+i = Ix[-<span style="color: #B452CD">1</span>]         <span style="color: #228B22"># x=L boundary</span>
+u[i+<span style="color: #B452CD">1</span>] = u[i-<span style="color: #B452CD">1</span>]
+</pre></div>
+<p>
+The physical solution to be plotted is now in <code>u[1:-1]</code>, or
+equivalently <code>u[Ix[0]:Ix[-1]+1]</code>, so this slice is
+the quantity to be returned from a solver function.
+A complete implementation appears in the program
+<a href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_n0_ghost.py" target="_self"><tt>wave1D_n0_ghost.py</tt></a>.
+
+<p>
+<div class="alert alert-block alert-warning alert-text-normal">
+<b>Warning.</b>
+<p>
+We have to be careful with how the spatial and temporal mesh
+points are stored. Say we let <code>x</code> be the physical mesh points,
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eee8d5"><pre style="line-height: 125%">x = linspace(<span style="color: #B452CD">0</span>, L, Nx+<span style="color: #B452CD">1</span>)
+</pre></div>
+<p>
+"Standard coding" of the initial condition,
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eee8d5"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix:
+    u_1[i] = I(x[i])
+</pre></div>
+<p>
+becomes wrong, since <code>u_1</code> and <code>x</code> have different lengths and the index <code>i</code>
+corresponds to two different mesh points. In fact, <code>x[i]</code> corresponds
+to <code>u[1+i]</code>. A correct implementation is
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eee8d5"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix:
+    u_1[i] = I(x[i-Ix[<span style="color: #B452CD">0</span>]])
+</pre></div>
+<p>
+Similarly, a source term usually coded as <code>f(x[i], t[n])</code> is incorrect
+if <code>x</code> is defined to be the physical points, so <code>x[i]</code> must be
+replaced by <code>x[i-Ix[0]]</code>.
+
+<p>
+An alternative remedy is to let <code>x</code> also cover the ghost points such that
+<code>u[i]</code> is the value at <code>x[i]</code>.
+</div>
+
+
+<p>
+The ghost cell is only added to the boundary where we have a Neumann
+condition. Suppose we have a Dirichlet condition at \( x=L \) and
+a homogeneous Neumann condition at \( x=0 \). One ghost cell \( [-\Delta x,0] \)
+is added to the mesh, so the index set for the physical points
+becomes \( \{1,\ldots,N_x+1\} \). A relevant implementation
+is
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">u = zeros(Nx+<span style="color: #B452CD">2</span>)
+Ix = <span style="color: #658b00">range</span>(<span style="color: #B452CD">1</span>, u.shape[<span style="color: #B452CD">0</span>])
+...
+<span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix[:-<span style="color: #B452CD">1</span>]:
+    u[i] = - u_2[i] + <span style="color: #B452CD">2</span>*u_1[i] + \ 
+           C2*(u_1[i-<span style="color: #B452CD">1</span>] - <span style="color: #B452CD">2</span>*u_1[i] + u_1[i+<span style="color: #B452CD">1</span>]) + \ 
+           dt2*f(x[i-Ix[<span style="color: #B452CD">0</span>]], t[n])
+i = Ix[-<span style="color: #B452CD">1</span>]
+u[i] = U_0       <span style="color: #228B22"># set Dirichlet value</span>
+i = Ix[<span style="color: #B452CD">0</span>]
+u[i-<span style="color: #B452CD">1</span>] = u[i+<span style="color: #B452CD">1</span>]  <span style="color: #228B22"># update ghost value</span>
+</pre></div>
+<p>
+The physical solution to be plotted is now in <code>u[1:]</code>
+or (as always) <code>u[Ix[0]:Ix[-1]+1]</code>.
+
+<h1 id="wave:pde2:var:c">Generalization: variable wave velocity</h1>
+
+<p>
+Our next generalization of the 1D wave equation <a href="._wave-solarized001.html#mjx-eqn-1">(1)</a> or
+<a href="._wave-solarized001.html#mjx-eqn-12">(12)</a> is to allow for a variable wave velocity \( c \):
+\( c=c(x) \), usually motivated by wave motion in a domain composed of
+different physical media. When the media differ in physical properties
+like density or porosity, the wave velocity \( c \) is affected and
+will depend on the position in space.
+Figure <a href="#wave:pde1:fig:pulse1:two:media">5</a> shows a wave
+propagating in one medium \( [0, 0.7]\cup [0.9,1] \) with wave
+velocity \( c_1 \) (left) before it enters a second medium \( (0.7,0.9) \)
+with wave velocity \( c_2 \) (right). When the wave passes the boundary
+where \( c \) jumps from \( c_1 \) to \( c_2 \), a part of the wave is reflected back
+into the first medium (the <em>reflected</em> wave), while one part is
+transmitted through the second medium (the <em>transmitted</em> wave).
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 5:  Left: wave entering another medium; right: transmitted and reflected wave. <div id="wave:pde1:fig:pulse1:two:media"></div> </p></center>
+<p><img src="fig-wave/pulse1_in_two_media.png" align="bottom" width=800></p>
+</center>
+
+<h2 id="___sec53">The model PDE with a variable coefficient </h2>
+
+<p>
+Instead of working with the squared quantity \( c^2(x) \), we
+shall for notational convenience introduce \( q(x) = c^2(x) \).
+A 1D wave equation with variable wave velocity often takes the form
+
+$$
+\begin{equation}
+\frac{\partial^2 u}{\partial t^2} =
+\frac{\partial}{\partial x}\left( q(x)
+\frac{\partial u}{\partial x}\right) + f(x,t)
+\tag{27}
+\tp
+\end{equation}
+$$
+
+This is the most frequent form of a wave
+equation with variable wave velocity,
+but other forms also appear, see the section <a href="._wave-solarized007.html#wave:app:string">Waves on a string</a>
+and equation <a href="._wave-solarized007.html#mjx-eqn-80">(80)</a>.
+
+<p>
+As usual, we sample <a href="#mjx-eqn-27">(27)</a> at a mesh point,
+
+$$
+\frac{\partial^2 }{\partial t^2} u(x_i,t_n) =
+\frac{\partial}{\partial x}\left( q(x_i)
+\frac{\partial}{\partial x} u(x_i,t_n)\right) + f(x_i,t_n),
+$$
+
+where the only new term to discretize is
+
+$$
+\frac{\partial}{\partial x}\left( q(x_i)
+\frac{\partial}{\partial x} u(x_i,t_n)\right) = \left[
+\frac{\partial}{\partial x}\left( q(x)
+\frac{\partial u}{\partial x}\right)\right]^n_i
+\tp
+$$
+
+<h2 id="wave:pde2:var:c:ideas">Discretizing the variable coefficient</h2>
+
+<p>
+The principal idea is to first discretize the outer derivative.
+Define
+$$ \phi = q(x)
+\frac{\partial u}{\partial x},
+$$
+
+and use a centered derivative around \( x=x_i \) for the derivative of \( \phi \):
+$$
+\left[\frac{\partial\phi}{\partial x}\right]^n_i
+\approx \frac{\phi_{i+\half} - \phi_{i-\half}}{\Delta x}
+= [D_x\phi]^n_i
+\tp
+$$
+
+Then discretize
+$$
+\phi_{i+\half}  = q_{i+\half}
+\left[\frac{\partial u}{\partial x}\right]^n_{i+\half}
+\approx q_{i+\half} \frac{u^n_{i+1} - u^n_{i}}{\Delta x}
+= [q D_x u]_{i+\half}^n
+\tp
+$$
+
+Similarly,
+$$
+\phi_{i-\half}  = q_{i-\half}
+\left[\frac{\partial u}{\partial x}\right]^n_{i-\half}
+\approx q_{i-\half} \frac{u^n_{i} - u^n_{i-1}}{\Delta x}
+= [q D_x u]_{i-\half}^n
+\tp
+$$
+
+These intermediate results are now combined to
+$$
+\begin{equation}
+\left[
+\frac{\partial}{\partial x}\left( q(x)
+\frac{\partial u}{\partial x}\right)\right]^n_i
+\approx \frac{1}{\Delta x^2}
+\left( q_{i+\half} \left({u^n_{i+1} - u^n_{i}}\right)
+- q_{i-\half} \left({u^n_{i} - u^n_{i-1}}\right)\right)
+\tag{28}
+\tp
+\end{equation}
+$$
+
+With operator notation we can write the discretization as
+$$
+\begin{equation}
+\left[
+\frac{\partial}{\partial x}\left( q(x)
+\frac{\partial u}{\partial x}\right)\right]^n_i
+\approx [D_xq D_x u]^n_i
+\tag{29}
+\tp
+\end{equation}
+$$
+
+<p>
+<div class="alert alert-block alert-warning alert-text-normal">
+<b>Do not use the chain rule on the spatial derivative term.</b>
+<p>
+Many are tempted to use the chain rule on the
+term \( \frac{\partial}{\partial x}\left( q(x)
+\frac{\partial u}{\partial x}\right) \), but this is not a good idea
+when discretizing such a term.
+
+<p>
+The term with a variable coefficient expresses the net flux
+\( qu_x \) into a small volume (i.e., interval in 1D):
+
+$$ \frac{\partial}{\partial x}\left( q(x)
+\frac{\partial u}{\partial x}\right) \approx
+\frac{1}{\Delta x}(q(x+\Delta x)u_x(x+\Delta x) - q(x)u_x(x))\tp$$
+
+Our discretization reflects this
+principle directly: \( qu_x \) at the right end of the cell minus \( qu_x \)
+at the left end, because this follows from the formula
+<a href="#mjx-eqn-28">(28)</a> or \( [D_x(q D_x u)]^n_i \).
+
+<p>
+When using the chain rule, we get two
+terms \( qu_{xx} + q_xu_x \). The typical discretization is
+
+$$
+\begin{equation}
+qD_xD_x u + D_{2x}q D_{2x} u]_i^n,
+\tag{30}
+\end{equation}
+$$
+
+Writing this out shows that it is different from
+\( [D_x(q D_x u)]^n_i \) and lacks the physical interpretation of
+net flux into a cell. With a smooth and slowly varying \( q(x) \) the
+differences between the two discretizations are not substantial.
+However, when \( q \) exhibits (potentially large) jumps,
+\( [D_x(q D_x u)]^n_i \) with harmonic averaging of \( q \) yields
+a better solution than arithmetic averaging or
+<a href="#mjx-eqn-30">(30)</a>.
+In the literature, the discretization \( [D_x(q D_x u)]^n_i \) totally
+dominant and very few mention the possibility of
+<a href="#mjx-eqn-30">(30)</a>.
+</div>
+
+
+<p>
+<!-- Needs some better explanation here - maybe the exact solution of a -->
+<!-- poisson type problem (piecewise linear solution) failes if we use -->
+<!-- the chain rule? Wesserling has an example, but it is tedious to -->
+<!-- work out. -->
+
+<h2 id="wave:pde2:var:c:means">Computing the coefficient between mesh points</h2>
+
+<p>
+If \( q \) is a known function of \( x \), we can easily evaluate
+\( q_{i+\half} \) simply as \( q(x_{i+\half}) \) with
+\( x_{i+\half} = x_i + \half\Delta x \).
+However, in many cases \( c \), and hence \( q \),
+is only known as a discrete function, often at the mesh points \( x_i \).
+Evaluating \( q \) between two mesh points \( x_i \) and \( x_{i+1} \) can then
+be done by averaging in three ways:
+
+$$
+\begin{align}
+q_{i+\half} &\approx
+\half\left( q_{i} + q_{i+1}\right) =
+[\overline{q}^{x}]_i
+\quad &\hbox{(arithmetic mean)}
+\tag{31}\\ 
+q_{i+\half} &\approx
+2\left( \frac{1}{q_{i}} + \frac{1}{q_{i+1}}\right)^{-1}
+\quad &\hbox{(harmonic mean)}
+\tag{32}\\ 
+q_{i+\half} &\approx
+\left(q_{i}q_{i+1}\right)^{1/2}
+\quad &\hbox{(geometric mean)}
+\tag{33}
+\end{align}
+$$
+
+The arithmetic mean in <a href="#mjx-eqn-31">(31)</a> is by
+far the most commonly used averaging technique and is well suited
+for smooth \( q(x) \) functions.
+The harmonic mean is often preferred when \( q(x) \) exhibits large
+jumps (which is typical for geological media).
+The geometric mean is less used, but popular in
+discretizations to linearize quadratic
+nonlinearities.
+
+<p>
+With the operator notation from <a href="#mjx-eqn-31">(31)</a>
+we can specify the discretization of the complete variable-coefficient
+wave equation in a compact way:
+$$
+\begin{equation}
+\lbrack D_tD_t u = D_x\overline{q}^{x}D_x u + f\rbrack^{n}_i
+\tp
+\tag{34}
+\end{equation}
+$$
+
+From this notation we immediately see what kind of differences that
+each term is approximated with. The notation \( \overline{q}^{x} \)
+also specifies that the variable coefficient is approximated by
+an arithmetic mean, the definition being
+\( [\overline{q}^{x}]_{i+\half}=(q_i+q_{i+1})/2 \).
+With the notation \( [D_xq D_x u]^n_i \),
+we specify that \( q \) is evaluated directly, as a function,
+between the mesh points:
+\( q(x_{i-\half}) \) and \( q(x_{i+\half}) \).
+
+<p>
+Before any implementation, it remains to solve
+<a href="#mjx-eqn-34">(34)</a> with respect to \( u_i^{n+1} \):
+
+$$
+\begin{align}
+u^{n+1}_i &= - u_i^{n-1}  + 2u_i^n + \nonumber\\ 
+&\quad \left(\frac{\Delta x}{\Delta t}\right)^2 \left(
+\half(q_{i} + q_{i+1})(u_{i+1}^n - u_{i}^n) -
+\half(q_{i} + q_{i-1})(u_{i}^n - u_{i-1}^n)\right)
++ \nonumber\\ 
+& \quad \Delta t^2 f^n_i
+\tp
+\tag{35}
+\end{align}
+$$
+
+<h2 id="wave:pde2:var:c:stability">How a variable coefficient affects the stability</h2>
+
+<p>
+The stability criterion derived in the section <a href="._wave-solarized004.html#wave:pde1:stability">Stability</a>
+reads \( \Delta t\leq \Delta x/c \). If \( c=c(x) \), the criterion will depend
+on the spatial location. We must therefore choose a \( \Delta t \) that
+is small enough such that no mesh cell has \( \Delta x/c(x) >\Delta t \).
+That is, we must use the largest \( c \) value in the criterion:
+
+$$
+\begin{equation}
+\Delta t \leq \beta \frac{\Delta x}{\max_{x\in [0,L]}c(x)}
+\tp
+\end{equation}
+$$
+
+The parameter \( \beta \) is included as a safety factor: in some problems with a
+significantly varying \( c \) it turns out that one must choose \( \beta < 1 \) to
+have stable solutions (\( \beta =0.9 \) may act as an all-round value).
+
+<p>
+A different strategy to handle the stability criterion with variable
+wave velocity is to use a spatially varying \( \Delta t \). While the idea
+is mathematically attractive at first sight, the implementation quickly
+becomes very complicated, so we stick to using a constant \( \Delta t \)
+and a worst case value of \( c(x) \) (with a safety factor \( \beta \)).
+
+<h2 id="wave:pde2:var:c:Neumann">Neumann condition and a variable coefficient</h2>
+
+<p>
+Consider a Neumann condition \( \partial u/\partial x=0 \) at \( x=L=N_x\Delta x \),
+discretized as
+
+$$ [D_{2x} u]^n_i =
+\frac{u_{i+1}^{n} - u_{i-1}^n}{2\Delta x} = 0\quad u_{i+1}^n = u_{i-1}^n,
+$$
+
+for \( i=N_x \). Using the scheme <a href="#mjx-eqn-35">(35)</a>
+at the end point \( i=N_x \) with \( u_{i+1}^n=u_{i-1}^n \) results in
+
+$$
+\begin{align}
+u^{n+1}_i &= - u_i^{n-1}  + 2u_i^n + \nonumber\\ 
+&\quad \left(\frac{\Delta x}{\Delta t}\right)^2 \left(
+q_{i+\half}(u_{i-1}^n - u_{i}^n) -
+q_{i-\half}(u_{i}^n - u_{i-1}^n)\right)
++ \Delta t^2 f^n_i
+\tag{36}\\ 
+&= - u_i^{n-1}  + 2u_i^n + \left(\frac{\Delta x}{\Delta t}\right)^2
+(q_{i+\half} + q_{i-\half})(u_{i-1}^n - u_{i}^n) +
+\Delta t^2 f^n_i\\ 
+&\approx - u_i^{n-1}  + 2u_i^n + \left(\frac{\Delta x}{\Delta t}\right)^2
+2q_{i}(u_{i-1}^n - u_{i}^n) + \Delta t^2 f^n_i
+\tp
+\tag{37}
+\end{align}
+$$
+
+Here we used the approximation
+
+$$
+\begin{align}
+q_{i+\half} + q_{i-\half} &=
+q_i + \left(\frac{dq}{dx}\right)_i \Delta x
++ \left(\frac{d^2q}{dx^2}\right)_i \Delta x^2 + \cdots
++\nonumber\\ 
+&\quad q_i - \left(\frac{dq}{dx}\right)_i \Delta x
++ \left(\frac{d^2q}{dx^2}\right)_i \Delta x^2 + \cdots\nonumber\\ 
+&= 2q_i + 2\left(\frac{d^2q}{dx^2}\right)_i \Delta x^2 + {\cal O}(\Delta x^4)
+\nonumber\\ 
+&\approx 2q_i
+\tp
+\end{align}
+$$
+
+<p>
+An alternative derivation may apply the arithmetic mean of \( q \) in
+<a href="#mjx-eqn-36">(36)</a>, leading to the term
+
+$$ (q_i + \half(q_{i+1}+q_{i-1}))(u_{i-1}^n-u_i^n)\tp$$
+
+Since \( \half(q_{i+1}+q_{i-1}) = q_i + {\cal O}(\Delta x^2) \),
+we can approximate with \( 2q_i(u_{i-1}^n-u_i^n) \) for \( i=N_x \) and
+get the same term as we did above.
+
+<p>
+A common technique when implementing \( \partial u/\partial x=0 \)
+boundary conditions, is to assume \( dq/dx=0 \) as well. This implies
+\( q_{i+1}=q_{i-1} \) and \( q_{i+1/2}=q_{i-1/2} \) for \( i=N_x \).
+The implications for the scheme are
+
+$$
+\begin{align}
+u^{n+1}_i &= - u_i^{n-1}  + 2u_i^n + \nonumber\\ 
+&\quad \left(\frac{\Delta x}{\Delta t}\right)^2 \left(
+q_{i+\half}(u_{i-1}^n - u_{i}^n) -
+q_{i-\half}(u_{i}^n - u_{i-1}^n)\right)
++ \nonumber\\ 
+& \quad \Delta t^2 f^n_i\\ 
+&= - u_i^{n-1}  + 2u_i^n + \left(\frac{\Delta x}{\Delta t}\right)^2
+2q_{i-\half}(u_{i-1}^n - u_{i}^n) +
+\Delta t^2 f^n_i
+\tp
+\tag{38}
+\end{align}
+$$
+
+<h2 id="wave:pde2:var:c:impl">Implementation of variable coefficients</h2>
+
+<p>
+The implementation of the scheme with a variable wave velocity \( q(x)=c^2(x) \)
+may assume that \( q \) is available as an array <code>q[i]</code> at
+the spatial mesh points. The following loop is a straightforward
+implementation of the scheme <a href="#mjx-eqn-35">(35)</a>:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #B452CD">1</span>, Nx):
+    u[i] = - u_2[i] + <span style="color: #B452CD">2</span>*u_1[i] + \ 
+           C2*(<span style="color: #B452CD">0.5</span>*(q[i] + q[i+<span style="color: #B452CD">1</span>])*(u_1[i+<span style="color: #B452CD">1</span>] - u_1[i])  - \ 
+               <span style="color: #B452CD">0.5</span>*(q[i] + q[i-<span style="color: #B452CD">1</span>])*(u_1[i] - u_1[i-<span style="color: #B452CD">1</span>])) + \ 
+           dt2*f(x[i], t[n])
+</pre></div>
+<p>
+The coefficient <code>C2</code> is now defined as <code>(dt/dx)**2</code>, i.e., <em>not</em> as the
+squared Courant number, since the wave velocity is variable and appears
+inside the parenthesis.
+
+<p>
+With Neumann conditions \( u_x=0 \) at the
+boundary, we need to combine this scheme with the discrete
+version of the boundary condition, as shown in the section <a href="#wave:pde2:var:c:Neumann">Neumann condition and a variable coefficient</a>.
+Nevertheless, it would be convenient to reuse the formula for the
+interior points and just modify the indices <code>ip1=i+1</code> and <code>im1=i-1</code>
+as we did in the section <a href="#wave:pde2:Neumann:impl">Implementation of Neumann conditions</a>. Assuming
+\( dq/dx=0 \) at the boundaries, we can implement the scheme at
+the boundary with the following code.
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">i = <span style="color: #B452CD">0</span>
+ip1 = i+<span style="color: #B452CD">1</span>
+im1 = ip1
+u[i] = - u_2[i] + <span style="color: #B452CD">2</span>*u_1[i] + \ 
+       C2*(<span style="color: #B452CD">0.5</span>*(q[i] + q[ip1])*(u_1[ip1] - u_1[i])  - \ 
+           <span style="color: #B452CD">0.5</span>*(q[i] + q[im1])*(u_1[i] - u_1[im1])) + \ 
+       dt2*f(x[i], t[n])
+</pre></div>
+<p>
+With ghost cells we can just reuse the formula for the interior
+points also at the boundary, provided that the ghost values of both
+\( u \) and \( q \) are correctly updated to ensure \( u_x=0 \) and \( q_x=0 \).
+
+<p>
+A vectorized version of the scheme with a variable coefficient
+at internal mesh points becomes
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">u[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] = - u_2[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] + <span style="color: #B452CD">2</span>*u_1[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] + \ 
+          C2*(<span style="color: #B452CD">0.5</span>*(q[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] + q[<span style="color: #B452CD">2</span>:])*(u_1[<span style="color: #B452CD">2</span>:] - u_1[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]) -
+              <span style="color: #B452CD">0.5</span>*(q[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] + q[:-<span style="color: #B452CD">2</span>])*(u_1[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] - u_1[:-<span style="color: #B452CD">2</span>])) + \ 
+          dt2*f(x[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>], t[n])
+</pre></div>
+
+<h2 id="___sec59">A more general PDE model with variable coefficients </h2>
+
+<p>
+Sometimes a wave PDE has a variable coefficient in front of
+the time-derivative term:
+
+$$
+\begin{equation}
+\varrho(x)\frac{\partial^2 u}{\partial t^2} =
+\frac{\partial}{\partial x}\left( q(x)
+\frac{\partial u}{\partial x}\right) + f(x,t)
+\tag{39}
+\tp
+\end{equation}
+$$
+
+One example appears when modeling elastic waves in a rod
+with varying density, cf.&nbsp;(<a href="._wave-solarized007.html#wave:app:string">Waves on a string</a>) with \( \varrho (x) \).
+
+<p>
+A natural scheme for <a href="#mjx-eqn-39">(39)</a> is
+
+$$
+\begin{equation}
+[\varrho D_tD_t u = D_x\overline{q}^xD_x u + f]^n_i
+\tp
+\end{equation}
+$$
+
+We realize that the \( \varrho \) coefficient poses no particular
+difficulty, since \( \varrho \) enters the formula just a simple factor
+in front of a derivative. There is hence no need for any averaging
+of \( \varrho \). Often, \( \varrho \) will be moved to the right-hand side,
+also without any difficulty:
+
+$$
+\begin{equation}
+[D_tD_t u = \varrho^{-1}D_x\overline{q}^xD_x u + f]^n_i
+\tp
+\end{equation}
+$$
+
+<h2 id="___sec60">Generalization: damping </h2>
+
+<p>
+Waves die out by two mechanisms. In 2D and 3D the energy of the wave
+spreads out in space, and energy conservation then requires
+the amplitude to decrease. This effect is not present in 1D.
+Damping is another cause of amplitude reduction. For example,
+the vibrations of a string die out because of damping due to
+air resistance and non-elastic effects in the string.
+
+<p>
+The simplest way of including damping is to add a first-order derivative
+to the equation (in the same way as friction forces enter a vibrating
+mechanical system):
+$$
+\begin{equation}
+\frac{\partial^2 u}{\partial t^2} + b\frac{\partial u}{\partial t} =
+c^2\frac{\partial^2 u}{\partial x^2}
+ + f(x,t),
+\tag{40}
+\end{equation}
+$$
+
+where \( b \geq 0 \) is a prescribed damping coefficient.
+
+<p>
+A typical discretization of <a href="#mjx-eqn-40">(40)</a> in terms of centered
+differences reads
+
+$$
+\begin{equation}
+[D_tD_t u + bD_{2t}u = c^2D_xD_x u + f]^n_i
+\tp
+\tag{41}
+\end{equation}
+$$
+
+Writing out the equation and solving for the unknown \( u^{n+1}_i \)
+gives the scheme
+
+$$
+\begin{equation}
+u^{n+1}_i = (1 + {\half}b\Delta t)^{-1}(({\half}b\Delta t -1)
+u^{n-1}_i + 2u^n_i + C^2
+\left(u^{n}_{i+1}-2u^{n}_{i} + u^{n}_{i-1}\right) + \Delta t^2 f^n_i),
+\tag{42}
+\end{equation}
+$$
+
+for \( i\in\seti{\Ix} \) and \( n\geq 1 \).
+New equations must be derived for \( u^1_i \), and for boundary points in case
+of Neumann conditions.
+
+<p>
+The damping is very small in many wave phenomena and thus only evident
+for very long time simulations. This makes the standard wave equation
+without damping relevant for a lot of applications.
+
+<h1 id="wave:pde2:software">Building a general 1D wave equation solver</h1>
+
+<p>
+The program <a href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_dn_vc.py" target="_self"><tt>wave1D_dn_vc.py</tt></a>
+is a fairly general code for 1D wave propagation problems that
+targets the following initial-boundary value problem
+
+$$
+\begin{align}
+u_{tt} &= (c^2(x)u_x)_x + f(x,t),\quad &x\in (0,L),\ t\in (0,T]
+\tag{43}\\ 
+u(x,0) &= I(x),\quad &x\in [0,L]\\ 
+u_t(x,0) &= V(t),\quad &x\in [0,L]\\ 
+u(0,t) &= U_0(t)\hbox{ or } u_x(0,t)=0,\quad &t\in (0,T]\\ 
+u(L,t) &= U_L(t)\hbox{ or } u_x(L,t)=0,\quad &t\in (0,T]
+\tag{44}
+\end{align}
+$$
+
+<p>
+The only new feature here is the time-dependent Dirichlet conditions.
+These are trivial to implement:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">i = Ix[<span style="color: #B452CD">0</span>]  <span style="color: #228B22"># x=0</span>
+u[i] = U_0(t[n+<span style="color: #B452CD">1</span>])
+
+i = Ix[-<span style="color: #B452CD">1</span>] <span style="color: #228B22"># x=L</span>
+u[i] = U_L(t[n+<span style="color: #B452CD">1</span>])
+</pre></div>
+<p>
+The <code>solver</code> function is a natural extension of the simplest
+<code>solver</code> function in the initial <code>wave1D_u0.py</code> program,
+extended with Neumann boundary conditions (\( u_x=0 \)),
+a the time-varying Dirichlet conditions, as well as
+a variable wave velocity. The different code segments needed
+to make these extensions have been shown and commented upon in the
+preceding text. We refer to the <code>solver</code> function in the
+<code>wave1D_dn_vc.py</code> file for all the details.
+
+<p>
+The vectorization is only applied inside the time loop, not for the
+initial condition or the first time steps, since this initial work
+is negligible for long time simulations in 1D problems.
+
+<p>
+The following sections explain various more advanced programming
+techniques applied in the general 1D wave equation solver.
+
+<h2 id="___sec62">User action function as a class </h2>
+
+<p>
+A useful feature in the <code>wave1D_dn_vc.py</code> program is the specification of
+the <code>user_action</code> function as a class. This part of the program may
+need some motivation and explanation. Although the <code>plot_u_st</code>
+function (and the <code>PlotMatplotlib</code> class)
+in the <code>wave1D_u0.viz</code> function
+remembers the local variables in the <code>viz</code> function, it is a
+cleaner solution to store the needed variables together with
+the function, which is exactly what a class offers.
+
+<h3 id="___sec63">The code </h3>
+
+<p>
+A class for flexible plotting, cleaning up files, making movie
+files, like the function <code>wave1D_u0.viz</code> did, can be coded as follows:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">class</span> <span style="color: #008b45; font-weight: bold">PlotAndStoreSolution</span>:
+    <span style="color: #CD5555">&quot;&quot;&quot;</span>
+<span style="color: #CD5555">    Class for the user_action function in solver.</span>
+<span style="color: #CD5555">    Visualizes the solution only.</span>
+<span style="color: #CD5555">    &quot;&quot;&quot;</span>
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">__init__</span>(
+        <span style="color: #658b00">self</span>,
+        casename=<span style="color: #CD5555">&#39;tmp&#39;</span>,    <span style="color: #228B22"># Prefix in filenames</span>
+        umin=-<span style="color: #B452CD">1</span>, umax=<span style="color: #B452CD">1</span>,   <span style="color: #228B22"># Fixed range of y axis</span>
+        pause_between_frames=<span style="color: #658b00">None</span>,  <span style="color: #228B22"># Movie speed</span>
+        backend=<span style="color: #CD5555">&#39;matplotlib&#39;</span>,       <span style="color: #228B22"># or &#39;gnuplot&#39; or None</span>
+        screen_movie=<span style="color: #658b00">True</span>, <span style="color: #228B22"># Show movie on screen?</span>
+        title=<span style="color: #CD5555">&#39;&#39;</span>,          <span style="color: #228B22"># Extra message in title</span>
+        skip_frame=<span style="color: #B452CD">1</span>,      <span style="color: #228B22"># Skip every skip_frame frame</span>
+        filename=<span style="color: #658b00">None</span>):    <span style="color: #228B22"># Name of file with solutions</span>
+        <span style="color: #658b00">self</span>.casename = casename
+        <span style="color: #658b00">self</span>.yaxis = [umin, umax]
+        <span style="color: #658b00">self</span>.pause = pause_between_frames
+        <span style="color: #658b00">self</span>.backend = backend
+        <span style="color: #8B008B; font-weight: bold">if</span> backend <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span>:
+            <span style="color: #228B22"># Use native matplotlib</span>
+            <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">matplotlib.pyplot</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">plt</span>
+        <span style="color: #8B008B; font-weight: bold">elif</span> backend <span style="color: #8B008B">in</span> (<span style="color: #CD5555">&#39;matplotlib&#39;</span>, <span style="color: #CD5555">&#39;gnuplot&#39;</span>):
+            module = <span style="color: #CD5555">&#39;scitools.easyviz.&#39;</span> + backend + <span style="color: #CD5555">&#39;_&#39;</span>
+            <span style="color: #8B008B; font-weight: bold">exec</span>(<span style="color: #CD5555">&#39;import %s as plt&#39;</span> % module)
+        <span style="color: #658b00">self</span>.plt = plt
+        <span style="color: #658b00">self</span>.screen_movie = screen_movie
+        <span style="color: #658b00">self</span>.title = title
+        <span style="color: #658b00">self</span>.skip_frame = skip_frame
+        <span style="color: #658b00">self</span>.filename = filename
+        <span style="color: #8B008B; font-weight: bold">if</span> filename <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+            <span style="color: #228B22"># Store time points when u is written to file</span>
+            <span style="color: #658b00">self</span>.t = []
+            filenames = glob.glob(<span style="color: #CD5555">&#39;.&#39;</span> + <span style="color: #658b00">self</span>.filename + <span style="color: #CD5555">&#39;*.dat.npz&#39;</span>)
+            <span style="color: #8B008B; font-weight: bold">for</span> filename <span style="color: #8B008B">in</span> filenames:
+                os.remove(filename)
+
+        <span style="color: #228B22"># Clean up old movie frames</span>
+        <span style="color: #8B008B; font-weight: bold">for</span> filename <span style="color: #8B008B">in</span> glob.glob(<span style="color: #CD5555">&#39;frame_*.png&#39;</span>):
+            os.remove(filename)
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">__call__</span>(<span style="color: #658b00">self</span>, u, x, t, n):
+        <span style="color: #CD5555">&quot;&quot;&quot;</span>
+<span style="color: #CD5555">        Callback function user_action, call by solver:</span>
+<span style="color: #CD5555">        Store solution, plot on screen and save to file.</span>
+<span style="color: #CD5555">        &quot;&quot;&quot;</span>
+        <span style="color: #228B22"># Save solution u to a file using numpy.savez</span>
+        <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">self</span>.filename <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+            name = <span style="color: #CD5555">&#39;u%04d&#39;</span> % n  <span style="color: #228B22"># array name</span>
+            kwargs = {name: u}
+            fname = <span style="color: #CD5555">&#39;.&#39;</span> + <span style="color: #658b00">self</span>.filename + <span style="color: #CD5555">&#39;_&#39;</span> + name + <span style="color: #CD5555">&#39;.dat&#39;</span>
+            savez(fname, **kwargs)
+            <span style="color: #658b00">self</span>.t.append(t[n])  <span style="color: #228B22"># store corresponding time value</span>
+            <span style="color: #8B008B; font-weight: bold">if</span> n == <span style="color: #B452CD">0</span>:           <span style="color: #228B22"># save x once</span>
+                savez(<span style="color: #CD5555">&#39;.&#39;</span> + <span style="color: #658b00">self</span>.filename + <span style="color: #CD5555">&#39;_x.dat&#39;</span>, x=x)
+
+        <span style="color: #228B22"># Animate</span>
+        <span style="color: #8B008B; font-weight: bold">if</span> n % <span style="color: #658b00">self</span>.skip_frame != <span style="color: #B452CD">0</span>:
+            <span style="color: #8B008B; font-weight: bold">return</span>
+        title = <span style="color: #CD5555">&#39;t=%.3f&#39;</span> % t[n]
+        <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">self</span>.title:
+            title = <span style="color: #658b00">self</span>.title + <span style="color: #CD5555">&#39; &#39;</span> + title
+        <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">self</span>.backend <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span>:
+            <span style="color: #228B22"># native matplotlib animation</span>
+            <span style="color: #8B008B; font-weight: bold">if</span> n == <span style="color: #B452CD">0</span>:
+                <span style="color: #658b00">self</span>.plt.ion()
+                <span style="color: #658b00">self</span>.lines = <span style="color: #658b00">self</span>.plt.plot(x, u, <span style="color: #CD5555">&#39;r-&#39;</span>)
+                <span style="color: #658b00">self</span>.plt.axis([x[<span style="color: #B452CD">0</span>], x[-<span style="color: #B452CD">1</span>],
+                               <span style="color: #658b00">self</span>.yaxis[<span style="color: #B452CD">0</span>], <span style="color: #658b00">self</span>.yaxis[<span style="color: #B452CD">1</span>]])
+                <span style="color: #658b00">self</span>.plt.xlabel(<span style="color: #CD5555">&#39;x&#39;</span>)
+                <span style="color: #658b00">self</span>.plt.ylabel(<span style="color: #CD5555">&#39;u&#39;</span>)
+                <span style="color: #658b00">self</span>.plt.title(title)
+                <span style="color: #658b00">self</span>.plt.legend([<span style="color: #CD5555">&#39;t=%.3f&#39;</span> % t[n]])
+            <span style="color: #8B008B; font-weight: bold">else</span>:
+                <span style="color: #228B22"># Update new solution</span>
+                <span style="color: #658b00">self</span>.lines[<span style="color: #B452CD">0</span>].set_ydata(u)
+                <span style="color: #658b00">self</span>.plt.legend([<span style="color: #CD5555">&#39;t=%.3f&#39;</span> % t[n]])
+                <span style="color: #658b00">self</span>.plt.draw()
+        <span style="color: #8B008B; font-weight: bold">else</span>:
+            <span style="color: #228B22"># scitools.easyviz animation</span>
+            <span style="color: #658b00">self</span>.plt.plot(x, u, <span style="color: #CD5555">&#39;r-&#39;</span>,
+                          xlabel=<span style="color: #CD5555">&#39;x&#39;</span>, ylabel=<span style="color: #CD5555">&#39;u&#39;</span>,
+                          axis=[x[<span style="color: #B452CD">0</span>], x[-<span style="color: #B452CD">1</span>],
+                                <span style="color: #658b00">self</span>.yaxis[<span style="color: #B452CD">0</span>], <span style="color: #658b00">self</span>.yaxis[<span style="color: #B452CD">1</span>]],
+                          title=title,
+                          show=<span style="color: #658b00">self</span>.screen_movie)
+        <span style="color: #228B22"># pause</span>
+        <span style="color: #8B008B; font-weight: bold">if</span> t[n] == <span style="color: #B452CD">0</span>:
+            time.sleep(<span style="color: #B452CD">2</span>)  <span style="color: #228B22"># let initial condition stay 2 s</span>
+        <span style="color: #8B008B; font-weight: bold">else</span>:
+            <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">self</span>.pause <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span>:
+                pause = <span style="color: #B452CD">0.2</span> <span style="color: #8B008B; font-weight: bold">if</span> u.size &lt; <span style="color: #B452CD">100</span> <span style="color: #8B008B; font-weight: bold">else</span> <span style="color: #B452CD">0</span>
+            time.sleep(pause)
+
+        <span style="color: #658b00">self</span>.plt.savefig(<span style="color: #CD5555">&#39;frame_%04d.png&#39;</span> % (n))
+</pre></div>
+
+<h3 id="___sec64">Dissection </h3>
+
+<p>
+Understanding this class requires quite some familiarity with Python
+in general and class programming in particular.
+The class supports plotting with Matplotlib (<code>backend=None</code>) or
+SciTools (<code>backend=matplotlib</code> or <code>backend=gnuplot</code>) for maximum
+flexibility.
+
+<p>
+<!-- Since all the plot frames are to be collected in a separate subdirectory, -->
+<!-- we demand a (logical) "casename" from the user that is used as -->
+<!-- subdirectory name in the <code>make_movie_file</code> method. The statements -->
+<!-- in this method perform actions normally done in the operating -->
+<!-- system, but the Python interface via <code>shutil.rmtree</code>, <code>os.mkdir</code>, -->
+<!-- <code>os.chdir</code>, etc., works on all platforms where Python works. -->
+
+<p>
+The constructor shows how we can flexibly import the plotting engine
+as (typically) <code>scitools.easyviz.gnuplot_</code> or
+<code>scitools.easyviz.matplotlib_</code> (note the trailing underscore - it is required).
+With the <code>screen_movie</code> parameter
+we can suppress displaying each movie frame on the screen.
+Alternatively, for slow movies associated with
+fine meshes, one can set
+<code>skip_frame=10</code>, causing every 10 frames to be shown.
+
+<p>
+The <code>__call__</code> method makes <code>PlotAndStoreSolution</code> instances behave like
+functions, so we can just pass an instance, say <code>p</code>, as the
+<code>user_action</code> argument in the <code>solver</code> function, and any call to
+<code>user_action</code> will be a call to <code>p.__call__</code>. The <code>__call__</code>
+method plots the solution on the screen,
+saves the plot to file, and stores the solution in a file for
+later retrieval.
+
+<p>
+More details on storing the solution in files appear in
+in
+the document
+<a href="http://tinyurl.com/k3sdbuv/pub/softeng2" target="_self">Scientific software engineering; wave equation case</a>
+<a href="._wave-solarized010.html#Langtangen_deqbook_softeng2">[2]</a>.
+
+<h2 id="___sec65">Pulse propagation in two media </h2>
+
+<p>
+The function <code>pulse</code> in <code>wave1D_dn_vc.py</code> demonstrates wave motion in
+heterogeneous media where \( c \) varies. One can specify an interval
+where the wave velocity is decreased by a factor <code>slowness_factor</code>
+(or increased by making this factor less than one).
+Figure <a href="#wave:pde1:fig:pulse1:two:media">5</a> shows a typical simulation
+scenario.
+
+<p>
+Four types of initial conditions are available:
+
+<ol>
+<li> a rectangular pulse (<code>plug</code>),</li>
+
+<ol>
+ <li> a Gaussian function (<code>gaussian</code>),</li>
+</ol>
+
+<li> a &quot;cosine hat&quot; consisting of one period of the cosine function
+   (<code>cosinehat</code>),</li>
+<li> half a period of a &quot;cosine hat&quot; (<code>half-cosinehat</code>)</li>
+</ol>
+
+These peak-shaped initial
+conditions can be placed in the middle (<code>loc='center'</code>) or at
+the left end (<code>loc='left'</code>) of the domain. The <code>pulse</code>
+function is a flexible tool for playing around with various wave
+shapes and location of a medium with a different wave velocity.
+
+<p>
+The code is shown to demonstrate how easy it is to reach this
+flexibility with the building blocks we have already developed:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">pulse</span>(C=<span style="color: #B452CD">1</span>,            <span style="color: #228B22"># aximum Courant number</span>
+          Nx=<span style="color: #B452CD">200</span>,         <span style="color: #228B22"># spatial resolution</span>
+          animate=<span style="color: #658b00">True</span>,
+          version=<span style="color: #CD5555">&#39;vectorized&#39;</span>,
+          T=<span style="color: #B452CD">2</span>,            <span style="color: #228B22"># end time</span>
+          loc=<span style="color: #CD5555">&#39;left&#39;</span>,     <span style="color: #228B22"># location of initial condition</span>
+          pulse_tp=<span style="color: #CD5555">&#39;gaussian&#39;</span>,  <span style="color: #228B22"># pulse/init.cond. type</span>
+          slowness_factor=<span style="color: #B452CD">2</span>, <span style="color: #228B22"># wave vel. in right medium</span>
+          medium=[<span style="color: #B452CD">0.7</span>, <span style="color: #B452CD">0.9</span>], <span style="color: #228B22"># interval for right medium</span>
+          skip_frame=<span style="color: #B452CD">1</span>,      <span style="color: #228B22"># skip frames in animations</span>
+          sigma=<span style="color: #B452CD">0.05</span>,        <span style="color: #228B22"># width measure of the pulse</span>
+          ):
+    <span style="color: #CD5555">&quot;&quot;&quot;</span>
+<span style="color: #CD5555">    Various peaked-shaped initial conditions on [0,1].</span>
+<span style="color: #CD5555">    Wave velocity is decreased by the slowness_factor inside</span>
+<span style="color: #CD5555">    medium. The loc parameter can be &#39;center&#39; or &#39;left&#39;,</span>
+<span style="color: #CD5555">    depending on where the initial pulse is to be located.</span>
+<span style="color: #CD5555">    The sigma parameter governs the width of the pulse.</span>
+<span style="color: #CD5555">    &quot;&quot;&quot;</span>
+    <span style="color: #228B22"># Use scaled parameters: L=1 for domain length, c_0=1</span>
+    <span style="color: #228B22"># for wave velocity outside the domain.</span>
+    L = <span style="color: #B452CD">1.0</span>
+    c_0 = <span style="color: #B452CD">1.0</span>
+    <span style="color: #8B008B; font-weight: bold">if</span> loc == <span style="color: #CD5555">&#39;center&#39;</span>:
+        xc = L/<span style="color: #B452CD">2</span>
+    <span style="color: #8B008B; font-weight: bold">elif</span> loc == <span style="color: #CD5555">&#39;left&#39;</span>:
+        xc = <span style="color: #B452CD">0</span>
+
+    <span style="color: #8B008B; font-weight: bold">if</span> pulse_tp <span style="color: #8B008B">in</span> (<span style="color: #CD5555">&#39;gaussian&#39;</span>,<span style="color: #CD5555">&#39;Gaussian&#39;</span>):
+        <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">I</span>(x):
+            <span style="color: #8B008B; font-weight: bold">return</span> exp(-<span style="color: #B452CD">0.5</span>*((x-xc)/sigma)**<span style="color: #B452CD">2</span>)
+    <span style="color: #8B008B; font-weight: bold">elif</span> pulse_tp == <span style="color: #CD5555">&#39;plug&#39;</span>:
+        <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">I</span>(x):
+            <span style="color: #8B008B; font-weight: bold">return</span> <span style="color: #B452CD">0</span> <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">abs</span>(x-xc) &gt; sigma <span style="color: #8B008B; font-weight: bold">else</span> <span style="color: #B452CD">1</span>
+    <span style="color: #8B008B; font-weight: bold">elif</span> pulse_tp == <span style="color: #CD5555">&#39;cosinehat&#39;</span>:
+        <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">I</span>(x):
+            <span style="color: #228B22"># One period of a cosine</span>
+            w = <span style="color: #B452CD">2</span>
+            a = w*sigma
+            <span style="color: #8B008B; font-weight: bold">return</span> <span style="color: #B452CD">0.5</span>*(<span style="color: #B452CD">1</span> + cos(pi*(x-xc)/a)) \ 
+                   <span style="color: #8B008B; font-weight: bold">if</span> xc - a &lt;= x &lt;= xc + a <span style="color: #8B008B; font-weight: bold">else</span> <span style="color: #B452CD">0</span>
+
+    <span style="color: #8B008B; font-weight: bold">elif</span> pulse_tp == <span style="color: #CD5555">&#39;half-cosinehat&#39;</span>:
+        <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">I</span>(x):
+            <span style="color: #228B22"># Half a period of a cosine</span>
+            w = <span style="color: #B452CD">4</span>
+            a = w*sigma
+            <span style="color: #8B008B; font-weight: bold">return</span> cos(pi*(x-xc)/a) \ 
+                   <span style="color: #8B008B; font-weight: bold">if</span> xc - <span style="color: #B452CD">0.5</span>*a &lt;= x &lt;= xc + <span style="color: #B452CD">0.5</span>*a <span style="color: #8B008B; font-weight: bold">else</span> <span style="color: #B452CD">0</span>
+    <span style="color: #8B008B; font-weight: bold">else</span>:
+        <span style="color: #8B008B; font-weight: bold">raise</span> <span style="color: #008b45; font-weight: bold">ValueError</span>(<span style="color: #CD5555">&#39;Wrong pulse_tp=&quot;%s&quot;&#39;</span> % pulse_tp)
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">c</span>(x):
+        <span style="color: #8B008B; font-weight: bold">return</span> c_0/slowness_factor \ 
+               <span style="color: #8B008B; font-weight: bold">if</span> medium[<span style="color: #B452CD">0</span>] &lt;= x &lt;= medium[<span style="color: #B452CD">1</span>] <span style="color: #8B008B; font-weight: bold">else</span> c_0
+
+    umin=-<span style="color: #B452CD">0.5</span>; umax=<span style="color: #B452CD">1.5</span>*I(xc)
+    casename = <span style="color: #CD5555">&#39;%s_Nx%s_sf%s&#39;</span> % \ 
+               (pulse_tp, Nx, slowness_factor)
+    action = PlotMediumAndSolution(
+        medium, casename=casename, umin=umin, umax=umax,
+        skip_frame=skip_frame, screen_movie=animate,
+        backend=<span style="color: #658b00">None</span>, filename=<span style="color: #CD5555">&#39;tmpdata&#39;</span>)
+
+    dt = (L/Nx)/c_0  <span style="color: #228B22"># choose the stability limit with given Nx, worst case c</span>
+    <span style="color: #228B22"># Lower C will then use this dt, but smaller Nx</span>
+    solver(I=I, V=<span style="color: #658b00">None</span>, f=<span style="color: #658b00">None</span>, c=c, U_0=<span style="color: #658b00">None</span>, U_L=<span style="color: #658b00">None</span>,
+           L=L, dt=dt, C=C, T=T,
+           user_action=action, version=version,
+           stability_safety_factor=<span style="color: #B452CD">1</span>)
+    action.make_movie_file()
+    action.file_close()
+</pre></div>
+<p>
+The <code>PlotMediumAndSolution</code> class used here is a subclass of
+<code>PlotAndStoreSolution</code> where the medium with reduced \( c \) value,
+as specified by the <code>medium</code> interval,
+is visualized in the plots.
+
+<p>
+<div class="alert alert-block alert-notice alert-text-normal">
+<b>Comment on the choices of discretization parameters.</b>
+<p>
+The argument \( N_x \) in the <code>pulse</code> function does not correspond to
+the actual spatial resolution of \( C < 1 \), since the <code>solver</code>
+function takes a fixed \( \Delta t \) and \( C \), and adjusts \( \Delta x \)
+accordingly. As seen in the <code>pulse</code> function,
+the specified \( \Delta t \) is chosen according to the
+limit \( C=1 \), so if \( C < 1 \), \( \Delta t \) remains the same, but the
+<code>solver</code> function operates with a larger \( \Delta x \) and smaller
+\( N_x \) than was specified in the call to <code>pulse</code>. The practical reason
+is that we always want to keep \( \Delta t \) fixed such that
+plot frames and movies are synchronized in time regardless of the
+value of \( C \) (i.e., \( \Delta x \) is varies when the
+Courant number varies).
+</div>
+
+
+<p>
+The reader is encouraged to play around with the <code>pulse</code> function:
+
+<p>
+
+<!-- code=ipy (!bc ipy) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">&gt;&gt;&gt; <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">wave1D_dn_vc</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">w</span>
+&gt;&gt;&gt; w.pulse(loc=<span style="color: #CD5555">&#39;left&#39;</span>, pulse_tp=<span style="color: #CD5555">&#39;cosinehat&#39;</span>, Nx=<span style="color: #B452CD">50</span>, every_frame=<span style="color: #B452CD">10</span>)
+</pre></div>
+<p>
+To easily kill the graphics by Ctrl-C and restart a new simulation it might be
+easier to run the above two statements from the command line
+with
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; python -c &#39;import wave1D_dn_vc as w; w.pulse(...)&#39;
+</pre></div>
+
+<h1 id="___sec66">Exercises </h1>
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:exer:standingwave:damped:uex">Exercise 6: Find the analytical solution to a damped wave equation</h2>
+
+<p>
+Consider the wave equation with damping <a href="#mjx-eqn-40">(40)</a>.
+The goal is to find an exact solution to a wave problem with damping.
+A starting point is the standing wave solution from
+<a href="._wave-solarized002.html#wave:exer:standingwave">Exercise 1: Simulate a standing wave</a>. It becomes necessary to
+include a damping term \( e^{-ct} \) and also have both a sine and cosine
+component in time:
+
+$$ \uex(x,t) =  e^{-\beta t}
+\sin kx \left( A\cos\omega t
++ B\sin\omega t\right)
+\tp
+$$
+
+Find \( k \) from the boundary conditions
+\( u(0,t)=u(L,t)=0 \). Then use the PDE to find constraints on
+\( \beta \), \( \omega \), \( A \), and \( B \).
+Set up a complete initial-boundary value problem
+and its solution.
+Filename: <code>damped_waves</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:exer:symmetry:bc">Problem 7: Explore symmetry boundary conditions</h2>
+
+<p>
+Consider the simple "plug" wave where \( \Omega = [-L,L] \) and
+
+$$
+\begin{equation*} I(x) = \left\lbrace\begin{array}{ll}
+1, & x\in [-\delta, \delta],\\ 
+0, & \hbox{otherwise}
+\end{array}\right.
+\end{equation*}
+$$
+
+for some number \( 0 < \delta < L \). The other initial condition is
+\( u_t(x,0)=0 \) and there is no source term \( f \).
+The boundary conditions can be set to \( u=0 \).
+The solution to this problem is symmetric around \( x=0 \).
+This means that we can simulate the wave process in only the half
+of the domain \( [0,L] \).
+
+<p>
+<b>a)</b>
+Argue why the symmetry boundary condition
+is \( u_x=0 \) at \( x=0 \).
+
+<p>
+<!-- --- begin hint in exercise --- -->
+
+<p>
+<b>Hint.</b>
+Symmetry of a function about \( x=x_0 \) means that
+\( f(x_0+h) = f(x_0-h) \).
+
+<p>
+<!-- --- end hint in exercise --- -->
+
+<p>
+<b>b)</b>
+Perform simulations of the complete wave problem from
+on \( [-L,L] \). Thereafter, utilize the
+symmetry of the solution and run a simulation
+in half of the domain \( [0,L] \), using a boundary condition
+at \( x=0 \). Compare the two solutions and
+make sure that they are the same.
+
+<p>
+<b>c)</b>
+Prove the symmetry property of the solution
+by setting up the complete initial-boundary value problem
+and showing that if \( u(x,t) \) is a solution, then also \( u(-x,t) \)
+is a solution.
+
+<p>
+Filename: <code>wave1D_symmetric</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:app:exer:pulse1D">Exercise 8: Send pulse waves through a layered medium</h2>
+
+<p>
+Use the <code>pulse</code> function in <code>wave1D_dn_vc.py</code> to investigate
+sending a pulse, located with its peak at \( x=0 \), through two
+media with different wave velocities. The (scaled) velocity in
+the left medium is 1 while it is \( s_f \) in the right medium.
+Report what happens with a Gaussian pulse, a &quot;cosine hat&quot; pulse,
+half a &quot;cosine hat&quot; pulse, and a plug pulse for resolutions
+\( N_x=40,80,160 \), and \( s_f=2,4 \). Simulate until \( T=2 \).
+Filename: <code>pulse1D</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:app:exer:pulse1D:analysis">Exercise 9: Explain why numerical noise occurs</h2>
+
+<p>
+The experiments performed in <a href="#wave:app:exer:pulse1D">Exercise 8: Send pulse waves through a layered medium</a> shows
+considerable numerical noise in the form of non-physical waves,
+especially for \( s_f=4 \) and the plug pulse or the half a &quot;cosinehat&quot;
+pulse. The noise is much less visible for a Gaussian pulse. Run the
+case with the plug and half a &quot;cosinehat&quot; pulses for \( s_f=1 \), \( C=0.9,
+0.25 \), and \( N_x=40,80,160 \). Use the numerical dispersion relation to
+explain the observations.
+Filename: <code>pulse1D_analysis</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:app:exer:pulse1D:harmonic">Exercise 10: Investigate harmonic averaging in a 1D model</h2>
+
+<p>
+Harmonic means are often used if the wave velocity is non-smooth or
+discontinuous.  Will harmonic averaging of the wave velocity give less
+numerical noise for the case \( s_f=4 \) in <a href="#wave:app:exer:pulse1D">Exercise 8: Send pulse waves through a layered medium</a>?
+Filename: <code>pulse1D_harmonic</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:app:exer:radiationBC">Problem 11: Implement open boundary conditions</h2>
+
+<p>
+<!-- Solution file is actually periodic.py from Exer <a href="#wave:exer:periodic">Exercise 12: Implement periodic boundary conditions</a>, -->
+<!-- just remove the periodc stuff ;-) -->
+
+<p>
+To enable a wave to leave the computational domain and travel
+undisturbed through
+the boundary \( x=L \), one can in a one-dimensional problem impose the
+following condition, called a <em>radiation condition</em> or
+<em>open boundary condition</em>:
+
+$$
+\begin{equation}
+\frac{\partial u}{\partial t} + c\frac{\partial u}{\partial x} = 0\tp
+\tag{45}
+\end{equation}
+$$
+
+The parameter \( c \) is the wave velocity.
+
+<p>
+Show that <a href="#mjx-eqn-45">(45)</a> accepts
+a solution \( u = g_R(x-ct) \) (right-going wave),
+but not \( u = g_L(x+ct) \) (left-going wave). This means
+that <a href="#mjx-eqn-45">(45)</a> will allow any
+right-going wave \( g_R(x-ct) \) to pass through the boundary undisturbed.
+
+<p>
+A corresponding open boundary condition for a left-going wave
+through \( x=0 \) is
+
+$$
+\begin{equation}
+\frac{\partial u}{\partial t} - c\frac{\partial u}{\partial x} = 0\tp
+\tag{46}
+\end{equation}
+$$
+
+<p>
+<b>a)</b>
+A natural idea for discretizing
+the condition <a href="#mjx-eqn-45">(45)</a>
+at the spatial end point \( i=N_x \) is to apply
+centered differences in time and space:
+
+$$
+\begin{equation}
+[D_{2t}u + cD_{2x}u =0]^n_{i},\quad i=N_x\tp
+\tag{47}
+\end{equation}
+$$
+
+Eliminate the fictitious value \( u_{N_x+1}^n \) by using
+the discrete equation at the same point.
+
+<p>
+The equation for the first step, \( u_i^1 \), is in principle also affected,
+but we can then use the condition \( u_{N_x}=0 \) since the wave
+has not yet reached the right boundary.
+
+<p>
+<b>b)</b>
+A much more convenient implementation of the open boundary condition
+at \( x=L \) can be based on an explicit discretization
+
+$$
+\begin{equation}
+[D^+_tu + cD_x^- u = 0]_i^n,\quad i=N_x\tp
+\tag{48}
+\end{equation}
+$$
+
+From this equation, one can solve for \( u^{n+1}_{N_x} \) and apply the
+formula as a Dirichlet condition at the boundary point.
+However, the finite difference approximations involved are of
+first order.
+
+<p>
+Implement this scheme for a wave equation
+\( u_{tt}=c^2u_{xx} \) in a domain \( [0,L] \),
+where you have \( u_x=0 \) at \( x=0 \), the condition <a href="#mjx-eqn-45">(45)</a>
+at \( x=L \), and an initial disturbance in the middle
+of the domain, e.g., a plug profile like
+
+$$ u(x,0) = \left\lbrace\begin{array}{ll} 1,& L/2-\ell \leq x \leq  L/2+\ell,\\ 
+0,\hbox{otherwise}\end{array}\right.
+$$
+
+Observe that the initial wave is split in two, the left-going wave
+is reflected at \( x=0 \), and both waves travel out of \( x=L \),
+leaving the solution as \( u=0 \) in \( [0,L] \). Use a unit Courant number
+such that the numerical solution is exact.
+Make a movie to illustrate what happens.
+
+<p>
+Because this simplified
+implementation of the open boundary condition works, there is no
+need to pursue the more complicated discretization in a).
+
+<p>
+<!-- --- begin hint in exercise --- -->
+
+<p>
+<b>Hint.</b>
+Modify the solver function in
+<a href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_dn.py" target="_self"><tt>wave1D_dn.py</tt></a>.
+
+<p>
+<!-- --- end hint in exercise --- -->
+
+<p>
+<b>c)</b>
+Add the possibility to have either \( u_x=0 \) or an open boundary
+condition at the left boundary. The latter condition is discretized
+as
+
+$$
+\begin{equation}
+[D^+_tu - cD_x^+ u = 0]_i^n,\quad i=0,
+\tag{49}
+\end{equation}
+$$
+
+leading to an explicit update of the boundary value \( u^{n+1}_0 \).
+
+<p>
+The implementation can be tested with a Gaussian function as initial condition:
+
+$$ g(x;m,s) = \frac{1}{\sqrt{2\pi}s}e^{-\frac{(x-m)^2}{2s^2}}\tp$$
+
+Run two tests:
+
+<ol>
+<li> Disturbance in the middle of the domain, \( I(x)=g(x;L/2,s) \), and
+   open boundary condition at the left end.</li>
+<li> Disturbance at the left end, \( I(x)=g(x;0,s) \), and \( u_x=0 \)
+   as symmetry boundary condition at this end.</li>
+</ol>
+
+Make nose tests for both cases, testing that the solution is zero
+after the waves have left the domain.
+
+<p>
+<b>d)</b>
+In 2D and 3D it is difficult to compute the correct wave velocity
+normal to the boundary, which is needed in generalizations of
+the open boundary conditions in higher dimensions. Test the effect
+of having a slightly wrong wave velocity in
+<a href="#mjx-eqn-48">(48)</a>.
+Make a movies to illustrate what happens.
+
+<p>
+Filename: <code>wave1D_open_BC</code>.
+
+<p>
+<!-- Closing remarks for this Problem -->
+
+<h3 id="___sec73">Remarks </h3>
+
+<p>
+The condition <a href="#mjx-eqn-45">(45)</a>
+works perfectly in 1D when \( c \) is known. In 2D and 3D, however, the
+condition reads \( u_t + c_x u_x + c_y u_y=0 \), where \( c_x \) and
+\( c_y \) are the wave speeds in the \( x \) and \( y \) directions. Estimating
+these components (i.e., the direction of the wave) is often
+challenging. Other methods are normally used in 2D and 3D to
+let waves move out of a computational domain.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:exer:periodic">Exercise 12: Implement periodic boundary conditions</h2>
+
+<p>
+It is frequently of interest to follow wave motion over large
+distances and long times. A straightforward approach is to
+work with a very large domain, but might lead to a lot of
+computations in areas of the domain where the waves cannot
+be noticed. A more efficient approach is to let a right-going
+wave out of the domain and at the same time let it enter
+the domain on the left. This is called a <em>periodic boundary
+condition</em>.
+
+<p>
+The boundary condition at the right end \( x=L \) is an open boundary
+condition (see <a href="#wave:app:exer:radiationBC">Problem 11: Implement open boundary conditions</a>) to let a
+right-going wave out of the domain.  At the left end, \( x=0 \), we apply,
+in the beginning of the simulation, either a symmetry boundary
+condition (see <a href="#wave:exer:symmetry:bc">Problem 7: Explore symmetry boundary conditions</a>) \( u_x=0 \), or an
+open boundary condition.
+
+<p>
+This initial wave will split in two and either reflected or
+transported out of the domain at \( x=0 \). The purpose of the exercise is
+to follow the right-going wave. We can do that with a <em>periodic
+boundary condition</em>.  This means that when the right-going wave hits
+the boundary \( x=L \), the open boundary condition lets the wave out of
+the domain, but at the same time we use a boundary condition on the
+left end \( x=0 \) that feeds the outgoing wave into the domain
+again. This periodic condition is simply \( u(0)=u(L) \). The switch from
+\( u_x=0 \) or an open boundary condition at the left end to a periodic
+condition can happen when \( u(L,t)>\epsilon \), where \( \epsilon =10^{-4} \)
+might be an appropriate value for determining when the right-going
+wave hits the boundary \( x=L \).
+
+<p>
+The open boundary conditions can conveniently be discretized as
+explained in <a href="#wave:app:exer:radiationBC">Problem 11: Implement open boundary conditions</a>.  Implement the
+described type of boundary conditions and test them on two different
+initial shapes: a plug \( u(x,0)=1 \) for \( x\leq 0.1 \), \( u(x,0)=0 \) for
+\( x>0.1 \), and a Gaussian function in the middle of the domain:
+\( u(x,0)=\exp{(-\frac{1}{2}(x-0.5)^2/0.05)} \). The domain is the unit
+interval \( [0,1] \). Run these two shapes for Courant numbers 1 and
+0.5. Assume constant wave velocity.  Make movies of the four cases.
+Reason why the solutions are correct.
+Filename: <code>periodic</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="___sec75">Exercise 13: Compare discretizations of a Neumann condition </h2>
+
+<p>
+We have a 1D wave equation with variable wave velocity:
+\( u_t=(qu_x)_x \).
+A Neumann condition \( u_x \) at \( x=0, L \) can be
+discretized as shown in <a href="#mjx-eqn-37">(37)</a>
+and <a href="#mjx-eqn-38">(38)</a>.
+
+<p>
+The aim of this exercise is to examine the rate of the numerical
+error when using different ways of discretizing the Neumann condition.
+As a test problem, \( q=1+(x-L/2)^4 \) can be used, with \( f(x,t) \)
+adapted such that the solution has a simple form, say
+\( u(x,t)=\cos (\pi x/L)\cos (\omega t) \) for some \( \omega = \sqrt{q}\pi/L \).
+
+<p>
+<b>a)</b>
+Perform numerical experiments and find the convergence rate of the
+error using
+the approximation
+and <a href="#mjx-eqn-38">(38)</a>.
+
+<p>
+<b>b)</b>
+Switch to \( q(x)=\cos(\pi x/L) \), which is symmetric at \( x=0,L \),
+and check the convergence rate
+of the scheme
+<a href="#mjx-eqn-38">(38)</a>. Now,
+\( q_{i-1/2} \) is a 2nd-order approximation to \( q_i \),
+\( q_{i-1/2}=q_i + 0.25q_i''\Delta x^2 + \cdots \), because \( q_i'=0 \)
+for \( i=N_x \) (a similar argument can be applied to the case \( i=0 \)).
+
+<p>
+<b>c)</b>
+A third discretization can be based on a simple and convenient,
+but less accurate, one-sided difference:
+\( u_{i}-u_{i-1}=0 \) at \( i=N_x \) and \( u_{i+1}-u_i=0 \) at \( i=0 \).
+Derive the resulting scheme in detail and implement it.
+Run experiments to establish the rate of convergence.
+
+<p>
+<b>d)</b>
+A fourth technique is to view the scheme as
+
+$$ [D_tD_tu]^n_i = \frac{1}{\Delta x}\left(
+[qD_xu]_{i+\half}^n - [qD_xu]_{i-\half}^n\right)
++ [f]_i^n,$$
+
+and place the boundary at \( x_{i+\half} \), \( i=N_x \), instead of
+exactly at the physical boundary. With this idea,
+we can just set \( [qD_xu]_{i+\half}^n=0 \). Derive the complete scheme
+using this technique. The implementation of the boundary condition at
+\( L-\Delta x/2 \) is \( \Oof{\Delta x^2} \) accurate, but the interesting question
+is what impact the movement of the boundary has on the convergence
+rate (compute the errors as usual over the entire mesh).
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:fd2:exer:verify:cubic">Exercise 14: Verification by a cubic polynomial in space</h2>
+
+<p>
+The purpose of this exercise is to verify the implementation of the
+<code>solver</code> function in the program <a href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_n0.py" target="_self"><tt>wave1D_n0.py</tt></a> by using an exact numerical solution
+for the wave equation \( u_{tt}=c^2u_{xx} + f \) with Neumann boundary
+conditions \( u_x(0,t)=u_x(L,t)=0 \).
+
+<p>
+A similar verification is used in the file <a href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_u0.py" target="_self"><tt>wave1D_u0.py</tt></a>, which solves the same PDE, but with
+Dirichlet boundary conditions \( u(0,t)=u(L,t)=0 \).  The idea of the
+verification test in function <code>test_quadratic</code> in <code>wave1D_u0.py</code> is to
+produce a solution that is a lower-order polynomial such that both the
+PDE problem, the boundary conditions, and all the discrete equations
+are exactly fulfilled. Then the <code>solver</code> function should reproduce
+this exact solution to machine precision.  More precisely, we seek
+\( u=X(x)T(t) \), with \( T(t) \) as a linear function and \( X(x) \) as a
+parabola that fulfills the boundary conditions.  Inserting this \( u \) in
+the PDE determines \( f \).  It turns out that \( u \) also fulfills the
+discrete equations, because the truncation error of the discretized
+PDE has derivatives in \( x \) and \( t \) of order four and higher. These
+derivatives all vanish for a quadratic \( X(x) \) and linear \( T(t) \).
+
+<p>
+It would be attractive to use a similar approach in the case of
+Neumann conditions. We set \( u=X(x)T(t) \) and seek lower-order
+polynomials \( X \) and \( T \).
+To force \( u_x \) to vanish at the boundary, we let \( X_x \) be
+a parabola. Then \( X \) is a cubic polynomial. The fourth-order
+derivative of a cubic polynomial vanishes, so \( u=X(x)T(t) \)
+will fulfill the discretized PDE also in this case, if \( f \)
+is adjusted such that \( u \) fulfills the PDE.
+
+<p>
+However, the discrete boundary condition is not exactly fulfilled
+by this choice of \( u \). The reason is that
+
+$$
+\begin{equation}
+[D_{2x}u]^n_i = u_{x}(x_i,t_n) + \frac{1}{6}u_{xxx}(x_i,t_n)\Delta x^2
++ \Oof{\Delta x^4}\tp
+\tag{50}
+\end{equation}
+$$
+
+At the boundary two boundary points, \( X_x(x)=0 \) such that \( u_x=0 \).
+However, \( u_{xxx} \) is a constant and not zero
+when \( X(x) \) is a cubic polynomial.
+Therefore, our \( u=X(x)T(t) \) fulfills
+
+$$ [D_{2x}u]^n_i = \frac{1}{6}u_{xxx}(x_i,t_n)\Delta x^2,
+$$
+
+and not
+
+$$ [D_{2x}u]^n_i =0, \quad i=0,N_x,$$
+
+as it should. (Note that all the higher-order terms \( \Oof{\Delta x^4} \)
+also have higher-order derivatives that vanish for a cubic polynomial.)
+So to summarize, the fundamental problem is that \( u \) as a product of
+a cubic polynomial and a linear or quadratic polynomial in time
+is not an exact solution of the discrete boundary conditions.
+
+<p>
+To make progress,
+we assume that \( u=X(x)T(t) \), where \( T \) for simplicity is taken as a
+prescribed linear function \( 1+\frac{1}{2}t \), and \( X(x) \) is taken
+as an <em>unknown</em> cubic polynomial \( \sum_{j=0}^3 a_jx^j \).
+There are two different ways of determining the coefficients
+\( a_0,\ldots,a_3 \) such that both the discretized PDE and the
+discretized boundary conditions are fulfilled, under the
+constraint that we can specify a function \( f(x,t) \) for the PDE to feed
+to the <code>solver</code> function in <code>wave1D_n0.py</code>. Both approaches
+are explained in the subexercises.
+
+<p>
+<!-- {wave:fd2:exer:verify:cubic:D2x} -->
+
+<p>
+<b>a)</b>
+One can insert \( u \) in the discretized PDE and find the corresponding \( f \).
+Then one can insert \( u \) in the discretized boundary conditions.
+This yields two equations for the four coefficients \( a_0,\ldots,a_3 \).
+To find the coefficients, one can set \( a_0=0 \) and \( a_1=1 \) for
+simplicity and then determine \( a_2 \) and \( a_3 \). This approach will make
+\( a_2 \) and \( a_3 \) depend on \( \Delta x \) and \( f \) will depend on both
+\( \Delta x \) and \( \Delta t \).
+
+<p>
+Use <code>sympy</code> to perform analytical computations.
+A starting point is to define \( u \) as follows:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">test_cubic1</span>():
+    <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">sympy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">sm</span>
+    x, t, c, L, dx, dt = sm.symbols(<span style="color: #CD5555">&#39;x t c L dx dt&#39;</span>)
+    i, n = sm.symbols(<span style="color: #CD5555">&#39;i n&#39;</span>, integer=<span style="color: #658b00">True</span>)
+
+    <span style="color: #228B22"># Assume discrete solution is a polynomial of degree 3 in x</span>
+    T = <span style="color: #8B008B; font-weight: bold">lambda</span> t: <span style="color: #B452CD">1</span> + sm.Rational(<span style="color: #B452CD">1</span>,<span style="color: #B452CD">2</span>)*t  <span style="color: #228B22"># Temporal term</span>
+    a = sm.symbols(<span style="color: #CD5555">&#39;a_0 a_1 a_2 a_3&#39;</span>)
+    X = <span style="color: #8B008B; font-weight: bold">lambda</span> x: <span style="color: #658b00">sum</span>(a[q]*x**q <span style="color: #8B008B; font-weight: bold">for</span> q <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #B452CD">4</span>))  <span style="color: #228B22"># Spatial term</span>
+    u = <span style="color: #8B008B; font-weight: bold">lambda</span> x, t: X(x)*T(t)
+</pre></div>
+<p>
+The symbolic expression for \( u \) is reached by calling <code>u(x,t)</code>
+with <code>x</code> and <code>t</code> as <code>sympy</code> symbols.
+
+<p>
+Define <code>DxDx(u, i, n)</code>, <code>DtDt(u, i, n)</code>, and <code>D2x(u, i, n)</code>
+as Python functions for returning the difference
+approximations \( [D_xD_x u]^n_i \), \( [D_tD_t u]^n_i \), and
+\( [D_{2x}u]^n_i \). The next step is to set up the residuals
+for the equations \( [D_{2x}u]^n_0=0 \) and \( [D_{2x}u]^n_{N_x}=0 \),
+where \( N_x=L/\Delta x \). Call the residuals <code>R_0</code> and <code>R_L</code>.
+Substitute \( a_0 \) and \( a_1 \) by 0 and 1, respectively, in
+<code>R_0</code>, <code>R_L</code>, and <code>a</code>:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">R_0 = R_0.subs(a[<span style="color: #B452CD">0</span>], <span style="color: #B452CD">0</span>).subs(a[<span style="color: #B452CD">1</span>], <span style="color: #B452CD">1</span>)
+R_L = R_L.subs(a[<span style="color: #B452CD">0</span>], <span style="color: #B452CD">0</span>).subs(a[<span style="color: #B452CD">1</span>], <span style="color: #B452CD">1</span>)
+a = <span style="color: #658b00">list</span>(a)  <span style="color: #228B22"># enable in-place assignment</span>
+a[<span style="color: #B452CD">0</span>:<span style="color: #B452CD">2</span>] = <span style="color: #B452CD">0</span>, <span style="color: #B452CD">1</span>
+</pre></div>
+<p>
+Determining \( a_2 \) and \( a_3 \) from the discretized boundary conditions
+is then about solving two equations with respect to \( a_2 \) and \( a_3 \),
+i.e., <code>a[2:]</code>:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">s = sm.solve([R_0, R_L], a[<span style="color: #B452CD">2</span>:])
+<span style="color: #228B22"># s is dictionary with the unknowns a[2] and a[3] as keys</span>
+a[<span style="color: #B452CD">2</span>:] = s[a[<span style="color: #B452CD">2</span>]], s[a[<span style="color: #B452CD">3</span>]]
+</pre></div>
+<p>
+Now, <code>a</code> contains computed values and <code>u</code> will automatically use
+these new values since <code>X</code> accesses <code>a</code>.
+
+<p>
+Compute the source term \( f \) from the discretized PDE:
+\( f^n_i = [D_tD_t u - c^2D_xD_x u]^n_i \). Turn \( u \), the time
+derivative \( u_t \) (needed for the initial condition \( V(x) \)),
+and \( f \) into Python functions. Set numerical values for
+\( L \), \( N_x \), \( C \), and \( c \). Prescribe the time interval as
+\( \Delta t = CL/(N_xc) \), which imply \( \Delta x = c\Delta t/C = L/N_x \).
+Define new functions <code>I(x)</code>, <code>V(x)</code>, and <code>f(x,t)</code> as wrappers of the ones
+made above, where fixed values of \( L \), \( c \), \( \Delta x \), and \( \Delta t \)
+are inserted, such that <code>I</code>, <code>V</code>, and <code>f</code> can be passed on to the
+<code>solver</code> function. Finally, call <code>solver</code> with a <code>user_action</code>
+function that compares the numerical solution to this exact
+solution \( u \) of the discrete PDE problem.
+
+<p>
+<!-- --- begin hint in exercise --- -->
+
+<p>
+<b>Hint.</b>
+To turn a <code>sympy</code> expression <code>e</code>, depending on a series of
+symbols, say <code>x</code>, <code>t</code>, <code>dx</code>, <code>dt</code>, <code>L</code>, and <code>c</code>, into plain
+Python function <code>e_exact(x,t,L,dx,dt,c)</code>, one can write
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">e_exact = sm.lambdify([x,t,L,dx,dt,c], e, <span style="color: #CD5555">&#39;numpy&#39;</span>)
+</pre></div>
+<p>
+The <code>'numpy'</code> argument is a good habit as the <code>e_exact</code> function
+will then work with array arguments if it contains mathematical
+functions (but here we only do plain arithmetics, which automatically
+work with arrays).
+
+<p>
+<!-- --- end hint in exercise --- -->
+
+<p>
+<b>b)</b>
+An alternative way of determining \( a_0,\ldots,a_3 \) is to reason as
+follows. We first construct \( X(x) \) such that the boundary conditions
+are fulfilled: \( X=x(L-x) \). However, to compensate for the fact
+that this choice of \( X \) does not fulfill the discrete boundary
+condition, we seek \( u \) such that
+
+$$ u_x = \frac{\partial}{\partial x}x(L-x)T(t) - \frac{1}{6}u_{xxx}\Delta x^2,$$
+
+since this \( u \) will fit the discrete boundary condition.
+Assuming \( u=T(t)\sum_{j=0}^3a_jx^j \), we can use the above equation to
+determine the coefficients \( a_1,a_2,a_3 \). A value, e.g., 1 can be used for
+\( a_0 \). The following <code>sumpy</code> code computes this \( u \):
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">test_cubic2</span>():
+    <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">sympy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">sm</span>
+    x, t, c, L, dx = sm.symbols(<span style="color: #CD5555">&#39;x t c L dx&#39;</span>)
+    T = <span style="color: #8B008B; font-weight: bold">lambda</span> t: <span style="color: #B452CD">1</span> + sm.Rational(<span style="color: #B452CD">1</span>,<span style="color: #B452CD">2</span>)*t  <span style="color: #228B22"># Temporal term</span>
+    <span style="color: #228B22"># Set u as a 3rd-degree polynomial in space</span>
+    X = <span style="color: #8B008B; font-weight: bold">lambda</span> x: <span style="color: #658b00">sum</span>(a[i]*x**i <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #B452CD">4</span>))
+    a = sm.symbols(<span style="color: #CD5555">&#39;a_0 a_1 a_2 a_3&#39;</span>)
+    u = <span style="color: #8B008B; font-weight: bold">lambda</span> x, t: X(x)*T(t)
+    <span style="color: #228B22"># Force discrete boundary condition to be zero by adding</span>
+    <span style="color: #228B22"># a correction term the analytical suggestion x*(L-x)*T</span>
+    <span style="color: #228B22"># u_x = x*(L-x)*T(t) - 1/6*u_xxx*dx**2</span>
+    R = sm.diff(u(x,t), x) - (
+        x*(L-x) - sm.Rational(<span style="color: #B452CD">1</span>,<span style="color: #B452CD">6</span>)*sm.diff(u(x,t), x, x, x)*dx**<span style="color: #B452CD">2</span>)
+    <span style="color: #228B22"># R is a polynomial: force all coefficients to vanish.</span>
+    <span style="color: #228B22"># Turn R to Poly to extract coefficients:</span>
+    R = sm.poly(R, x)
+    coeff = R.all_coeffs()
+    s = sm.solve(coeff, a[<span style="color: #B452CD">1</span>:])  <span style="color: #228B22"># a[0] is not present in R</span>
+    <span style="color: #228B22"># s is dictionary with a[i] as keys</span>
+    <span style="color: #228B22"># Fix a[0] as 1</span>
+    s[a[<span style="color: #B452CD">0</span>]] = <span style="color: #B452CD">1</span>
+    X = <span style="color: #8B008B; font-weight: bold">lambda</span> x: sm.simplify(<span style="color: #658b00">sum</span>(s[a[i]]*x**i <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #B452CD">4</span>)))
+    u = <span style="color: #8B008B; font-weight: bold">lambda</span> x, t: X(x)*T(t)
+    <span style="color: #8B008B; font-weight: bold">print</span> <span style="color: #CD5555">&#39;u:&#39;</span>, u(x,t)
+</pre></div>
+<p>
+The next step is to find the source term <code>f_e</code> by inserting <code>u_e</code>
+in the PDE. Thereafter, turn <code>u</code>, <code>f</code>, and the time derivative of <code>u</code>
+into plain Python functions as in a), and then wrap these functions
+in new functions <code>I</code>, <code>V</code>, and <code>f</code>, with the right signature as
+required by the <code>solver</code> function. Set parameters as in a) and
+check that the solution is exact to machine precision at each
+time level using an appropriate <code>user_action</code> function.
+
+<p>
+Filename: <code>wave1D_n0_test_cubic</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<p>
+<!-- begin bottom navigation -->
+<table style="width: 100%"><tr><td>
+<div style="text-align: left;"><a href="._wave-solarized002.html">&laquo; Previous</a></div>
+</td><td>
+<div style="text-align: right;"><a href="._wave-solarized004.html">Next &raquo;</a></div>
+</td></tr></table>
+<!-- end bottom navigation -->
+</p>
+
+<!-- ------------------- end of main content --------------- -->
+
+
+</body>
+</html>
+    
+

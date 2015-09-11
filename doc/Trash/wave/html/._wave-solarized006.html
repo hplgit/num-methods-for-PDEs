@@ -1,0 +1,1255 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Finite difference methods for wave motion">
+<meta name="keywords" content="waves on a string,wave equation 1D,wave equation 1D, finite difference method,mesh finite differences,stencil 1D wave equation,mesh function,wave equation 1D, implementation,callback function,nose test,pytest test,unit testing,software testing nose,software testing pytest,closure,vectorization,scalar code,vectorization,array computing,array slices,slice,lambda function (Python),Neumann conditions,Dirichlet conditions,homogeneous Neumann conditions,homogeneous Dirichlet conditions,boundary conditions Neumann,boundary conditions Dirichlet,stencil Neumann boundary,index set notation,geometric mean,arithmetic mean,harmonic average,averaging geometric,averaging arithmetic,averaging harmonic,radiation condition,open boundary condition,boundary condition open (radiation),periodic boundary conditions,boundary conditions periodic,wave equation 1D, analytical properties,Fourier series,Fourier transform,discrete Fourier transform,wave equation 1D, exact numerical solution,Courant number,stability criterion,wave equation 1D, stability,wave equation 2D, implementation,index set notation">
+
+<title>Finite difference methods for wave motion</title>
+
+
+<link href="https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_styles/style_solarized_box/css/solarized_light_code.css" rel="stylesheet" type="text/css" title="light"/>
+<script src="https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_styles/style_solarized_box/js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<link href="http://thomasf.github.io/solarized-css/solarized-light.min.css" rel="stylesheet">
+<style type="text/css">
+h1 {color: #b58900;}  /* yellow */
+/* h1 {color: #cb4b16;}  orange */
+/* h1 {color: #d33682;}  magenta, the original choice of thomasf */
+code { padding: 0px; background-color: inherit; }
+pre {
+  border: 0pt solid #93a1a1;
+  box-shadow: none;
+}
+.alert-text-small   { font-size: 80%;  }
+.alert-text-large   { font-size: 130%; }
+.alert-text-normal  { font-size: 90%;  }
+.alert {
+  padding:8px 35px 8px 14px; margin-bottom:18px;
+  text-shadow:0 1px 0 rgba(255,255,255,0.5);
+  border:1px solid #93a1a1;
+  border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  color: #555;
+  background-color: #eee8d5;
+  background-position: 10px 5px;
+  background-repeat: no-repeat;
+  background-size: 38px;
+  padding-left: 55px;
+  width: 75%;
+ }
+.alert-block {padding-top:14px; padding-bottom:14px}
+.alert-block > p, .alert-block > ul {margin-bottom:1em}
+.alert li {margin-top: 1em}
+.alert-block p+p {margin-top:5px}
+.alert-notice { background-image: url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_notice.png); }
+.alert-summary  { background-image:url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_summary.png); }
+.alert-warning { background-image: url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_warning.png); }
+.alert-question {background-image:url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_question.png); }
+
+div { text-align: justify; text-justify: inter-word; }
+</style>
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('Simulation of waves on a string',
+               1,
+               'wave:string',
+               'wave:string'),
+              ('Discretizing the domain',
+               2,
+               'wave:string:mesh',
+               'wave:string:mesh'),
+              ('Uniform meshes', 3, None, '___sec2'),
+              ('The discrete solution',
+               2,
+               'wave:string:numerical:sol',
+               'wave:string:numerical:sol'),
+              ('Fulfilling the equation at the mesh points',
+               2,
+               'wave:string:samplingPDE',
+               'wave:string:samplingPDE'),
+              ('Replacing derivatives by finite differences',
+               2,
+               'wave:string:fd',
+               'wave:string:fd'),
+              ('Algebraic version of the PDE', 3, None, '___sec6'),
+              ('Interpretation of the equation as a stencil',
+               3,
+               None,
+               '___sec7'),
+              ('Algebraic version of the initial conditions',
+               3,
+               None,
+               '___sec8'),
+              ('Formulating a recursive algorithm',
+               2,
+               'wave:string:alg',
+               'wave:string:alg'),
+              ('Sketch of an implementation',
+               2,
+               'wave:string:impl',
+               'wave:string:impl'),
+              ('Verification', 1, None, '___sec11'),
+              ('A slightly generalized model problem',
+               2,
+               'wave:pde2:fd',
+               'wave:pde2:fd'),
+              ('Using an analytical solution of physical significance',
+               2,
+               'wave:pde2:fd:standing:waves',
+               'wave:pde2:fd:standing:waves'),
+              ('Manufactured solution',
+               2,
+               'wave:pde2:fd:MMS',
+               'wave:pde2:fd:MMS'),
+              ('Constructing an exact solution of the discrete equations',
+               2,
+               'wave:pde2:fd:verify:quadratic',
+               'wave:pde2:fd:verify:quadratic'),
+              ('Implementation', 1, 'wave:pde1:impl', 'wave:pde1:impl'),
+              ('Callback function for user-specific actions',
+               2,
+               None,
+               '___sec17'),
+              ('The solver function',
+               2,
+               'wave:pde1:impl:solver',
+               'wave:pde1:impl:solver'),
+              ('Verification: exact quadratic solution',
+               2,
+               'wave:pde1:impl:verify:quadratic',
+               'wave:pde1:impl:verify:quadratic'),
+              ('Visualization: animating the solution',
+               2,
+               'wave:pde1:impl:animate',
+               'wave:pde1:impl:animate'),
+              ('Function for administering the simulation',
+               3,
+               None,
+               '___sec21'),
+              ('Dissection of the code', 3, None, '___sec22'),
+              ('Making movie files', 3, None, '___sec23'),
+              ('Skipping frames for animation speed', 3, None, '___sec24'),
+              ('Running a case',
+               2,
+               'wave:pde1:guitar:data',
+               'wave:pde1:guitar:data'),
+              ('Working with a scaled PDE model', 2, None, '___sec26'),
+              ('Vectorization',
+               1,
+               'wave:pde1:impl:vec',
+               'wave:pde1:impl:vec'),
+              ('Operations on slices of arrays',
+               2,
+               'wave:pde1:impl:vec:slices:basics',
+               'wave:pde1:impl:vec:slices:basics'),
+              ('Finite difference schemes expressed as slices',
+               2,
+               'wave:pde1:impl:vec:slices:fdm',
+               'wave:pde1:impl:vec:slices:fdm'),
+              ('Verification',
+               2,
+               'wave:pde1:impl:vec:verify:quadratic',
+               'wave:pde1:impl:vec:verify:quadratic'),
+              ('Efficiency measurements', 2, None, '___sec31'),
+              ('Solution 1', 3, None, '___sec32'),
+              ('Solution 2', 3, None, '___sec33'),
+              ('Efficiency experiments', 3, None, '___sec34'),
+              ('Remark on the updating of arrays',
+               2,
+               'wave:pde1:impl:ref:switch',
+               'wave:pde1:impl:ref:switch'),
+              ('Exercises', 1, None, '___sec36'),
+              ('Exercise 1: Simulate a standing wave',
+               2,
+               'wave:exer:standingwave',
+               'wave:exer:standingwave'),
+              ('Remarks', 3, None, '___sec38'),
+              ('Exercise 2: Add storage of solution in a user action function',
+               2,
+               'wave:exer:store:list',
+               'wave:exer:store:list'),
+              ('Exercise 3: Use a class for the user action function',
+               2,
+               'wave:exer:store:list:class',
+               'wave:exer:store:list:class'),
+              ('Exercise 4: Compare several Courant numbers in one movie',
+               2,
+               'wave:exer:multiple:C',
+               'wave:exer:multiple:C'),
+              ('Project 5: Calculus with 1D mesh functions',
+               2,
+               'wave:exer:mesh1D:calculus',
+               'wave:exer:mesh1D:calculus'),
+              ('Generalization: reflecting boundaries',
+               1,
+               'wave:pde2:Neumann',
+               'wave:pde2:Neumann'),
+              ('Neumann boundary condition',
+               2,
+               'wave:pde2:Neumann:bc',
+               'wave:pde2:Neumann:bc'),
+              ('Discretization of derivatives at the boundary',
+               2,
+               'wave:pde2:Neumann:discr',
+               'wave:pde2:Neumann:discr'),
+              ('Implementation of Neumann conditions',
+               2,
+               'wave:pde2:Neumann:impl',
+               'wave:pde2:Neumann:impl'),
+              ('Index set notation', 2, 'wave:indexset', 'wave:indexset'),
+              ('Verifying the implementation of Neumann conditions',
+               2,
+               'wave:pde1:verify',
+               'wave:pde1:verify'),
+              ('Alternative implementation via ghost cells',
+               2,
+               'wave:pde1:Neumann:ghost',
+               'wave:pde1:Neumann:ghost'),
+              ('Idea', 3, None, '___sec50'),
+              ('Implementation', 3, None, '___sec51'),
+              ('Generalization: variable wave velocity',
+               1,
+               'wave:pde2:var:c',
+               'wave:pde2:var:c'),
+              ('The model PDE with a variable coefficient',
+               2,
+               None,
+               '___sec53'),
+              ('Discretizing the variable coefficient',
+               2,
+               'wave:pde2:var:c:ideas',
+               'wave:pde2:var:c:ideas'),
+              ('Computing the coefficient between mesh points',
+               2,
+               'wave:pde2:var:c:means',
+               'wave:pde2:var:c:means'),
+              ('How a variable coefficient affects the stability',
+               2,
+               'wave:pde2:var:c:stability',
+               'wave:pde2:var:c:stability'),
+              ('Neumann condition and a variable coefficient',
+               2,
+               'wave:pde2:var:c:Neumann',
+               'wave:pde2:var:c:Neumann'),
+              ('Implementation of variable coefficients',
+               2,
+               'wave:pde2:var:c:impl',
+               'wave:pde2:var:c:impl'),
+              ('A more general PDE model with variable coefficients',
+               2,
+               None,
+               '___sec59'),
+              ('Generalization: damping', 2, None, '___sec60'),
+              ('Building a general 1D wave equation solver',
+               1,
+               'wave:pde2:software',
+               'wave:pde2:software'),
+              ('User action function as a class', 2, None, '___sec62'),
+              ('The code', 3, None, '___sec63'),
+              ('Dissection', 3, None, '___sec64'),
+              ('Pulse propagation in two media', 2, None, '___sec65'),
+              ('Exercises', 1, None, '___sec66'),
+              ('Exercise 6: Find the analytical solution to a damped wave equation',
+               2,
+               'wave:exer:standingwave:damped:uex',
+               'wave:exer:standingwave:damped:uex'),
+              ('Problem 7: Explore symmetry boundary conditions',
+               2,
+               'wave:exer:symmetry:bc',
+               'wave:exer:symmetry:bc'),
+              ('Exercise 8: Send pulse waves through a layered medium',
+               2,
+               'wave:app:exer:pulse1D',
+               'wave:app:exer:pulse1D'),
+              ('Exercise 9: Explain why numerical noise occurs',
+               2,
+               'wave:app:exer:pulse1D:analysis',
+               'wave:app:exer:pulse1D:analysis'),
+              ('Exercise 10: Investigate harmonic averaging in a 1D model',
+               2,
+               'wave:app:exer:pulse1D:harmonic',
+               'wave:app:exer:pulse1D:harmonic'),
+              ('Problem 11: Implement open boundary conditions',
+               2,
+               'wave:app:exer:radiationBC',
+               'wave:app:exer:radiationBC'),
+              ('Remarks', 3, None, '___sec73'),
+              ('Exercise 12: Implement periodic boundary conditions',
+               2,
+               'wave:exer:periodic',
+               'wave:exer:periodic'),
+              ('Exercise 13: Compare discretizations of a Neumann condition',
+               2,
+               None,
+               '___sec75'),
+              ('Exercise 14: Verification by a cubic polynomial in space',
+               2,
+               'wave:fd2:exer:verify:cubic',
+               'wave:fd2:exer:verify:cubic'),
+              ('Analysis of the difference equations',
+               1,
+               'wave:pde1:analysis',
+               'wave:pde1:analysis'),
+              ('Properties of the solution of the wave equation',
+               2,
+               'wave:pde1:properties',
+               'wave:pde1:properties'),
+              ('More precise definition of Fourier representations',
+               2,
+               'wave:pde1:Fourier',
+               'wave:pde1:Fourier'),
+              ('Stability', 2, 'wave:pde1:stability', 'wave:pde1:stability'),
+              ('Preliminary results', 3, None, '___sec81'),
+              ('Numerical wave propagation', 3, None, '___sec82'),
+              ('Numerical dispersion relation',
+               2,
+               'wave:pde1:num:dispersion',
+               'wave:pde1:num:dispersion'),
+              ('Extending the analysis to 2D and 3D',
+               2,
+               'wave:pde1:analysis:2D3D',
+               'wave:pde1:analysis:2D3D'),
+              ('Finite difference methods for 2D and 3D wave equations',
+               1,
+               'wave:2D3D',
+               'wave:2D3D'),
+              ('Multi-dimensional wave equations',
+               2,
+               'wave:2D3D:models',
+               'wave:2D3D:models'),
+              ('Mesh', 2, 'wave:2D3D:mesh', 'wave:2D3D:mesh'),
+              ('Discretization', 2, 'wave:2D3D:models', 'wave:2D3D:models'),
+              ('Discretizing the PDEs', 3, None, '___sec89'),
+              ('Handling boundary conditions where $u$ is known',
+               3,
+               None,
+               '___sec90'),
+              ('Discretizing the Neumann condition', 3, None, '___sec91'),
+              ('Implementation', 1, 'wave:2D3D:impl', 'wave:2D3D:impl'),
+              ('Scalar computations',
+               2,
+               'wave2D3D:impl:scalar',
+               'wave2D3D:impl:scalar'),
+              ('Domain and mesh', 3, None, '___sec94'),
+              ('Solution arrays', 3, None, '___sec95'),
+              ('Index sets', 3, None, '___sec96'),
+              ('Computing the solution', 3, None, '___sec97'),
+              ('Vectorized computations',
+               2,
+               'wave2D3D:impl:vectorized',
+               'wave2D3D:impl:vectorized'),
+              ('Verification',
+               2,
+               'wave2D3D:impl:verify',
+               'wave2D3D:impl:verify'),
+              ('Testing a quadratic solution', 3, None, '___sec100'),
+              ('Using classes to implement a simulator',
+               1,
+               None,
+               '___sec101'),
+              ('Exercises', 1, None, '___sec102'),
+              ('Exercise 15: Check that a solution fulfills the discrete model',
+               2,
+               'wave:exer:quadratic:2D',
+               'wave:exer:quadratic:2D'),
+              ('Project 16: Calculus with 2D mesh functions',
+               2,
+               'wave:exer:mesh3D:calculus',
+               'wave:exer:mesh3D:calculus'),
+              ('Exercise 17: Implement Neumann conditions in 2D',
+               2,
+               'wave:app:exer:wave2D:Neumann',
+               'wave:app:exer:wave2D:Neumann'),
+              ('Exercise 18: Test the efficiency of compiled loops in 3D',
+               2,
+               'wave:exer:3D:f77:cy:efficiency',
+               'wave:exer:3D:f77:cy:efficiency'),
+              ('Applications of wave equations', 1, 'wave:app', 'wave:app'),
+              ('Waves on a string', 2, 'wave:app:string', 'wave:app:string'),
+              ('Damping', 3, None, '___sec109'),
+              ('External forcing', 3, None, '___sec110'),
+              ('Modeling the tension via springs', 3, None, '___sec111'),
+              ('Waves on a membrane',
+               2,
+               'wave:app:membrane',
+               'wave:app:membrane'),
+              ('Elastic waves in a rod',
+               2,
+               'wave:app:elastic:rod',
+               'wave:app:elastic:rod'),
+              ('The acoustic model for seismic waves',
+               2,
+               'wave:app:acoustic:seismic',
+               'wave:app:acoustic:seismic'),
+              ('Anisotropy', 3, None, '___sec115'),
+              ('Sound waves in liquids and gases',
+               2,
+               'wave:app:sound',
+               'wave:app:sound'),
+              ('Spherical waves',
+               2,
+               'wave:app:spherical',
+               'wave:app:spherical'),
+              ('The linear shallow water equations',
+               2,
+               'wave:app:sw:2D',
+               'wave:app:sw:2D'),
+              ('Wind drag on the surface', 3, None, '___sec119'),
+              ('Bottom drag', 3, None, '___sec120'),
+              ("Effect of the Earth's rotation", 3, None, '___sec121'),
+              ('Waves in blood vessels',
+               2,
+               'wave:app:blood',
+               'wave:app:blood'),
+              ('Electromagnetic waves',
+               2,
+               'wave:app:light',
+               'wave:app:light'),
+              ('Exercises', 1, 'wave:app:exer', 'wave:app:exer'),
+              ('Exercise 19: Simulate waves on a non-homogeneous string',
+               2,
+               'wave:app:exer:string:discont',
+               'wave:app:exer:string:discont'),
+              ('Exercise 20: Simulate damped waves on a string',
+               2,
+               'wave:app:exer:string:damping',
+               'wave:app:exer:string:damping'),
+              ('Exercise 21: Simulate elastic waves in a rod',
+               2,
+               'wave:app:exer:rod',
+               'wave:app:exer:rod'),
+              ('Exercise 22: Simulate spherical waves',
+               2,
+               'wave:app:exer:spherical',
+               'wave:app:exer:spherical'),
+              ('Problem 23: Earthquake-generated tsunami over a subsea hill',
+               2,
+               'wave:app:exer:tsunami1D:hill',
+               'wave:app:exer:tsunami1D:hill'),
+              ('Problem 24: Earthquake-generated tsunami over a 3D hill',
+               2,
+               'wave:app:exer:tsunami2D:hill',
+               'wave:app:exer:tsunami2D:hill'),
+              ('Problem 25: Investigate Matplotlib for visualization',
+               2,
+               'wave:app:exer:tsunami:hill:viz:matplotlib',
+               'wave:app:exer:tsunami:hill:viz:matplotlib'),
+              ('Problem 26: Investigate visualization packages',
+               2,
+               'wave:app:exer:tsunami:hill:viz:packages',
+               'wave:app:exer:tsunami:hill:viz:packages'),
+              ('Problem 27: Implement loops in compiled languages',
+               2,
+               'wave:app:exer:tsunami2D:hill:compiled',
+               'wave:app:exer:tsunami2D:hill:compiled'),
+              ('Exercise 28: Simulate seismic waves in 2D',
+               2,
+               'wave:app:exer:seismic2D',
+               'wave:app:exer:seismic2D'),
+              ('Project 29: Model 3D acoustic waves in a room',
+               2,
+               'wave:app:exer:acoustics',
+               'wave:app:exer:acoustics'),
+              ('Project 30: Solve a 1D transport equation',
+               2,
+               'wave:app:exer:advec1D',
+               'wave:app:exer:advec1D'),
+              ('Problem 31: General analytical solution of a 1D damped wave equation',
+               2,
+               'wave:app:exer:anal:damped:wave1D',
+               'wave:app:exer:anal:damped:wave1D'),
+              ('Problem 32: General analytical solution of a 2D damped wave equation',
+               2,
+               'wave:app:exer:anal:damped:wave2D',
+               'wave:app:exer:anal:damped:wave2D'),
+              ('References', 1, None, '___sec139')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\halfi}{{1/2}}
+\newcommand{\tp}{\thinspace .}
+\newcommand{\uex}{{u_{\small\mbox{e}}}}
+\newcommand{\xpoint}{\boldsymbol{x}}
+\newcommand{\normalvec}{\boldsymbol{n}}
+\newcommand{\Oof}[1]{\mathcal{O}(#1)}
+\renewcommand{\u}{\boldsymbol{u}}
+\newcommand{\f}{\boldsymbol{f}}
+\newcommand{\stress}{\boldsymbol{\sigma}}
+\newcommand{\I}{\boldsymbol{I}}
+\newcommand{\T}{\boldsymbol{T}}
+\newcommand{\ii}{\boldsymbol{i}}
+\newcommand{\jj}{\boldsymbol{j}}
+\newcommand{\kk}{\boldsymbol{k}}
+\newcommand{\Ix}{\mathcal{I}_x}
+\newcommand{\Iy}{\mathcal{I}_y}
+\newcommand{\Iz}{\mathcal{I}_z}
+\newcommand{\It}{\mathcal{I}_t}
+\newcommand{\setb}[1]{#1^0}    % set begin
+\newcommand{\sete}[1]{#1^{-1}} % set end
+\newcommand{\setl}[1]{#1^-}
+\newcommand{\setr}[1]{#1^+}
+\newcommand{\seti}[1]{#1^i}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Integer}{\mathbb{Z}}
+$$
+
+
+
+
+    
+<a name="part0006"></a>
+<p>
+<!-- begin top navigation -->
+<table style="width: 100%"><tr><td>
+<div style="text-align: left;"><a href="._wave-solarized005.html">&laquo; Previous</a></div>
+</td><td>
+<div style="text-align: right;"><a href="._wave-solarized007.html">Next &raquo;</a></div>
+</td></tr></table>
+<!-- end top navigation -->
+</p>
+
+<p>
+<!-- !split -->
+
+<h1 id="wave:2D3D:impl">Implementation</h1>
+
+<p>
+We shall now describe in detail various Python implementations
+for solving a standard 2D, linear wave equation with constant
+wave velocity and \( u=0 \) on the
+boundary. The wave equation is to be solved
+in the space-time domain \( \Omega\times (0,T] \),
+where \( \Omega = (0,L_x)\times (0,L_y) \) is a rectangular spatial
+domain. More precisely,
+the complete initial-boundary value problem is defined by
+
+$$
+\begin{align}
+u_t &= c^2(u_{xx} + u_{yy}) + f(x,y,t),\quad &(x,y)\in \Omega,\ t\in (0,T],\\ 
+u(x,y,0) &= I(x,y),\quad &(x,y)\in\Omega,\\ 
+u_t(x,y,0) &= V(x,y),\quad &(x,y)\in\Omega,\\ 
+u &= 0,\quad &(x,y)\in\partial\Omega,\ t\in (0,T],
+\end{align}
+$$
+
+where \( \partial\Omega \) is the boundary of \( \Omega \), in this case
+the four sides of the rectangle \( \Omega = [0,L_x]\times [0,L_y] \):
+\( x=0 \), \( x=L_x \), \( y=0 \), and \( y=L_y \).
+
+<p>
+The PDE is discretized as
+$$ [D_t D_t u = c^2(D_xD_x u + D_yD_y u) + f]^n_{i,j},
+$$
+
+which leads to an explicit updating formula to be implemented in a
+program:
+
+$$
+\begin{align}
+u^{n+1} &= -u^{n-1}_{i,j} + 2u^n_{i,j} + \nonumber\\ 
+&\quad C_x^2(
+u^{n}_{i+1,j} - 2u^{n}_{i,j} + u^{n}_{i-1,j}) + C_y^2
+(u^{n}_{i,j+1} - 2u^{n}_{i,j} + u^{n}_{i,j-1}) + \Delta t^2 f_{i,j}^n,
+\tag{74}
+\end{align}
+$$
+
+for all interior mesh points \( i\in\seti{\Ix} \) and
+\( j\in\seti{\Iy} \), and for \( n\in\setr{\It} \).
+The constants \( C_x \) and \( C_y \) are defined as
+
+$$ C_x = c\frac{\Delta t}{\Delta x},\quad C_x = c\frac{\Delta t}{\Delta y}
+\tp
+$$
+
+<p>
+At the boundary, we simply set \( u^{n+1}_{i,j}=0 \) for
+\( i=0 \), \( j=0,\ldots,N_y \); \( i=N_x \), \( j=0,\ldots,N_y \);
+\( j=0 \), \( i=0,\ldots,N_x \); and \( j=N_y \), \( i=0,\ldots,N_x \).
+For the first step, \( n=0 \), <a href="#mjx-eqn-74">(74)</a>
+is combined with the discretization of the initial condition \( u_t=V \),
+\( [D_{2t} u = V]^0_{i,j} \) to obtain a special formula for
+\( u^1_{i,j} \) at the interior mesh points:
+
+$$
+\begin{align}
+u^{1} &= u^0_{i,j} + \Delta t V_{i,j} + \nonumber\\ 
+&\quad {\half}C_x^2(
+u^{0}_{i+1,j} - 2u^{0}_{i,j} + u^{0}_{i-1,j}) + {\half}C_y^2
+(u^{0}_{i,j+1} - 2u^{0}_{i,j} + u^{0}_{i,j-1}) + \half\Delta t^2f_{i,j}^n,
+\tag{74}
+\end{align}
+$$
+
+<p>
+The algorithm is very similar to the one in 1D:
+
+<ol>
+<li> Set initial condition \( u^0_{i,j}=I(x_i,y_j) \)</li>
+<li> Compute \( u^1_{i,j} \) from <a href="#mjx-eqn-74">(74)</a></li>
+<li> Set \( u^1_{i,j}=0 \) for the boundaries \( i=0,N_x \), \( j=0,N_y \)</li>
+<li> For \( n=1,2,\ldots,N_t \):</li>
+
+<ol>
+ <li> Find \( u^{n+1}_{i,j} \) from <a href="#mjx-eqn-74">(74)</a>
+    for all internal mesh points, \( i\in\seti{\Ix} \), \( j\in\seti{\Iy} \)</li>
+ <li> Set \( u^{n+1}_{i,j}=0 \) for the boundaries \( i=0,N_x \), \( j=0,N_y \)</li>
+</ol>
+
+</ol>
+
+<h2 id="wave2D3D:impl:scalar">Scalar computations</h2>
+
+<p>
+The <code>solver</code> function for a 2D case with constant wave velocity and
+boundary condition \( u=0 \) is analogous to the 1D case with similar parameter
+values (see <code>wave1D_u0.py</code>), apart from a few necessary
+extensions. The code is found in the program
+<a href="http://tinyurl.com/nm5587k/wave/wave2D_u0/wave2D_u0.py" target="_self"><tt>wave2D_u0.py</tt></a>.
+
+<h3 id="___sec94">Domain and mesh </h3>
+
+<p>
+The spatial domain is now \( [0,L_x]\times [0,L_y] \), specified
+by the arguments <code>Lx</code> and <code>Ly</code>. Similarly, the number of mesh
+points in the \( x \) and \( y \) directions,
+\( N_x \) and \( N_y \), become the arguments <code>Nx</code> and <code>Ny</code>.
+In multi-dimensional problems it makes less sense to specify a
+Courant number since the wave velocity is a vector and mesh spacings
+may differ in the various spatial directions.
+We therefore give \( \Delta t \) explicitly. The signature of
+the <code>solver</code> function is then
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">solver</span>(I, V, f, c, Lx, Ly, Nx, Ny, dt, T,
+           user_action=<span style="color: #658b00">None</span>, version=<span style="color: #CD5555">&#39;scalar&#39;</span>):
+</pre></div>
+<p>
+Key parameters used in the calculations are created as
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">x = linspace(<span style="color: #B452CD">0</span>, Lx, Nx+<span style="color: #B452CD">1</span>)                  <span style="color: #228B22"># mesh points in x dir</span>
+y = linspace(<span style="color: #B452CD">0</span>, Ly, Ny+<span style="color: #B452CD">1</span>)                  <span style="color: #228B22"># mesh points in y dir</span>
+dx = x[<span style="color: #B452CD">1</span>] - x[<span style="color: #B452CD">0</span>]
+dy = y[<span style="color: #B452CD">1</span>] - y[<span style="color: #B452CD">0</span>]
+Nt = <span style="color: #658b00">int</span>(<span style="color: #658b00">round</span>(T/<span style="color: #658b00">float</span>(dt)))
+t = linspace(<span style="color: #B452CD">0</span>, N*dt, N+<span style="color: #B452CD">1</span>)                 <span style="color: #228B22"># mesh points in time</span>
+Cx2 = (c*dt/dx)**<span style="color: #B452CD">2</span>;  Cy2 = (c*dt/dy)**<span style="color: #B452CD">2</span>    <span style="color: #228B22"># help variables</span>
+dt2 = dt**<span style="color: #B452CD">2</span>
+</pre></div>
+
+<h3 id="___sec95">Solution arrays </h3>
+
+<p>
+We store \( u^{n+1}_{i,j} \), \( u^{n}_{i,j} \), and
+\( u^{n-1}_{i,j} \) in three two-dimensional arrays,
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">u   = zeros((Nx+<span style="color: #B452CD">1</span>,Ny+<span style="color: #B452CD">1</span>))   <span style="color: #228B22"># solution array</span>
+u_1 = zeros((Nx+<span style="color: #B452CD">1</span>,Ny+<span style="color: #B452CD">1</span>))   <span style="color: #228B22"># solution at t-dt</span>
+u_2 = zeros((Nx+<span style="color: #B452CD">1</span>,Ny+<span style="color: #B452CD">1</span>))   <span style="color: #228B22"># solution at t-2*dt</span>
+</pre></div>
+<p>
+where \( u^{n+1}_{i,j} \) corresponds to <code>u[i,j]</code>,
+\( u^{n}_{i,j} \) to <code>u_1[i,j]</code>, and
+\( u^{n-1}_{i,j} \) to <code>u_2[i,j]</code>
+
+<h3 id="___sec96">Index sets </h3>
+
+<p>
+It is also convenient to introduce the index sets (cf. The section <a href="._wave-solarized003.html#wave:indexset">Index set notation</a>)
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Ix = <span style="color: #658b00">range</span>(<span style="color: #B452CD">0</span>, u.shape[<span style="color: #B452CD">0</span>])
+Iy = <span style="color: #658b00">range</span>(<span style="color: #B452CD">0</span>, u.shape[<span style="color: #B452CD">1</span>])
+It = <span style="color: #658b00">range</span>(<span style="color: #B452CD">0</span>, t.shape[<span style="color: #B452CD">0</span>])
+</pre></div>
+
+<h3 id="___sec97">Computing the solution </h3>
+
+<p>
+Inserting the initial
+condition <code>I</code> in <code>u_1</code> and making a callback to the user in terms of
+the <code>user_action</code> function is a straightforward generalization of
+the 1D code from the section <a href="._wave-solarized001.html#wave:string:impl">Sketch of an implementation</a>:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix:
+    <span style="color: #8B008B; font-weight: bold">for</span> j <span style="color: #8B008B">in</span> Iy:
+        u_1[i,j] = I(x[i], y[j])
+
+<span style="color: #8B008B; font-weight: bold">if</span> user_action <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+    user_action(u_1, x, xv, y, yv, t, <span style="color: #B452CD">0</span>)
+</pre></div>
+<p>
+The <code>user_action</code> function has additional arguments compared to the
+1D case. The arguments <code>xv</code> and <code>yv</code> will be commented
+upon in the section <a href="#wave2D3D:impl:vectorized">Vectorized computations</a>.
+
+<p>
+The key finite difference formula <a href="._wave-solarized005.html#mjx-eqn-71">(71)</a>
+for updating the solution at
+a time level is implemented in a separate function as
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">advance_scalar</span>(u, u_1, u_2, f, x, y, t, n, Cx2, Cy2, dt2,
+                   V=<span style="color: #658b00">None</span>, step1=<span style="color: #658b00">False</span>):
+    Ix = <span style="color: #658b00">range</span>(<span style="color: #B452CD">0</span>, u.shape[<span style="color: #B452CD">0</span>]);  Iy = <span style="color: #658b00">range</span>(<span style="color: #B452CD">0</span>, u.shape[<span style="color: #B452CD">1</span>])
+    <span style="color: #8B008B; font-weight: bold">if</span> step1:
+        dt = sqrt(dt2)  <span style="color: #228B22"># save</span>
+        Cx2 = <span style="color: #B452CD">0.5</span>*Cx2;  Cy2 = <span style="color: #B452CD">0.5</span>*Cy2; dt2 = <span style="color: #B452CD">0.5</span>*dt2  <span style="color: #228B22"># redefine</span>
+        D1 = <span style="color: #B452CD">1</span>;  D2 = <span style="color: #B452CD">0</span>
+    <span style="color: #8B008B; font-weight: bold">else</span>:
+        D1 = <span style="color: #B452CD">2</span>;  D2 = <span style="color: #B452CD">1</span>
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]:
+        <span style="color: #8B008B; font-weight: bold">for</span> j <span style="color: #8B008B">in</span> Iy[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]:
+            u_xx = u_1[i-<span style="color: #B452CD">1</span>,j] - <span style="color: #B452CD">2</span>*u_1[i,j] + u_1[i+<span style="color: #B452CD">1</span>,j]
+            u_yy = u_1[i,j-<span style="color: #B452CD">1</span>] - <span style="color: #B452CD">2</span>*u_1[i,j] + u_1[i,j+<span style="color: #B452CD">1</span>]
+            u[i,j] = D1*u_1[i,j] - D2*u_2[i,j] + \ 
+                     Cx2*u_xx + Cy2*u_yy + dt2*f(x[i], y[j], t[n])
+            <span style="color: #8B008B; font-weight: bold">if</span> step1:
+                u[i,j] += dt*V(x[i], y[j])
+    <span style="color: #228B22"># Boundary condition u=0</span>
+    j = Iy[<span style="color: #B452CD">0</span>]
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix: u[i,j] = <span style="color: #B452CD">0</span>
+    j = Iy[-<span style="color: #B452CD">1</span>]
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix: u[i,j] = <span style="color: #B452CD">0</span>
+    i = Ix[<span style="color: #B452CD">0</span>]
+    <span style="color: #8B008B; font-weight: bold">for</span> j <span style="color: #8B008B">in</span> Iy: u[i,j] = <span style="color: #B452CD">0</span>
+    i = Ix[-<span style="color: #B452CD">1</span>]
+    <span style="color: #8B008B; font-weight: bold">for</span> j <span style="color: #8B008B">in</span> Iy: u[i,j] = <span style="color: #B452CD">0</span>
+    <span style="color: #8B008B; font-weight: bold">return</span> u
+</pre></div>
+<p>
+The <code>step1</code> variable has been introduced to allow the formula to be
+reused for first step \( u^1_{i,j} \):
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">u = advance_scalar(u, u_1, u_2, f, x, y, t,
+                   n, Cx2, Cy2, dt, V, step1=<span style="color: #658b00">True</span>)
+</pre></div>
+<p>
+Below, we will make many alternative implementations of the
+<code>advance_scalar</code> function to speed up the code since most of
+the CPU time in simulations is spent in this function.
+
+<p>
+Finally, we remark that the <code>solver</code> function in the <code>wave2D_u0.py</code> code
+updates arrays for the next time step by switching references as
+described in the section <a href="._wave-solarized002.html#wave:pde1:impl:ref:switch">Remark on the updating of arrays</a>. If the solution
+<code>u</code> is returned from <code>solver</code>, which it is not, it is important to
+set <code>u = u_1</code> after the time loop, otherwise <code>u</code> actually contains <code>u_2</code>.
+
+<h2 id="wave2D3D:impl:vectorized">Vectorized computations</h2>
+
+<p>
+The scalar code above turns out to be extremely slow for large 2D
+meshes, and probably useless in 3D beyond debugging of small test cases.
+Vectorization is therefore a must for multi-dimensional
+finite difference computations in Python. For example,
+with a mesh consisting of \( 30\times 30 \) cells, vectorization
+brings down the CPU time by a factor of 70 (!).
+
+<p>
+In the vectorized case, we must be able to evaluate user-given functions
+like \( I(x,y) \) and \( f(x,y,t) \) for the entire mesh in one operation (without
+loops). These user-given functions are
+provided as Python functions <code>I(x,y)</code>
+and <code>f(x,y,t)</code>, respectively.
+Having the one-dimensional coordinate arrays <code>x</code> and <code>y</code> is not
+sufficient when calling <code>I</code> and <code>f</code> in a vectorized way.
+We must extend <code>x</code> and <code>y</code> to their vectorized versions <code>xv</code> and <code>yv</code>:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">import</span> newaxis
+xv = x[:,newaxis]
+yv = y[newaxis,:]
+<span style="color: #228B22"># or</span>
+xv = x.reshape((x.size, <span style="color: #B452CD">1</span>))
+yv = y.reshape((<span style="color: #B452CD">1</span>, y.size))
+</pre></div>
+<p>
+This is a standard required technique when evaluating functions over
+a 2D mesh, say <code>sin(xv)*cos(xv)</code>, which then gives a result with shape
+<code>(Nx+1,Ny+1)</code>. Calling <code>I(xv, yv)</code> and <code>f(xv, yv, t[n])</code> will now
+return <code>I</code> and <code>f</code> values for the entire set of mesh points.
+
+<p>
+With the <code>xv</code> and <code>yv</code> arrays for vectorized computing,
+setting the initial condition is just a matter of
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">u_1[:,:] = I(xv, yv)
+</pre></div>
+<p>
+One could also have written <code>u_1 = I(xv, yv)</code> and let <code>u_1</code> point
+to a new object, but vectorized operations often make use of
+direct insertion in the original array through <code>u_1[:,:]</code>, because
+sometimes not all of the array is to be filled by such a function
+evaluation. This is the case with the computational scheme for \( u^{n+1}_{i,j} \):
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">advance_vectorized</span>(u, u_1, u_2, f_a, Cx2, Cy2, dt2,
+                       V=<span style="color: #658b00">None</span>, step1=<span style="color: #658b00">False</span>):
+    <span style="color: #8B008B; font-weight: bold">if</span> step1:
+        dt = sqrt(dt2)  <span style="color: #228B22"># save</span>
+        Cx2 = <span style="color: #B452CD">0.5</span>*Cx2;  Cy2 = <span style="color: #B452CD">0.5</span>*Cy2; dt2 = <span style="color: #B452CD">0.5</span>*dt2  <span style="color: #228B22"># redefine</span>
+        D1 = <span style="color: #B452CD">1</span>;  D2 = <span style="color: #B452CD">0</span>
+    <span style="color: #8B008B; font-weight: bold">else</span>:
+        D1 = <span style="color: #B452CD">2</span>;  D2 = <span style="color: #B452CD">1</span>
+    u_xx = u_1[:-<span style="color: #B452CD">2</span>,<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] - <span style="color: #B452CD">2</span>*u_1[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>,<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] + u_1[<span style="color: #B452CD">2</span>:,<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]
+    u_yy = u_1[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>,:-<span style="color: #B452CD">2</span>] - <span style="color: #B452CD">2</span>*u_1[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>,<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] + u_1[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>,<span style="color: #B452CD">2</span>:]
+    u[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>,<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] = D1*u_1[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>,<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] - D2*u_2[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>,<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] + \ 
+                   Cx2*u_xx + Cy2*u_yy + dt2*f_a[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>,<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]
+    <span style="color: #8B008B; font-weight: bold">if</span> step1:
+        u[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>,<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] += dt*V[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>, <span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]
+    <span style="color: #228B22"># Boundary condition u=0</span>
+    j = <span style="color: #B452CD">0</span>
+    u[:,j] = <span style="color: #B452CD">0</span>
+    j = u.shape[<span style="color: #B452CD">1</span>]-<span style="color: #B452CD">1</span>
+    u[:,j] = <span style="color: #B452CD">0</span>
+    i = <span style="color: #B452CD">0</span>
+    u[i,:] = <span style="color: #B452CD">0</span>
+    i = u.shape[<span style="color: #B452CD">0</span>]-<span style="color: #B452CD">1</span>
+    u[i,:] = <span style="color: #B452CD">0</span>
+    <span style="color: #8B008B; font-weight: bold">return</span> u
+
+<span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">quadratic</span>(Nx, Ny, version):
+    <span style="color: #CD5555">&quot;&quot;&quot;Exact discrete solution of the scheme.&quot;&quot;&quot;</span>
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">exact_solution</span>(x, y, t):
+        <span style="color: #8B008B; font-weight: bold">return</span> x*(Lx - x)*y*(Ly - y)*(<span style="color: #B452CD">1</span> + <span style="color: #B452CD">0.5</span>*t)
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">I</span>(x, y):
+        <span style="color: #8B008B; font-weight: bold">return</span> exact_solution(x, y, <span style="color: #B452CD">0</span>)
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">V</span>(x, y):
+        <span style="color: #8B008B; font-weight: bold">return</span> <span style="color: #B452CD">0.5</span>*exact_solution(x, y, <span style="color: #B452CD">0</span>)
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">f</span>(x, y, t):
+        <span style="color: #8B008B; font-weight: bold">return</span> <span style="color: #B452CD">2</span>*c**<span style="color: #B452CD">2</span>*(<span style="color: #B452CD">1</span> + <span style="color: #B452CD">0.5</span>*t)*(y*(Ly - y) + x*(Lx - x))
+
+    Lx = <span style="color: #B452CD">5</span>;  Ly = <span style="color: #B452CD">2</span>
+    c = <span style="color: #B452CD">1.5</span>
+    dt = -<span style="color: #B452CD">1</span> <span style="color: #228B22"># use longest possible steps</span>
+    T = <span style="color: #B452CD">18</span>
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">assert_no_error</span>(u, x, xv, y, yv, t, n):
+        u_e = exact_solution(xv, yv, t[n])
+        diff = <span style="color: #658b00">abs</span>(u - u_e).max()
+        tol = <span style="color: #B452CD">1E-12</span>
+        msg = <span style="color: #CD5555">&#39;diff=%g, step %d, time=%g&#39;</span> % (diff, n, t[n]))
+        <span style="color: #8B008B; font-weight: bold">assert</span> diff &lt; tol, msg
+
+    new_dt, cpu = solver(
+        I, V, f, c, Lx, Ly, Nx, Ny, dt, T,
+        user_action=assert_no_error, version=version)
+    <span style="color: #8B008B; font-weight: bold">return</span> new_dt, cpu
+
+
+<span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">test_quadratic</span>():
+    <span style="color: #228B22"># Test a series of meshes where Nx &gt; Ny and Nx &lt; Ny</span>
+    versions = <span style="color: #CD5555">&#39;scalar&#39;</span>, <span style="color: #CD5555">&#39;vectorized&#39;</span>, <span style="color: #CD5555">&#39;cython&#39;</span>, <span style="color: #CD5555">&#39;f77&#39;</span>, <span style="color: #CD5555">&#39;c_cy&#39;</span>, <span style="color: #CD5555">&#39;c_f2py&#39;</span>
+    <span style="color: #8B008B; font-weight: bold">for</span> Nx <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #B452CD">2</span>, <span style="color: #B452CD">6</span>, <span style="color: #B452CD">2</span>):
+        <span style="color: #8B008B; font-weight: bold">for</span> Ny <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #B452CD">2</span>, <span style="color: #B452CD">6</span>, <span style="color: #B452CD">2</span>):
+            <span style="color: #8B008B; font-weight: bold">for</span> version <span style="color: #8B008B">in</span> versions:
+                <span style="color: #8B008B; font-weight: bold">print</span> <span style="color: #CD5555">&#39;testing&#39;</span>, version, <span style="color: #CD5555">&#39;for %dx%d mesh&#39;</span> % (Nx, Ny)
+                quadratic(Nx, Ny, version)
+
+<span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">run_efficiency</span>(nrefinements=<span style="color: #B452CD">4</span>):
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">I</span>(x, y):
+        <span style="color: #8B008B; font-weight: bold">return</span> sin(pi*x/Lx)*sin(pi*y/Ly)
+
+    Lx = <span style="color: #B452CD">10</span>;  Ly = <span style="color: #B452CD">10</span>
+    c = <span style="color: #B452CD">1.5</span>
+    T = <span style="color: #B452CD">100</span>
+    versions = [<span style="color: #CD5555">&#39;scalar&#39;</span>, <span style="color: #CD5555">&#39;vectorized&#39;</span>, <span style="color: #CD5555">&#39;cython&#39;</span>, <span style="color: #CD5555">&#39;f77&#39;</span>,
+               <span style="color: #CD5555">&#39;c_f2py&#39;</span>, <span style="color: #CD5555">&#39;c_cy&#39;</span>]
+    <span style="color: #8B008B; font-weight: bold">print</span> <span style="color: #CD5555">&#39; &#39;</span>*<span style="color: #B452CD">15</span>, <span style="color: #CD5555">&#39;&#39;</span>.join([<span style="color: #CD5555">&#39;%-13s&#39;</span> % v <span style="color: #8B008B; font-weight: bold">for</span> v <span style="color: #8B008B">in</span> versions])
+    <span style="color: #8B008B; font-weight: bold">for</span> Nx <span style="color: #8B008B">in</span> <span style="color: #B452CD">15</span>, <span style="color: #B452CD">30</span>, <span style="color: #B452CD">60</span>, <span style="color: #B452CD">120</span>:
+        cpu = {}
+        <span style="color: #8B008B; font-weight: bold">for</span> version <span style="color: #8B008B">in</span> versions:
+            dt, cpu_ = solver(I, <span style="color: #658b00">None</span>, <span style="color: #658b00">None</span>, c, Lx, Ly, Nx, Nx,
+                              -<span style="color: #B452CD">1</span>, T, user_action=<span style="color: #658b00">None</span>,
+                              version=version)
+            cpu[version] = cpu_
+        cpu_min = <span style="color: #658b00">min</span>(<span style="color: #658b00">list</span>(cpu.values()))
+        <span style="color: #8B008B; font-weight: bold">if</span> cpu_min &lt; <span style="color: #B452CD">1E-6</span>:
+            <span style="color: #8B008B; font-weight: bold">print</span> <span style="color: #CD5555">&#39;Ignored %dx%d grid (too small execution time)&#39;</span> \ 
+                  % (Nx, Nx)
+        <span style="color: #8B008B; font-weight: bold">else</span>:
+            cpu = {version: cpu[version]/cpu_min <span style="color: #8B008B; font-weight: bold">for</span> version <span style="color: #8B008B">in</span> cpu}
+            <span style="color: #8B008B; font-weight: bold">print</span> <span style="color: #CD5555">&#39;%-15s&#39;</span> % <span style="color: #CD5555">&#39;%dx%d&#39;</span> % (Nx, Nx),
+            <span style="color: #8B008B; font-weight: bold">print</span> <span style="color: #CD5555">&#39;&#39;</span>.join([<span style="color: #CD5555">&#39;%13.1f&#39;</span> % cpu[version] <span style="color: #8B008B; font-weight: bold">for</span> version <span style="color: #8B008B">in</span> versions])
+
+<span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">gaussian</span>(plot_method=<span style="color: #B452CD">2</span>, version=<span style="color: #CD5555">&#39;vectorized&#39;</span>, save_plot=<span style="color: #658b00">True</span>):
+    <span style="color: #CD5555">&quot;&quot;&quot;</span>
+<span style="color: #CD5555">    Initial Gaussian bell in the middle of the domain.</span>
+<span style="color: #CD5555">    plot_method=1 applies mesh function, =2 means surf, =0 means no plot.</span>
+<span style="color: #CD5555">    &quot;&quot;&quot;</span>
+    <span style="color: #228B22"># Clean up plot files</span>
+    <span style="color: #8B008B; font-weight: bold">for</span> name <span style="color: #8B008B">in</span> glob(<span style="color: #CD5555">&#39;tmp_*.png&#39;</span>):
+        os.remove(name)
+
+    Lx = <span style="color: #B452CD">10</span>
+    Ly = <span style="color: #B452CD">10</span>
+    c = <span style="color: #B452CD">1.0</span>
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">I</span>(x, y):
+        <span style="color: #CD5555">&quot;&quot;&quot;Gaussian peak at (Lx/2, Ly/2).&quot;&quot;&quot;</span>
+        <span style="color: #8B008B; font-weight: bold">return</span> exp(-<span style="color: #B452CD">0.5</span>*(x-Lx/<span style="color: #B452CD">2.0</span>)**<span style="color: #B452CD">2</span> - <span style="color: #B452CD">0.5</span>*(y-Ly/<span style="color: #B452CD">2.0</span>)**<span style="color: #B452CD">2</span>)
+
+    <span style="color: #8B008B; font-weight: bold">if</span> plot_method == <span style="color: #B452CD">3</span>:
+        <span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">mpl_toolkits.mplot3d</span> <span style="color: #8B008B; font-weight: bold">import</span> axes3d
+        <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">matplotlib.pyplot</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">plt</span>
+        <span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">matplotlib</span> <span style="color: #8B008B; font-weight: bold">import</span> cm
+        plt.ion()
+        fig = plt.figure()
+        u_surf = <span style="color: #658b00">None</span>
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">plot_u</span>(u, x, xv, y, yv, t, n):
+        <span style="color: #8B008B; font-weight: bold">if</span> t[n] == <span style="color: #B452CD">0</span>:
+            time.sleep(<span style="color: #B452CD">2</span>)
+        <span style="color: #8B008B; font-weight: bold">if</span> plot_method == <span style="color: #B452CD">1</span>:
+            mesh(x, y, u, title=<span style="color: #CD5555">&#39;t=%g&#39;</span> % t[n], zlim=[-<span style="color: #B452CD">1</span>,<span style="color: #B452CD">1</span>],
+                 caxis=[-<span style="color: #B452CD">1</span>,<span style="color: #B452CD">1</span>])
+        <span style="color: #8B008B; font-weight: bold">elif</span> plot_method == <span style="color: #B452CD">2</span>:
+            surfc(xv, yv, u, title=<span style="color: #CD5555">&#39;t=%g&#39;</span> % t[n], zlim=[-<span style="color: #B452CD">1</span>, <span style="color: #B452CD">1</span>],
+                  colorbar=<span style="color: #658b00">True</span>, colormap=hot(), caxis=[-<span style="color: #B452CD">1</span>,<span style="color: #B452CD">1</span>],
+                  shading=<span style="color: #CD5555">&#39;flat&#39;</span>)
+        <span style="color: #8B008B; font-weight: bold">elif</span> plot_method == <span style="color: #B452CD">3</span>:
+            <span style="color: #8B008B; font-weight: bold">print</span> <span style="color: #CD5555">&#39;Experimental 3D matplotlib...under development...&#39;</span>
+            <span style="color: #228B22">#plt.clf()</span>
+            ax = fig.add_subplot(<span style="color: #B452CD">111</span>, projection=<span style="color: #CD5555">&#39;3d&#39;</span>)
+            u_surf = ax.plot_surface(xv, yv, u, alpha=<span style="color: #B452CD">0.3</span>)
+            <span style="color: #228B22">#ax.contourf(xv, yv, u, zdir=&#39;z&#39;, offset=-100, cmap=cm.coolwarm)</span>
+            <span style="color: #228B22">#ax.set_zlim(-1, 1)</span>
+            <span style="color: #228B22"># Remove old surface before drawing</span>
+            <span style="color: #8B008B; font-weight: bold">if</span> u_surf <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+                ax.collections.remove(u_surf)
+            plt.draw()
+            time.sleep(<span style="color: #B452CD">1</span>)
+        <span style="color: #8B008B; font-weight: bold">if</span> plot_method &gt; <span style="color: #B452CD">0</span>:
+            time.sleep(<span style="color: #B452CD">0</span>) <span style="color: #228B22"># pause between frames</span>
+            <span style="color: #8B008B; font-weight: bold">if</span> save_plot:
+                filename = <span style="color: #CD5555">&#39;tmp_%04d.png&#39;</span> % n
+                savefig(filename)  <span style="color: #228B22"># time consuming!</span>
+
+    Nx = <span style="color: #B452CD">40</span>; Ny = <span style="color: #B452CD">40</span>; T = <span style="color: #B452CD">20</span>
+    dt, cpu = solver(I, <span style="color: #658b00">None</span>, <span style="color: #658b00">None</span>, c, Lx, Ly, Nx, Ny, -<span style="color: #B452CD">1</span>, T,
+                     user_action=plot_u, version=version)
+
+
+
+<span style="color: #8B008B; font-weight: bold">if</span> __name__ == <span style="color: #CD5555">&#39;__main__&#39;</span>:
+    test_quadratic()
+</pre></div>
+<p>
+Array slices in 2D are more complicated to understand than those in
+1D, but the logic from 1D applies to each dimension separately.
+For example, when doing \( u^{n}_{i,j} - u^{n}_{i-1,j} \) for \( i\in\setr{\Ix} \),
+we just keep <code>j</code> constant and make a slice in the first index:
+<code>u_1[1:,j] - u_1[:-1,j]</code>, exactly as in 1D. The <code>1:</code> slice
+specifies all the indices \( i=1,2,\ldots,N_x \) (up to the last
+valid index),
+while <code>:-1</code> specifies the relevant indices for the second term:
+\( 0,1,\ldots,N_x-1 \) (up to, but not including the last index).
+
+<p>
+In the above code segment, the situation is slightly more complicated,
+because each displaced slice in one direction is
+accompanied by a <code>1:-1</code> slice in the other direction. The reason is
+that we only work with the internal points for the index that is
+kept constant in a difference.
+
+<p>
+The boundary conditions along the four sides makes use of
+a slice consisting of all indices along a boundary:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">u[: ,<span style="color: #B452CD">0</span>] = <span style="color: #B452CD">0</span>
+u[:,Ny] = <span style="color: #B452CD">0</span>
+u[<span style="color: #B452CD">0</span> ,:] = <span style="color: #B452CD">0</span>
+u[Nx,:] = <span style="color: #B452CD">0</span>
+</pre></div>
+<p>
+In the vectorized update of <code>u</code> (above), the function <code>f</code> is first computed
+as an array over all mesh points:
+<p>
+
+<!-- code=text typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">f_a = f(xv, yv, t[n])
+</pre></div>
+<p>
+We could, alternatively, have used the call <code>f(xv, yv, t[n])[1:-1,1:-1]</code>
+in the last term of the update statement, but other implementations
+in compiled languages benefit from having <code>f</code> available in an array
+rather than calling our Python function <code>f(x,y,t)</code> for
+every point.
+
+<p>
+Also in the <code>advance_vectorized</code> function we have introduced a
+boolean <code>step1</code> to reuse the formula for the first time step
+in the same way as we did with <code>advance_scalar</code>.
+We refer to the <code>solver</code> function in <code>wave2D_u0.py</code>
+for the details on how the overall algorithm is implemented.
+
+<p>
+The callback function now has the arguments
+<code>u, x, xv, y, yv, t, n</code>. The inclusion of <code>xv</code> and <code>yv</code> makes it
+easy to, e.g., compute an exact 2D solution in the callback function
+and compute errors, through an expression like
+<code>u - u_exact(xv, yv, t[n])</code>.
+
+<h2 id="wave2D3D:impl:verify">Verification</h2>
+
+<h3 id="___sec100">Testing a quadratic solution </h3>
+
+<p>
+The 1D solution from the section <a href="._wave-solarized001.html#wave:pde2:fd:verify:quadratic">Constructing an exact solution of the discrete equations</a> can be
+generalized to multi-dimensions and provides a test case where the
+exact solution also fulfills the discrete equations, such that we know
+(to machine precision) what numbers the solver function should
+produce. In 2D we use the following generalization of
+<a href="._wave-solarized001.html#mjx-eqn-21">(21)</a>:
+
+$$
+\begin{equation}
+\uex(x,y,t) = x(L_x-x)y(L_y-y)(1+{\half}t)
+\tp
+\tag{75}
+\end{equation}
+$$
+
+This solution fulfills the PDE problem if \( I(x,y)=\uex(x,y,0) \),
+\( V=\half\uex(x,y,0) \), and \( f=2c^2(1+{\half}t)(y(L_y-y) +
+x(L_x-x)) \). To show that \( \uex \) also solves the discrete equations,
+we start with the general results \( [D_t D_t 1]^n=0 \), \( [D_t D_t t]^n=0 \),
+and \( [D_t D_t t^2]=2 \), and use these to compute
+
+$$
+\begin{align*}
+[D_xD_x \uex]^n_{i,j} &= [y(L_y-y)(1+{\half}t) D_xD_x x(L_x-x)]^n_{i,j}\\ 
+&= y_j(L_y-y_j)(1+{\half}t_n)(-2)\tp
+\end{align*}
+$$
+
+A similar calculation must be carried out for the \( [D_yD_y
+\uex]^n_{i,j} \) and \( [D_tD_t \uex]^n_{i,j} \) terms.  One must also show
+that the quadratic solution fits the special formula for
+\( u^1_{i,j} \). The details are left as <a href="#wave:exer:quadratic:2D">Exercise 15: Check that a solution fulfills the discrete model</a>.
+The <code>test_quadratic</code> function in the
+<a href="http://tinyurl.com/nm5587k/wave/wave2D_u0/wave2D_u0.py" target="_self"><tt>wave2D_u0.py</tt></a>
+program implements this verification as a nose test.
+
+<h1 id="___sec101">Using classes to implement a simulator </h1>
+
+<ul>
+ <li> Introduce classes <code>Mesh</code>, <code>Function</code>, <code>Problem</code>, <code>Solver</code>, <code>Visualizer</code>,
+   <code>File</code>
+<!-- communicate with compiled code by ensuring that classes work with arrays -->
+<!-- ===== Callbacks to Python from Fortran or C ===== -->
+<!-- 5631 projects: -->
+<!-- Drop f_a, call py from f77 -->
+<!-- Call py with cpdef f from Cython, but hardcode function name -->
+<!-- As above, but transfer function to Cython -->
+<!-- Instant -->
+<!-- test_quadratic for all -->
+<!-- Think of extensions: Neumann with modified stencil or ghost cells, -->
+<!-- variable coefficients, damping, ... --></li>
+</ul>
+
+<h1 id="___sec102">Exercises </h1>
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:exer:quadratic:2D">Exercise 15: Check that a solution fulfills the discrete model</h2>
+
+<p>
+Carry out all mathematical details to show that
+<a href="#mjx-eqn-75">(75)</a> is indeed a solution of the
+discrete model for a 2D wave equation with \( u=0 \) on the boundary.
+One must check the boundary conditions, the initial conditions,
+the general discrete equation at a time level and the special
+version of this equation for the first time level.
+Filename: <code>check_quadratic_solution</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:exer:mesh3D:calculus">Project 16: Calculus with 2D mesh functions</h2>
+
+<p>
+The goal of this project is to redo
+<a href="._wave-solarized002.html#wave:exer:mesh1D:calculus">Project 5: Calculus with 1D mesh functions</a> with 2D
+mesh functions (\( f_{i,j} \)).
+
+<p>
+<b>Differentiation.</b>
+The differentiation results in a discrete gradient
+function, which in the 2D case can be represented by a three-dimensional
+array <code>df[d,i,j]</code> where <code>d</code> represents the direction of
+the derivative, and <code>i,j</code> is a mesh point in 2D.
+Use centered differences for
+the derivative at inner points and one-sided forward or backward
+differences at the boundary points. Construct unit tests and
+write a corresponding test function.
+
+<p>
+<b>Integration.</b>
+The integral of a 2D mesh function \( f_{i,j} \) is defined as
+
+$$ F_{i,j} = \int_{y_0}^{y_j} \int_{x_0}^{x_i} f(x,y)dxdy,$$
+
+where \( f(x,y) \) is a function that takes on the values of the
+discrete mesh function \( f_{i,j} \) at the mesh points, but can also
+be evaluated in between the mesh points. The particular variation
+between mesh points can be taken as bilinear, but this is not
+important as we will use a product Trapezoidal rule to approximate
+the integral over a cell in the mesh and then we only need to
+evaluate \( f(x,y) \) at the mesh points.
+
+<p>
+Suppose \( F_{i,j} \) is computed. The calculation of \( F_{i+1,j} \)
+is then
+
+$$
+\begin{align*}
+F_{i+1,j} &= F_{i,j} + \int_{x_i}^{x_{i+1}}\int_{y_0}^{y_j} f(x,y)dydx\\ 
+& \approx \Delta x \half\left(
+\int_{y_0}^{y_j} f(x_{i},y)dy
++ \int_{y_0}^{y_j} f(x_{i+1},y)dy\right)
+\end{align*}
+$$
+
+The integrals in the \( y \) direction can be approximated by a Trapezoidal
+rule. A similar idea can be used to compute \( F_{i,j+1} \). Thereafter,
+\( F_{i+1,j+1} \) can be computed by adding the integral over the final
+corner cell to \( F_{i+1,j} + F_{i,j+1} - F_{i,j} \). Carry out the
+details of these computations and implement a function that can
+return \( F_{i,j} \) for all mesh indices \( i \) and \( j \). Use the
+fact that the Trapezoidal rule is exact for linear functions and
+write a test function.
+Filename: <code>mesh_calculus_2D</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:app:exer:wave2D:Neumann">Exercise 17: Implement Neumann conditions in 2D</h2>
+
+<p>
+Modify the <a href="http://tinyurl.com/nm5587k/wave/wave2D_u0/wave2D_u0.py" target="_self"><tt>wave2D_u0.py</tt></a>
+program, which solves the 2D wave equation \( u_{tt}=c^2(u_{xx}+u_{yy}) \)
+with constant wave velocity \( c \) and \( u=0 \) on the boundary, to have
+Neumann boundary conditions: \( \partial u/\partial n=0 \).
+Include both scalar code (for debugging and reference) and
+vectorized code (for speed).
+
+<p>
+To test the code, use \( u=1.2 \) as solution (\( I(x,y)=1.2 \), \( V=f=0 \), and
+\( c \) arbitrary), which should be exactly reproduced with any mesh
+as long as the stability criterion is satisfied.
+Another test is to use the plug-shaped pulse
+in the <code>pulse</code> function from the section <a href="._wave-solarized003.html#wave:pde2:software">Building a general 1D wave equation solver</a>
+and the <a href="http://tinyurl.com/nm5587k/wave/wave1D/wave1D_dn_vc.py" target="_self"><tt>wave1D_dn_vc.py</tt></a>
+program. This pulse
+is exactly propagated in 1D if \( c\Delta t/\Delta x=1 \). Check
+that also the 2D program can propagate this pulse exactly
+in \( x \) direction (\( c\Delta t/\Delta x=1 \), \( \Delta y \) arbitrary)
+and \( y \) direction (\( c\Delta t/\Delta y=1 \), \( \Delta x \) arbitrary).
+Filename: <code>wave2D_dn</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="wave:exer:3D:f77:cy:efficiency">Exercise 18: Test the efficiency of compiled loops in 3D</h2>
+
+<p>
+Extend the <code>wave2D_u0.py</code> code and the Cython, Fortran, and C versions to 3D.
+Set up an efficiency experiment to determine the relative efficiency of
+pure scalar Python code, vectorized code, Cython-compiled loops,
+Fortran-compiled loops, and C-compiled loops.
+Normalize the CPU time for each mesh by the fastest version.
+Filename: <code>wave3D_u0</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<p>
+<!-- begin bottom navigation -->
+<table style="width: 100%"><tr><td>
+<div style="text-align: left;"><a href="._wave-solarized005.html">&laquo; Previous</a></div>
+</td><td>
+<div style="text-align: right;"><a href="._wave-solarized007.html">Next &raquo;</a></div>
+</td></tr></table>
+<!-- end bottom navigation -->
+</p>
+
+<!-- ------------------- end of main content --------------- -->
+
+
+</body>
+</html>
+    
+

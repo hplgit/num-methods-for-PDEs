@@ -1,0 +1,2284 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Scientific software engineering; wave equation model">
+<meta name="keywords" content="Cython,declaration of variables in Cython,C extension module,wrapper code,Fortran subroutine,row-major ordering,column-major ordering,Fortran array storage,C/Python array storage">
+
+<title>Scientific software engineering; wave equation model</title>
+
+
+<link href="https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_styles/style_solarized_box/css/solarized_light_code.css" rel="stylesheet" type="text/css" title="light"/>
+<script src="https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_styles/style_solarized_box/js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<link href="http://thomasf.github.io/solarized-css/solarized-light.min.css" rel="stylesheet">
+<style type="text/css">
+h1 {color: #b58900;}  /* yellow */
+/* h1 {color: #cb4b16;}  orange */
+/* h1 {color: #d33682;}  magenta, the original choice of thomasf */
+code { padding: 0px; background-color: inherit; }
+pre {
+  border: 0pt solid #93a1a1;
+  box-shadow: none;
+}
+.alert-text-small   { font-size: 80%;  }
+.alert-text-large   { font-size: 130%; }
+.alert-text-normal  { font-size: 90%;  }
+.alert {
+  padding:8px 35px 8px 14px; margin-bottom:18px;
+  text-shadow:0 1px 0 rgba(255,255,255,0.5);
+  border:1px solid #93a1a1;
+  border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  color: #555;
+  background-color: #eee8d5;
+  background-position: 10px 5px;
+  background-repeat: no-repeat;
+  background-size: 38px;
+  padding-left: 55px;
+  width: 75%;
+ }
+.alert-block {padding-top:14px; padding-bottom:14px}
+.alert-block > p, .alert-block > ul {margin-bottom:1em}
+.alert li {margin-top: 1em}
+.alert-block p+p {margin-top:5px}
+.alert-notice { background-image: url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_notice.png); }
+.alert-summary  { background-image:url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_summary.png); }
+.alert-warning { background-image: url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_warning.png); }
+.alert-question {background-image:url(https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_images/small_yellow_question.png); }
+
+div { text-align: justify; text-justify: inter-word; }
+</style>
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('A 1D wave equation simulator', 1, None, '___sec0'),
+              ('Mathematical model', 2, None, '___sec1'),
+              ('Numerical discretization', 2, None, '___sec2'),
+              ('A solver function', 2, None, '___sec3'),
+              ('Saving large arrays in files',
+               1,
+               'softeng2:wave1D:filestorage',
+               'softeng2:wave1D:filestorage'),
+              ('Using `savez` to store arrays in files',
+               2,
+               'softeng2:wave1D:filestorage:savez',
+               'softeng2:wave1D:filestorage:savez'),
+              ('Storing individual arrays', 3, None, '___sec6'),
+              ('Merging zip archives', 3, None, '___sec7'),
+              ('Reading arrays from zip archives', 3, None, '___sec8'),
+              ('Using `joblib` to store arrays in files',
+               2,
+               'softeng2:wave1D:filestorage:joblib',
+               'softeng2:wave1D:filestorage:joblib'),
+              ('Using a hash to create a file or directory name',
+               2,
+               'softeng2:wave1D:filestorage:hashlib',
+               'softeng2:wave1D:filestorage:hashlib'),
+              ('Software for the 1D wave equation', 1, None, '___sec11'),
+              ('Making hash strings from input data',
+               2,
+               'softeng2:wave1D:filestorage:hashlib',
+               'softeng2:wave1D:filestorage:hashlib'),
+              ('Avoiding rerunning previously run cases',
+               2,
+               'softeng2:wave1D:filestorage:hashlib',
+               'softeng2:wave1D:filestorage:hashlib'),
+              ('Verification', 2, None, '___sec14'),
+              ('Programming the solver with classes', 1, None, '___sec15'),
+              ('Class Problem', 2, None, '___sec16'),
+              ('Class Mesh', 2, None, '___sec17'),
+              ('Class Function', 2, None, '___sec18'),
+              ('Class Solver', 2, None, '___sec19'),
+              ('Migrating loops to Cython',
+               1,
+               'wave2D3D:impl:Cython',
+               'wave2D3D:impl:Cython'),
+              ('Declaring variables and annotating the code',
+               2,
+               None,
+               '___sec21'),
+              ('Visual inspection of the C translation', 2, None, '___sec22'),
+              ('Building the extension module', 2, None, '___sec23'),
+              ('Calling the Cython function from Python',
+               2,
+               None,
+               '___sec24'),
+              ('Efficiency', 3, None, '___sec25'),
+              ('Migrating loops to Fortran', 1, None, '___sec26'),
+              ('The Fortran subroutine', 2, None, '___sec27'),
+              ('Building the Fortran module with f2py', 2, None, '___sec28'),
+              ('How to avoid array copying', 2, None, '___sec29'),
+              ('Efficiency', 3, None, '___sec30'),
+              ('Migrating loops to C via Cython', 1, None, '___sec31'),
+              ('Translating index pairs to single indices',
+               2,
+               None,
+               '___sec32'),
+              ('The complete C code', 2, None, '___sec33'),
+              ('The Cython interface file', 2, None, '___sec34'),
+              ('Building the extension module', 2, None, '___sec35'),
+              ('Efficiency', 3, None, '___sec36'),
+              ('Migrating loops to C via f2py', 1, None, '___sec37'),
+              ('Migrating loops to C++ via f2py', 2, None, '___sec38'),
+              ('Exercises', 1, None, '___sec39'),
+              ('Exercise 1: Make an improved `numpy.savez` function',
+               2,
+               'softeng2:exer:savez',
+               'softeng2:exer:savez'),
+              ('Bibliography', 1, None, '___sec41')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\tp}{\thinspace .}
+$$
+
+
+
+
+    
+<a name="part0001"></a>
+<p>
+<!-- begin top navigation -->
+<table style="width: 100%"><tr><td>
+<div style="text-align: left;"><a href="._softeng2-solarized000.html">&laquo; Previous</a></div>
+</td><td>
+<div style="text-align: right;"><a href="._softeng2-solarized002.html">Next &raquo;</a></div>
+</td></tr></table>
+<!-- end top navigation -->
+</p>
+
+<p>
+<!-- !split -->
+
+<ul>
+ <li> Define some wave project, e.g., earthquake induced waves where
+   a quite flat bottom has a discontinuity point/line and some part
+   to the right lifts up suddenly and falls back?</li>
+ <li> Start with <code>wave1D_dn_vc.py</code> and <code>wave2D_u0.py</code></li>
+ <li> Storing solutions with joblib, XDMF
+   <a href="http://www.xdmf.org/index.php/Write_Xdmf" target="_self"><tt>http://www.xdmf.org/index.php/Write_Xdmf</tt></a>
+   <a href="http://www.xdmf.org/index.php/Xdmf3_Python_API" target="_self"><tt>http://www.xdmf.org/index.php/Xdmf3_Python_API</tt></a>
+   OBS: both a post on the fenics list and here,
+   <a href="http://fenicsproject.org/qa/6513/time-series-of-many-function-instances-in-a-single-file" target="_self"><tt>http://fenicsproject.org/qa/6513/time-series-of-many-function-instances-in-a-single-file</tt></a>, suggests that paraview cannot view xdmf files will more
+   than one field/function - should store in separate files...
+   See the dolfin function that writes xdmf files before trying too much...
+   FiPy applies <a href="https://matforge.org/fipy/browser/fipy/fipy/io/xdmf/time.py?rev=517630187125d4aee390fd251ba42324b9aacce0" target="_self">xdmf</a>
+   joblib vs <a href="http://stackoverflow.com/questions/28311141/decorators-for-selective-caching-memoization" target="_self">klepto</a></li>
+ <li> Problem and Solver classes</li>
+ <li> Profiling</li>
+ <li> Fortran, Cython, C, C++</li>
+ <li> Viz here? Movie making?</li>
+ <li> DrawFunction for drawing bottom and surface, build app for this :-)</li>
+ <li> Parampool with full pool ("menu")</li>
+</ul>
+
+<h1 id="___sec0">A 1D wave equation simulator </h1>
+
+<h2 id="___sec1">Mathematical model </h2>
+
+<p>
+Let \( u_t \), \( u_{tt} \), \( u_x \), \( u_{xx} \) denote derivatives of \( u \) with
+respect to the subscript, i.e., \( u_{tt} \) is a second-order time
+derivative and \( u_x \) is a first-order space derivative.  The
+initial-boundary value problem implemented in the <code>wave1D_dn_vc.py</code>
+code is
+
+$$
+\begin{align}
+u_{tt} &= (q(x)u_x)_x + f(x,t),\quad &x\in (0,L),\ t\in (0,T]
+\tag{1}\\ 
+u(x,0) &= I(x),\quad &x\in [0,L]\\ 
+u_t(x,0) &= V(t),\quad &x\in [0,L]\\ 
+u(0,t) &= U_0(t)\hbox{ or } u_x(0,t)=0,\quad &t\in (0,T]\\ 
+u(L,t) &= U_L(t)\hbox{ or } u_x(L,t)=0,\quad &t\in (0,T]
+\tag{2}
+\end{align}
+$$
+
+We allow variable wave velocity \( c^2(x)=q(x) \), and Dirichlet or homogeneous
+Neumann conditions at the boundaries.
+
+<h2 id="___sec2">Numerical discretization </h2>
+
+<p>
+The PDE is discretized by second-order finite differences in
+time and space, with arithmetic mean for the variable coefficient
+
+$$
+\begin{equation}
+[D_tD_t u = \varrho^{-1}D_x\overline{q}^xD_x u + f]^n_i
+\tp
+\end{equation}
+$$
+
+The Neumann boundary conditions are discretized by
+
+$$ [D_{2x}u]^n_i=0,$$
+
+at a boundary point \( i \). The details of how the numerical scheme
+is worked out are described in in
+the document <a href="http://tinyurl.com/k3sdbuv/pub/wave" target="_self">Finite difference methods for wave motion</a>
+<a href="._softeng2-solarized002.html#Langtangen_deqbook_wave">[1]</a>.
+
+<h2 id="___sec3">A solver function </h2>
+
+<p>
+The general initial-boundary value problem
+<a href="#mjx-eqn-1">(1)</a>-<a href="#mjx-eqn-2">(2)</a>
+solved by finite difference methods can be implemented in
+the following <code>solver</code> function (taken from the
+file <a href="http://tinyurl.com/nm5587k/wave/wave1D/wave_dn_vc.py" target="_self"><tt>wave1D_dn_vc.py</tt></a>).
+This function builds on
+simpler versions described in
+in
+the document <a href="http://tinyurl.com/k3sdbuv/pub/wave" target="_self">Finite difference methods for wave motion</a>
+<a href="._softeng2-solarized002.html#Langtangen_deqbook_wave">[1]</a>.
+There are several quite advanced
+constructs that will be commented upon later.
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">solver</span>(I, V, f, c, U_0, U_L, L, dt, C, T,
+           user_action=<span style="color: #658b00">None</span>, version=<span style="color: #CD5555">&#39;scalar&#39;</span>,
+           stability_safety_factor=<span style="color: #B452CD">1.0</span>):
+    <span style="color: #CD5555">&quot;&quot;&quot;Solve u_tt=(c^2*u_x)_x + f on (0,L)x(0,T].&quot;&quot;&quot;</span>
+    Nt = <span style="color: #658b00">int</span>(<span style="color: #658b00">round</span>(T/dt))
+    t = linspace(<span style="color: #B452CD">0</span>, Nt*dt, Nt+<span style="color: #B452CD">1</span>)      <span style="color: #228B22"># Mesh points in time</span>
+
+    <span style="color: #228B22"># Find max(c) using a fake mesh and adapt dx to C and dt</span>
+    <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">isinstance</span>(c, (<span style="color: #658b00">float</span>,<span style="color: #658b00">int</span>)):
+        c_max = c
+    <span style="color: #8B008B; font-weight: bold">elif</span> <span style="color: #658b00">callable</span>(c):
+        c_max = <span style="color: #658b00">max</span>([c(x_) <span style="color: #8B008B; font-weight: bold">for</span> x_ <span style="color: #8B008B">in</span> linspace(<span style="color: #B452CD">0</span>, L, <span style="color: #B452CD">101</span>)])
+    dx = dt*c_max/(stability_safety_factor*C)
+    Nx = <span style="color: #658b00">int</span>(<span style="color: #658b00">round</span>(L/dx))
+    x = linspace(<span style="color: #B452CD">0</span>, L, Nx+<span style="color: #B452CD">1</span>)          <span style="color: #228B22"># Mesh points in space</span>
+
+    <span style="color: #228B22"># Treat c(x) as array</span>
+    <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">isinstance</span>(c, (<span style="color: #658b00">float</span>,<span style="color: #658b00">int</span>)):
+        c = zeros(x.shape) + c
+    <span style="color: #8B008B; font-weight: bold">elif</span> <span style="color: #658b00">callable</span>(c):
+        <span style="color: #228B22"># Call c(x) and fill array c</span>
+        c_ = zeros(x.shape)
+        <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(Nx+<span style="color: #B452CD">1</span>):
+            c_[i] = c(x[i])
+        c = c_
+
+    q = c**<span style="color: #B452CD">2</span>
+    C2 = (dt/dx)**<span style="color: #B452CD">2</span>; dt2 = dt*dt      <span style="color: #228B22"># Help variables in the scheme</span>
+
+    <span style="color: #228B22"># Wrap user-given f, I, V, U_0, U_L if None or 0</span>
+    <span style="color: #8B008B; font-weight: bold">if</span> f <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">or</span> f == <span style="color: #B452CD">0</span>:
+        f = (<span style="color: #8B008B; font-weight: bold">lambda</span> x, t: <span style="color: #B452CD">0</span>) <span style="color: #8B008B; font-weight: bold">if</span> version == <span style="color: #CD5555">&#39;scalar&#39;</span> <span style="color: #8B008B; font-weight: bold">else</span> \ 
+            <span style="color: #8B008B; font-weight: bold">lambda</span> x, t: zeros(x.shape)
+    <span style="color: #8B008B; font-weight: bold">if</span> I <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">or</span> I == <span style="color: #B452CD">0</span>:
+        I = (<span style="color: #8B008B; font-weight: bold">lambda</span> x: <span style="color: #B452CD">0</span>) <span style="color: #8B008B; font-weight: bold">if</span> version == <span style="color: #CD5555">&#39;scalar&#39;</span> <span style="color: #8B008B; font-weight: bold">else</span> \ 
+            <span style="color: #8B008B; font-weight: bold">lambda</span> x: zeros(x.shape)
+    <span style="color: #8B008B; font-weight: bold">if</span> V <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">or</span> V == <span style="color: #B452CD">0</span>:
+        V = (<span style="color: #8B008B; font-weight: bold">lambda</span> x: <span style="color: #B452CD">0</span>) <span style="color: #8B008B; font-weight: bold">if</span> version == <span style="color: #CD5555">&#39;scalar&#39;</span> <span style="color: #8B008B; font-weight: bold">else</span> \ 
+            <span style="color: #8B008B; font-weight: bold">lambda</span> x: zeros(x.shape)
+    <span style="color: #8B008B; font-weight: bold">if</span> U_0 <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+        <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">isinstance</span>(U_0, (<span style="color: #658b00">float</span>,<span style="color: #658b00">int</span>)) <span style="color: #8B008B">and</span> U_0 == <span style="color: #B452CD">0</span>:
+            U_0 = <span style="color: #8B008B; font-weight: bold">lambda</span> t: <span style="color: #B452CD">0</span>
+    <span style="color: #8B008B; font-weight: bold">if</span> U_L <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+        <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">isinstance</span>(U_L, (<span style="color: #658b00">float</span>,<span style="color: #658b00">int</span>)) <span style="color: #8B008B">and</span> U_L == <span style="color: #B452CD">0</span>:
+            U_L = <span style="color: #8B008B; font-weight: bold">lambda</span> t: <span style="color: #B452CD">0</span>
+
+    <span style="color: #228B22"># Make hash of all input data</span>
+    <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">hashlib</span>, <span style="color: #008b45; text-decoration: underline">inspect</span>
+    data = inspect.getsource(I) + <span style="color: #CD5555">&#39;_&#39;</span> + inspect.getsource(V) + \ 
+           <span style="color: #CD5555">&#39;_&#39;</span> + inspect.getsource(f) + <span style="color: #CD5555">&#39;_&#39;</span> + <span style="color: #658b00">str</span>(c) + <span style="color: #CD5555">&#39;_&#39;</span> + \ 
+           (<span style="color: #CD5555">&#39;None&#39;</span> <span style="color: #8B008B; font-weight: bold">if</span> U_0 <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B; font-weight: bold">else</span> inspect.getsource(U_0)) + \ 
+           (<span style="color: #CD5555">&#39;None&#39;</span> <span style="color: #8B008B; font-weight: bold">if</span> U_L <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B; font-weight: bold">else</span> inspect.getsource(U_L)) + \ 
+           <span style="color: #CD5555">&#39;_&#39;</span> + <span style="color: #658b00">str</span>(L) + <span style="color: #658b00">str</span>(dt) + <span style="color: #CD5555">&#39;_&#39;</span> + <span style="color: #658b00">str</span>(C) + <span style="color: #CD5555">&#39;_&#39;</span> + <span style="color: #658b00">str</span>(T) + \ 
+           <span style="color: #CD5555">&#39;_&#39;</span> + <span style="color: #658b00">str</span>(stability_safety_factor)
+    hashed_input = hashlib.sha1(data).hexdigest()
+    <span style="color: #8B008B; font-weight: bold">if</span> os.path.isfile(<span style="color: #CD5555">&#39;.&#39;</span> + hashed_input + <span style="color: #CD5555">&#39;_archive.npz&#39;</span>):
+        <span style="color: #228B22"># Simulation is already run</span>
+        <span style="color: #8B008B; font-weight: bold">return</span> -<span style="color: #B452CD">1</span>, hashed_input
+
+    u   = zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution array at new time level</span>
+    u_1 = zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution at 1 time level back</span>
+    u_2 = zeros(Nx+<span style="color: #B452CD">1</span>)   <span style="color: #228B22"># Solution at 2 time levels back</span>
+
+    <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">time</span>;  t0 = time.clock()  <span style="color: #228B22"># CPU time measurement</span>
+
+    Ix = <span style="color: #658b00">range</span>(<span style="color: #B452CD">0</span>, Nx+<span style="color: #B452CD">1</span>)
+    It = <span style="color: #658b00">range</span>(<span style="color: #B452CD">0</span>, Nt+<span style="color: #B452CD">1</span>)
+
+    <span style="color: #228B22"># Load initial condition into u_1</span>
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #B452CD">0</span>,Nx+<span style="color: #B452CD">1</span>):
+        u_1[i] = I(x[i])
+
+    <span style="color: #8B008B; font-weight: bold">if</span> user_action <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+        user_action(u_1, x, t, <span style="color: #B452CD">0</span>)
+
+    <span style="color: #228B22"># Special formula for the first step</span>
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]:
+        u[i] = u_1[i] + dt*V(x[i]) + \ 
+        <span style="color: #B452CD">0.5</span>*C2*(<span style="color: #B452CD">0.5</span>*(q[i] + q[i+<span style="color: #B452CD">1</span>])*(u_1[i+<span style="color: #B452CD">1</span>] - u_1[i]) - \ 
+                <span style="color: #B452CD">0.5</span>*(q[i] + q[i-<span style="color: #B452CD">1</span>])*(u_1[i] - u_1[i-<span style="color: #B452CD">1</span>])) + \ 
+        <span style="color: #B452CD">0.5</span>*dt2*f(x[i], t[<span style="color: #B452CD">0</span>])
+
+    i = Ix[<span style="color: #B452CD">0</span>]
+    <span style="color: #8B008B; font-weight: bold">if</span> U_0 <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span>:
+        <span style="color: #228B22"># Set boundary values (x=0: i-1 -&gt; i+1 since u[i-1]=u[i+1]</span>
+        <span style="color: #228B22"># when du/dn = 0, on x=L: i+1 -&gt; i-1 since u[i+1]=u[i-1])</span>
+        ip1 = i+<span style="color: #B452CD">1</span>
+        im1 = ip1  <span style="color: #228B22"># i-1 -&gt; i+1</span>
+        u[i] = u_1[i] + dt*V(x[i]) + \ 
+               <span style="color: #B452CD">0.5</span>*C2*(<span style="color: #B452CD">0.5</span>*(q[i] + q[ip1])*(u_1[ip1] - u_1[i])  - \ 
+                       <span style="color: #B452CD">0.5</span>*(q[i] + q[im1])*(u_1[i] - u_1[im1])) + \ 
+        <span style="color: #B452CD">0.5</span>*dt2*f(x[i], t[<span style="color: #B452CD">0</span>])
+    <span style="color: #8B008B; font-weight: bold">else</span>:
+        u[i] = U_0(dt)
+
+    i = Ix[-<span style="color: #B452CD">1</span>]
+    <span style="color: #8B008B; font-weight: bold">if</span> U_L <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span>:
+        im1 = i-<span style="color: #B452CD">1</span>
+        ip1 = im1  <span style="color: #228B22"># i+1 -&gt; i-1</span>
+        u[i] = u_1[i] + dt*V(x[i]) + \ 
+               <span style="color: #B452CD">0.5</span>*C2*(<span style="color: #B452CD">0.5</span>*(q[i] + q[ip1])*(u_1[ip1] - u_1[i])  - \ 
+                       <span style="color: #B452CD">0.5</span>*(q[i] + q[im1])*(u_1[i] - u_1[im1])) + \ 
+        <span style="color: #B452CD">0.5</span>*dt2*f(x[i], t[<span style="color: #B452CD">0</span>])
+    <span style="color: #8B008B; font-weight: bold">else</span>:
+        u[i] = U_L(dt)
+
+    <span style="color: #8B008B; font-weight: bold">if</span> user_action <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+        user_action(u, x, t, <span style="color: #B452CD">1</span>)
+
+    <span style="color: #228B22"># Update data structures for next step</span>
+    <span style="color: #228B22">#u_2[:] = u_1;  u_1[:] = u  # safe, but slower</span>
+    u_2, u_1, u = u_1, u, u_2
+
+    <span style="color: #8B008B; font-weight: bold">for</span> n <span style="color: #8B008B">in</span> It[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]:
+        <span style="color: #228B22"># Update all inner points</span>
+        <span style="color: #8B008B; font-weight: bold">if</span> version == <span style="color: #CD5555">&#39;scalar&#39;</span>:
+            <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]:
+                u[i] = - u_2[i] + <span style="color: #B452CD">2</span>*u_1[i] + \ 
+                    C2*(<span style="color: #B452CD">0.5</span>*(q[i] + q[i+<span style="color: #B452CD">1</span>])*(u_1[i+<span style="color: #B452CD">1</span>] - u_1[i])  - \ 
+                        <span style="color: #B452CD">0.5</span>*(q[i] + q[i-<span style="color: #B452CD">1</span>])*(u_1[i] - u_1[i-<span style="color: #B452CD">1</span>])) + \ 
+                dt2*f(x[i], t[n])
+
+        <span style="color: #8B008B; font-weight: bold">elif</span> version == <span style="color: #CD5555">&#39;vectorized&#39;</span>:
+            u[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] = - u_2[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] + <span style="color: #B452CD">2</span>*u_1[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] + \ 
+            C2*(<span style="color: #B452CD">0.5</span>*(q[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] + q[<span style="color: #B452CD">2</span>:])*(u_1[<span style="color: #B452CD">2</span>:] - u_1[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]) -
+                <span style="color: #B452CD">0.5</span>*(q[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] + q[:-<span style="color: #B452CD">2</span>])*(u_1[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>] - u_1[:-<span style="color: #B452CD">2</span>])) + \ 
+            dt2*f(x[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>], t[n])
+        <span style="color: #8B008B; font-weight: bold">else</span>:
+            <span style="color: #8B008B; font-weight: bold">raise</span> <span style="color: #008b45; font-weight: bold">ValueError</span>(<span style="color: #CD5555">&#39;version=%s&#39;</span> % version)
+
+        <span style="color: #228B22"># Insert boundary conditions</span>
+        i = Ix[<span style="color: #B452CD">0</span>]
+        <span style="color: #8B008B; font-weight: bold">if</span> U_0 <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span>:
+            <span style="color: #228B22"># Set boundary values</span>
+            <span style="color: #228B22"># x=0: i-1 -&gt; i+1 since u[i-1]=u[i+1] when du/dn=0</span>
+            <span style="color: #228B22"># x=L: i+1 -&gt; i-1 since u[i+1]=u[i-1] when du/dn=0</span>
+            ip1 = i+<span style="color: #B452CD">1</span>
+            im1 = ip1
+            u[i] = - u_2[i] + <span style="color: #B452CD">2</span>*u_1[i] + \ 
+                   C2*(<span style="color: #B452CD">0.5</span>*(q[i] + q[ip1])*(u_1[ip1] - u_1[i])  - \ 
+                       <span style="color: #B452CD">0.5</span>*(q[i] + q[im1])*(u_1[i] - u_1[im1])) + \ 
+            dt2*f(x[i], t[n])
+        <span style="color: #8B008B; font-weight: bold">else</span>:
+            u[i] = U_0(t[n+<span style="color: #B452CD">1</span>])
+
+        i = Ix[-<span style="color: #B452CD">1</span>]
+        <span style="color: #8B008B; font-weight: bold">if</span> U_L <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span>:
+            im1 = i-<span style="color: #B452CD">1</span>
+            ip1 = im1
+            u[i] = - u_2[i] + <span style="color: #B452CD">2</span>*u_1[i] + \ 
+                   C2*(<span style="color: #B452CD">0.5</span>*(q[i] + q[ip1])*(u_1[ip1] - u_1[i])  - \ 
+                       <span style="color: #B452CD">0.5</span>*(q[i] + q[im1])*(u_1[i] - u_1[im1])) + \ 
+            dt2*f(x[i], t[n])
+        <span style="color: #8B008B; font-weight: bold">else</span>:
+            u[i] = U_L(t[n+<span style="color: #B452CD">1</span>])
+
+        <span style="color: #8B008B; font-weight: bold">if</span> user_action <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+            <span style="color: #8B008B; font-weight: bold">if</span> user_action(u, x, t, n+<span style="color: #B452CD">1</span>):
+                <span style="color: #8B008B; font-weight: bold">break</span>
+
+        <span style="color: #228B22"># Update data structures for next step</span>
+        <span style="color: #228B22">#u_2[:] = u_1;  u_1[:] = u  # safe, but slower</span>
+        u_2, u_1, u = u_1, u, u_2
+
+    <span style="color: #228B22"># Important to correct the mathematically wrong u=u_2 above</span>
+    <span style="color: #228B22"># before returning u</span>
+    u = u_1
+    cpu_time = t0 - time.clock()
+    <span style="color: #8B008B; font-weight: bold">return</span> cpu_time, hashed_input
+</pre></div>
+<p>
+Or maybe copy section by section...?
+
+<h1 id="softeng2:wave1D:filestorage">Saving large arrays in files</h1>
+
+<p>
+Numerical simulations produce large arrays as results and the software
+needs to store these arrays on disk. Several methods are available
+in Python. We recommend to use tailored solutions for large arrays and
+not standard file storage tools such as <code>pickle</code> (<code>cPickle</code> for speed
+in Python version 2) and <code>shelve</code>.
+
+<h2 id="softeng2:wave1D:filestorage:savez">Using <code>savez</code> to store arrays in files</h2>
+
+<h3 id="___sec6">Storing individual arrays </h3>
+
+<p>
+The <code>numpy.storez</code> function can store a set of arrays to a named
+file in a zip archive. An associated function
+<code>numpy.load</code> can be used to read the file later.
+Basically, we call <code>numpy.storez(filename, **kwargs)</code>, where
+<code>kwargs</code> is a dictionary containing array names as keys and
+the corresponding array objects as values. Very often, the
+solution at a time point is given a natural name where the
+name of the variable and the time level counter are combined, e.g.,
+<code>u11</code> or <code>v39</code>. Suppose <code>n</code> is the time level counter and we have
+two solution arrays, <code>u</code> and <code>v</code>, that we want to save to a zip
+archive. The appropriate code is
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">np</span>
+u_name = <span style="color: #CD5555">&#39;u%04d&#39;</span> % n   <span style="color: #228B22"># array name</span>
+v_name = <span style="color: #CD5555">&#39;v%04d&#39;</span> % n   <span style="color: #228B22"># array name</span>
+kwargs = {u_name: u, v_name: v}   <span style="color: #228B22"># keyword args for savez</span>
+fname = <span style="color: #CD5555">&#39;.mydata%04d.dat&#39;</span> % n
+np.savez(fname, **kwargs)
+<span style="color: #8B008B; font-weight: bold">if</span> n == <span style="color: #B452CD">0</span>:           <span style="color: #228B22"># store x once</span>
+    np.savez(<span style="color: #CD5555">&#39;.mydata_x.dat&#39;</span>, x=x)
+</pre></div>
+<p>
+Since the name of the array must be given as a keyword argument
+to <code>savez</code>, and the name must be constructed as shown, it becomes
+a little tricky to do the call, but with a dictionary <code>kwargs</code> and
+<code>**kwargs</code>, which sends each key-value pair as individual keyword
+arguments, the task gets accomplished.
+
+<h3 id="___sec7">Merging zip archives </h3>
+
+<p>
+Each separate call to <code>np.savez</code> creates a new file (zip archive) with
+extension <code>.npz</code>. It is very convenient if collect all results in
+one archive instead. This can be done by merging all the individual
+<code>.npz</code> files into a single zip archive:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">merge_zip_archives</span>(individual_archives, archive_name):
+    <span style="color: #CD5555">&quot;&quot;&quot;</span>
+<span style="color: #CD5555">    Merge individual zip archives made with numpy.savez into</span>
+<span style="color: #CD5555">    one archive with name archive_name.</span>
+<span style="color: #CD5555">    The individual archives can be given as a list of names</span>
+<span style="color: #CD5555">    or as a Unix wild chard filename expression for glob.glob.</span>
+<span style="color: #CD5555">    The result of this function is that all the individual</span>
+<span style="color: #CD5555">    archives are deleted and the new single archive made.</span>
+<span style="color: #CD5555">    &quot;&quot;&quot;</span>
+    <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">zipfile</span>
+    archive = zipfile.ZipFile(
+        archive_name, <span style="color: #CD5555">&#39;w&#39;</span>, zipfile.ZIP_DEFLATED,
+        allowZip64=<span style="color: #658b00">True</span>)
+    <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">isinstance</span>(individual_archives, (<span style="color: #658b00">list</span>,<span style="color: #658b00">tuple</span>)):
+        filenames = individual_archives
+    <span style="color: #8B008B; font-weight: bold">elif</span> <span style="color: #658b00">isinstance</span>(individual_archives, <span style="color: #658b00">str</span>):
+        filenames = glob.glob(individual_archives)
+
+    <span style="color: #228B22"># Open each archive and write to the common archive</span>
+    <span style="color: #8B008B; font-weight: bold">for</span> filename <span style="color: #8B008B">in</span> filenames:
+        f = zipfile.ZipFile(filename,  <span style="color: #CD5555">&#39;r&#39;</span>,
+                            zipfile.ZIP_DEFLATED)
+        <span style="color: #8B008B; font-weight: bold">for</span> name <span style="color: #8B008B">in</span> f.namelist():
+            data = f.open(name, <span style="color: #CD5555">&#39;r&#39;</span>)
+            <span style="color: #228B22"># Save under name without .npy</span>
+            archive.writestr(name[:-<span style="color: #B452CD">4</span>], data.read())
+        f.close()
+        os.remove(filename)
+    archive.close()
+</pre></div>
+<p>
+Here we remark that <code>savez</code> automatically
+adds the <code>.npz</code> extension to the names of
+the arrays we store. We do not want this extension in the final
+archive.
+
+<h3 id="___sec8">Reading arrays from zip archives </h3>
+
+<p>
+Archives created by <code>savez</code> or the merged archive we describe
+above with name of the form <code>myarchive.npz</code>
+can be conveniently read by the <code>numpy.load</code> function:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">np</span>
+array_names = np.load(<span style="color: #CD5555">`myarchive.npz`</span>)
+<span style="color: #8B008B; font-weight: bold">for</span> array_name <span style="color: #8B008B">in</span> array_names:
+    <span style="color: #228B22"># array_names[array_name] is the array itself</span>
+    <span style="color: #228B22"># e.g. plot(array_names[&#39;t&#39;], array_names[array_name])</span>
+</pre></div>
+
+<h2 id="softeng2:wave1D:filestorage:joblib">Using <code>joblib</code> to store arrays in files</h2>
+
+<p>
+The Python package <code>joblib</code> has nice functionality for efficient storage
+of arrays on disk. The following class applies this functionality so that
+one can save an array, or in fact any Python data structure (e.g., a
+dictionary of arrays), to disk under a certain name. Later, we can
+retrieve the object from its name. The name of the directory under which
+the arrays are stored by <code>joblib</code> can be given by the user.
+
+<p>
+
+<!-- code=python (!bc pypro) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">class</span> <span style="color: #008b45; font-weight: bold">Storage</span>(<span style="color: #658b00">object</span>):
+    <span style="color: #CD5555">&quot;&quot;&quot;</span>
+<span style="color: #CD5555">    Store large data structures (e.g. numpy arrays) efficiently</span>
+<span style="color: #CD5555">    using joblib.</span>
+
+<span style="color: #CD5555">    Use:</span>
+
+<span style="color: #CD5555">    &gt;&gt;&gt; from Storage import Storage</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; storage = Storage(cachedir=&#39;tmp_u01&#39;, verbose=1)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; import numpy as np</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; a = np.linspace(0, 1, 100000) # large array</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; b = np.linspace(0, 1, 100000) # large array</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; storage.save(&#39;a&#39;, a)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; storage.save(&#39;b&#39;, b)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; # later</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; a = storage.retrieve(&#39;a&#39;)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; b = storage.retrieve(&#39;b&#39;)</span>
+<span style="color: #CD5555">    &quot;&quot;&quot;</span>
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">__init__</span>(<span style="color: #658b00">self</span>, cachedir=<span style="color: #CD5555">&#39;tmp&#39;</span>, verbose=<span style="color: #B452CD">1</span>):
+        <span style="color: #CD5555">&quot;&quot;&quot;</span>
+<span style="color: #CD5555">        Parameters</span>
+<span style="color: #CD5555">        ----------</span>
+<span style="color: #CD5555">        cachedir: str</span>
+<span style="color: #CD5555">             Name of directory where objects are stored in files.</span>
+<span style="color: #CD5555">        verbose: bool, int</span>
+<span style="color: #CD5555">             Let joblib and this class speak when storing files</span>
+<span style="color: #CD5555">             to disk.</span>
+<span style="color: #CD5555">        &quot;&quot;&quot;</span>
+        <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">joblib</span>
+        <span style="color: #658b00">self</span>.memory = joblib.Memory(cachedir=cachedir,
+                                    verbose=verbose)
+        <span style="color: #658b00">self</span>.verbose = verbose
+        <span style="color: #658b00">self</span>.retrieve = <span style="color: #658b00">self</span>.memory.cache(
+            <span style="color: #658b00">self</span>.retrieve, ignore=[<span style="color: #CD5555">&#39;data&#39;</span>])
+        <span style="color: #658b00">self</span>.save = <span style="color: #658b00">self</span>.retrieve
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">retrieve</span>(<span style="color: #658b00">self</span>, name, data=<span style="color: #658b00">None</span>):
+        <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">self</span>.verbose &gt; <span style="color: #B452CD">0</span>:
+            <span style="color: #8B008B; font-weight: bold">print</span> <span style="color: #CD5555">&#39;joblib save of&#39;</span>, name
+        <span style="color: #8B008B; font-weight: bold">return</span> data
+</pre></div>
+<p>
+The <code>retrive</code> and <code>save</code> functions, which do the work, seem quite
+magic. The idea is that <code>joblib</code> looks at the <code>name</code> parameter
+and saves the return value <code>data</code> to disk if the <code>name</code> parameter
+has not been used in a previous call. Otherwise, if <code>name</code> is
+already registered, <code>joblib</code> fetches the <code>data</code> object from
+file and returns it (this is example of a memoize function,
+see the document <a href="http://tinyurl.com/k3sdbuv/pub/scale" target="_self">Scaling of differential equations</a> <a href="._softeng2-solarized002.html#Langtangen_deqbook_scale">[2]</a> for a brief explanation).
+
+<h2 id="___sec10">Using a hash to create a file or directory name </h2>
+<div id="softeng2:wave1D:filestorage:hashlib"></div>
+
+<p>
+The user of array storage techniques like those outlined in
+the sections <a href="#softeng2:wave1D:filestorage:joblib">Using <code>joblib</code> to store arrays in files</a> and
+<a href="#softeng2:wave1D:filestorage:savez">Using <code>savez</code> to store arrays in files</a> demand the user to assign
+a name for the file(s) or directory where the solution is to be
+stored. Ideally, this name should reflect parameters in the problem
+such that one can recognize an already run simulation. One
+technique is to make a hash string out of the input data.
+A hash string is a 40-character long hexadecimal string that uniquely
+reflects another potentially much longer string. (You may be used
+to hash strings from the Git version control system: every committed
+version of the files in Git is recognized by a hash string.)
+
+<p>
+Suppose you have some input data in the form of functions,
+<code>numpy</code> arrays, and other objects. To turn these input data
+into a string we may grab the source code of the functions,
+use a very efficient hash method for potentially large arrays,
+and simply convert all other objects via <code>str</code> to a string
+representation. The final string, merging all input data,
+is then converted to an SHA1 hash string such that we represent
+the input with a 40-character long string.
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">myfunction</span>(func1, func2, array1, array2, obj1, obj2):
+    <span style="color: #228B22"># Convert arguments to hash</span>
+    <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">inspect</span>, <span style="color: #008b45; text-decoration: underline">joblib</span>, <span style="color: #008b45; text-decoration: underline">hashlib</span>
+    data = (inspect.getsource(func1),
+            inspect.getsource(func2),
+	    joblib.hash(array1),
+	    joblib.hash(array2),
+	    <span style="color: #658b00">str</span>(obj1),
+	    <span style="color: #658b00">str</span>(obj2))
+    hash_input = hashlib.sha1(data).hexdigest()
+</pre></div>
+<p>
+It is wise to use <code>joblib.hash</code> and not try to do a
+<code>str(array1)</code>, since that string can be <em>very</em> long, and
+<code>joblib.hash</code> is more efficient than <code>hashlib</code> to turn
+these data into a hash.
+
+<p>
+<div class="alert alert-block alert-warning alert-text-normal">
+<b>Remark: turning function objects into their source code is unreliable!</b>
+<p>
+The idea of turning a function object into a string via its source code
+may look smart, but is not a completely reliable solution.
+Suppose we have some function
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eee8d5"><pre style="line-height: 125%">x0 = <span style="color: #B452CD">0.1</span>
+f = <span style="color: #8B008B; font-weight: bold">lambda</span> x: <span style="color: #B452CD">0</span> of x &lt;= x0 <span style="color: #8B008B; font-weight: bold">else</span> <span style="color: #B452CD">1</span>
+</pre></div>
+<p>
+The source code will be <code>f = lambda x: 0 of x &lt;= x0 else 1</code>, so if the
+calling code changes the value of <code>x0</code> (which <code>f</code> remembers - it is
+a closure), the source remains unchanged, the hash is the same,
+and the change in input data is unnoticed. Consequently, the technique
+above must be used with care. The user can always just remove the
+stored files in disk and thereby force a recomputation (provided the software
+applies to hash to test if a zip archive or <code>joblib</code> subdirectory
+exists and if so avoids recomputation).
+</div>
+
+
+<h1 id="___sec11">Software for the 1D wave equation </h1>
+
+<p>
+<!-- ----------- -->
+We use <code>numpy.storez</code> to store the solution at each time level on disk.
+Such actions must be
+taken care of outside the <code>solver</code> function, more precisely in the
+<code>user_action</code> function that is called at every time level.
+
+<p>
+We have in the <a href="http://tinyurl.com/nm5587k/wave/wave1D/wave_dn_vc.py" target="_self"><tt>wave1D_dn_vc.py</tt></a>
+code implemented the <code>user_action</code>
+callback function as a class <code>PlotAndStoreSolution</code> with a
+<code>__call__(self, x, t, t, n)</code> method for the <code>user_action</code> function.
+Basically, <code>__call__</code> stores and plots the solution.
+The storage makes use of the <code>numpy.savez</code> function for saving
+a set of arrays to a zip archive.
+Here, in this callback function, we want to save one array, <code>u</code>.
+Since there will be many such arrays, we introduce the array names
+<code>'u%04d' % n</code> and closely related filenames.
+The usage of <code>numpy.savez</code> in <code>__call__</code> goes like this:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">import</span> savez
+name = <span style="color: #CD5555">&#39;u%04d&#39;</span> % n   <span style="color: #228B22"># array name</span>
+kwargs = {name: u}   <span style="color: #228B22"># keyword args for savez</span>
+fname = <span style="color: #CD5555">&#39;.&#39;</span> + <span style="color: #658b00">self</span>.filename + <span style="color: #CD5555">&#39;_&#39;</span> + name + <span style="color: #CD5555">&#39;.dat&#39;</span>
+<span style="color: #658b00">self</span>.t.append(t[n])  <span style="color: #228B22"># store corresponding time value</span>
+savez(fname, **kwargs)
+<span style="color: #8B008B; font-weight: bold">if</span> n == <span style="color: #B452CD">0</span>:           <span style="color: #228B22"># store x once</span>
+    savez(<span style="color: #CD5555">&#39;.&#39;</span> + <span style="color: #658b00">self</span>.filename + <span style="color: #CD5555">&#39;_x.dat&#39;</span>, x=x)
+</pre></div>
+<p>
+For example, if <code>n</code> is 10 and <code>self.filename</code> is <code>tmp</code>,
+the above call to <code>savez</code> becomes
+<code>savez('.tmp_u0010.dat', u0010=u)</code>.
+The actual filename becomes <code>.tmp_u0010.dat.npz</code>. The actual array
+name becomes <code>u0010.npy</code>.
+
+<p>
+Each <code>savez</code> call results in a file, so after the simulation we have
+one file per time level. Each file produced by <code>savez</code> is a zip archive.
+It makes sense to merge all the files into one. This is done in
+the <code>close_file</code> method in the <code>PlotAndStoreSolution</code> class. The code goes as
+follows.
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">class</span> <span style="color: #008b45; font-weight: bold">PlotAndStoreSolution</span>:
+    ...
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">close_file</span>(<span style="color: #658b00">self</span>, hashed_input):
+        <span style="color: #CD5555">&quot;&quot;&quot;</span>
+<span style="color: #CD5555">        Merge all files from savez calls into one archive.</span>
+<span style="color: #CD5555">        hashed_input is a string reflecting input data</span>
+<span style="color: #CD5555">        for this simulation (made by solver).</span>
+<span style="color: #CD5555">        &quot;&quot;&quot;</span>
+        <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">self</span>.filename <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+            <span style="color: #228B22"># Save all the time points where solutions are saved</span>
+            savez(<span style="color: #CD5555">&#39;.&#39;</span> + <span style="color: #658b00">self</span>.filename + <span style="color: #CD5555">&#39;_t.dat&#39;</span>,
+                  t=array(<span style="color: #658b00">self</span>.t, dtype=<span style="color: #658b00">float</span>))
+            <span style="color: #228B22"># Merge all savez files to one zip archive</span>
+            archive_name = <span style="color: #CD5555">&#39;.&#39;</span> + hashed_input + <span style="color: #CD5555">&#39;_archive.npz&#39;</span>
+            filenames = glob.glob(<span style="color: #CD5555">&#39;.&#39;</span> + <span style="color: #658b00">self</span>.filename + <span style="color: #CD5555">&#39;*.dat.npz&#39;</span>)
+            merge_zip_archives(filenames, archive_name)
+</pre></div>
+<p>
+We use various <code>ZipFile</code> functionality to extract the content of the
+individual files (each with name <code>filename</code>) and write it to the
+merged archive (<code>archive</code>).  There is only one
+array in each individual file (<code>filename</code>) so strictly speaking, there
+is no need for the loop <code>for name in f.namelist()</code> (as <code>f.namelist()</code>
+returns a list of length 1). However, in other applications where
+we compute more arrays at each time level, <code>savez</code> will store all
+these and then there is need for iterating over <code>f.namelist()</code>.
+
+<p>
+Instead of merging the archives written by <code>savez</code> we could make
+an alternative implementation that writes all our arrays into
+one archive. This is the subject of <a href="#softeng2:exer:savez">Exercise 1: Make an improved <code>numpy.savez</code> function</a>.
+
+<h2 id="___sec12">Making hash strings from input data </h2>
+<div id="softeng2:wave1D:filestorage:hashlib"></div>
+
+<p>
+The <code>hashed_input</code> argument, used to name the
+resulting archive file with all solutions, is supposed to be a
+hash reflecting all import parameters in the problem such that this
+simulation has a unique name.
+The <code>hashed_input</code> string is made in the <a href="http://tinyurl.com/nm5587k/wave/wave1D/wave_dn_vc.py" target="_self"><tt>solver</tt></a> function, using the <code>hashlib</code>
+and <code>inspect</code> modules, based on the arguments to <code>solver</code>:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #228B22"># Make hash of all input data</span>
+<span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">hashlib</span>, <span style="color: #008b45; text-decoration: underline">inspect</span>
+data = inspect.getsource(I) + <span style="color: #CD5555">&#39;_&#39;</span> + inspect.getsource(V) + \ 
+       <span style="color: #CD5555">&#39;_&#39;</span> + inspect.getsource(f) + <span style="color: #CD5555">&#39;_&#39;</span> + <span style="color: #658b00">str</span>(c) + <span style="color: #CD5555">&#39;_&#39;</span> + \ 
+       (<span style="color: #CD5555">&#39;None&#39;</span> <span style="color: #8B008B; font-weight: bold">if</span> U_0 <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B; font-weight: bold">else</span> inspect.getsource(U_0)) + \ 
+       (<span style="color: #CD5555">&#39;None&#39;</span> <span style="color: #8B008B; font-weight: bold">if</span> U_L <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B; font-weight: bold">else</span> inspect.getsource(U_L)) + \ 
+       <span style="color: #CD5555">&#39;_&#39;</span> + <span style="color: #658b00">str</span>(L) + <span style="color: #658b00">str</span>(dt) + <span style="color: #CD5555">&#39;_&#39;</span> + <span style="color: #658b00">str</span>(C) + <span style="color: #CD5555">&#39;_&#39;</span> + <span style="color: #658b00">str</span>(T) + \ 
+       <span style="color: #CD5555">&#39;_&#39;</span> + <span style="color: #658b00">str</span>(stability_safety_factor)
+hashed_input = hashlib.sha1(data).hexdigest()
+</pre></div>
+<p>
+NOTE: All this is now explained!
+
+<p>
+To get the source code of a function <code>f</code> as a string,
+we use <code>inspect.getsource(f)</code>. All input, functions as
+well as variables, is then merged
+to a string <code>data</code>, and then <code>hashlib.sha1</code> makes a unique, much shorter
+(40 characters long),
+fixed-length string out of <code>data</code> that we can use in the archive filename.
+
+<p>
+<div class="alert alert-block alert-warning alert-text-normal">
+<b>Remark.</b>
+<p>
+Note that the construction of the <code>data</code> string is not fool proof:
+if, e.g., <code>I</code> is a formula with parameters and the parameters change,
+the source code is still the same and <code>data</code> and hence the hash remains
+unaltered. The implementation must therefore be used with care!
+</div>
+
+
+<h2 id="softeng2:wave1D:filestorage:hashlib">Avoiding rerunning previously run cases</h2>
+
+<p>
+If the archive file whose name is based on <code>hashed_input</code> already
+exists, the simulation with the current set of parameters has been
+done before and one can avoid redoing the work. The <code>solver</code> function
+returns the CPU time and <code>hashed_input</code>, and a negative CPU time means
+that no simulation was run. In that case we should not call
+the <code>close_file</code> method above (otherwise we overwrite the archive with
+just the <code>self.t</code> array). The typical usage goes like
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">action = PlotAndStoreSolution(...)
+dt = (L/Nx)/C  <span style="color: #228B22"># choose the stability limit with given Nx</span>
+cpu, hashed_input = solver(
+    I=<span style="color: #8B008B; font-weight: bold">lambda</span> x: ...,
+    V=<span style="color: #B452CD">0</span>, f=<span style="color: #B452CD">0</span>, c=<span style="color: #B452CD">1</span>, U_0=<span style="color: #8B008B; font-weight: bold">lambda</span> t: <span style="color: #B452CD">0</span>, U_L=<span style="color: #658b00">None</span>, L=<span style="color: #B452CD">1</span>,
+    dt=dt, C=C, T=T,
+    user_action=action, version=<span style="color: #CD5555">&#39;vectorized&#39;</span>,
+    stability_safety_factor=<span style="color: #B452CD">1</span>)
+action.make_movie_file()
+<span style="color: #8B008B; font-weight: bold">if</span> cpu &gt; <span style="color: #B452CD">0</span>:  <span style="color: #228B22"># did we generate new data?</span>
+    action.close_file(hashed_input)
+</pre></div>
+
+<h2 id="___sec14">Verification </h2>
+
+<p>
+Exact solutions of the numerical equations are always attractive for
+verification purposes since the software should reproduce such
+solutions to machine precision. With Dirichlet boundary conditions
+we can construct a function that is linear in \( t \) and quadratic in
+\( x \) that is an exact solution of the scheme, while with Neumann
+conditions are left with testing just a constant solution
+(see comments in in
+the document <a href="http://tinyurl.com/k3sdbuv/pub/wave" target="_self">Finite difference methods for wave motion</a>
+<a href="._softeng2-solarized002.html#Langtangen_deqbook_wave">[1]</a>).
+
+<p>
+A more general method for verification is to check the convergence rates.
+
+<p>
+Do convergence rates here! It is general...
+
+<h1 id="___sec15">Programming the solver with classes </h1>
+
+<p>
+Many who knows about class programming prefer to organize their software
+in terms of classes. We can easily port our function-based code in ...
+to a class version.
+
+<p>
+We will create a class <code>Problem</code> to hold the physical parameters of the
+problem and a class <code>Solver</code> to hold the numerical parameters and
+the solver function. In addition, it is convenient to collect the
+arrays that describe the mesh in a special <code>Mesh</code> class and make
+a class <code>Function</code> for a mesh function (mesh point values and its mesh).
+
+<h2 id="___sec16">Class Problem </h2>
+
+<h2 id="___sec17">Class Mesh </h2>
+
+<p>
+The <code>Mesh</code> class can be made valid for a space-time mesh in any number
+of space dimensions. To make versatile, the constructor accepts
+either a tuple/list of number of cells in each spatial dimension or
+a tuple/list of cell spacings. In addition, we need the size of the
+hypercube mesh as a tuple/list of 2-tuples with lower and upper limits
+of the mesh coordinates in each direction. For 1D meshes it is more
+natural to just write the number of cells or the cell size and not
+wrap it in a list. We also need the time
+interval from <code>t0</code> to <code>T</code>. Giving no spatial discretization information
+implies a time mesh only, and vice versa. The <code>Mesh</code> class with
+documentation and a doc test should now be self-explanatory:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">np</span>
+
+<span style="color: #8B008B; font-weight: bold">class</span> <span style="color: #008b45; font-weight: bold">Mesh</span>(<span style="color: #658b00">object</span>):
+    <span style="color: #CD5555">&quot;&quot;&quot;</span>
+<span style="color: #CD5555">    Holds data structures for a uniform mesh on a hypercube in</span>
+<span style="color: #CD5555">    space, plus a uniform mesh in time.</span>
+
+<span style="color: #CD5555">    ======== ==================================================</span>
+<span style="color: #CD5555">    Argument                Explanation</span>
+<span style="color: #CD5555">    ======== ==================================================</span>
+<span style="color: #CD5555">    L        List of 2-lists of min and max coordinates</span>
+<span style="color: #CD5555">             in each spatial direction.</span>
+<span style="color: #CD5555">    T        Final time in time mesh.</span>
+<span style="color: #CD5555">    Nt       Number of cells in time mesh.</span>
+<span style="color: #CD5555">    dt       Time step. Either Nt or dt must be given.</span>
+<span style="color: #CD5555">    N        List of number of cells in the spatial directions.</span>
+<span style="color: #CD5555">    d        List of cell sizes in the spatial directions.</span>
+<span style="color: #CD5555">             Either N or d must be given.</span>
+<span style="color: #CD5555">    ======== ==================================================</span>
+
+<span style="color: #CD5555">    Users can access all the parameters mentioned above, plus</span>
+<span style="color: #CD5555">    ``x[i]`` and ``t`` for the coordinates in direction ``i``</span>
+<span style="color: #CD5555">    and the time coordinates, respectively.</span>
+
+<span style="color: #CD5555">    Examples:</span>
+
+<span style="color: #CD5555">    &gt;&gt;&gt; from UniformFDMesh import Mesh</span>
+<span style="color: #CD5555">    &gt;&gt;&gt;</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; # Simple space mesh</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; m = Mesh(L=[0,1], N=4)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; print m.dump()</span>
+<span style="color: #CD5555">    space: [0,1] N=4 d=0.25</span>
+<span style="color: #CD5555">    &gt;&gt;&gt;</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; # Simple time mesh</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; m = Mesh(T=4, dt=0.5)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; print m.dump()</span>
+<span style="color: #CD5555">    time: [0,4] Nt=8 dt=0.5</span>
+<span style="color: #CD5555">    &gt;&gt;&gt;</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; # 2D space mesh</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; m = Mesh(L=[[0,1], [-1,1]], d=[0.5, 1])</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; print m.dump()</span>
+<span style="color: #CD5555">    space: [0,1]x[-1,1] N=2x2 d=0.5,1</span>
+<span style="color: #CD5555">    &gt;&gt;&gt;</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; # 2D space mesh and time mesh</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; m = Mesh(L=[[0,1], [-1,1]], d=[0.5, 1], Nt=10, T=3)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; print m.dump()</span>
+<span style="color: #CD5555">    space: [0,1]x[-1,1] N=2x2 d=0.5,1 time: [0,3] Nt=10 dt=0.3</span>
+
+<span style="color: #CD5555">    &quot;&quot;&quot;</span>
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">__init__</span>(<span style="color: #658b00">self</span>,
+                 L=<span style="color: #658b00">None</span>, T=<span style="color: #658b00">None</span>, t0=<span style="color: #B452CD">0</span>,
+                 N=<span style="color: #658b00">None</span>, d=<span style="color: #658b00">None</span>,
+                 Nt=<span style="color: #658b00">None</span>, dt=<span style="color: #658b00">None</span>):
+        <span style="color: #8B008B; font-weight: bold">if</span> N <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> d <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span>:
+            <span style="color: #228B22"># No spatial mesh</span>
+            <span style="color: #8B008B; font-weight: bold">if</span> Nt <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> dt <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span>:
+                <span style="color: #8B008B; font-weight: bold">raise</span> <span style="color: #008b45; font-weight: bold">ValueError</span>(
+                <span style="color: #CD5555">&#39;Mesh constructor: either Nt or dt must be given&#39;</span>)
+            <span style="color: #8B008B; font-weight: bold">if</span> T <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span>:
+                <span style="color: #8B008B; font-weight: bold">raise</span> <span style="color: #008b45; font-weight: bold">ValueError</span>(
+                <span style="color: #CD5555">&#39;Mesh constructor: T must be given&#39;</span>)
+        <span style="color: #8B008B; font-weight: bold">if</span> Nt <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> dt <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span>:
+            <span style="color: #8B008B; font-weight: bold">if</span> N <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> d <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span>:
+                <span style="color: #8B008B; font-weight: bold">raise</span> <span style="color: #008b45; font-weight: bold">ValueError</span>(
+                <span style="color: #CD5555">&#39;Mesh constructor: either N or d must be given&#39;</span>)
+            <span style="color: #8B008B; font-weight: bold">if</span> L <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span>:
+                <span style="color: #8B008B; font-weight: bold">raise</span> <span style="color: #008b45; font-weight: bold">ValueError</span>(
+                <span style="color: #CD5555">&#39;Mesh constructor: L must be given&#39;</span>)
+
+        <span style="color: #228B22"># Allow 1D interface without nested lists with one element</span>
+        <span style="color: #8B008B; font-weight: bold">if</span> L <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> <span style="color: #658b00">isinstance</span>(L[<span style="color: #B452CD">0</span>], (<span style="color: #658b00">float</span>,<span style="color: #658b00">int</span>)):
+            <span style="color: #228B22"># Only an interval was given</span>
+            L = [L]
+        <span style="color: #8B008B; font-weight: bold">if</span> N <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> <span style="color: #658b00">isinstance</span>(N, (<span style="color: #658b00">float</span>,<span style="color: #658b00">int</span>)):
+            N = [N]
+        <span style="color: #8B008B; font-weight: bold">if</span> d <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> <span style="color: #658b00">isinstance</span>(d, (<span style="color: #658b00">float</span>,<span style="color: #658b00">int</span>)):
+            d = [d]
+
+        <span style="color: #228B22"># Set all attributes to None</span>
+        <span style="color: #658b00">self</span>.x = <span style="color: #658b00">None</span>
+        <span style="color: #658b00">self</span>.t = <span style="color: #658b00">None</span>
+        <span style="color: #658b00">self</span>.Nt = <span style="color: #658b00">None</span>
+        <span style="color: #658b00">self</span>.dt = <span style="color: #658b00">None</span>
+        <span style="color: #658b00">self</span>.N = <span style="color: #658b00">None</span>
+        <span style="color: #658b00">self</span>.d = <span style="color: #658b00">None</span>
+        <span style="color: #658b00">self</span>.t0 = t0
+
+        <span style="color: #8B008B; font-weight: bold">if</span> N <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> d <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> L <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+            <span style="color: #658b00">self</span>.L = L
+            <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">len</span>(d) != <span style="color: #658b00">len</span>(L):
+                <span style="color: #8B008B; font-weight: bold">raise</span> <span style="color: #008b45; font-weight: bold">ValueError</span>(
+                    <span style="color: #CD5555">&#39;d has different size (no of space dim.) from &#39;</span>
+                    <span style="color: #CD5555">&#39;L: %d vs %d&#39;</span>, <span style="color: #658b00">len</span>(d), <span style="color: #658b00">len</span>(L))
+            <span style="color: #658b00">self</span>.d = d
+            <span style="color: #658b00">self</span>.N = [<span style="color: #658b00">int</span>(<span style="color: #658b00">round</span>(<span style="color: #658b00">float</span>(<span style="color: #658b00">self</span>.L[i][<span style="color: #B452CD">1</span>] -
+                                      <span style="color: #658b00">self</span>.L[i][<span style="color: #B452CD">0</span>])/d[i]))
+                      <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #658b00">len</span>(d))]
+        <span style="color: #8B008B; font-weight: bold">if</span> d <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> N <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> L <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+            <span style="color: #658b00">self</span>.L = L
+            <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">len</span>(N) != <span style="color: #658b00">len</span>(L):
+                <span style="color: #8B008B; font-weight: bold">raise</span> <span style="color: #008b45; font-weight: bold">ValueError</span>(
+                    <span style="color: #CD5555">&#39;N has different size (no of space dim.) from &#39;</span>
+                    <span style="color: #CD5555">&#39;L: %d vs %d&#39;</span>, <span style="color: #658b00">len</span>(N), <span style="color: #658b00">len</span>(L))
+            <span style="color: #658b00">self</span>.N = N
+            <span style="color: #658b00">self</span>.d = [<span style="color: #658b00">float</span>(<span style="color: #658b00">self</span>.L[i][<span style="color: #B452CD">1</span>] - <span style="color: #658b00">self</span>.L[i][<span style="color: #B452CD">0</span>])/N[i]
+                      <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #658b00">len</span>(N))]
+
+        <span style="color: #8B008B; font-weight: bold">if</span> Nt <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> dt <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> T <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+            <span style="color: #658b00">self</span>.T = T
+            <span style="color: #658b00">self</span>.dt = dt
+            <span style="color: #658b00">self</span>.Nt = <span style="color: #658b00">int</span>(<span style="color: #658b00">round</span>(T/dt))
+        <span style="color: #8B008B; font-weight: bold">if</span> dt <span style="color: #8B008B">is</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> Nt <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span> <span style="color: #8B008B">and</span> T <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+            <span style="color: #658b00">self</span>.T = T
+            <span style="color: #658b00">self</span>.Nt = Nt
+            <span style="color: #658b00">self</span>.dt = T/<span style="color: #658b00">float</span>(Nt)
+
+        <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">self</span>.N <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+            <span style="color: #658b00">self</span>.x = [np.linspace(
+                      <span style="color: #658b00">self</span>.L[i][<span style="color: #B452CD">0</span>], <span style="color: #658b00">self</span>.L[i][<span style="color: #B452CD">1</span>], <span style="color: #658b00">self</span>.N[i]+<span style="color: #B452CD">1</span>)
+                      <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #658b00">len</span>(<span style="color: #658b00">self</span>.L))]
+        <span style="color: #8B008B; font-weight: bold">if</span> Nt <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>:
+            <span style="color: #658b00">self</span>.t = np.linspace(<span style="color: #658b00">self</span>.t0, <span style="color: #658b00">self</span>.T, <span style="color: #658b00">self</span>.Nt+<span style="color: #B452CD">1</span>)
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">get_num_space_dim</span>(<span style="color: #658b00">self</span>):
+        <span style="color: #8B008B; font-weight: bold">return</span> <span style="color: #658b00">len</span>(<span style="color: #658b00">self</span>.d) <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">self</span>.d <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span> <span style="color: #8B008B; font-weight: bold">else</span> <span style="color: #B452CD">0</span>
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">has_space</span>(<span style="color: #658b00">self</span>):
+        <span style="color: #8B008B; font-weight: bold">return</span> <span style="color: #658b00">self</span>.d <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">has_time</span>(<span style="color: #658b00">self</span>):
+        <span style="color: #8B008B; font-weight: bold">return</span> <span style="color: #658b00">self</span>.dt <span style="color: #8B008B">is</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">None</span>
+
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">dump</span>(<span style="color: #658b00">self</span>):
+        s = <span style="color: #CD5555">&#39;&#39;</span>
+        <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">self</span>.has_space():
+            s += <span style="color: #CD5555">&#39;space: &#39;</span> + \ 
+                 <span style="color: #CD5555">&#39;x&#39;</span>.join([<span style="color: #CD5555">&#39;[%g,%g]&#39;</span> % (<span style="color: #658b00">self</span>.L[i][<span style="color: #B452CD">0</span>], <span style="color: #658b00">self</span>.L[i][<span style="color: #B452CD">1</span>])
+                          <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #658b00">len</span>(<span style="color: #658b00">self</span>.L))]) + <span style="color: #CD5555">&#39; N=&#39;</span>
+            s += <span style="color: #CD5555">&#39;x&#39;</span>.join([<span style="color: #658b00">str</span>(Ni) <span style="color: #8B008B; font-weight: bold">for</span> Ni <span style="color: #8B008B">in</span> <span style="color: #658b00">self</span>.N]) + <span style="color: #CD5555">&#39; d=&#39;</span>
+            s += <span style="color: #CD5555">&#39;,&#39;</span>.join([<span style="color: #658b00">str</span>(di) <span style="color: #8B008B; font-weight: bold">for</span> di <span style="color: #8B008B">in</span> <span style="color: #658b00">self</span>.d])
+        <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">self</span>.has_space() <span style="color: #8B008B">and</span> <span style="color: #658b00">self</span>.has_time():
+            s += <span style="color: #CD5555">&#39; &#39;</span>
+        <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">self</span>.has_time():
+            s += <span style="color: #CD5555">&#39;time: &#39;</span> + <span style="color: #CD5555">&#39;[%g,%g]&#39;</span> % (<span style="color: #658b00">self</span>.t0, <span style="color: #658b00">self</span>.T) + \ 
+                 <span style="color: #CD5555">&#39; Nt=%g&#39;</span> % <span style="color: #658b00">self</span>.Nt + <span style="color: #CD5555">&#39; dt=%g&#39;</span> % <span style="color: #658b00">self</span>.dt
+        <span style="color: #8B008B; font-weight: bold">return</span> s
+</pre></div>
+<p>
+<div class="alert alert-block alert-notice alert-text-normal">
+<b>We rely on attribute access - not get/set functions!</b>
+<p>
+Java programmers in particular are used to get/set functions in
+classes to access internal data. In Python, we usually apply direct
+access of the attribute, such as <code>m.N[i]</code> if <code>m</code> is a <code>Mesh</code> object.
+A widely used convention is to do this as long as access to
+an attribute does not require additional code. In that case, one
+applies a property construction. The original interface remains
+the same after a property is introduced (in contrast to Java), so
+user will not notice a change to properties.
+
+<p>
+The only argument against direct attribute access in class <code>Mesh</code>
+is that the attributes are read-only so we could avoid offering
+a set function. Instead, we rely on the user that she does not
+assign new values to the attributes.
+</div>
+
+
+<h2 id="___sec18">Class Function </h2>
+
+<p>
+A class <code>Function</code> is handy to hold a mesh and corresponding values for
+a scalar or vector function over the mesh. Since we may have a
+time or space mesh, or a combined time and space mesh, with one or
+more components in the function, some if tests are needed for
+allocating the right array sizes. To help the user, an <code>indices</code>
+attribute with the name of the indices in the final array <code>u</code>
+for the function values is made. The examples in the doc string
+should explain the functionality.
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">class</span> <span style="color: #008b45; font-weight: bold">Function</span>(<span style="color: #658b00">object</span>):
+    <span style="color: #CD5555">&quot;&quot;&quot;</span>
+<span style="color: #CD5555">    A scalar or vector function over a mesh (of class Mesh).</span>
+
+<span style="color: #CD5555">    ========== ===================================================</span>
+<span style="color: #CD5555">    Argument                       Explanation</span>
+<span style="color: #CD5555">    ========== ===================================================</span>
+<span style="color: #CD5555">    mesh       Class Mesh object: spatial and/or temporal mesh.</span>
+<span style="color: #CD5555">    num_comp   Number of components in function (1 for scalar).</span>
+<span style="color: #CD5555">    space_only True if the function is defined on the space mesh</span>
+<span style="color: #CD5555">               only (to save space). False if function has values</span>
+<span style="color: #CD5555">               in space and time.</span>
+<span style="color: #CD5555">    ========== ===================================================</span>
+
+<span style="color: #CD5555">    The indexing of ``u``, which holds the mesh point values of the</span>
+<span style="color: #CD5555">    function, depends on whether we have a space and/or time mesh.</span>
+
+<span style="color: #CD5555">    Examples:</span>
+
+<span style="color: #CD5555">    &gt;&gt;&gt; from UniformFDMesh import Mesh, Function</span>
+<span style="color: #CD5555">    &gt;&gt;&gt;</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; # Simple space mesh</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; m = Mesh(L=[0,1], N=4)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; print m.dump()</span>
+<span style="color: #CD5555">    space: [0,1] N=4 d=0.25</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f = Function(m)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.indices</span>
+<span style="color: #CD5555">    [&#39;x0&#39;]</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.u.shape</span>
+<span style="color: #CD5555">    (5,)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.u[4]  # space point 4</span>
+<span style="color: #CD5555">    0.0</span>
+<span style="color: #CD5555">    &gt;&gt;&gt;</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; # Simple time mesh for two components</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; m = Mesh(T=4, dt=0.5)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; print m.dump()</span>
+<span style="color: #CD5555">    time: [0,4] Nt=8 dt=0.5</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f = Function(m, num_comp=2)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.indices</span>
+<span style="color: #CD5555">    [&#39;time&#39;, &#39;component&#39;]</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.u.shape</span>
+<span style="color: #CD5555">    (9, 2)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.u[3,1]  # time point 3, comp=1 (2nd comp.)</span>
+<span style="color: #CD5555">    0.0</span>
+<span style="color: #CD5555">    &gt;&gt;&gt;</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; # 2D space mesh</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; m = Mesh(L=[[0,1], [-1,1]], d=[0.5, 1])</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; print m.dump()</span>
+<span style="color: #CD5555">    space: [0,1]x[-1,1] N=2x2 d=0.5,1</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f = Function(m)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.indices</span>
+<span style="color: #CD5555">    [&#39;x0&#39;, &#39;x1&#39;]</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.u.shape</span>
+<span style="color: #CD5555">    (3, 3)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.u[1,2]  # space point (1,2)</span>
+<span style="color: #CD5555">    0.0</span>
+<span style="color: #CD5555">    &gt;&gt;&gt;</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; # 2D space mesh and time mesh</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; m = Mesh(L=[[0,1],[-1,1]], d=[0.5,1], Nt=10, T=3)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; print m.dump()</span>
+<span style="color: #CD5555">    space: [0,1]x[-1,1] N=2x2 d=0.5,1 time: [0,3] Nt=10 dt=0.3</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f = Function(m, num_comp=2, space_only=False)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.indices</span>
+<span style="color: #CD5555">    [&#39;time&#39;, &#39;x0&#39;, &#39;x1&#39;, &#39;component&#39;]</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.u.shape</span>
+<span style="color: #CD5555">    (11, 3, 3, 2)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.u[2,1,2,0]  # time step 2, space point (1,2), comp=0</span>
+<span style="color: #CD5555">    0.0</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; # Function with space data only</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f = Function(m, num_comp=1, space_only=True)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.indices</span>
+<span style="color: #CD5555">    [&#39;x0&#39;, &#39;x1&#39;]</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.u.shape</span>
+<span style="color: #CD5555">    (3, 3)</span>
+<span style="color: #CD5555">    &gt;&gt;&gt; f.u[1,2]  # space point (1,2)</span>
+<span style="color: #CD5555">    0.0</span>
+<span style="color: #CD5555">    &quot;&quot;&quot;</span>
+    <span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">__init__</span>(<span style="color: #658b00">self</span>, mesh, num_comp=<span style="color: #B452CD">1</span>, space_only=<span style="color: #658b00">True</span>):
+        <span style="color: #658b00">self</span>.mesh = mesh
+        <span style="color: #658b00">self</span>.num_comp = num_comp
+        <span style="color: #658b00">self</span>.indices = []
+
+        <span style="color: #228B22"># Create array(s) to store mesh point values</span>
+        <span style="color: #8B008B; font-weight: bold">if</span> (<span style="color: #658b00">self</span>.mesh.has_space() <span style="color: #8B008B">and</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">self</span>.mesh.has_time()) <span style="color: #8B008B">or</span> \ 
+           (<span style="color: #658b00">self</span>.mesh.has_space() <span style="color: #8B008B">and</span> <span style="color: #658b00">self</span>.mesh.has_time() <span style="color: #8B008B">and</span> \ 
+            space_only):
+            <span style="color: #228B22"># Space mesh only</span>
+            <span style="color: #8B008B; font-weight: bold">if</span> num_comp == <span style="color: #B452CD">1</span>:
+                <span style="color: #658b00">self</span>.u = np.zeros(
+                    [<span style="color: #658b00">self</span>.mesh.N[i] + <span style="color: #B452CD">1</span>
+                     <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #658b00">len</span>(<span style="color: #658b00">self</span>.mesh.N))])
+                <span style="color: #658b00">self</span>.indices = [
+                    <span style="color: #CD5555">&#39;x&#39;</span>+<span style="color: #658b00">str</span>(i) <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #658b00">len</span>(<span style="color: #658b00">self</span>.mesh.N))]
+            <span style="color: #8B008B; font-weight: bold">else</span>:
+                <span style="color: #658b00">self</span>.u = np.zeros(
+                    [<span style="color: #658b00">self</span>.mesh.N[i] + <span style="color: #B452CD">1</span>
+                     <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #658b00">len</span>(<span style="color: #658b00">self</span>.mesh.N))] +
+                    [num_comp])
+                <span style="color: #658b00">self</span>.indices = [
+                    <span style="color: #CD5555">&#39;x&#39;</span>+<span style="color: #658b00">str</span>(i)
+                    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #658b00">len</span>(<span style="color: #658b00">self</span>.mesh.N))] +\ 
+                    [<span style="color: #CD5555">&#39;component&#39;</span>]
+        <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #8B008B">not</span> <span style="color: #658b00">self</span>.mesh.has_space() <span style="color: #8B008B">and</span> <span style="color: #658b00">self</span>.mesh.has_time():
+            <span style="color: #228B22"># Time mesh only</span>
+            <span style="color: #8B008B; font-weight: bold">if</span> num_comp == <span style="color: #B452CD">1</span>:
+                <span style="color: #658b00">self</span>.u = np.zeros(<span style="color: #658b00">self</span>.mesh.Nt+<span style="color: #B452CD">1</span>)
+                <span style="color: #658b00">self</span>.indices = [<span style="color: #CD5555">&#39;time&#39;</span>]
+            <span style="color: #8B008B; font-weight: bold">else</span>:
+                <span style="color: #228B22"># Need num_comp entries per time step</span>
+                <span style="color: #658b00">self</span>.u = np.zeros((<span style="color: #658b00">self</span>.mesh.Nt+<span style="color: #B452CD">1</span>, num_comp))
+                <span style="color: #658b00">self</span>.indices = [<span style="color: #CD5555">&#39;time&#39;</span>, <span style="color: #CD5555">&#39;component&#39;</span>]
+        <span style="color: #8B008B; font-weight: bold">if</span> <span style="color: #658b00">self</span>.mesh.has_space() <span style="color: #8B008B">and</span> <span style="color: #658b00">self</span>.mesh.has_time() \ 
+            <span style="color: #8B008B">and</span> <span style="color: #8B008B">not</span> space_only:
+            <span style="color: #228B22"># Space-time mesh</span>
+            size = [<span style="color: #658b00">self</span>.mesh.Nt+<span style="color: #B452CD">1</span>] + \ 
+                   [<span style="color: #658b00">self</span>.mesh.N[i]+<span style="color: #B452CD">1</span>
+                    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #658b00">len</span>(<span style="color: #658b00">self</span>.mesh.N))]
+            <span style="color: #8B008B; font-weight: bold">if</span> num_comp &gt; <span style="color: #B452CD">1</span>:
+                <span style="color: #658b00">self</span>.indices = [<span style="color: #CD5555">&#39;time&#39;</span>] + \ 
+                               [<span style="color: #CD5555">&#39;x&#39;</span>+<span style="color: #658b00">str</span>(i)
+                                <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #658b00">len</span>(<span style="color: #658b00">self</span>.mesh.N))] +\ 
+                               [<span style="color: #CD5555">&#39;component&#39;</span>]
+                size += [num_comp]
+            <span style="color: #8B008B; font-weight: bold">else</span>:
+                <span style="color: #658b00">self</span>.indices = [<span style="color: #CD5555">&#39;time&#39;</span>] + [<span style="color: #CD5555">&#39;x&#39;</span>+<span style="color: #658b00">str</span>(i)
+                                <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #658b00">len</span>(<span style="color: #658b00">self</span>.mesh.N))]
+            <span style="color: #658b00">self</span>.u = np.zeros(size)
+</pre></div>
+
+<h2 id="___sec19">Class Solver </h2>
+
+<p>
+With the <code>Mesh</code> and <code>Function</code> classes in place, we can rewrite
+the <code>solver</code> function, but we put it as a method in class <code>Solver</code>:
+
+<p>
+
+<!-- begin inline comment -->
+<font color="red">(<b>hpl 1</b>: Rewrite solver!)</font>
+<!-- end inline comment -->
+
+<h1 id="wave2D3D:impl:Cython">Migrating loops to Cython</h1>
+
+<p>
+We now consider the <a href="http://tinyurl.com/nm5587k/wave/wave2D_u0/wave2D_u0.py" target="_self"><tt>wave2D_u0.py</tt></a>
+code for solving the 2D linear wave equation with constant wave
+velocity and homogeneous Dirichlet boundary conditions \( u=0 \).
+This code contains a <code>solver</code> function, which calls and <code>advance_*</code>
+function to advance the numerical scheme one level forward in time.
+The function <code>advance_scalar</code> applies standard Python loops to implement
+the scheme, while <code>advance_vectorized</code> performs corresponding
+vectorized arithmetics with array slices. The statements of this
+solver are explained in
+in
+the document <a href="http://tinyurl.com/k3sdbuv/pub/wave" target="_self">Finite difference methods for wave motion</a>
+<a href="._softeng2-solarized002.html#Langtangen_deqbook_wave">[1]</a>.
+
+<p>
+Although vectorization can bring down the CPU time dramatically
+compared with scalar code, there is still some factor 5-10 to win
+in these types of applications
+by implementing the finite difference scheme in compiled code,
+typically in Fortran, C, or C++. This can quite easily be done by
+adding a little extra code to our program. Cython is an extension of
+Python that offers the easiest way to nail our Python loops in the
+scalar code down to machine code and achieve the efficiency of C.
+
+<p>
+Cython can be viewed as an extended Python language where variables are
+declared with types and where functions are marked to be implemented in C.
+Migrating Python code to Cython is done by copying the desired code
+segments to functions (or classes) and placing them in one or more separate
+files with extension <code>.pyx</code>.
+
+<h2 id="___sec21">Declaring variables and annotating the code </h2>
+
+<p>
+Our starting point is the plain <code>advance_scalar</code> function for a scalar
+implementation of the updating algorithm for new values
+\( u^{n+1}_{i,j} \):
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">advance_scalar</span>(u, u_1, u_2, f, x, y, t, n, Cx2, Cy2, dt2,
+                   V=<span style="color: #658b00">None</span>, step1=<span style="color: #658b00">False</span>):
+    Ix = <span style="color: #658b00">range</span>(<span style="color: #B452CD">0</span>, u.shape[<span style="color: #B452CD">0</span>]);  Iy = <span style="color: #658b00">range</span>(<span style="color: #B452CD">0</span>, u.shape[<span style="color: #B452CD">1</span>])
+    <span style="color: #8B008B; font-weight: bold">if</span> step1:
+        dt = sqrt(dt2)  <span style="color: #228B22"># save</span>
+        Cx2 = <span style="color: #B452CD">0.5</span>*Cx2;  Cy2 = <span style="color: #B452CD">0.5</span>*Cy2; dt2 = <span style="color: #B452CD">0.5</span>*dt2  <span style="color: #228B22"># redefine</span>
+        D1 = <span style="color: #B452CD">1</span>;  D2 = <span style="color: #B452CD">0</span>
+    <span style="color: #8B008B; font-weight: bold">else</span>:
+        D1 = <span style="color: #B452CD">2</span>;  D2 = <span style="color: #B452CD">1</span>
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]:
+        <span style="color: #8B008B; font-weight: bold">for</span> j <span style="color: #8B008B">in</span> Iy[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]:
+            u_xx = u_1[i-<span style="color: #B452CD">1</span>,j] - <span style="color: #B452CD">2</span>*u_1[i,j] + u_1[i+<span style="color: #B452CD">1</span>,j]
+            u_yy = u_1[i,j-<span style="color: #B452CD">1</span>] - <span style="color: #B452CD">2</span>*u_1[i,j] + u_1[i,j+<span style="color: #B452CD">1</span>]
+            u[i,j] = D1*u_1[i,j] - D2*u_2[i,j] + \ 
+                     Cx2*u_xx + Cy2*u_yy + dt2*f(x[i], y[j], t[n])
+            <span style="color: #8B008B; font-weight: bold">if</span> step1:
+                u[i,j] += dt*V(x[i], y[j])
+    <span style="color: #228B22"># Boundary condition u=0</span>
+    j = Iy[<span style="color: #B452CD">0</span>]
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix: u[i,j] = <span style="color: #B452CD">0</span>
+    j = Iy[-<span style="color: #B452CD">1</span>]
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix: u[i,j] = <span style="color: #B452CD">0</span>
+    i = Ix[<span style="color: #B452CD">0</span>]
+    <span style="color: #8B008B; font-weight: bold">for</span> j <span style="color: #8B008B">in</span> Iy: u[i,j] = <span style="color: #B452CD">0</span>
+    i = Ix[-<span style="color: #B452CD">1</span>]
+    <span style="color: #8B008B; font-weight: bold">for</span> j <span style="color: #8B008B">in</span> Iy: u[i,j] = <span style="color: #B452CD">0</span>
+    <span style="color: #8B008B; font-weight: bold">return</span> u
+</pre></div>
+<p>
+We simply take
+a copy of this function and put it in a file <code>wave2D_u0_loop_cy.pyx</code>.
+The relevant Cython implementation arises from declaring variables with
+types and adding some important annotations to speed up array
+computing in Cython. Let us first list the complete code in the
+<code>.pyx</code> file:
+
+<p>
+
+<!-- code=cython (!bc cypro) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">np</span>
+<span style="color: #8B008B; font-weight: bold">cimport</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">np</span>
+<span style="color: #8B008B; font-weight: bold">cimport</span> <span style="color: #008b45; text-decoration: underline">cython</span>
+<span style="color: #8B008B; font-weight: bold">ctypedef</span> np.float64_t DT    <span style="color: #228B22"># data type</span>
+
+<span style="color: #707a7c">@cython</span>.boundscheck(<span style="color: #658b00">False</span>)  <span style="color: #228B22"># turn off array bounds check</span>
+<span style="color: #707a7c">@cython</span>.wraparound(<span style="color: #658b00">False</span>)   <span style="color: #228B22"># turn off negative indices (u[-1,-1])</span>
+<span style="color: #8B008B; font-weight: bold">cpdef</span> <span style="color: #008b45">advance</span>(
+    np.ndarray[DT, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] u,
+    np.ndarray[DT, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] u_1,
+    np.ndarray[DT, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] u_2,
+    np.ndarray[DT, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] f,
+    double Cx2, double Cy2, double dt2):
+
+    cdef:
+        <span style="color: #658b00">int</span> Ix_start = <span style="color: #B452CD">0</span>
+        <span style="color: #658b00">int</span> Iy_start = <span style="color: #B452CD">0</span>
+        <span style="color: #658b00">int</span> Ix_end = u.shape[<span style="color: #B452CD">0</span>]-<span style="color: #B452CD">1</span>
+        <span style="color: #658b00">int</span> Iy_end = u.shape[<span style="color: #B452CD">1</span>]-<span style="color: #B452CD">1</span>
+        <span style="color: #658b00">int</span> i, j
+        double u_xx, u_yy
+
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(Ix_start+<span style="color: #B452CD">1</span>, Ix_end):
+        <span style="color: #8B008B; font-weight: bold">for</span> j <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(Iy_start+<span style="color: #B452CD">1</span>, Iy_end):
+            u_xx = u_1[i-<span style="color: #B452CD">1</span>,j] - <span style="color: #B452CD">2</span>*u_1[i,j] + u_1[i+<span style="color: #B452CD">1</span>,j]
+            u_yy = u_1[i,j-<span style="color: #B452CD">1</span>] - <span style="color: #B452CD">2</span>*u_1[i,j] + u_1[i,j+<span style="color: #B452CD">1</span>]
+            u[i,j] = <span style="color: #B452CD">2</span>*u_1[i,j] - u_2[i,j] + \
+                     Cx2*u_xx + Cy2*u_yy + dt2*f[i,j]
+    <span style="color: #228B22"># Boundary condition u=0</span>
+    j = Iy_start
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(Ix_start, Ix_end+<span style="color: #B452CD">1</span>): u[i,j] = <span style="color: #B452CD">0</span>
+    j = Iy_end
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(Ix_start, Ix_end+<span style="color: #B452CD">1</span>): u[i,j] = <span style="color: #B452CD">0</span>
+    i = Ix_start
+    <span style="color: #8B008B; font-weight: bold">for</span> j <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(Iy_start, Iy_end+<span style="color: #B452CD">1</span>): u[i,j] = <span style="color: #B452CD">0</span>
+    i = Ix_end
+    <span style="color: #8B008B; font-weight: bold">for</span> j <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(Iy_start, Iy_end+<span style="color: #B452CD">1</span>): u[i,j] = <span style="color: #B452CD">0</span>
+    <span style="color: #8B008B; font-weight: bold">return</span> u
+</pre></div>
+<p>
+This example may act as a recipe on how to transform array-intensive
+code with loops into Cython.
+
+<ol>
+<li> Variables are declared with types: for example,
+   <code>double v</code> in the argument list instead of just <code>v</code>, and <code>cdef double v</code>
+   for a variable <code>v</code> in the body of the function.
+   A Python <code>float</code> object is declared as <code>double</code> for
+   translation to C by Cython, while an <code>int</code> object is
+   declared by <code>int</code>.</li>
+<li> Arrays need a comprehensive type declaration involving</li>
+
+<ul>
+   <li> the type <code>np.ndarray</code>,</li>
+   <li> the data type of the elements, here 64-bit floats,
+     abbreviated as <code>DT</code> through <code>ctypedef np.float64_t DT</code>
+     (instead of <code>DT</code> we could use the full name of the
+     data type: <code>np.float64_t</code>, which is a Cython-defined type),</li>
+   <li> the dimensions of the array, here <code>ndim=2</code> and <code>ndim=1</code>,</li>
+   <li> specification of contiguous memory for the array (<code>mode='c'</code>).</li>
+</ul>
+
+<li> Functions declared with <code>cpdef</code> are translated to C but are also
+   accessible from Python.</li>
+<li> In addition to the standard <code>numpy</code> import we also need a special
+   Cython import of <code>numpy</code>: <code>cimport numpy as np</code>, to appear <em>after</em>
+   the standard import.</li>
+<li> By default, array indices are checked to be within their legal
+   limits. To speed up the code one should turn off this feature
+   for a specific function by placing <code>@cython.boundscheck(False)</code>
+   above the function header.</li>
+<li> Also by default, array indices can be negative (counting from the
+   end), but this feature has a performance penalty and is therefore
+   here turned off by writing <code>@cython.wraparound(False)</code> right above
+   the function header.</li>
+<li> The use of index sets <code>Ix</code> and <code>Iy</code> in the scalar code cannot be
+   successfully translated to C. One reason is that constructions like
+   <code>Ix[1:-1]</code> involve negative indices, and these are now turned
+   off. Another reason is that Cython loops must take the form <code>for i
+   in xrange</code> or <code>for i in range</code> for being translated into efficient
+   C loops. We have therefore introduced <code>Ix_start</code> as <code>Ix[0]</code>
+   and <code>Ix_end</code> as <code>Ix[-1]</code> to hold the start and end of the values
+   of index \( i \). Similar variables are introduced for the \( j \) index.
+   A loop <code>for i in Ix</code> is with these new variables written as
+   <code>for i in range(Ix_start, Ix_end+1)</code>.</li>
+</ol>
+
+<div class="alert alert-block alert-notice alert-text-normal">
+<b>Array declaration syntax in Cython.</b>
+<p>
+We have used the syntax <code>np.ndarray[DT, ndim=2, mode='c']</code> to declare
+<code>numpy</code> arrays in Cython. There is a simpler, alternative syntax, employing
+<a href="http://docs.cython.org/src/userguide/memoryviews.html" target="_self">typed memory views</a>,
+where the declaration looks like <code>double [:,:]</code>.
+However, the full support for this functionality is not yet ready, and
+in this text we use the full array declaration syntax.
+</div>
+
+
+<h2 id="___sec22">Visual inspection of the C translation </h2>
+
+<p>
+Cython can visually explain how successfully it translated a code from
+Python to C. The command
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; cython -a wave2D_u0_loop_cy.pyx
+</pre></div>
+<p>
+produces an HTML file <code>wave2D_u0_loop_cy.html</code>, which can be loaded into
+a web browser to illustrate which lines of the code that have been
+translated to C. Figure <a href="#wave:2D3D:impl:fig:cython:ma1">1</a> shows
+the illustrated code. Yellow lines indicate the lines that Cython did not manage
+to translate to efficient C code and that remain in Python.
+For the present code we see that Cython is able to translate all the
+loops with array computing to C, which is our primary goal.
+
+<p>
+<center> <!-- figure -->
+<hr class="figure">
+<center><p class="caption">Figure 1:  Visual illustration of Cython's ability to translate Python to C. <div id="wave:2D3D:impl:fig:cython:ma1"></div> </p></center>
+<p><img src="fig-softeng2/wave2D_u0_loop_cy1.png" align="bottom" width=500></p>
+</center>
+
+<p>
+You can also inspect the generated C code directly, as it appears in
+the file <code>wave2D_u0_loop_cy.c</code>. Nevertheless, understanding this C
+code requires some familiarity with writing Python extension modules
+in C by hand.  Deep down in the file we can see in detail how the
+compute-intensive statements have been translated into some complex C
+code that is quite different from what a human would write (at
+least if a direct correspondence to the mathematical notation was
+intended).
+
+<h2 id="___sec23">Building the extension module </h2>
+
+<p>
+Cython code must be translated to C, compiled, and linked to form what
+is known in the Python world as a <em>C extension module</em>.
+This is usually done by making a <code>setup.py</code> script, which
+is the standard way of building and installing Python software.
+For an extension module arising from Cython code, the following
+<code>setup.py</code> script is all we need to build and install the module:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">distutils.core</span> <span style="color: #8B008B; font-weight: bold">import</span> setup
+<span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">distutils.extension</span> <span style="color: #8B008B; font-weight: bold">import</span> Extension
+<span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">Cython.Distutils</span> <span style="color: #8B008B; font-weight: bold">import</span> build_ext
+
+cymodule = <span style="color: #CD5555">&#39;wave2D_u0_loop_cy&#39;</span>
+setup(
+  name=cymodule
+  ext_modules=[Extension(cymodule, [cymodule + <span style="color: #CD5555">&#39;.pyx&#39;</span>],)],
+  cmdclass={<span style="color: #CD5555">&#39;build_ext&#39;</span>: build_ext},
+)
+</pre></div>
+<p>
+We run the script by
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; python setup.py build_ext --inplace
+</pre></div>
+<p>
+The <code>--inplace</code> option makes the extension module available in the
+current directory as the file <code>wave2D_u0_loop_cy.so</code>. This
+file acts as a normal Python module that can be imported and inspected:
+
+<p>
+
+<!-- code=ipy (!bc ipy) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">&gt;&gt;&gt; <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">wave2D_u0_loop_cy</span>
+&gt;&gt;&gt; <span style="color: #658b00">dir</span>(wave2D_u0_loop_cy)
+[<span style="color: #CD5555">&#39;__builtins__&#39;</span>, <span style="color: #CD5555">&#39;__doc__&#39;</span>, <span style="color: #CD5555">&#39;__file__&#39;</span>, <span style="color: #CD5555">&#39;__name__&#39;</span>,
+ <span style="color: #CD5555">&#39;__package__&#39;</span>, <span style="color: #CD5555">&#39;__test__&#39;</span>, <span style="color: #CD5555">&#39;advance&#39;</span>, <span style="color: #CD5555">&#39;np&#39;</span>]
+</pre></div>
+<p>
+The important output from the <code>dir</code> function is our Cython function
+<code>advance</code> (the module also features the imported <code>numpy</code> module under
+the name <code>np</code> as well as many standard Python objects with double
+underscores in their names).
+
+<p>
+The <code>setup.py</code> file makes use of the <code>distutils</code> package in Python
+and Cython's extension of this package.
+These tools know how Python was built on the computer and will
+use compatible compiler(s) and options when building other code
+in Cython, C, or C++. Quite some experience with building large
+program systems is needed to do the build process manually, so using
+a <code>setup.py</code> script is strongly recommended.
+
+<p>
+<div class="alert alert-block alert-notice alert-text-normal">
+<b>Simplified build of a Cython module.</b>
+<p>
+When there is no need to link the C code with special libraries,
+Cython offers a shortcut for generating and importing the extension
+module:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eee8d5"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">pyximport</span>; pyximport.install()
+</pre></div>
+<p>
+This makes the <code>setup.py</code> script redundant. However, in the <code>wave2D_u0.py</code>
+code we do not use <code>pyximport</code> and require an explicit build process
+of this and many other modules.
+</div>
+
+
+<h2 id="___sec24">Calling the Cython function from Python </h2>
+
+<p>
+The <code>wave2D_u0_loop_cy</code>
+module contains our <code>advance</code> function, which we now may call from
+the Python program for the wave equation:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">wave2D_u0_loop_cy</span>
+advance = wave2D_u0_loop_cy.advance
+...
+<span style="color: #8B008B; font-weight: bold">for</span> n <span style="color: #8B008B">in</span> It[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>:                  <span style="color: #228B22"># time loop</span>
+    f_a[:,:] = f(xv, yv, t[n])     <span style="color: #228B22"># precompute, size as u</span>
+    u = advance(u, u_1, u_2, f_a, x, y, t, Cx2, Cy2, dt2)
+</pre></div>
+
+<h3 id="___sec25">Efficiency </h3>
+
+<p>
+For a mesh consisting of \( 120\times 120 \) cells, the scalar Python code
+require 1370 CPU time units, the vectorized version requires 5.5,
+while the Cython version requires only 1! For a smaller mesh with
+\( 60\times 60 \) cells Cython is about 1000 times faster than the scalar
+Python code, and the vectorized version is about 6 times slower than
+the Cython version.
+
+<p>
+<!-- In 3D these numbers are even more favorable. -->
+
+<h1 id="___sec26">Migrating loops to Fortran </h1>
+
+<p>
+Instead of relying on Cython's (excellent) ability to translate Python to C,
+we can invoke a compiled language directly and write the loops ourselves.
+Let us start with Fortran 77, because this is a language with more
+convenient array handling than C (or plain C++). Or more precisely,
+we can with ease program with the same multi-dimensional indices
+in the Fortran code as in the <code>numpy</code>
+arrays in the Python code, while in C these arrays are
+one-dimensional and requires us to reduce multi-dimensional indices
+to a single index.
+
+<p>
+<!-- Fortran compilers -->
+<!-- build on 60 years of intensive research on how to optimize loops with -->
+<!-- array computations. -->
+
+<h2 id="___sec27">The Fortran subroutine </h2>
+
+<p>
+We write a Fortran subroutine <code>advance</code> in a file
+<a href="http://tinyurl.com/nm5587k/wave/wave2D_u0/wave2D_u0_loop_f77.f" target="_self"><tt>wave2D_u0_loop_f77.f</tt></a>
+for implementing the updating formula
+\eqref{wave:2D3D:impl1:2Du0:ueq:discrete} and setting the solution to zero
+at the boundaries:
+
+<p>
+
+<!-- code=fortran (!bc fpro) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">      <span style="color: #8B008B; font-weight: bold">subroutine </span>advance(u, u_1, u_2, f, Cx2, Cy2, dt2, Nx, Ny)
+      <span style="color: #a7a7a7; font-weight: bold">integer </span>Nx, Ny
+      <span style="color: #a7a7a7; font-weight: bold">real</span>*<span style="color: #B452CD">8</span> u(<span style="color: #B452CD">0</span>:Nx,<span style="color: #B452CD">0</span>:Ny), u_1(<span style="color: #B452CD">0</span>:Nx,<span style="color: #B452CD">0</span>:Ny), u_2(<span style="color: #B452CD">0</span>:Nx,<span style="color: #B452CD">0</span>:Ny)
+      <span style="color: #a7a7a7; font-weight: bold">real</span>*<span style="color: #B452CD">8</span> f(<span style="color: #B452CD">0</span>:Nx,<span style="color: #B452CD">0</span>:Ny), Cx2, Cy2, dt2
+      <span style="color: #a7a7a7; font-weight: bold">integer </span>i, j
+      <span style="color: #a7a7a7; font-weight: bold">real</span>*<span style="color: #B452CD">8</span> u_xx, u_yy
+Cf2py <span style="color: #8B008B; font-weight: bold">intent</span>(in, out) u
+
+C     Scheme at interior points
+      <span style="color: #8B008B; font-weight: bold">do </span>j = <span style="color: #B452CD">1</span>, Ny-<span style="color: #B452CD">1</span>
+         <span style="color: #8B008B; font-weight: bold">do </span>i = <span style="color: #B452CD">1</span>, Nx-<span style="color: #B452CD">1</span>
+            u_xx = u_1(i-<span style="color: #B452CD">1</span>,j) - <span style="color: #B452CD">2</span>*u_1(i,j) + u_1(i+<span style="color: #B452CD">1</span>,j)
+            u_yy = u_1(i,j-<span style="color: #B452CD">1</span>) - <span style="color: #B452CD">2</span>*u_1(i,j) + u_1(i,j+<span style="color: #B452CD">1</span>)
+            u(i,j) = <span style="color: #B452CD">2</span>*u_1(i,j) - u_2(i,j) + Cx2*u_xx + Cy2*u_yy +
+     &amp;               dt2*f(i,j)
+         <span style="color: #8B008B; font-weight: bold">end do</span>
+<span style="color: #8B008B; font-weight: bold">      end do</span>
+
+C     Boundary conditions
+      j = <span style="color: #B452CD">0</span>
+      <span style="color: #8B008B; font-weight: bold">do </span>i = <span style="color: #B452CD">0</span>, Nx
+         u(i,j) = <span style="color: #B452CD">0</span>
+      <span style="color: #8B008B; font-weight: bold">end do</span>
+<span style="color: #8B008B; font-weight: bold">      </span>j = Ny
+      <span style="color: #8B008B; font-weight: bold">do </span>i = <span style="color: #B452CD">0</span>, Nx
+         u(i,j) = <span style="color: #B452CD">0</span>
+      <span style="color: #8B008B; font-weight: bold">end do</span>
+<span style="color: #8B008B; font-weight: bold">      </span>i = <span style="color: #B452CD">0</span>
+      <span style="color: #8B008B; font-weight: bold">do </span>j = <span style="color: #B452CD">0</span>, Ny
+         u(i,j) = <span style="color: #B452CD">0</span>
+      <span style="color: #8B008B; font-weight: bold">end do</span>
+<span style="color: #8B008B; font-weight: bold">      </span>i = Nx
+      <span style="color: #8B008B; font-weight: bold">do </span>j = <span style="color: #B452CD">0</span>, Ny
+         u(i,j) = <span style="color: #B452CD">0</span>
+      <span style="color: #8B008B; font-weight: bold">end do</span>
+<span style="color: #8B008B; font-weight: bold">      return</span>
+<span style="color: #8B008B; font-weight: bold">      end</span>
+</pre></div>
+<p>
+This code is plain Fortran 77, except for the special <code>Cf2py</code> comment
+line, which here specifies that <code>u</code> is both an input argument <em>and</em>
+an object to be returned from the <code>advance</code> routine. Or more
+precisely, Fortran is not able return an array from a function,
+but we need a <em>wrapper code</em> in C for the Fortran subroutine to enable
+calling it from Python, and from this wrapper code one can return <code>u</code>
+to the calling Python code.
+
+<p>
+<div class="alert alert-block alert-notice alert-text-normal">
+<b>Remark.</b>
+<p>
+It is not strictly necessary to return <code>u</code> to the calling Python
+code since the <code>advance</code> function will modify the elements of <code>u</code>,
+but the convention in Python is to get all output from a function
+as returned values. That is, the right way of calling the above
+Fortran subroutine from Python is
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eee8d5"><pre style="line-height: 125%">u = advance(u, u_1, u_2, f, Cx2, Cy2, dt2)
+</pre></div>
+<p>
+The less encouraged style, which works and resembles the way the
+Fortran subroutine is called from Fortran, reads
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eee8d5"><pre style="line-height: 125%">advance(u, u_1, u_2, f, Cx2, Cy2, dt2)
+</pre></div>
+
+</div>
+
+
+<h2 id="___sec28">Building the Fortran module with f2py </h2>
+
+<p>
+The nice feature of writing loops in Fortran is that, without
+much effort, the tool <code>f2py</code>
+can produce a C extension module such that
+we can call the Fortran version of <code>advance</code> from Python.
+The necessary commands to run are
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; f2py -m wave2D_u0_loop_f77 -h wave2D_u0_loop_f77.pyf \ 
+          --overwrite-signature wave2D_u0_loop_f77.f
+Terminal&gt; f2py -c wave2D_u0_loop_f77.pyf --build-dir build_f77 \ 
+          -DF2PY_REPORT_ON_ARRAY_COPY=1 wave2D_u0_loop_f77.f
+</pre></div>
+<p>
+The first command asks <code>f2py</code> to interpret the Fortran code and make
+a Fortran 90
+specification of the extension module in the file
+<code>wave2D_u0_loop_f77.pyf</code>. The second command makes
+<code>f2py</code> generate all necessary
+wrapper code, compile our Fortran file and the wrapper code,
+and finally build the module.
+The build process takes place in the specified subdirectory <code>build_f77</code>
+so that files can be inspected if something goes wrong.
+The option <code>-DF2PY_REPORT_ON_ARRAY_COPY=1</code> makes <code>f2py</code> write a message
+for every array that is copied in the communication between Fortran and Python,
+which is very useful for avoiding unnecessary array copying (see below).
+The name of the module file
+is <code>wave2D_u0_loop_f77.so</code>, and this file can be imported and inspected
+as any other
+Python module:
+
+<p>
+
+<!-- code=ipy (!bc ipy) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">&gt;&gt;&gt; <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">wave2D_u0_loop_f77</span>
+&gt;&gt;&gt; <span style="color: #658b00">dir</span>(wave2D_u0_loop_f77)
+[<span style="color: #CD5555">&#39;__doc__&#39;</span>, <span style="color: #CD5555">&#39;__file__&#39;</span>, <span style="color: #CD5555">&#39;__name__&#39;</span>, <span style="color: #CD5555">&#39;__package__&#39;</span>,
+ <span style="color: #CD5555">&#39;__version__&#39;</span>, <span style="color: #CD5555">&#39;advance&#39;</span>]
+&gt;&gt;&gt; <span style="color: #8B008B; font-weight: bold">print</span> wave2D_u0_loop_f77.__doc__
+This module <span style="color: #CD5555">&#39;wave2D_u0_loop_f77&#39;</span> <span style="color: #8B008B">is</span> auto-generated <span style="color: #8B008B; font-weight: bold">with</span> f2py....
+Functions:
+  u = advance(u,u_1,u_2,f,cx2,cy2,dt2,
+      nx=(shape(u,<span style="color: #B452CD">0</span>)-<span style="color: #B452CD">1</span>),ny=(shape(u,<span style="color: #B452CD">1</span>)-<span style="color: #B452CD">1</span>))
+</pre></div>
+<p>
+<div class="alert alert-block alert-warning alert-text-normal">
+<b>Examine the doc strings!</b>
+<p>
+Printing the doc strings of the module and its functions is
+extremely important after having created a module with <code>f2py</code>.
+The reason is that
+<code>f2py</code> makes Python interfaces to the Fortran functions
+that are different from how the functions are declared in
+the Fortran code (!). The rationale for this behavior is that
+<code>f2py</code> creates <em>Pythonic</em> interfaces such that Fortran routines
+can be called in the same way as one calls Python functions.
+Output data from Python functions is always returned
+to the calling code, but this is technically impossible in Fortran.
+Also, arrays in Python are passed to Python functions without
+their dimensions because that information is packed with the array
+data in the array objects. This is not possible in Fortran, however.
+Therefore, <code>f2py</code> removes array dimensions from the argument list,
+and <code>f2py</code> makes it possible to
+return objects back to Python.
+</div>
+
+
+<p>
+Let us follow the advice of examining the doc strings
+and take a close look at
+the documentation <code>f2py</code> has generated for our Fortran <code>advance</code>
+subroutine:
+
+<p>
+
+<!-- code=ipy (!bc ipy) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">&gt;&gt;&gt; <span style="color: #8B008B; font-weight: bold">print</span> wave2D_u0_loop_f77.advance.__doc__
+This module <span style="color: #CD5555">&#39;wave2D_u0_loop_f77&#39;</span> <span style="color: #8B008B">is</span> auto-generated <span style="color: #8B008B; font-weight: bold">with</span> f2py
+Functions:
+  u = advance(u,u_1,u_2,f,cx2,cy2,dt2,
+              nx=(shape(u,<span style="color: #B452CD">0</span>)-<span style="color: #B452CD">1</span>),ny=(shape(u,<span style="color: #B452CD">1</span>)-<span style="color: #B452CD">1</span>))
+.
+advance - Function signature:
+  u = advance(u,u_1,u_2,f,cx2,cy2,dt2,[nx,ny])
+Required arguments:
+  u : <span style="color: #658b00">input</span> rank-<span style="color: #B452CD">2</span> array(<span style="color: #CD5555">&#39;d&#39;</span>) <span style="color: #8B008B; font-weight: bold">with</span> bounds (nx + <span style="color: #B452CD">1</span>,ny + <span style="color: #B452CD">1</span>)
+  u_1 : <span style="color: #658b00">input</span> rank-<span style="color: #B452CD">2</span> array(<span style="color: #CD5555">&#39;d&#39;</span>) <span style="color: #8B008B; font-weight: bold">with</span> bounds (nx + <span style="color: #B452CD">1</span>,ny + <span style="color: #B452CD">1</span>)
+  u_2 : <span style="color: #658b00">input</span> rank-<span style="color: #B452CD">2</span> array(<span style="color: #CD5555">&#39;d&#39;</span>) <span style="color: #8B008B; font-weight: bold">with</span> bounds (nx + <span style="color: #B452CD">1</span>,ny + <span style="color: #B452CD">1</span>)
+  f : <span style="color: #658b00">input</span> rank-<span style="color: #B452CD">2</span> array(<span style="color: #CD5555">&#39;d&#39;</span>) <span style="color: #8B008B; font-weight: bold">with</span> bounds (nx + <span style="color: #B452CD">1</span>,ny + <span style="color: #B452CD">1</span>)
+  cx2 : <span style="color: #658b00">input</span> <span style="color: #658b00">float</span>
+  cy2 : <span style="color: #658b00">input</span> <span style="color: #658b00">float</span>
+  dt2 : <span style="color: #658b00">input</span> <span style="color: #658b00">float</span>
+Optional arguments:
+  nx := (shape(u,<span style="color: #B452CD">0</span>)-<span style="color: #B452CD">1</span>) <span style="color: #658b00">input</span> <span style="color: #658b00">int</span>
+  ny := (shape(u,<span style="color: #B452CD">1</span>)-<span style="color: #B452CD">1</span>) <span style="color: #658b00">input</span> <span style="color: #658b00">int</span>
+Return objects:
+  u : rank-<span style="color: #B452CD">2</span> array(<span style="color: #CD5555">&#39;d&#39;</span>) <span style="color: #8B008B; font-weight: bold">with</span> bounds (nx + <span style="color: #B452CD">1</span>,ny + <span style="color: #B452CD">1</span>)
+</pre></div>
+<p>
+Here we see that the <code>nx</code> and <code>ny</code> parameters declared in
+Fortran are optional arguments that can be omitted when calling
+<code>advance</code> from Python.
+
+<p>
+We strongly recommend to print out the
+documentation of <em>every</em> Fortran function to be called from Python
+and make sure the call syntax is exactly as listed in the
+documentation.
+
+<h2 id="___sec29">How to avoid array copying </h2>
+
+<p>
+Multi-dimensional arrays are stored as a stream of numbers in memory.
+For a two-dimensional array consisting of rows and columns there are
+two ways of creating such a stream: <em>row-major ordering</em>, which means
+that rows are stored consecutively in memory, or <em>column-major
+ordering</em>, which means that the columns are stored one after each other.
+All programming languages inherited from C, including Python, apply
+the row-major ordering, but Fortran uses column-major storage.
+Thinking of a two-dimensional array in Python or C
+as a matrix, it means that Fortran
+works with the transposed matrix.
+
+<p>
+Fortunately, <code>f2py</code> creates extra code so that accessing <code>u(i,j)</code> in
+the Fortran subroutine corresponds to the element <code>u[i,j]</code> in the
+underlying <code>numpy</code> array (without the extra code, <code>u(i,j)</code> in Fortran
+would access <code>u[j,i]</code> in the <code>numpy</code> array).  Technically, <code>f2py</code>
+takes a copy of our <code>numpy</code> array and reorders the data before
+sending the array to Fortran. Such copying can be costly. For 2D wave
+simulations on a \( 60\times 60 \) grid the overhead of copying is a
+factor of 5, which means that almost the whole performance gain of
+Fortran over vectorized <code>numpy</code> code is lost!
+
+<p>
+To avoid having <code>f2py</code> to copy
+arrays with C storage to the corresponding Fortran storage, we declare
+the arrays with Fortran storage:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">order = <span style="color: #CD5555">&#39;Fortran&#39;</span> <span style="color: #8B008B; font-weight: bold">if</span> version == <span style="color: #CD5555">&#39;f77&#39;</span> <span style="color: #8B008B; font-weight: bold">else</span> <span style="color: #CD5555">&#39;C&#39;</span>
+u   = zeros((Nx+<span style="color: #B452CD">1</span>,Ny+<span style="color: #B452CD">1</span>), order=order)   <span style="color: #228B22"># solution array</span>
+u_1 = zeros((Nx+<span style="color: #B452CD">1</span>,Ny+<span style="color: #B452CD">1</span>), order=order)   <span style="color: #228B22"># solution at t-dt</span>
+u_2 = zeros((Nx+<span style="color: #B452CD">1</span>,Ny+<span style="color: #B452CD">1</span>), order=order)   <span style="color: #228B22"># solution at t-2*dt</span>
+</pre></div>
+<p>
+In the compile and build step of using <code>f2py</code>, it is recommended to add
+an extra option for making <code>f2py</code> report on array copying:
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; f2py -c wave2D_u0_loop_f77.pyf --build-dir build_f77 \ 
+          -DF2PY_REPORT_ON_ARRAY_COPY=1 wave2D_u0_loop_f77.f
+</pre></div>
+<p>
+It can sometimes be a challenge to track down which array that causes
+a copying. There are two principal reasons for copying array data:
+either the array does not have Fortran storage or the element types do
+not match those declared in the Fortran code. The latter cause is
+usually effectively eliminated by using <code>real*8</code> data in the Fortran
+code and <code>float64</code> (the default <code>float</code> type in <code>numpy</code>) in the arrays
+on the Python side. The former reason is more common, and to check
+whether an array before a Fortran call has the right storage one can
+print the result of <code>isfortran(a)</code>, which is <code>True</code> if the array <code>a</code>
+has Fortran storage.
+
+<p>
+Let us look at an example where we face problems with array storage.
+A typical problem in the <code>wave2D_u0.py</code> code is
+to set
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">f_a = f(xv, yv, t[n])
+</pre></div>
+<p>
+before the call to the Fortran <code>advance</code> routine. This computation creates
+a new array with C storage. An undesired copy of <code>f_a</code> will be produced
+when sending <code>f_a</code> to a Fortran routine.
+There are two remedies, either direct insertion
+of data in an array with Fortran storage,
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">f_a = zeros((Nx+<span style="color: #B452CD">1</span>, Ny+<span style="color: #B452CD">1</span>), order=<span style="color: #CD5555">&#39;Fortran&#39;</span>)
+...
+f_a[:,:] = f(xv, yv, t[n])
+</pre></div>
+<p>
+or remaking the <code>f(xv, yv, t[n])</code> array,
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">f_a = asarray(f(xv, yv, t[n]), order=<span style="color: #CD5555">&#39;Fortran&#39;</span>)
+</pre></div>
+<p>
+The former remedy is most efficient if the <code>asarray</code> operation is to
+be performed a large number of times.
+
+<h3 id="___sec30">Efficiency </h3>
+
+<p>
+The efficiency of this Fortran code is very similar to the Cython code.
+There is usually nothing more to gain, from a computational efficiency
+point of view, by implementing the <em>complete</em> Python program in Fortran
+or C. That will just be a lot more code for all administering work
+that is needed in scientific software, especially if we extend our
+sample program <code>wave2D_u0.py</code> to handle a real scientific problem.
+Then only a small portion will consist of loops with intensive
+array calculations. These can be migrated to Cython or Fortran as
+explained, while the rest of the programming can be more conveniently
+done in Python.
+
+<h1 id="___sec31">Migrating loops to C via Cython </h1>
+
+<p>
+The computationally intensive loops can alternatively be implemented
+in C code. Just as Fortran calls for care regarding the storage of
+two-dimensional arrays, working with two-dimensional arrays in C
+is a bit tricky. The reason is that
+<code>numpy</code> arrays are viewed as one-dimensional arrays when
+transferred to C, while C programmers will think of <code>u</code>, <code>u_1</code>, and
+<code>u_2</code> as two dimensional arrays and index them like <code>u[i][j]</code>.
+The C code must declare <code>u</code> as <code>double* u</code> and translate an index
+pair <code>[i][j]</code> to a corresponding single index when <code>u</code> is
+viewed as one-dimensional. This translation requires knowledge of
+how the numbers in <code>u</code> are stored in memory.
+
+<h2 id="___sec32">Translating index pairs to single indices </h2>
+
+<p>
+Two-dimensional <code>numpy</code> arrays with the default C storage are stored
+row by row. In general, multi-dimensional arrays with C storage are
+stored such that the last index has the fastest variation, then the
+next last index, and so on, ending up with the slowest variation
+in the first index. For a two-dimensional <code>u</code> declared as
+<code>zeros((Nx+1,Ny+1))</code> in Python, the individual elements are stored
+in the following order:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">u[<span style="color: #B452CD">0</span>,<span style="color: #B452CD">0</span>], u[<span style="color: #B452CD">0</span>,<span style="color: #B452CD">1</span>], u[<span style="color: #B452CD">0</span>,<span style="color: #B452CD">2</span>], ..., u[<span style="color: #B452CD">0</span>,Ny], u[<span style="color: #B452CD">1</span>,<span style="color: #B452CD">0</span>], u[<span style="color: #B452CD">1</span>,<span style="color: #B452CD">1</span>], ...,
+u[<span style="color: #B452CD">1</span>,Ny], u[<span style="color: #B452CD">2</span>,<span style="color: #B452CD">0</span>], ..., u[Nx,<span style="color: #B452CD">0</span>], u[Nx,<span style="color: #B452CD">1</span>], ..., u[Nx, Ny]
+</pre></div>
+<p>
+Viewing <code>u</code> as one-dimensional, the index pair \( (i,j) \) translates
+to \( i(N_y+1)+j \). So, where a C programmer would naturally write
+an index <code>u[i][j]</code>, the indexing must read <code>u[i*(Ny+1) + j]</code>.
+This is tedious to write, so it can be handy to define a C macro,
+
+<p>
+
+<!-- code=c (!bc ccod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #1e889b">#define idx(i,j) (i)*(Ny+1) + j</span>
+</pre></div>
+<p>
+so that we can write <code>u[idx(i,j)]</code>, which reads much better and is
+easier to debug.
+
+<p>
+<div class="alert alert-block alert-warning alert-text-normal">
+<b>Be careful with macro definitions.</b>
+<p>
+Macros just perform simple text substitutions:
+<code>idx(hello,world)</code> is expanded to <code>(hello)*(Ny+1) + world</code>.
+The parenthesis in <code>(i)</code> are essential - using the natural mathematical
+formula <code>i*(Ny+1) + j</code> in the macro definition,
+<code>idx(i-1,j)</code> would expand to <code>i-1*(Ny+1) + j</code>, which is the wrong
+formula. Macros are handy, but requires careful use.
+In C++, inline functions are safer and replace the need for macros.
+</div>
+
+
+<h2 id="___sec33">The complete C code </h2>
+
+<p>
+The C version of our function <code>advance</code> can be coded as follows.
+
+<p>
+
+<!-- code=c (!bc cpro) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #1e889b">#define idx(i,j) (i)*(Ny+1) + j</span>
+
+<span style="color: #a7a7a7; font-weight: bold">void</span> <span style="color: #008b45">advance</span>(<span style="color: #a7a7a7; font-weight: bold">double</span>* u, <span style="color: #a7a7a7; font-weight: bold">double</span>* u_1, <span style="color: #a7a7a7; font-weight: bold">double</span>* u_2, <span style="color: #a7a7a7; font-weight: bold">double</span>* f,
+	     <span style="color: #a7a7a7; font-weight: bold">double</span> Cx2, <span style="color: #a7a7a7; font-weight: bold">double</span> Cy2, <span style="color: #a7a7a7; font-weight: bold">double</span> dt2, <span style="color: #a7a7a7; font-weight: bold">int</span> Nx, <span style="color: #a7a7a7; font-weight: bold">int</span> Ny)
+{
+  <span style="color: #a7a7a7; font-weight: bold">int</span> i, j;
+  <span style="color: #a7a7a7; font-weight: bold">double</span> u_xx, u_yy;
+  <span style="color: #228B22">/* Scheme at interior points */</span>
+  <span style="color: #8B008B; font-weight: bold">for</span> (i=<span style="color: #B452CD">1</span>; i&lt;=Nx-<span style="color: #B452CD">1</span>; i++) {
+    <span style="color: #8B008B; font-weight: bold">for</span> (j=<span style="color: #B452CD">1</span>; j&lt;=Ny-<span style="color: #B452CD">1</span>; j++) {
+      u_xx = u_1[idx(i-<span style="color: #B452CD">1</span>,j)] - <span style="color: #B452CD">2</span>*u_1[idx(i,j)] + u_1[idx(i+<span style="color: #B452CD">1</span>,j)];
+      u_yy = u_1[idx(i,j-<span style="color: #B452CD">1</span>)] - <span style="color: #B452CD">2</span>*u_1[idx(i,j)] + u_1[idx(i,j+<span style="color: #B452CD">1</span>)];
+      u[idx(i,j)] = <span style="color: #B452CD">2</span>*u_1[idx(i,j)] - u_2[idx(i,j)] +
+	Cx2*u_xx + Cy2*u_yy + dt2*f[idx(i,j)];
+    }
+  }
+  <span style="color: #228B22">/* Boundary conditions */</span>
+  j = <span style="color: #B452CD">0</span>;  <span style="color: #8B008B; font-weight: bold">for</span> (i=<span style="color: #B452CD">0</span>; i&lt;=Nx; i++) u[idx(i,j)] = <span style="color: #B452CD">0</span>;
+  j = Ny; <span style="color: #8B008B; font-weight: bold">for</span> (i=<span style="color: #B452CD">0</span>; i&lt;=Nx; i++) u[idx(i,j)] = <span style="color: #B452CD">0</span>;
+  i = <span style="color: #B452CD">0</span>;  <span style="color: #8B008B; font-weight: bold">for</span> (j=<span style="color: #B452CD">0</span>; j&lt;=Ny; j++) u[idx(i,j)] = <span style="color: #B452CD">0</span>;
+  i = Nx; <span style="color: #8B008B; font-weight: bold">for</span> (j=<span style="color: #B452CD">0</span>; j&lt;=Ny; j++) u[idx(i,j)] = <span style="color: #B452CD">0</span>;
+}
+</pre></div>
+
+<h2 id="___sec34">The Cython interface file </h2>
+
+<p>
+All the code above appears in a file <a href="http://tinyurl.com/nm5587k/wave//wave2D_u0/wave2D_u0_loop_c.c" target="_self"><tt>wave2D_u0_loop_c.c</tt></a>.
+We need to compile this file together with C wrapper code such that
+<code>advance</code> can be called from Python. Cython can be used to generate
+appropriate wrapper code.
+The relevant Cython code for interfacing C is
+placed in a file with extension <code>.pyx</code>. Here this file, called
+<a href="http://tinyurl.com/nm5587k/wave/wave2D_u0/wave2D_u0_loop_c_cy.pyx" target="_self"><tt>wave2D_u0_loop_c_cy.pyx</tt></a>, looks like
+
+<p>
+
+<!-- code=cython (!bc cypro) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">np</span>
+<span style="color: #8B008B; font-weight: bold">cimport</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">np</span>
+<span style="color: #8B008B; font-weight: bold">cimport</span> <span style="color: #008b45; text-decoration: underline">cython</span>
+
+<span style="color: #8B008B; font-weight: bold">cdef</span> <span style="color: #8B008B; font-weight: bold">extern</span> <span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #CD5555">&quot;wave2D_u0_loop_c.h&quot;</span>:
+    void advance(double* u, double* u_1, double* u_2, double* f,
+                 double Cx2, double Cy2, double dt2,
+                 <span style="color: #658b00">int</span> Nx, <span style="color: #658b00">int</span> Ny)
+
+<span style="color: #707a7c">@cython</span>.boundscheck(<span style="color: #658b00">False</span>)
+<span style="color: #707a7c">@cython</span>.wraparound(<span style="color: #658b00">False</span>)
+<span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">advance_cwrap</span>(
+    np.ndarray[double, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] u,
+    np.ndarray[double, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] u_1,
+    np.ndarray[double, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] u_2,
+    np.ndarray[double, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] f,
+    double Cx2, double Cy2, double dt2):
+    advance(&amp;u[<span style="color: #B452CD">0</span>,<span style="color: #B452CD">0</span>], &amp;u_1[<span style="color: #B452CD">0</span>,<span style="color: #B452CD">0</span>], &amp;u_2[<span style="color: #B452CD">0</span>,<span style="color: #B452CD">0</span>], &amp;f[<span style="color: #B452CD">0</span>,<span style="color: #B452CD">0</span>],
+            Cx2, Cy2, dt2,
+            u.shape[<span style="color: #B452CD">0</span>]-<span style="color: #B452CD">1</span>, u.shape[<span style="color: #B452CD">1</span>]-<span style="color: #B452CD">1</span>)
+    <span style="color: #8B008B; font-weight: bold">return</span> u
+</pre></div>
+<p>
+We first declare the C functions to be interfaced.
+These must also appear in a C header file, <a href="http://tinyurl.com/nm5587k/wave/wave2D_u0/wave2D_u0_loop_c.h" target="_self"><tt>wave2D_u0_loop_c.h</tt></a>,
+
+<p>
+
+<!-- code=c++ (!bc cpppro) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">extern</span> <span style="color: #a7a7a7; font-weight: bold">void</span> <span style="color: #008b45">advance</span>(<span style="color: #a7a7a7; font-weight: bold">double</span>* u, <span style="color: #a7a7a7; font-weight: bold">double</span>* u_1, <span style="color: #a7a7a7; font-weight: bold">double</span>* u_2, <span style="color: #a7a7a7; font-weight: bold">double</span>* f,
+		    <span style="color: #a7a7a7; font-weight: bold">double</span> Cx2, <span style="color: #a7a7a7; font-weight: bold">double</span> Cy2, <span style="color: #a7a7a7; font-weight: bold">double</span> dt2,
+		    <span style="color: #a7a7a7; font-weight: bold">int</span> Nx, <span style="color: #a7a7a7; font-weight: bold">int</span> Ny);
+</pre></div>
+<p>
+The next step is to write a Cython function with Python objects as arguments.
+The name <code>advance</code> is already used for the C function so the function
+to be called from Python is named <code>advance_cwrap</code>. The contents of
+this function is simply a call to the <code>advance</code> version in C. To this end,
+the right information from the Python objects must be passed on as
+arguments to <code>advance</code>. Arrays are sent with their C pointers to the
+first element, obtained in Cython as <code>&u[0,0]</code> (the <code>&</code> takes the
+address of a C variable). The <code>Nx</code> and <code>Ny</code> arguments in <code>advance</code> are
+easily obtained from the shape of the <code>numpy</code> array <code>u</code>.
+Finally, <code>u</code> must be returned such that we can set <code>u = advance(...)</code>
+in Python.
+
+<h2 id="___sec35">Building the extension module </h2>
+
+<p>
+It remains to build the extension module. An appropriate
+<code>setup.py</code> file is
+
+<p>
+
+<!-- code=python (!bc pypro) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">distutils.core</span> <span style="color: #8B008B; font-weight: bold">import</span> setup
+<span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">distutils.extension</span> <span style="color: #8B008B; font-weight: bold">import</span> Extension
+<span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">Cython.Distutils</span> <span style="color: #8B008B; font-weight: bold">import</span> build_ext
+
+sources = [<span style="color: #CD5555">&#39;wave2D_u0_loop_c.c&#39;</span>, <span style="color: #CD5555">&#39;wave2D_u0_loop_c_cy.pyx&#39;</span>]
+module = <span style="color: #CD5555">&#39;wave2D_u0_loop_c_cy&#39;</span>
+setup(
+  name=module,
+  ext_modules=[Extension(module, sources,
+                         libraries=[], <span style="color: #228B22"># C libs to link with</span>
+                         )],
+  cmdclass={<span style="color: #CD5555">&#39;build_ext&#39;</span>: build_ext},
+)
+</pre></div>
+<p>
+All we need to specify is the <code>.c</code> file(s) and the <code>.pyx</code> interface
+file. Cython is automatically run to generate the necessary wrapper
+code. Files are then compiled and linked to an extension module
+residing in the file <code>wave2D_u0_loop_c_cy.so</code>. Here is a
+session with running <code>setup.py</code>
+and examining the resulting module in Python
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; python setup.py build_ext --inplace
+Terminal&gt; python
+&gt;&gt;&gt; import wave2D_u0_loop_c_cy as m
+&gt;&gt;&gt; dir(m)
+[&#39;__builtins__&#39;, &#39;__doc__&#39;, &#39;__file__&#39;, &#39;__name__&#39;, &#39;__package__&#39;,
+ &#39;__test__&#39;, &#39;advance_cwrap&#39;, &#39;np&#39;]
+</pre></div>
+<p>
+The call to the C version of <code>advance</code> can go like this in Python:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">wave2D_u0_loop_c_cy</span>
+advance = wave2D_u0_loop_c_cy.advance_cwrap
+...
+f_a[:,:] = f(xv, yv, t[n])
+u = advance(u, u_1, u_2, f_a, Cx2, Cy2, dt2)
+</pre></div>
+
+<h3 id="___sec36">Efficiency </h3>
+
+<p>
+In this example, the C and Fortran code runs at the same speed, and there
+are no significant differences in the efficiency of the wrapper code.
+The overhead implied by the wrapper code is negligible as long as
+we do not work with very small meshes and consequently little numerical
+work in the <code>advance</code> function.
+
+<h1 id="___sec37">Migrating loops to C via f2py </h1>
+
+<p>
+An alternative to using Cython for interfacing C code is to apply
+<code>f2py</code>. The C code is the same, just the details of specifying how
+it is to be called from Python differ. The <code>f2py</code> tool requires
+the call specification to be a Fortran 90 module defined in a <code>.pyf</code>
+file. This file was automatically generated when we interfaced a
+Fortran subroutine. With a C function we need to write this module
+ourselves, or we can use a trick and let <code>f2py</code> generate it for us.
+The trick consists in writing the signature of the C function with
+Fortran syntax and place it in a Fortran file, here
+<code>wave2D_u0_loop_c_f2py_signature.f</code>:
+
+<p>
+
+<!-- code=fortran (!bc fpro) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">      <span style="color: #8B008B; font-weight: bold">subroutine </span>advance(u, u_1, u_2, f, Cx2, Cy2, dt2, Nx, Ny)
+Cf2py <span style="color: #8B008B; font-weight: bold">intent</span>(c) advance
+      <span style="color: #a7a7a7; font-weight: bold">integer </span>Nx, Ny, N
+      <span style="color: #a7a7a7; font-weight: bold">real</span>*<span style="color: #B452CD">8</span> u(<span style="color: #B452CD">0</span>:Nx,<span style="color: #B452CD">0</span>:Ny), u_1(<span style="color: #B452CD">0</span>:Nx,<span style="color: #B452CD">0</span>:Ny), u_2(<span style="color: #B452CD">0</span>:Nx,<span style="color: #B452CD">0</span>:Ny)
+      <span style="color: #a7a7a7; font-weight: bold">real</span>*<span style="color: #B452CD">8</span> f(<span style="color: #B452CD">0</span>:Nx, <span style="color: #B452CD">0</span>:Ny), Cx2, Cy2, dt2
+Cf2py <span style="color: #8B008B; font-weight: bold">intent</span>(in, out) u
+Cf2py <span style="color: #8B008B; font-weight: bold">intent</span>(c) u, u_1, u_2, f, Cx2, Cy2, dt2, Nx, Ny
+      <span style="color: #8B008B; font-weight: bold">return</span>
+<span style="color: #8B008B; font-weight: bold">      end</span>
+</pre></div>
+<p>
+Note that we need a special <code>f2py</code> instruction, through a <code>Cf2py</code>
+comment line, to specify that all the function arguments are
+C variables. We also need to tell that the function is actually
+in C: <code>intent(c) advance</code>.
+
+<p>
+Since <code>f2py</code> is just concerned with the function signature and not the
+complete contents of the function body, it can easily generate the
+Fortran 90 module specification based solely on the signature above:
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; f2py -m wave2D_u0_loop_c_f2py \ 
+          -h wave2D_u0_loop_c_f2py.pyf --overwrite-signature \ 
+          wave2D_u0_loop_c_f2py_signature.f
+</pre></div>
+<p>
+The compile and build step is as for the Fortran code, except that we
+list C files instead of Fortran files:
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; f2py -c wave2D_u0_loop_c_f2py.pyf \ 
+          --build-dir tmp_build_c \ 
+          -DF2PY_REPORT_ON_ARRAY_COPY=1 wave2D_u0_loop_c.c
+</pre></div>
+<p>
+As when interfacing Fortran code with <code>f2py</code>, we need to print out
+the doc string to see the exact call syntax from the Python side.
+This doc string is identical for the C and Fortran versions of
+<code>advance</code>.
+
+<p>
+<!-- No worries with transposed storage, copy of arrays can only take -->
+<!-- place if the type don't match -->
+
+<p>
+<!-- ===== Migrating loops to C via Instant ===== -->
+
+<h2 id="___sec38">Migrating loops to C++ via f2py </h2>
+
+<p>
+C++ is a much more versatile language than C or Fortran and has over
+the last two decades become very popular for numerical computing.
+Many will therefore prefer to migrate compute-intensive Python code
+to C++. This is, in principle, easy: just write the desired C++ code
+and use some tool for interfacing it from Python. A tool like
+<a href="http://swig.org/" target="_self">SWIG</a> can interpret the C++ code and generate
+interfaces for a wide range of
+languages, including Python, Perl, Ruby, and Java.
+However, SWIG is a comprehensive tool with a correspondingly
+steep learning curve. Alternative tools, such as
+<a href="http://www.boost.org/doc/libs/1_51_0/libs/python/doc/index.html" target="_self">Boost Python</a>, <a href="http://riverbankcomputing.co.uk/software/sip/intro" target="_self">SIP</a>,
+and <a href="http://qt-project.org/wiki/Category:LanguageBindings::PySide::Shiboken" target="_self">Shiboken</a>
+are similarly comprehensive. Simpler tools include
+<a href="http://code.google.com/p/pybindgen/" target="_self">PyBindGen</a>,
+
+<p>
+<!-- More tools for interfacing C++ from Python -->
+
+<p>
+A technically much easier way of interfacing C++ code is to drop the
+possibility to use C++ classes directly from Python, but instead
+make a C interface to the C++ code. The C interface can be handled
+by <code>f2py</code> as shown in the example with pure C code. Such a solution
+means that classes in Python and C++ cannot be mixed and that only
+primitive data types like numbers, strings, and arrays can be
+transferred between Python and C++. Actually, this is often a very
+good solution because it forces the C++ code to work on array data,
+which usually gives faster code than if fancy data structures with
+classes are used. The arrays coming from Python, and looking like
+plain C/C++ arrays, can be efficiently wrapped in more user-friendly
+C++ array classes in the C++ code, if desired.
+
+<p>
+<!-- __Remaining.__ -->
+<!-- Use some array class. Key issue: <code>extern &quot;C&quot;</code> declaration of C++ -->
+<!-- function in the C file with the interface we want to wrap. -->
+
+<h1 id="___sec39">Exercises </h1>
+
+<p>
+<!-- --- begin exercise --- -->
+
+<h2 id="softeng2:exer:savez">Exercise 1: Make an improved <code>numpy.savez</code> function</h2>
+
+<p>
+The <code>numpy.savez</code> function can save multiple arrays to a zip archive.
+Unfortunately, if we want to use <code>savez</code> in time-dependent problems
+and call it multiple times (once per time level), each call leads
+to a separate zip archive. It is more convenient to have all
+arrays in one archive, which can be read by <code>numpy.load</code>.
+The section <a href="#softeng2:wave1D:filestorage">Saving large arrays in files</a> provides a recipe for
+merging all the individual zip archives into one archive.
+An alternative is to write a new <code>savez</code> function that allows
+multiple calls and storage into the same archive prior to a final
+<code>close</code> method to close the archive and make it ready for reading.
+Implement such an improved <code>savez</code> function as a class <code>Savez</code>.
+
+<p>
+The class should pass the following unit test:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">test_Savez</span>():
+    <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">tempfile</span>, <span style="color: #008b45; text-decoration: underline">os</span>
+    tmp = <span style="color: #CD5555">&#39;tmp_testarchive&#39;</span>
+    database = Savez(tmp)
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(<span style="color: #B452CD">4</span>):
+        array = np.linspace(<span style="color: #B452CD">0</span>, <span style="color: #B452CD">5</span>+i, <span style="color: #B452CD">3</span>)
+        kwargs = {<span style="color: #CD5555">&#39;myarray_%02d&#39;</span> % i: array}
+        database.savez(**kwargs)
+    database.close()
+
+    database = np.load(tmp+<span style="color: #CD5555">&#39;.npz&#39;</span>)
+
+    expected = {
+        <span style="color: #CD5555">&#39;myarray_00&#39;</span>: np.array([ <span style="color: #B452CD">0.</span> ,  <span style="color: #B452CD">2.5</span>,  <span style="color: #B452CD">5.</span> ]),
+        <span style="color: #CD5555">&#39;myarray_01&#39;</span>: np.array([ <span style="color: #B452CD">0.</span>,  <span style="color: #B452CD">3.</span>,  <span style="color: #B452CD">6.</span>])
+        <span style="color: #CD5555">&#39;myarray_02&#39;</span>: np.array([ <span style="color: #B452CD">0.</span> ,  <span style="color: #B452CD">3.5</span>,  <span style="color: #B452CD">7.</span> ]),
+        <span style="color: #CD5555">&#39;myarray_03&#39;</span>: np.array([ <span style="color: #B452CD">0.</span>,  <span style="color: #B452CD">4.</span>,  <span style="color: #B452CD">8.</span>]),
+        }
+    <span style="color: #8B008B; font-weight: bold">for</span> name <span style="color: #8B008B">in</span> database:
+        computed = database[name]
+        diff = np.abs(expected[name] - computed).max()
+        <span style="color: #8B008B; font-weight: bold">assert</span> diff &lt; <span style="color: #B452CD">1E-13</span>
+    database.close
+    os.remove(tmp+<span style="color: #CD5555">&#39;.npz&#39;</span>)
+</pre></div>
+<p>
+<!-- --- begin hint in exercise --- -->
+
+<p>
+<b>Hint.</b>
+Study the <a href="https://github.com/numpy/numpy/blob/master/numpy/lib/npyio.py" target="_self">source code</a> for function <code>savez</code> (or more precisely, function <code>_savez</code>).
+
+<p>
+<!-- --- end hint in exercise --- -->
+
+<p>
+<!-- removed !bsol ... !esol environment (because of the command-line option --without_solutions)
+ -->Filename: <code>Savez</code>.
+
+<p>
+<!-- --- end exercise --- -->
+
+<p>
+<p>
+<!-- begin bottom navigation -->
+<table style="width: 100%"><tr><td>
+<div style="text-align: left;"><a href="._softeng2-solarized000.html">&laquo; Previous</a></div>
+</td><td>
+<div style="text-align: right;"><a href="._softeng2-solarized002.html">Next &raquo;</a></div>
+</td></tr></table>
+<!-- end bottom navigation -->
+</p>
+
+<!-- ------------------- end of main content --------------- -->
+
+
+</body>
+</html>
+    
+

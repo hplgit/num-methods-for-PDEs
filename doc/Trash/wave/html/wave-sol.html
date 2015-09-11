@@ -1,0 +1,711 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Finite difference methods for wave motion">
+<meta name="keywords" content="waves on a string,wave equation 1D,wave equation 1D, finite difference method,mesh finite differences,stencil 1D wave equation,mesh function,wave equation 1D, implementation,callback function,nose test,pytest test,unit testing,software testing nose,software testing pytest,closure,vectorization,scalar code,vectorization,array computing,array slices,slice,lambda function (Python),Neumann conditions,Dirichlet conditions,homogeneous Neumann conditions,homogeneous Dirichlet conditions,boundary conditions Neumann,boundary conditions Dirichlet,stencil Neumann boundary,index set notation,geometric mean,arithmetic mean,harmonic average,averaging geometric,averaging arithmetic,averaging harmonic,radiation condition,open boundary condition,boundary condition open (radiation),periodic boundary conditions,boundary conditions periodic,wave equation 1D, analytical properties,Fourier series,Fourier transform,discrete Fourier transform,wave equation 1D, exact numerical solution,Courant number,stability criterion,wave equation 1D, stability,wave equation 2D, implementation,index set notation">
+
+<title>Finite difference methods for wave motion</title>
+
+<!-- Bootstrap style: bootswatch_journal -->
+<link href="http://netdna.bootstrapcdn.com/bootswatch/3.1.1/journal/bootstrap.min.css" rel="stylesheet">
+<!-- not necessary
+<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+-->
+
+<style type="text/css">
+/* Let inline verbatim have the same color as the surroundings */
+code { color: inherit; background-color: transparent; }
+</style>
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('Simulation of waves on a string',
+               1,
+               'wave:string',
+               'wave:string'),
+              ('Discretizing the domain',
+               2,
+               'wave:string:mesh',
+               'wave:string:mesh'),
+              ('Uniform meshes', 3, None, '___sec2'),
+              ('The discrete solution',
+               2,
+               'wave:string:numerical:sol',
+               'wave:string:numerical:sol'),
+              ('Fulfilling the equation at the mesh points',
+               2,
+               'wave:string:samplingPDE',
+               'wave:string:samplingPDE'),
+              ('Replacing derivatives by finite differences',
+               2,
+               'wave:string:fd',
+               'wave:string:fd'),
+              ('Algebraic version of the PDE', 3, None, '___sec6'),
+              ('Interpretation of the equation as a stencil',
+               3,
+               None,
+               '___sec7'),
+              ('Algebraic version of the initial conditions',
+               3,
+               None,
+               '___sec8'),
+              ('Formulating a recursive algorithm',
+               2,
+               'wave:string:alg',
+               'wave:string:alg'),
+              ('Sketch of an implementation',
+               2,
+               'wave:string:impl',
+               'wave:string:impl'),
+              ('Verification', 1, None, '___sec11'),
+              ('A slightly generalized model problem',
+               2,
+               'wave:pde2:fd',
+               'wave:pde2:fd'),
+              ('Using an analytical solution of physical significance',
+               2,
+               'wave:pde2:fd:standing:waves',
+               'wave:pde2:fd:standing:waves'),
+              ('Manufactured solution',
+               2,
+               'wave:pde2:fd:MMS',
+               'wave:pde2:fd:MMS'),
+              ('Constructing an exact solution of the discrete equations',
+               2,
+               'wave:pde2:fd:verify:quadratic',
+               'wave:pde2:fd:verify:quadratic'),
+              ('Implementation', 1, 'wave:pde1:impl', 'wave:pde1:impl'),
+              ('Callback function for user-specific actions',
+               2,
+               None,
+               '___sec17'),
+              ('The solver function',
+               2,
+               'wave:pde1:impl:solver',
+               'wave:pde1:impl:solver'),
+              ('Verification: exact quadratic solution',
+               2,
+               'wave:pde1:impl:verify:quadratic',
+               'wave:pde1:impl:verify:quadratic'),
+              ('Visualization: animating the solution',
+               2,
+               'wave:pde1:impl:animate',
+               'wave:pde1:impl:animate'),
+              ('Function for administering the simulation',
+               3,
+               None,
+               '___sec21'),
+              ('Dissection of the code', 3, None, '___sec22'),
+              ('Making movie files', 3, None, '___sec23'),
+              ('Skipping frames for animation speed', 3, None, '___sec24'),
+              ('Running a case',
+               2,
+               'wave:pde1:guitar:data',
+               'wave:pde1:guitar:data'),
+              ('Working with a scaled PDE model', 2, None, '___sec26'),
+              ('Vectorization',
+               1,
+               'wave:pde1:impl:vec',
+               'wave:pde1:impl:vec'),
+              ('Operations on slices of arrays',
+               2,
+               'wave:pde1:impl:vec:slices:basics',
+               'wave:pde1:impl:vec:slices:basics'),
+              ('Finite difference schemes expressed as slices',
+               2,
+               'wave:pde1:impl:vec:slices:fdm',
+               'wave:pde1:impl:vec:slices:fdm'),
+              ('Verification',
+               2,
+               'wave:pde1:impl:vec:verify:quadratic',
+               'wave:pde1:impl:vec:verify:quadratic'),
+              ('Efficiency measurements', 2, None, '___sec31'),
+              ('Solution 1', 3, None, '___sec32'),
+              ('Solution 2', 3, None, '___sec33'),
+              ('Efficiency experiments', 3, None, '___sec34'),
+              ('Remark on the updating of arrays',
+               2,
+               'wave:pde1:impl:ref:switch',
+               'wave:pde1:impl:ref:switch'),
+              ('Exercises', 1, None, '___sec36'),
+              ('Exercise 1: Simulate a standing wave',
+               2,
+               'wave:exer:standingwave',
+               'wave:exer:standingwave'),
+              ('Remarks', 3, None, '___sec38'),
+              ('Exercise 2: Add storage of solution in a user action function',
+               2,
+               'wave:exer:store:list',
+               'wave:exer:store:list'),
+              ('Exercise 3: Use a class for the user action function',
+               2,
+               'wave:exer:store:list:class',
+               'wave:exer:store:list:class'),
+              ('Exercise 4: Compare several Courant numbers in one movie',
+               2,
+               'wave:exer:multiple:C',
+               'wave:exer:multiple:C'),
+              ('Project 5: Calculus with 1D mesh functions',
+               2,
+               'wave:exer:mesh1D:calculus',
+               'wave:exer:mesh1D:calculus'),
+              ('Generalization: reflecting boundaries',
+               1,
+               'wave:pde2:Neumann',
+               'wave:pde2:Neumann'),
+              ('Neumann boundary condition',
+               2,
+               'wave:pde2:Neumann:bc',
+               'wave:pde2:Neumann:bc'),
+              ('Discretization of derivatives at the boundary',
+               2,
+               'wave:pde2:Neumann:discr',
+               'wave:pde2:Neumann:discr'),
+              ('Implementation of Neumann conditions',
+               2,
+               'wave:pde2:Neumann:impl',
+               'wave:pde2:Neumann:impl'),
+              ('Index set notation', 2, 'wave:indexset', 'wave:indexset'),
+              ('Verifying the implementation of Neumann conditions',
+               2,
+               'wave:pde1:verify',
+               'wave:pde1:verify'),
+              ('Alternative implementation via ghost cells',
+               2,
+               'wave:pde1:Neumann:ghost',
+               'wave:pde1:Neumann:ghost'),
+              ('Idea', 3, None, '___sec50'),
+              ('Implementation', 3, None, '___sec51'),
+              ('Generalization: variable wave velocity',
+               1,
+               'wave:pde2:var:c',
+               'wave:pde2:var:c'),
+              ('The model PDE with a variable coefficient',
+               2,
+               None,
+               '___sec53'),
+              ('Discretizing the variable coefficient',
+               2,
+               'wave:pde2:var:c:ideas',
+               'wave:pde2:var:c:ideas'),
+              ('Computing the coefficient between mesh points',
+               2,
+               'wave:pde2:var:c:means',
+               'wave:pde2:var:c:means'),
+              ('How a variable coefficient affects the stability',
+               2,
+               'wave:pde2:var:c:stability',
+               'wave:pde2:var:c:stability'),
+              ('Neumann condition and a variable coefficient',
+               2,
+               'wave:pde2:var:c:Neumann',
+               'wave:pde2:var:c:Neumann'),
+              ('Implementation of variable coefficients',
+               2,
+               'wave:pde2:var:c:impl',
+               'wave:pde2:var:c:impl'),
+              ('A more general PDE model with variable coefficients',
+               2,
+               None,
+               '___sec59'),
+              ('Generalization: damping', 2, None, '___sec60'),
+              ('Building a general 1D wave equation solver',
+               1,
+               'wave:pde2:software',
+               'wave:pde2:software'),
+              ('User action function as a class', 2, None, '___sec62'),
+              ('The code', 3, None, '___sec63'),
+              ('Dissection', 3, None, '___sec64'),
+              ('Pulse propagation in two media', 2, None, '___sec65'),
+              ('Exercises', 1, None, '___sec66'),
+              ('Exercise 6: Find the analytical solution to a damped wave equation',
+               2,
+               'wave:exer:standingwave:damped:uex',
+               'wave:exer:standingwave:damped:uex'),
+              ('Problem 7: Explore symmetry boundary conditions',
+               2,
+               'wave:exer:symmetry:bc',
+               'wave:exer:symmetry:bc'),
+              ('Exercise 8: Send pulse waves through a layered medium',
+               2,
+               'wave:app:exer:pulse1D',
+               'wave:app:exer:pulse1D'),
+              ('Exercise 9: Explain why numerical noise occurs',
+               2,
+               'wave:app:exer:pulse1D:analysis',
+               'wave:app:exer:pulse1D:analysis'),
+              ('Exercise 10: Investigate harmonic averaging in a 1D model',
+               2,
+               'wave:app:exer:pulse1D:harmonic',
+               'wave:app:exer:pulse1D:harmonic'),
+              ('Problem 11: Implement open boundary conditions',
+               2,
+               'wave:app:exer:radiationBC',
+               'wave:app:exer:radiationBC'),
+              ('Remarks', 3, None, '___sec73'),
+              ('Exercise 12: Implement periodic boundary conditions',
+               2,
+               'wave:exer:periodic',
+               'wave:exer:periodic'),
+              ('Exercise 13: Compare discretizations of a Neumann condition',
+               2,
+               None,
+               '___sec75'),
+              ('Exercise 14: Verification by a cubic polynomial in space',
+               2,
+               'wave:fd2:exer:verify:cubic',
+               'wave:fd2:exer:verify:cubic'),
+              ('Analysis of the difference equations',
+               1,
+               'wave:pde1:analysis',
+               'wave:pde1:analysis'),
+              ('Properties of the solution of the wave equation',
+               2,
+               'wave:pde1:properties',
+               'wave:pde1:properties'),
+              ('More precise definition of Fourier representations',
+               2,
+               'wave:pde1:Fourier',
+               'wave:pde1:Fourier'),
+              ('Stability', 2, 'wave:pde1:stability', 'wave:pde1:stability'),
+              ('Preliminary results', 3, None, '___sec81'),
+              ('Numerical wave propagation', 3, None, '___sec82'),
+              ('Numerical dispersion relation',
+               2,
+               'wave:pde1:num:dispersion',
+               'wave:pde1:num:dispersion'),
+              ('Extending the analysis to 2D and 3D',
+               2,
+               'wave:pde1:analysis:2D3D',
+               'wave:pde1:analysis:2D3D'),
+              ('Finite difference methods for 2D and 3D wave equations',
+               1,
+               'wave:2D3D',
+               'wave:2D3D'),
+              ('Multi-dimensional wave equations',
+               2,
+               'wave:2D3D:models',
+               'wave:2D3D:models'),
+              ('Mesh', 2, 'wave:2D3D:mesh', 'wave:2D3D:mesh'),
+              ('Discretization', 2, 'wave:2D3D:models', 'wave:2D3D:models'),
+              ('Discretizing the PDEs', 3, None, '___sec89'),
+              ('Handling boundary conditions where $u$ is known',
+               3,
+               None,
+               '___sec90'),
+              ('Discretizing the Neumann condition', 3, None, '___sec91'),
+              ('Implementation', 1, 'wave:2D3D:impl', 'wave:2D3D:impl'),
+              ('Scalar computations',
+               2,
+               'wave2D3D:impl:scalar',
+               'wave2D3D:impl:scalar'),
+              ('Domain and mesh', 3, None, '___sec94'),
+              ('Solution arrays', 3, None, '___sec95'),
+              ('Index sets', 3, None, '___sec96'),
+              ('Computing the solution', 3, None, '___sec97'),
+              ('Vectorized computations',
+               2,
+               'wave2D3D:impl:vectorized',
+               'wave2D3D:impl:vectorized'),
+              ('Verification',
+               2,
+               'wave2D3D:impl:verify',
+               'wave2D3D:impl:verify'),
+              ('Testing a quadratic solution', 3, None, '___sec100'),
+              ('Using classes to implement a simulator',
+               1,
+               None,
+               '___sec101'),
+              ('Exercises', 1, None, '___sec102'),
+              ('Exercise 15: Check that a solution fulfills the discrete model',
+               2,
+               'wave:exer:quadratic:2D',
+               'wave:exer:quadratic:2D'),
+              ('Project 16: Calculus with 2D mesh functions',
+               2,
+               'wave:exer:mesh3D:calculus',
+               'wave:exer:mesh3D:calculus'),
+              ('Exercise 17: Implement Neumann conditions in 2D',
+               2,
+               'wave:app:exer:wave2D:Neumann',
+               'wave:app:exer:wave2D:Neumann'),
+              ('Exercise 18: Test the efficiency of compiled loops in 3D',
+               2,
+               'wave:exer:3D:f77:cy:efficiency',
+               'wave:exer:3D:f77:cy:efficiency'),
+              ('Applications of wave equations', 1, 'wave:app', 'wave:app'),
+              ('Waves on a string', 2, 'wave:app:string', 'wave:app:string'),
+              ('Damping', 3, None, '___sec109'),
+              ('External forcing', 3, None, '___sec110'),
+              ('Modeling the tension via springs', 3, None, '___sec111'),
+              ('Waves on a membrane',
+               2,
+               'wave:app:membrane',
+               'wave:app:membrane'),
+              ('Elastic waves in a rod',
+               2,
+               'wave:app:elastic:rod',
+               'wave:app:elastic:rod'),
+              ('The acoustic model for seismic waves',
+               2,
+               'wave:app:acoustic:seismic',
+               'wave:app:acoustic:seismic'),
+              ('Anisotropy', 3, None, '___sec115'),
+              ('Sound waves in liquids and gases',
+               2,
+               'wave:app:sound',
+               'wave:app:sound'),
+              ('Spherical waves',
+               2,
+               'wave:app:spherical',
+               'wave:app:spherical'),
+              ('The linear shallow water equations',
+               2,
+               'wave:app:sw:2D',
+               'wave:app:sw:2D'),
+              ('Wind drag on the surface', 3, None, '___sec119'),
+              ('Bottom drag', 3, None, '___sec120'),
+              ("Effect of the Earth's rotation", 3, None, '___sec121'),
+              ('Waves in blood vessels',
+               2,
+               'wave:app:blood',
+               'wave:app:blood'),
+              ('Electromagnetic waves',
+               2,
+               'wave:app:light',
+               'wave:app:light'),
+              ('Exercises', 1, 'wave:app:exer', 'wave:app:exer'),
+              ('Exercise 19: Simulate waves on a non-homogeneous string',
+               2,
+               'wave:app:exer:string:discont',
+               'wave:app:exer:string:discont'),
+              ('Exercise 20: Simulate damped waves on a string',
+               2,
+               'wave:app:exer:string:damping',
+               'wave:app:exer:string:damping'),
+              ('Exercise 21: Simulate elastic waves in a rod',
+               2,
+               'wave:app:exer:rod',
+               'wave:app:exer:rod'),
+              ('Exercise 22: Simulate spherical waves',
+               2,
+               'wave:app:exer:spherical',
+               'wave:app:exer:spherical'),
+              ('Problem 23: Earthquake-generated tsunami over a subsea hill',
+               2,
+               'wave:app:exer:tsunami1D:hill',
+               'wave:app:exer:tsunami1D:hill'),
+              ('Problem 24: Earthquake-generated tsunami over a 3D hill',
+               2,
+               'wave:app:exer:tsunami2D:hill',
+               'wave:app:exer:tsunami2D:hill'),
+              ('Problem 25: Investigate Matplotlib for visualization',
+               2,
+               'wave:app:exer:tsunami:hill:viz:matplotlib',
+               'wave:app:exer:tsunami:hill:viz:matplotlib'),
+              ('Problem 26: Investigate visualization packages',
+               2,
+               'wave:app:exer:tsunami:hill:viz:packages',
+               'wave:app:exer:tsunami:hill:viz:packages'),
+              ('Problem 27: Implement loops in compiled languages',
+               2,
+               'wave:app:exer:tsunami2D:hill:compiled',
+               'wave:app:exer:tsunami2D:hill:compiled'),
+              ('Exercise 28: Simulate seismic waves in 2D',
+               2,
+               'wave:app:exer:seismic2D',
+               'wave:app:exer:seismic2D'),
+              ('Project 29: Model 3D acoustic waves in a room',
+               2,
+               'wave:app:exer:acoustics',
+               'wave:app:exer:acoustics'),
+              ('Project 30: Solve a 1D transport equation',
+               2,
+               'wave:app:exer:advec1D',
+               'wave:app:exer:advec1D'),
+              ('Problem 31: General analytical solution of a 1D damped wave equation',
+               2,
+               'wave:app:exer:anal:damped:wave1D',
+               'wave:app:exer:anal:damped:wave1D'),
+              ('Problem 32: General analytical solution of a 2D damped wave equation',
+               2,
+               'wave:app:exer:anal:damped:wave2D',
+               'wave:app:exer:anal:damped:wave2D'),
+              ('References', 1, None, '___sec139')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\halfi}{{1/2}}
+\newcommand{\tp}{\thinspace .}
+\newcommand{\uex}{{u_{\small\mbox{e}}}}
+\newcommand{\xpoint}{\boldsymbol{x}}
+\newcommand{\normalvec}{\boldsymbol{n}}
+\newcommand{\Oof}[1]{\mathcal{O}(#1)}
+\renewcommand{\u}{\boldsymbol{u}}
+\newcommand{\f}{\boldsymbol{f}}
+\newcommand{\stress}{\boldsymbol{\sigma}}
+\newcommand{\I}{\boldsymbol{I}}
+\newcommand{\T}{\boldsymbol{T}}
+\newcommand{\ii}{\boldsymbol{i}}
+\newcommand{\jj}{\boldsymbol{j}}
+\newcommand{\kk}{\boldsymbol{k}}
+\newcommand{\Ix}{\mathcal{I}_x}
+\newcommand{\Iy}{\mathcal{I}_y}
+\newcommand{\Iz}{\mathcal{I}_z}
+\newcommand{\It}{\mathcal{I}_t}
+\newcommand{\setb}[1]{#1^0}    % set begin
+\newcommand{\sete}[1]{#1^{-1}} % set end
+\newcommand{\setl}[1]{#1^-}
+\newcommand{\setr}[1]{#1^+}
+\newcommand{\seti}[1]{#1^i}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Integer}{\mathbb{Z}}
+$$
+
+
+
+
+    
+<!-- Bootstrap navigation bar -->
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="wave-sol.html">Finite difference methods for wave motion</a>
+  </div>
+  <div class="navbar-collapse collapse navbar-responsive-collapse">
+    <ul class="nav navbar-nav navbar-right">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Contents <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+     <!-- navigation toc: --> <li><a href="._wave-sol001.html#wave:string" style="font-size: 80%;">Simulation of waves on a string</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol001.html#___sec11" style="font-size: 80%;">Verification</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol002.html#wave:pde1:impl" style="font-size: 80%;">Implementation</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol002.html#wave:pde1:impl:vec" style="font-size: 80%;">Vectorization</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol002.html#___sec36" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol003.html#wave:pde2:Neumann" style="font-size: 80%;">Generalization: reflecting boundaries</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol003.html#wave:pde2:var:c" style="font-size: 80%;">Generalization: variable wave velocity</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol003.html#wave:pde2:software" style="font-size: 80%;">Building a general 1D wave equation solver</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol003.html#___sec66" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol004.html#wave:pde1:analysis" style="font-size: 80%;">Analysis of the difference equations</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol005.html#wave:2D3D" style="font-size: 80%;">Finite difference methods for 2D and 3D wave equations</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol006.html#wave:2D3D:impl" style="font-size: 80%;">Implementation</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol006.html#___sec101" style="font-size: 80%;">Using classes to implement a simulator</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol006.html#___sec102" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol007.html#wave:app" style="font-size: 80%;">Applications of wave equations</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol010.html#wave:app:exer" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._wave-sol010.html#___sec139" style="font-size: 80%;">References</a></li>
+
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+</div> <!-- end of navigation bar -->
+
+<div class="container">
+
+<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p> <!-- add vertical space -->
+
+<a name="part0000"></a>
+<!-- ------------------- main content ---------------------- -->
+
+
+
+<div class="jumbotron">
+<center><h1>Finite difference methods for wave motion</h1></center>  <!-- document title -->
+
+<p>
+<!-- author(s): Hans Petter Langtangen -->
+
+<center>
+<b>Hans Petter Langtangen</b> [1, 2]
+</center>
+
+<p>
+<!-- institution(s) -->
+
+<center>[1] <b>Center for Biomedical Computing, Simula Research Laboratory</b></center>
+<center>[2] <b>Department of Informatics, University of Oslo</b></center>
+<br>
+<p>
+<center><h4>Sep 8, 2015</h4></center> <!-- date -->
+<br>
+<p>
+<!-- Externaldocuments: ../decay/main_decay, ../vib/main_vib -->
+
+<p>
+This is still a <b>preliminary version</b>.
+
+<h2>Table of contents</h2>
+
+<p>
+<a href="._wave-sol001.html#wave:string"> Simulation of waves on a string </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol001.html#wave:string:mesh"> Discretizing the domain </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol001.html#wave:string:numerical:sol"> The discrete solution </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol001.html#wave:string:samplingPDE"> Fulfilling the equation at the mesh points </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol001.html#wave:string:fd"> Replacing derivatives by finite differences </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol001.html#wave:string:alg"> Formulating a recursive algorithm </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol001.html#wave:string:impl"> Sketch of an implementation </a><br>
+<a href="._wave-sol001.html#___sec11"> Verification </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol001.html#wave:pde2:fd"> A slightly generalized model problem </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol001.html#wave:pde2:fd:standing:waves"> Using an analytical solution of physical significance </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol001.html#wave:pde2:fd:MMS"> Manufactured solution </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol001.html#wave:pde2:fd:verify:quadratic"> Constructing an exact solution of the discrete equations </a><br>
+<a href="._wave-sol002.html#wave:pde1:impl"> Implementation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#___sec17"> Callback function for user-specific actions </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#wave:pde1:impl:solver"> The solver function </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#wave:pde1:impl:verify:quadratic"> Verification: exact quadratic solution </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#wave:pde1:impl:animate"> Visualization: animating the solution </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#wave:pde1:guitar:data"> Running a case </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#___sec26"> Working with a scaled PDE model </a><br>
+<a href="._wave-sol002.html#wave:pde1:impl:vec"> Vectorization </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#wave:pde1:impl:vec:slices:basics"> Operations on slices of arrays </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#wave:pde1:impl:vec:slices:fdm"> Finite difference schemes expressed as slices </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#wave:pde1:impl:vec:verify:quadratic"> Verification </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#___sec31"> Efficiency measurements </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#wave:pde1:impl:ref:switch"> Remark on the updating of arrays </a><br>
+<a href="._wave-sol002.html#___sec36"> Exercises </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#wave:exer:standingwave"> Exercise 1: Simulate a standing wave </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#wave:exer:store:list"> Exercise 2: Add storage of solution in a user action function </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#wave:exer:store:list:class"> Exercise 3: Use a class for the user action function </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#wave:exer:multiple:C"> Exercise 4: Compare several Courant numbers in one movie </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol002.html#wave:exer:mesh1D:calculus"> Project 5: Calculus with 1D mesh functions </a><br>
+<a href="._wave-sol003.html#wave:pde2:Neumann"> Generalization: reflecting boundaries </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:pde2:Neumann:bc"> Neumann boundary condition </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:pde2:Neumann:discr"> Discretization of derivatives at the boundary </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:pde2:Neumann:impl"> Implementation of Neumann conditions </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:indexset"> Index set notation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:pde1:verify"> Verifying the implementation of Neumann conditions </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:pde1:Neumann:ghost"> Alternative implementation via ghost cells </a><br>
+<a href="._wave-sol003.html#wave:pde2:var:c"> Generalization: variable wave velocity </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#___sec53"> The model PDE with a variable coefficient </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:pde2:var:c:ideas"> Discretizing the variable coefficient </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:pde2:var:c:means"> Computing the coefficient between mesh points </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:pde2:var:c:stability"> How a variable coefficient affects the stability </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:pde2:var:c:Neumann"> Neumann condition and a variable coefficient </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:pde2:var:c:impl"> Implementation of variable coefficients </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#___sec59"> A more general PDE model with variable coefficients </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#___sec60"> Generalization: damping </a><br>
+<a href="._wave-sol003.html#wave:pde2:software"> Building a general 1D wave equation solver </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#___sec62"> User action function as a class </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#___sec65"> Pulse propagation in two media </a><br>
+<a href="._wave-sol003.html#___sec66"> Exercises </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:exer:standingwave:damped:uex"> Exercise 6: Find the analytical solution to a damped wave equation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:exer:symmetry:bc"> Problem 7: Explore symmetry boundary conditions </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:app:exer:pulse1D"> Exercise 8: Send pulse waves through a layered medium </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:app:exer:pulse1D:analysis"> Exercise 9: Explain why numerical noise occurs </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:app:exer:pulse1D:harmonic"> Exercise 10: Investigate harmonic averaging in a 1D model </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:app:exer:radiationBC"> Problem 11: Implement open boundary conditions </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:exer:periodic"> Exercise 12: Implement periodic boundary conditions </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#___sec75"> Exercise 13: Compare discretizations of a Neumann condition </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol003.html#wave:fd2:exer:verify:cubic"> Exercise 14: Verification by a cubic polynomial in space </a><br>
+<a href="._wave-sol004.html#wave:pde1:analysis"> Analysis of the difference equations </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol004.html#wave:pde1:properties"> Properties of the solution of the wave equation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol004.html#wave:pde1:Fourier"> More precise definition of Fourier representations </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol004.html#wave:pde1:stability"> Stability </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol004.html#wave:pde1:num:dispersion"> Numerical dispersion relation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol004.html#wave:pde1:analysis:2D3D"> Extending the analysis to 2D and 3D </a><br>
+<a href="._wave-sol005.html#wave:2D3D"> Finite difference methods for 2D and 3D wave equations </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol005.html#wave:2D3D:models"> Multi-dimensional wave equations </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol005.html#wave:2D3D:mesh"> Mesh </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol005.html#wave:2D3D:models"> Discretization </a><br>
+<a href="._wave-sol006.html#wave:2D3D:impl"> Implementation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol006.html#wave2D3D:impl:scalar"> Scalar computations </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol006.html#wave2D3D:impl:vectorized"> Vectorized computations </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol006.html#wave2D3D:impl:verify"> Verification </a><br>
+<a href="._wave-sol006.html#___sec101"> Using classes to implement a simulator </a><br>
+<a href="._wave-sol006.html#___sec102"> Exercises </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol006.html#wave:exer:quadratic:2D"> Exercise 15: Check that a solution fulfills the discrete model </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol006.html#wave:exer:mesh3D:calculus"> Project 16: Calculus with 2D mesh functions </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol006.html#wave:app:exer:wave2D:Neumann"> Exercise 17: Implement Neumann conditions in 2D </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol006.html#wave:exer:3D:f77:cy:efficiency"> Exercise 18: Test the efficiency of compiled loops in 3D </a><br>
+<a href="._wave-sol007.html#wave:app"> Applications of wave equations </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol007.html#wave:app:string"> Waves on a string </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol007.html#wave:app:membrane"> Waves on a membrane </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol007.html#wave:app:elastic:rod"> Elastic waves in a rod </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol007.html#wave:app:acoustic:seismic"> The acoustic model for seismic waves </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol007.html#wave:app:sound"> Sound waves in liquids and gases </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol008.html#wave:app:spherical"> Spherical waves </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol008.html#wave:app:sw:2D"> The linear shallow water equations </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol009.html#wave:app:blood"> Waves in blood vessels </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol009.html#wave:app:light"> Electromagnetic waves </a><br>
+<a href="._wave-sol010.html#wave:app:exer"> Exercises </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol010.html#wave:app:exer:string:discont"> Exercise 19: Simulate waves on a non-homogeneous string </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol010.html#wave:app:exer:string:damping"> Exercise 20: Simulate damped waves on a string </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol010.html#wave:app:exer:rod"> Exercise 21: Simulate elastic waves in a rod </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol010.html#wave:app:exer:spherical"> Exercise 22: Simulate spherical waves </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol010.html#wave:app:exer:tsunami1D:hill"> Problem 23: Earthquake-generated tsunami over a subsea hill </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol010.html#wave:app:exer:tsunami2D:hill"> Problem 24: Earthquake-generated tsunami over a 3D hill </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol010.html#wave:app:exer:tsunami:hill:viz:matplotlib"> Problem 25: Investigate Matplotlib for visualization </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol010.html#wave:app:exer:tsunami:hill:viz:packages"> Problem 26: Investigate visualization packages </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol010.html#wave:app:exer:tsunami2D:hill:compiled"> Problem 27: Implement loops in compiled languages </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol010.html#wave:app:exer:seismic2D"> Exercise 28: Simulate seismic waves in 2D </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol010.html#wave:app:exer:acoustics"> Project 29: Model 3D acoustic waves in a room </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol010.html#wave:app:exer:advec1D"> Project 30: Solve a 1D transport equation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol010.html#wave:app:exer:anal:damped:wave1D"> Problem 31: General analytical solution of a 1D damped wave equation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._wave-sol010.html#wave:app:exer:anal:damped:wave2D"> Problem 32: General analytical solution of a 2D damped wave equation </a><br>
+<a href="._wave-sol010.html#___sec139"> References </a><br>
+</p>
+<p>
+
+
+<p><a href="._wave-sol001.html" class="btn btn-primary btn-lg">Read &raquo;</a></p>
+
+
+</div> <!-- end jumbotron -->
+
+<p>
+<!-- navigation buttons at the bottom of the page -->
+<ul class="pager">
+  <li class="next">
+    <a href="._wave-sol001.html">Next &rarr;</a>
+  </li>
+</ul>
+<!-- ------------------- end of main content --------------- -->
+
+</div>  <!-- end container -->
+<!-- include javascript, jQuery *first* -->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+<!-- Bootstrap footer
+<footer>
+<a href="http://..."><img width="250" align=right src="http://..."></a>
+</footer>
+-->
+
+
+</body>
+</html>
+    
+

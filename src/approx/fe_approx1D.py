@@ -23,24 +23,6 @@ def mesh_uniform(N_e, d, Omega=[0,1], symbolic=False):
 
 from Lagrange import Lagrange_polynomial, Chebyshev_nodes, Lagrange_polynomials
 
-def phi_r(r, X, d):
-    """
-    Return local basis function phi_r at local point X in
-    a 1D element with d+1 nodes.
-    """
-    if d == 0:
-        return np.ones_like(X)
-
-    if isinstance(X, sym.Symbol):
-        # Use sym.Rational and integers for nodes
-        # (to maximize nice-looking output)
-        h = sym.Rational(1, d)
-        nodes = [2*i*h - 1 for i in range(d+1)]
-    else:
-        # X is numeric: use floats for nodes
-        nodes = np.linspace(-1, 1, d+1)
-    return Lagrange_polynomial(X, r, nodes)
-
 
 def basis(d, point_distribution='uniform', symbolic=False):
     """
@@ -96,16 +78,17 @@ def u_glob(U, elements, nodes, resolution_per_element=51):
     """
     Compute (x, y) coordinates of a curve y = u(x), where u is a
     finite element function: u(x) = sum_i of U_i*phi_i(x).
+    (The solution of the linear system is in U.)
     Method: Run through each element and compute curve coordinates
     over the element.
     """
     x_patches = []
     u_patches = []
-    phi = basis(d)
     for e in range(len(elements)):
         Omega_e = (nodes[elements[e][0]], nodes[elements[e][-1]])
         local_nodes = elements[e]
         d = len(local_nodes) - 1
+        phi = basis(d)
         X = np.linspace(-1, 1, resolution_per_element)
         x = affine_mapping(X, Omega_e)
         x_patches.append(x)
@@ -117,6 +100,41 @@ def u_glob(U, elements, nodes, resolution_per_element=51):
     x = np.concatenate(x_patches)
     u = np.concatenate(u_patches)
     return x, u
+
+def u_glob2(U, cells, vertices, dof_map, resolution_per_element=51):
+    """
+    Compute (x, y) coordinates of a curve y = u(x), where u is a
+    finite element function: u(x) = sum_i of U_i*phi_i(x).
+    (The solution of the linear system is in U.)
+    Method: Run through each element and compute curve coordinates
+    over the element.
+    This function works with cells, vertices, and dof_map.
+    """
+    x_patches = []
+    u_patches = []
+    nodes = {}  # node coordinates (use dict to avoid multiple values)
+    for e in range(len(cells)):
+        Omega_e = (vertices[cells[e][0]], vertices[cells[e][-1]])
+        d = len(dof_map[e]) - 1
+        phi = basis(d)
+        X = np.linspace(-1, 1, resolution_per_element)
+        x = affine_mapping(X, Omega_e)
+        x_patches.append(x)
+        u_cell = 0
+        for r in range(d+1):
+            i = dof_map[e][r]  # global dof number
+            u_cell += U[i]*phi[r](X)
+        u_patches.append(u_cell)
+        # Compute global coordinates of local nodes,
+        # assuming all dofs corresponds to values at nodes
+        X = np.linspace(-1, 1, d+1)
+        x = affine_mapping(X, Omega_e)
+        for r in range(d+1):
+            nodes[dof_map[e][r]] = x[r]
+    nodes = np.array([nodes[i] for i in sorted(nodes)])
+    x = np.concatenate(x_patches)
+    u = np.concatenate(u_patches)
+    return x, u, nodes
 
 def element_matrix(phi, Omega_e, symbolic=True):
     n = len(phi)

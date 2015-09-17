@@ -1,0 +1,284 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Finite difference methods for diffusion processes">
+<meta name="keywords" content="diffusion equation, 1D,heat equation, 1D,stationary solution,explicit discretization methods,implicit discretization methods,amplification factor,energy estimates (diffusion)">
+
+<title>Finite difference methods for diffusion processes</title>
+
+<!-- Bootstrap style: bootswatch_journal -->
+<link href="http://netdna.bootstrapcdn.com/bootswatch/3.1.1/journal/bootstrap.min.css" rel="stylesheet">
+<!-- not necessary
+<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+-->
+
+<style type="text/css">
+/* Let inline verbatim have the same color as the surroundings */
+code { color: inherit; background-color: transparent; }
+</style>
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('The 1D diffusion equation', 1, None, '___sec0'),
+              ('The initial-boundary value problem for 1D diffusion',
+               2,
+               None,
+               '___sec1'),
+              ('Forward Euler scheme', 2, 'diffu:pde1:FE', 'diffu:pde1:FE'),
+              ('Backward Euler scheme', 2, 'diffu:pde1:BE', 'diffu:pde1:BE'),
+              ('Sparse matrix implementation',
+               2,
+               'diffu:pde1:impl:sparse',
+               'diffu:pde1:impl:sparse'),
+              ('Crank-Nicolson scheme', 2, 'diffu:pde1:CN', 'diffu:pde1:CN'),
+              ('The $\\theta$ rule',
+               2,
+               'diffu:pde1:theta',
+               'diffu:pde1:theta'),
+              ('The Laplace and Poisson equation', 2, None, '___sec7'),
+              ('Extensions', 2, None, '___sec8'),
+              ('Analysis of schemes for the diffusion equation',
+               1,
+               'diffu:pde1:analysis',
+               'diffu:pde1:analysis'),
+              ('Properties of the solution',
+               2,
+               'diffu:pde1:analysis:uex',
+               'diffu:pde1:analysis:uex'),
+              ('Similarity solution', 3, None, '___sec11'),
+              ('Solution for a Gaussian pulse', 3, None, '___sec12'),
+              ('Solution for a sine component', 3, None, '___sec13'),
+              ('Example: Diffusion of a discontinues profile',
+               2,
+               None,
+               '___sec14'),
+              ('Analysis of discrete equations', 2, None, '___sec15'),
+              ('Analysis of the finite difference schemes',
+               2,
+               'diffu:pde1:analysis',
+               'diffu:pde1:analysis'),
+              ('Stability', 3, None, '___sec17'),
+              ('Accuracy', 3, None, '___sec18'),
+              ('Analysis of the Forward Euler scheme',
+               2,
+               'diffu:pde1:analysis:FE',
+               'diffu:pde1:analysis:FE'),
+              ('Stability', 3, None, '___sec20'),
+              ('Accuracy', 3, None, '___sec21'),
+              ('Analysis of the Backward Euler scheme',
+               2,
+               'diffu:pde1:analysis:BE',
+               'diffu:pde1:analysis:BE'),
+              ('Stability', 3, None, '___sec23'),
+              ('Analysis of the Crank-Nicolson scheme',
+               2,
+               'diffu:pde1:analysis:CN',
+               'diffu:pde1:analysis:CN'),
+              ('Stability', 3, None, '___sec25'),
+              ('Summary of accuracy of amplification factors',
+               2,
+               None,
+               '___sec26'),
+              ('Exercise 1: Explore symmetry in a 1D problem',
+               2,
+               'diffu:exer:1D:gaussian:symmetric',
+               'diffu:exer:1D:gaussian:symmetric'),
+              ('Exercise 2: Investigate approximation errors from a $u_x=0$ boundary condition',
+               2,
+               'diffu:exer:1D:ux:onesided',
+               'diffu:exer:1D:ux:onesided'),
+              ('Exercise 3: Experiment with open boundary conditions in 1D',
+               2,
+               'diffu:exer:1D:openBC',
+               'diffu:exer:1D:openBC'),
+              ('Exercise 4: Simulate a diffused Gaussian peak in 2D/3D',
+               2,
+               None,
+               '___sec30'),
+              ('Exercise 5: Examine stability of a diffusion model with a source term',
+               2,
+               'diffu:exer:uterm',
+               'diffu:exer:uterm'),
+              ('Diffusion in heterogeneous media', 1, None, '___sec32'),
+              ('Stationary solution', 2, None, '___sec33'),
+              ('Piecewise constant medium', 2, None, '___sec34'),
+              ('Implementation', 2, None, '___sec35'),
+              ('Exercises', 1, None, '___sec36'),
+              ('Exercise 6: Stabilizing the Crank-Nicolson method by Rannacher time stepping',
+               2,
+               'diffu:exer:CN:Rannacher',
+               'diffu:exer:CN:Rannacher'),
+              ('Project 7: Energy estimates for diffusion problems',
+               2,
+               'diffu:exer:energy:estimates',
+               'diffu:exer:energy:estimates'),
+              ('Bibliography', 1, None, '___sec39')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\tp}{\thinspace .}
+\newcommand{\uex}{{u_{\small\mbox{e}}}}
+\newcommand{\Aex}{{A_{\small\mbox{e}}}}
+\newcommand{\Oof}[1]{\mathcal{O}(#1)}
+\newcommand{\dfc}{\alpha}  % diffusion coefficient
+\newcommand{\dx}{\, \mathrm{d}x}
+\newcommand{\ds}{\, \mathrm{d}s}
+$$
+
+
+
+
+    
+<!-- Bootstrap navigation bar -->
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="diffu-sol.html">Finite difference methods for diffusion processes</a>
+  </div>
+  <div class="navbar-collapse collapse navbar-responsive-collapse">
+    <ul class="nav navbar-nav navbar-right">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Contents <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+     <!-- navigation toc: --> <li><a href="._diffu-sol001.html#___sec0" style="font-size: 80%;">The 1D diffusion equation</a></li>
+     <!-- navigation toc: --> <li><a href="._diffu-sol001.html#diffu:pde1:analysis" style="font-size: 80%;">Analysis of schemes for the diffusion equation</a></li>
+     <!-- navigation toc: --> <li><a href="._diffu-sol001.html#___sec32" style="font-size: 80%;">Diffusion in heterogeneous media</a></li>
+     <!-- navigation toc: --> <li><a href="._diffu-sol001.html#___sec36" style="font-size: 80%;">Exercises</a></li>
+     <!-- navigation toc: --> <li><a href="._diffu-sol002.html#___sec39" style="font-size: 80%;">Bibliography</a></li>
+
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+</div> <!-- end of navigation bar -->
+
+<div class="container">
+
+<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p> <!-- add vertical space -->
+
+<a name="part0000"></a>
+<!-- ------------------- main content ---------------------- -->
+
+
+
+<div class="jumbotron">
+<center><h1>Finite difference methods for diffusion processes</h1></center>  <!-- document title -->
+
+<p>
+<!-- author(s): Hans Petter Langtangen -->
+
+<center>
+<b>Hans Petter Langtangen</b> [1, 2]
+</center>
+
+<p>
+<!-- institution(s) -->
+
+<center>[1] <b>Center for Biomedical Computing, Simula Research Laboratory</b></center>
+<center>[2] <b>Department of Informatics, University of Oslo</b></center>
+<br>
+<p>
+<center><h4>Sep 17, 2015</h4></center> <!-- date -->
+<br>
+<p>
+Note: <b>PRELIMINARY VERSION</b>
+
+<h2>Table of contents</h2>
+
+<p>
+<a href="._diffu-sol001.html#___sec0"> The 1D diffusion equation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#___sec1"> The initial-boundary value problem for 1D diffusion </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:pde1:FE"> Forward Euler scheme </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:pde1:BE"> Backward Euler scheme </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:pde1:impl:sparse"> Sparse matrix implementation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:pde1:CN"> Crank-Nicolson scheme </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:pde1:theta"> The \( \theta \) rule </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#___sec7"> The Laplace and Poisson equation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#___sec8"> Extensions </a><br>
+<a href="._diffu-sol001.html#diffu:pde1:analysis"> Analysis of schemes for the diffusion equation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:pde1:analysis:uex"> Properties of the solution </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#___sec14"> Example: Diffusion of a discontinues profile </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#___sec15"> Analysis of discrete equations </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:pde1:analysis"> Analysis of the finite difference schemes </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:pde1:analysis:FE"> Analysis of the Forward Euler scheme </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:pde1:analysis:BE"> Analysis of the Backward Euler scheme </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:pde1:analysis:CN"> Analysis of the Crank-Nicolson scheme </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#___sec26"> Summary of accuracy of amplification factors </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:exer:1D:gaussian:symmetric"> Exercise 1: Explore symmetry in a 1D problem </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:exer:1D:ux:onesided"> Exercise 2: Investigate approximation errors from a \( u_x=0 \) boundary condition </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:exer:1D:openBC"> Exercise 3: Experiment with open boundary conditions in 1D </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#___sec30"> Exercise 4: Simulate a diffused Gaussian peak in 2D/3D </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:exer:uterm"> Exercise 5: Examine stability of a diffusion model with a source term </a><br>
+<a href="._diffu-sol001.html#___sec32"> Diffusion in heterogeneous media </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#___sec33"> Stationary solution </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#___sec34"> Piecewise constant medium </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#___sec35"> Implementation </a><br>
+<a href="._diffu-sol001.html#___sec36"> Exercises </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:exer:CN:Rannacher"> Exercise 6: Stabilizing the Crank-Nicolson method by Rannacher time stepping </a><br>
+&nbsp; &nbsp; &nbsp; <a href="._diffu-sol001.html#diffu:exer:energy:estimates"> Project 7: Energy estimates for diffusion problems </a><br>
+<a href="._diffu-sol002.html#___sec39"> Bibliography </a><br>
+</p>
+<p>
+
+
+<p><a href="._diffu-sol001.html" class="btn btn-primary btn-lg">Read &raquo;</a></p>
+
+
+</div> <!-- end jumbotron -->
+
+<p>
+<!-- navigation buttons at the bottom of the page -->
+<ul class="pager">
+  <li class="next">
+    <a href="._diffu-sol001.html">Next &rarr;</a>
+  </li>
+</ul>
+<!-- ------------------- end of main content --------------- -->
+
+</div>  <!-- end container -->
+<!-- include javascript, jQuery *first* -->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+<!-- Bootstrap footer
+<footer>
+<a href="http://..."><img width="250" align=right src="http://..."></a>
+</footer>
+-->
+
+
+</body>
+</html>
+    
+

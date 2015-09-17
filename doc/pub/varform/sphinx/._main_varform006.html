@@ -79,7 +79,7 @@
           <div class="body" role="main">
             
   <div class="section" id="implementation">
-<span id="fem-deq-1d-code-global"></span><h1>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h1>
+<span id="fem-deq-1d-code"></span><h1>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h1>
 <p>At this point, it is sensible to create a
 program with symbolic calculations to perform all the steps in the
 computational machinery,
@@ -88,7 +88,7 @@ As we have seen, there are quite many details involved with
 finite element computations and incorporation of boundary conditions.
 An implementation will also act as a structured summary of all these details.</p>
 <div class="section" id="global-basis-functions">
-<h2>Global basis functions<a class="headerlink" href="#global-basis-functions" title="Permalink to this headline">¶</a></h2>
+<span id="fem-deq-1d-code-global"></span><h2>Global basis functions<a class="headerlink" href="#global-basis-functions" title="Permalink to this headline">¶</a></h2>
 <p>We first consider implementations when <span class="math">\({\psi}_i\)</span> are global functions
 are hence different from zero on most of <span class="math">\(\Omega =[0,L]\)</span> so all integrals
 need integration over the entire domain. (Finite element basis functions,
@@ -122,8 +122,8 @@ user-supplied function may look like.</p>
 the following function:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">sympy</span> <span class="kn">as</span> <span class="nn">sym</span>
 
-<span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="n">integrand_lhs</span><span class="p">,</span> <span class="n">integrand_rhs</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Omega</span><span class="p">,</span>
-          <span class="n">boundary_lhs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">boundary_rhs</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">integrand_lhs</span><span class="p">,</span> <span class="n">integrand_rhs</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Omega</span><span class="p">,</span>
+           <span class="n">boundary_lhs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">boundary_rhs</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">psi</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>
     <span class="n">A</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
     <span class="n">b</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
@@ -142,7 +142,7 @@ the following function:</p>
         <span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">I</span>
     <span class="n">c</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">LUsolve</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
     <span class="n">u</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">psi</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">psi</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
-    <span class="k">return</span> <span class="n">u</span>
+    <span class="k">return</span> <span class="n">u</span><span class="p">,</span> <span class="n">c</span>
 </pre></div>
 </div>
 <p>Not surprisingly, symbolic solution of differential
@@ -155,7 +155,7 @@ only in <code class="docutils literal"><span class="pre">sympy</span></code> but
 (which applies the perhaps most powerful symbolic integration
 software available today: Mathematica). Numerical integration
 as an option is therefore desirable.</p>
-<p>The extended <code class="docutils literal"><span class="pre">solve</span></code> function below tries to combine symbolic and
+<p>The extended <code class="docutils literal"><span class="pre">solver</span></code> function below tries to combine symbolic and
 numerical integration.  The latter can be enforced by the user, or it
 can be invoked after a non-successful symbolic integration (being
 detected by an <code class="docutils literal"><span class="pre">Integral</span></code> object as the result of the integration
@@ -163,14 +163,14 @@ in <code class="docutils literal"><span class="pre">sympy</span></code>).</p>
 <p>Note that for a
 numerical integration, symbolic expressions must be converted to
 Python functions (using <code class="docutils literal"><span class="pre">lambdify</span></code>), and the expressions cannot contain
-other symbols than <code class="docutils literal"><span class="pre">x</span></code>. The real <code class="docutils literal"><span class="pre">solve</span></code> routine in the
+other symbols than <code class="docutils literal"><span class="pre">x</span></code>. The real <code class="docutils literal"><span class="pre">solver</span></code> routine in the
 <a class="reference external" href="http://tinyurl.com/nm5587k/varform/varform1D.py">varform1D.py</a>
 file has error checking and meaningful error messages in such cases.
-The <code class="docutils literal"><span class="pre">solve</span></code> code below is a condensed version of the real one, with
+The <code class="docutils literal"><span class="pre">solver</span></code> code below is a condensed version of the real one, with
 the purpose of showing how to automate the Galerkin or least squares
 method for solving differential equations in 1D with global basis functions:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="n">integrand_lhs</span><span class="p">,</span> <span class="n">integrand_rhs</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Omega</span><span class="p">,</span>
-          <span class="n">boundary_lhs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">boundary_rhs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">integrand_lhs</span><span class="p">,</span> <span class="n">integrand_rhs</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Omega</span><span class="p">,</span>
+           <span class="n">boundary_lhs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">boundary_rhs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
     <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">psi</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>
     <span class="n">A</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
     <span class="n">b</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
@@ -201,7 +201,7 @@ method for solving differential equations in 1D with global basis functions:</p>
         <span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">I</span>
     <span class="n">c</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">LUsolve</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
     <span class="n">u</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">psi</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">psi</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
-    <span class="k">return</span> <span class="n">u</span>
+    <span class="k">return</span> <span class="n">u</span><span class="p">,</span> <span class="n">c</span>
 </pre></div>
 </div>
 </div>
@@ -225,12 +225,13 @@ equation by <span class="math">\(v\)</span> and integrating by parts yield</p>
 <div class="math">
 \[\int_0^1 u'v' {\, \mathrm{d}x} = \int_0^1 fv {\, \mathrm{d}x}\quad\forall v\in V,\]</div>
 <p>and with <span class="math">\(u=B + \sum_jc_j{\psi}_j\)</span> we get the linear system</p>
-<div class="math">
-\[\sum_{j\in{\mathcal{I}_s}}\left(\int_0^1{\psi}_i'{\psi}_j' {\, \mathrm{d}x}\right)c_j =
-\int_0^1(f{\psi}_i-B'{\psi}_i') {\, \mathrm{d}x},
-\quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
+<div class="math" id="equation-_auto37">
+<span id="eq-auto37"></span><span class="eqno">(1)</span>\[     \sum_{j\in{\mathcal{I}_s}}\left(\int_0^1{\psi}_i'{\psi}_j' {\, \mathrm{d}x}\right)c_j =
+     \int_0^1(f{\psi}_i-B'{\psi}_i') {\, \mathrm{d}x},
+     \quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
 <p>The application can be coded as follows with <code class="docutils literal"><span class="pre">sympy</span></code>:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">x</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s">&#39;x b&#39;</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">sympy</span> <span class="kn">as</span> <span class="nn">sym</span>
+<span class="n">x</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s">&#39;x b&#39;</span><span class="p">)</span>
 <span class="n">f</span> <span class="o">=</span> <span class="n">b</span>
 <span class="n">B</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">x</span><span class="o">**</span><span class="mi">3</span>
 <span class="n">dBdx</span> <span class="o">=</span> <span class="n">sym</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
@@ -248,8 +249,9 @@ equation by <span class="math">\(v\)</span> and integrating by parts yield</p>
 
 <span class="n">Omega</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
 
-<span class="n">u_bar</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">integrand_lhs</span><span class="p">,</span> <span class="n">integrand_rhs</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Omega</span><span class="p">,</span>
-              <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">varform1D</span> <span class="kn">import</span> <span class="n">solver</span>
+<span class="n">u_bar</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">integrand_lhs</span><span class="p">,</span> <span class="n">integrand_rhs</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Omega</span><span class="p">,</span>
+                  <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="n">u</span> <span class="o">=</span> <span class="n">B</span> <span class="o">+</span> <span class="n">u_bar</span>
 <span class="k">print</span> <span class="s">&#39;solution u:&#39;</span><span class="p">,</span> <span class="n">sym</span><span class="o">.</span><span class="n">simplify</span><span class="p">(</span><span class="n">sym</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
 </pre></div>
@@ -292,7 +294,7 @@ so numerical integration in the code, and hence numerical answers,
 have the greatest application potential.</p>
 </div>
 <div class="section" id="finite-elements">
-<h2>Finite elements<a class="headerlink" href="#finite-elements" title="Permalink to this headline">¶</a></h2>
+<span id="fem-deq-1d-code-fe"></span><h2>Finite elements<a class="headerlink" href="#finite-elements" title="Permalink to this headline">¶</a></h2>
 <p>Implementation of the finite element algorithms for differential
 equations follows closely the algorithm for approximation of functions.
 The new additional ingredients are</p>
@@ -318,7 +320,10 @@ left- and right-hand side of the equation system:</p>
 derivatives of order <code class="docutils literal"><span class="pre">q</span></code> of the basis functions with respect to the
 physical coordinate <span class="math">\(x\)</span>.  The derivatives are available as Python
 functions of <code class="docutils literal"><span class="pre">X</span></code>.  For example, <code class="docutils literal"><span class="pre">phi[0][r](X)</span></code> means <span class="math">\({\tilde{\varphi}}_r(X)\)</span>,
-and <code class="docutils literal"><span class="pre">phi[1][s](X,</span> <span class="pre">h)</span></code> means <span class="math">\(d{\tilde{\varphi}}_s (X)/dx\)</span>.  The <code class="docutils literal"><span class="pre">r</span></code> and <code class="docutils literal"><span class="pre">s</span></code>
+and <code class="docutils literal"><span class="pre">phi[1][s](X,</span> <span class="pre">h)</span></code> means <span class="math">\(d{\tilde{\varphi}}_s (X)/dx\)</span> (we refer to
+the file <a class="reference external" href="http://tinyurl.com/nm5587k/varform/fe1D.py">fe1D.py</a> for details
+regarding the function <code class="docutils literal"><span class="pre">basis</span></code> that computes the <code class="docutils literal"><span class="pre">phi</span></code>
+dictionary).  The <code class="docutils literal"><span class="pre">r</span></code> and <code class="docutils literal"><span class="pre">s</span></code>
 arguments in the above functions correspond to the index in the
 integrand contribution from an integration point to <span class="math">\(\tilde
 A^{(e)}_{r,s}\)</span> and <span class="math">\(\tilde b^{(e)}_r\)</span>. The variables <code class="docutils literal"><span class="pre">e</span></code> and <code class="docutils literal"><span class="pre">h</span></code> are
@@ -466,10 +471,122 @@ Below is the complete function without the print statements.</p>
 <p>The <code class="docutils literal"><span class="pre">timing</span></code> object is a dictionary holding the CPU spent on computing
 <code class="docutils literal"><span class="pre">A</span></code> and the CPU time spent on solving the linear system. (We have
 left out the timing statements.)</p>
-<p><code class="docutils literal"><span class="pre">model2</span></code> function from the section <a class="reference internal" href="._main_varform001.html#fem-deq-1d-models-simple"><span class="std std-ref">Simple model problems and their solutions</span></a> can
-readily solve the problem: <code class="docutils literal"><span class="pre">model2(x,</span> <span class="pre">L,</span> <span class="pre">C,</span> <span class="pre">D)</span></code>.</p>
+</div>
+<div class="section" id="utilizing-a-sparse-matrix">
+<span id="fem-deq-1d-code-fe-sparse"></span><h2>Utilizing a sparse matrix<a class="headerlink" href="#utilizing-a-sparse-matrix" title="Permalink to this headline">¶</a></h2>
+<p>A potential efficiency problem with the <code class="docutils literal"><span class="pre">finite_element1D_naive</span></code> function
+is that it uses dense <span class="math">\((N+1)\times (N+1)\)</span> matrices, while we know that
+only <span class="math">\(2d+1\)</span> diagonals around the main diagonal are different from zero.
+Switching to a sparse matrix is very easy. Using the DOK (dictionary of
+keys) format, we declare <code class="docutils literal"><span class="pre">A</span></code> as</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">scipy.sparse</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">dok_matrix</span><span class="p">((</span><span class="n">N_n</span><span class="p">,</span> <span class="n">N_n</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Assignments or in-place arithmetics are done as for a dense matrix,</p>
+<div class="highlight-text"><div class="highlight"><pre>A[i,j] += term
+A[i,j]  = term
+</pre></div>
+</div>
+<p>but only the index pairs <code class="docutils literal"><span class="pre">(i,j)</span></code> we have used in assignments or
+in-place arithmetics are actually stored.
+A tailored solution algorithm is needed. The most reliable is
+sparse Gaussian elimination:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">scipy.sparse.linalg</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">spsolve</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">tocsr</span><span class="p">(),</span> <span class="n">b</span><span class="p">,</span> <span class="n">use_umfpack</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The declaration of <code class="docutils literal"><span class="pre">A</span></code> and the solve statement are the only
+changes needed in the <code class="docutils literal"><span class="pre">finite_element1D_naive</span></code> to utilize
+sparse matrices. The resulting modification is found in the
+function <code class="docutils literal"><span class="pre">finite_element1D</span></code>.</p>
+<div class="section" id="example-2">
+<h3>Example  (2)<a class="headerlink" href="#example-2" title="Permalink to this headline">¶</a></h3>
+<p>Let us demonstrate the finite element software on</p>
 <div class="math">
-\[u(x) = D + C(x-L) + \frac{1}{6}(L^3 - x^3)\]</div>
+\[-u''(x)=f(x),\quad x\in (0,L),\quad u'(0)=C,\ u(L)=D{\thinspace .}\]</div>
+<p>This problem can be analytically solved by the
+<code class="docutils literal"><span class="pre">model2</span></code> function from the section <a class="reference internal" href="._main_varform001.html#fem-deq-1d-models-simple"><span class="std std-ref">Simple model problems and their solutions</span></a>.
+Let <span class="math">\(f(x)=x^2\)</span>. Calling <code class="docutils literal"><span class="pre">model2(x**2,</span> <span class="pre">L,</span> <span class="pre">C,</span> <span class="pre">D)</span></code> gives</p>
+<div class="math">
+\[u(x) = D + C(x-L) + \frac{1}{12}(L^4 - x^4)\]</div>
+<p>The variational formulation reads</p>
+<div class="math">
+\[(u', v) = (x^2, v) - Cv(0){\thinspace .}\]</div>
+<p>The entries in the element matrix and vector,
+which we need to set up the <code class="docutils literal"><span class="pre">ilhs</span></code>, <code class="docutils literal"><span class="pre">irhs</span></code>,
+<code class="docutils literal"><span class="pre">blhs</span></code>, and <code class="docutils literal"><span class="pre">brhs</span></code> functions, becomes</p>
+<div class="math">
+\[\begin{split}A^{(e)}_{r,s} &amp;= \int_{-1}^1 \frac{d{\tilde{\varphi}}_r}{dx}\frac{{\tilde{\varphi}}_s}{dx}(\det J{\, \mathrm{d}X}),\\
+b^{(e)} &amp;= \int_{-1}^1 x^2{\tilde{\varphi}}_r\det J{\, \mathrm{d}X} - C{\tilde{\varphi}}_r(-1)I(e,0),\end{split}\]</div>
+<p>where <span class="math">\(I(e)\)</span> is an indicator function: <span class="math">\(I(e,q)=1\)</span> if <span class="math">\(e=q\)</span>, otherwise <span class="math">\(I(e)=0\)</span>.
+We use this indicator function to formulate that the boundary term
+<span class="math">\(Cv(0)\)</span>, which in the local element coordinate system becomes <span class="math">\(C{\tilde{\varphi}}_r(-1)\)</span>,
+is only included for the element <span class="math">\(e=0\)</span>.</p>
+<p>The functions for specifying the element matrix and vector entries
+must contain the integrand, but without the <span class="math">\(\det J{\, \mathrm{d}X}\)</span> term, and
+the derivatives <span class="math">\(d{\tilde{\varphi}}_r(X)/dx\)</span>
+with respect to the physical <span class="math">\(x\)</span> coordinates are
+contained in <code class="docutils literal"><span class="pre">phi[1][r](X)</span></code>, computed by the function <code class="docutils literal"><span class="pre">basis</span></code>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">ilhs</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">phi</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">r</span><span class="p">](</span><span class="n">X</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span><span class="o">*</span><span class="n">phi</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">s</span><span class="p">](</span><span class="n">X</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">irhs</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">phi</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">r</span><span class="p">](</span><span class="n">X</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">blhs</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">0</span>
+
+<span class="k">def</span> <span class="nf">brhs</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">):</span>
+    <span class="k">return</span> <span class="o">-</span><span class="n">C</span><span class="o">*</span><span class="n">phi</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">r</span><span class="p">](</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">e</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>We can then make the call to <code class="docutils literal"><span class="pre">finite_element1D_naive</span></code> or <code class="docutils literal"><span class="pre">finite_element1D</span></code>
+to solve the problem with two P1 elements:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">fe1D</span> <span class="kn">import</span> <span class="n">finite_element1D_naive</span><span class="p">,</span> <span class="n">mesh_uniform</span>
+<span class="n">C</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>  <span class="n">D</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>  <span class="n">L</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">d</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">vertices</span><span class="p">,</span> <span class="n">cells</span><span class="p">,</span> <span class="n">dof_map</span> <span class="o">=</span> <span class="n">mesh_uniform</span><span class="p">(</span>
+    <span class="n">N_e</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">Omega</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">L</span><span class="p">],</span> <span class="n">symbolic</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">essbc</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">essbc</span><span class="p">[</span><span class="n">dof_map</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">D</span>
+
+<span class="n">c</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">timing</span> <span class="o">=</span> <span class="n">finite_element1D</span><span class="p">(</span>
+    <span class="n">vertices</span><span class="p">,</span> <span class="n">cells</span><span class="p">,</span> <span class="n">dof_map</span><span class="p">,</span> <span class="n">essbc</span><span class="p">,</span>
+    <span class="n">ilhs</span><span class="o">=</span><span class="n">ilhs</span><span class="p">,</span> <span class="n">irhs</span><span class="o">=</span><span class="n">irhs</span><span class="p">,</span> <span class="n">blhs</span><span class="o">=</span><span class="n">blhs</span><span class="p">,</span> <span class="n">brhs</span><span class="o">=</span><span class="n">brhs</span><span class="p">,</span>
+    <span class="n">intrule</span><span class="o">=</span><span class="s">&#39;GaussLegendre&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>It remains to plot the solution (with high resolution in each element).
+To this end, we use the <code class="docutils literal"><span class="pre">u_glob</span></code> function imported from
+<code class="docutils literal"><span class="pre">fe1D</span></code>, which imports it from <code class="docutils literal"><span class="pre">fe_approx1D_numit</span></code> (the
+<code class="docutils literal"><span class="pre">u_glob</span></code> function in <code class="docutils literal"><span class="pre">fe_approx1D.py</span></code>
+works with <code class="docutils literal"><span class="pre">elements</span></code> and <code class="docutils literal"><span class="pre">nodes</span></code>, while <code class="docutils literal"><span class="pre">u_glob</span></code> in
+<code class="docutils literal"><span class="pre">fe_approx1D_numint</span></code> works with <code class="docutils literal"><span class="pre">cells</span></code>, <code class="docutils literal"><span class="pre">vertices</span></code>,
+and <code class="docutils literal"><span class="pre">dof_map</span></code>):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">u_exact</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">D</span> <span class="o">+</span> <span class="n">C</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">L</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mi">6</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">L</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="n">x</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">fe1D</span> <span class="kn">import</span> <span class="n">u_glob</span>
+<span class="n">x</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">nodes</span> <span class="o">=</span> <span class="n">u_glob</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">cells</span><span class="p">,</span> <span class="n">vertices</span><span class="p">,</span> <span class="n">dof_map</span><span class="p">)</span>
+<span class="n">u_e</span> <span class="o">=</span> <span class="n">u_exact</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">L</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">u_exact</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">L</span><span class="p">)</span> <span class="o">-</span> <span class="n">c</span>  <span class="c"># difference at the nodes</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="s">&#39;b-&#39;</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">u_e</span><span class="p">,</span> <span class="s">&#39;r--&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s">&#39;finite elements, d=</span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span><span class="n">d</span><span class="p">,</span> <span class="s">&#39;exact&#39;</span><span class="p">],</span> <span class="n">loc</span><span class="o">=</span><span class="s">&#39;upper left&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The result is shown in Figure <a class="reference internal" href="#fem-deq-1d-code-fe-fig1"><span class="std std-ref">Finite element and exact solution using two cells</span></a>. We see
+that the solution using P1 elements is exact at the nodes, but
+feature considerable discrepancy between the nodes.
+<a class="reference internal" href="._main_varform009.html#fem-deq-exer-1d-exact-numerics"><span class="std std-ref">Exercise 11: Investigate exact finite element solutions</span></a> asks you to explore
+this problem further using other <span class="math">\(m\)</span> and <span class="math">\(d\)</span> values.</p>
+<div class="figure" id="id1">
+<span id="fem-deq-1d-code-fe-fig1"></span><a class="reference internal image-reference" href="_images/uxx_x2.png"><img alt="_images/uxx_x2.png" src="_images/uxx_x2.png" style="width: 500px;" /></a>
+<p class="caption"><span class="caption-text"><em>Finite element and exact solution using two cells</em></span></p>
+</div>
+</div>
 </div>
 </div>
 
@@ -490,6 +607,10 @@ readily solve the problem: <code class="docutils literal"><span class="pre">mode
 <li><a class="reference internal" href="#global-basis-functions">Global basis functions</a></li>
 <li><a class="reference internal" href="#example-constant-right-hand-side">Example: constant right-hand side</a></li>
 <li><a class="reference internal" href="#finite-elements">Finite elements</a></li>
+<li><a class="reference internal" href="#utilizing-a-sparse-matrix">Utilizing a sparse matrix</a><ul>
+<li><a class="reference internal" href="#example-2">Example  (2)</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -544,7 +665,7 @@ readily solve the problem: <code class="docutils literal"><span class="pre">mode
     <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
     <br />
     <br />
-      &copy;2015, No author.
+      &copy;2015, Hans Petter Langtangen.
   </div>
 </div>
 

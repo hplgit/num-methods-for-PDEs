@@ -1749,7 +1749,7 @@ $$
 \begin{equation}
 \baspsi_{2i} = \cos\left( i\frac{2\pi}{L}x\right),\quad
 \baspsi_{2i+1} = \sin\left( i\frac{2\pi}{L}x\right),
-\tag{54}
+\tag{125}
 \end{equation}
 $$
 
@@ -1780,7 +1780,7 @@ f(x)\baspsi_i \dx \). To avoid name clash between the right-hand side
 components of the linear system and the \( b_i \) coefficients in the
 Fourier series, we use the symbol \( q_i \) for the former.
 With the basis functions in
-<a href="#mjx-eqn-54">(54)</a> we get four different types
+<a href="#mjx-eqn-125">(125)</a> we get four different types
 of integrals:
 
 $$
@@ -2862,7 +2862,7 @@ Filename: <code>fe_tanh_P3P4</code>.
 <h2 id="fem:approx:fe:exer:Asinwt:interpol:error">Exercise 17: Investigate the approximation error in finite elements</h2>
 
 <p>
-The theory <a href="._approx-sol007.html#mjx-eqn-47">(47)</a> from the section <a href="._approx-sol007.html#fem:approx:fe:error">Computing the error of the approximation</a> predicts that the error in the Pd
+The theory <a href="._approx-sol007.html#mjx-eqn-101">(101)</a> from the section <a href="._approx-sol007.html#fem:approx:fe:error">Computing the error of the approximation</a> predicts that the error in the Pd
 approximation of a function should behave as \( h^{d+1} \), where \( h \) is
 the length of the element. Use experiments to verify this asymptotic
 behavior (i.e., for small enough \( h \)).  Choose three examples:
@@ -2876,7 +2876,7 @@ behavior (i.e., for small enough \( h \)).  Choose three examples:
 <p>
 <a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
  data-target="#exer_17_1" style="font-size: 80%;"></a>
-<b>Hint.</b>
+<b>Hint 1.</b>
 <div class="collapse-group">
 <p><div class="collapse" id="exer_17_1">
 
@@ -2899,6 +2899,164 @@ Run such experiments for different \( d \) for the different \( f(x) \) function
 
 <p>
 <!-- --- end hint in exercise --- -->
+
+<p>
+<!-- --- begin hint in exercise --- -->
+
+<p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_17_2" style="font-size: 80%;"></a>
+<b>Hint 2.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_17_2">
+
+<p>
+The <code>approximate</code> function in <code>fe_approx1D_numint.py</code> is handy for
+calculating the numerical solution. This function returns the
+finite element solution as the coefficients \( \sequencei{c} \).
+To compute \( u \), use <code>u_glob</code> from the same module.
+Use the Trapezoidal rule to integrate the \( L^2 \) error:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">xc, u <span style="color: #666666">=</span> u_glob(c, vertices, cells, dof_map)
+e <span style="color: #666666">=</span> f_func(xc) <span style="color: #666666">-</span> u
+L2_error <span style="color: #666666">=</span> <span style="color: #666666">0</span>
+e2 <span style="color: #666666">=</span> e<span style="color: #666666">**2</span>
+<span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(xc)<span style="color: #666666">-1</span>):
+    L2_error <span style="color: #666666">+=</span> <span style="color: #666666">0.5*</span>(e2[i<span style="color: #666666">+1</span>] <span style="color: #666666">+</span> e2[i])<span style="color: #666666">*</span>(xc[i<span style="color: #666666">+1</span>] <span style="color: #666666">-</span> xc[i])
+L2_error <span style="color: #666666">=</span> np<span style="color: #666666">.</span>sqrt(L2_error)
+</pre></div>
+<p>
+The reason for this Trapezoidal integration is
+that <code>u_glob</code> returns coordinates <code>xc</code> and corresponding <code>u</code> values
+where some of the coordinates (the cell vertices) coincides, because
+the solution is computed in one element at a time, using all local
+nodes. Also note that there are many coordinates in \( xc \) per cell
+such that we can accurately compute the error inside each cell.
+
+<p>
+</div></p>
+</div>
+</p>
+
+<p>
+<!-- --- end hint in exercise --- -->
+
+<p>
+<!-- --- begin solution of exercise --- -->
+
+<p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_17_3" style="font-size: 80%;"></a>
+<b>Solution.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_17_3">
+
+<p>
+Here is an appropriate program:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">fe_approx1D_numint</span> <span style="color: #008000; font-weight: bold">import</span> approximate, mesh_uniform, u_glob
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">import</span> sqrt, exp, sin, Symbol, lambdify, simplify
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">math</span> <span style="color: #008000; font-weight: bold">import</span> log
+
+x <span style="color: #666666">=</span> Symbol(<span style="color: #BA2121">&#39;x&#39;</span>)
+A <span style="color: #666666">=</span> <span style="color: #666666">1</span>
+w <span style="color: #666666">=</span> <span style="color: #666666">1</span>
+
+cases <span style="color: #666666">=</span> {<span style="color: #BA2121">&#39;sqrt&#39;</span>: {<span style="color: #BA2121">&#39;f&#39;</span>: sqrt(x), <span style="color: #BA2121">&#39;Omega&#39;</span>: [<span style="color: #666666">0</span>,<span style="color: #666666">1</span>]},
+         <span style="color: #BA2121">&#39;exp&#39;</span>: {<span style="color: #BA2121">&#39;f&#39;</span>: A<span style="color: #666666">*</span>exp(<span style="color: #666666">-</span>w<span style="color: #666666">*</span>x), <span style="color: #BA2121">&#39;Omega&#39;</span>: [<span style="color: #666666">0</span>, <span style="color: #666666">3.0/</span>w]},
+         <span style="color: #BA2121">&#39;sin&#39;</span>: {<span style="color: #BA2121">&#39;f&#39;</span>: A<span style="color: #666666">*</span>sin(w<span style="color: #666666">*</span>x), <span style="color: #BA2121">&#39;Omega&#39;</span>: [<span style="color: #666666">0</span>, <span style="color: #666666">2*</span>np<span style="color: #666666">.</span>pi<span style="color: #666666">/</span>w]}}
+
+results <span style="color: #666666">=</span> {}
+d_values <span style="color: #666666">=</span> [<span style="color: #666666">1</span>, <span style="color: #666666">2</span>, <span style="color: #666666">3</span>, <span style="color: #666666">4</span>]
+
+<span style="color: #008000; font-weight: bold">for</span> case <span style="color: #AA22FF; font-weight: bold">in</span> cases:
+    f <span style="color: #666666">=</span> cases[case][<span style="color: #BA2121">&#39;f&#39;</span>]
+    f_func <span style="color: #666666">=</span> lambdify([x], f, modules<span style="color: #666666">=</span><span style="color: #BA2121">&#39;numpy&#39;</span>)
+    Omega <span style="color: #666666">=</span> cases[case][<span style="color: #BA2121">&#39;Omega&#39;</span>]
+    results[case] <span style="color: #666666">=</span> {}
+    <span style="color: #008000; font-weight: bold">for</span> d <span style="color: #AA22FF; font-weight: bold">in</span> d_values:
+        results[case][d] <span style="color: #666666">=</span> {<span style="color: #BA2121">&#39;E&#39;</span>: [], <span style="color: #BA2121">&#39;h&#39;</span>: [], <span style="color: #BA2121">&#39;r&#39;</span>: []}
+        <span style="color: #008000; font-weight: bold">for</span> N_e <span style="color: #AA22FF; font-weight: bold">in</span> [<span style="color: #666666">4</span>, <span style="color: #666666">8</span>, <span style="color: #666666">16</span>, <span style="color: #666666">32</span>, <span style="color: #666666">64</span>, <span style="color: #666666">128</span>]:
+            <span style="color: #008000; font-weight: bold">try</span>:
+                c <span style="color: #666666">=</span> approximate(
+                    f, symbolic<span style="color: #666666">=</span><span style="color: #008000">False</span>,
+                    numint<span style="color: #666666">=</span><span style="color: #BA2121">&#39;GaussLegendre</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> (d<span style="color: #666666">+1</span>),
+                    d<span style="color: #666666">=</span>d, N_e<span style="color: #666666">=</span>N_e, Omega<span style="color: #666666">=</span>Omega,
+                    filename<span style="color: #666666">=</span><span style="color: #BA2121">&#39;tmp_</span><span style="color: #BB6688; font-weight: bold">%s</span><span style="color: #BA2121">_d</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">_e</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> (case, d, N_e))
+            <span style="color: #008000; font-weight: bold">except</span> np<span style="color: #666666">.</span>linalg<span style="color: #666666">.</span>linalg<span style="color: #666666">.</span>LinAlgError <span style="color: #008000; font-weight: bold">as</span> e:
+                <span style="color: #008000; font-weight: bold">print</span> <span style="color: #008000">str</span>(e)
+                <span style="color: #008000; font-weight: bold">continue</span>
+            vertices, cells, dof_map <span style="color: #666666">=</span> mesh_uniform(
+                N_e, d, Omega, symbolic<span style="color: #666666">=</span><span style="color: #008000">False</span>)
+            xc, u <span style="color: #666666">=</span> u_glob(c, vertices, cells, dof_map, <span style="color: #666666">51</span>)
+            e <span style="color: #666666">=</span> f_func(xc) <span style="color: #666666">-</span> u
+            <span style="color: #408080; font-style: italic"># Trapezoidal integration of the L2 error</span>
+            e2 <span style="color: #666666">=</span> e<span style="color: #666666">**2</span>
+            L2_error <span style="color: #666666">=</span> <span style="color: #666666">0</span>
+            <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(xc)<span style="color: #666666">-1</span>):
+                L2_error <span style="color: #666666">+=</span> <span style="color: #666666">0.5*</span>(e2[i<span style="color: #666666">+1</span>] <span style="color: #666666">+</span> e2[i])<span style="color: #666666">*</span>(xc[i<span style="color: #666666">+1</span>] <span style="color: #666666">-</span> xc[i])
+            L2_error <span style="color: #666666">=</span> np<span style="color: #666666">.</span>sqrt(L2_error)
+            h <span style="color: #666666">=</span> (Omega[<span style="color: #666666">1</span>] <span style="color: #666666">-</span> Omega[<span style="color: #666666">0</span>])<span style="color: #666666">/</span><span style="color: #008000">float</span>(N_e)
+            results[case][d][<span style="color: #BA2121">&#39;E&#39;</span>]<span style="color: #666666">.</span>append(L2_error)
+            results[case][d][<span style="color: #BA2121">&#39;h&#39;</span>]<span style="color: #666666">.</span>append(h)
+        <span style="color: #408080; font-style: italic"># Compute rates</span>
+        h <span style="color: #666666">=</span> results[case][d][<span style="color: #BA2121">&#39;h&#39;</span>]
+        E <span style="color: #666666">=</span> results[case][d][<span style="color: #BA2121">&#39;E&#39;</span>]
+        <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(h)<span style="color: #666666">-1</span>):
+            r <span style="color: #666666">=</span> log(E[i<span style="color: #666666">+1</span>]<span style="color: #666666">/</span>E[i])<span style="color: #666666">/</span>log(h[i<span style="color: #666666">+1</span>]<span style="color: #666666">/</span>h[i])
+            results[case][d][<span style="color: #BA2121">&#39;r&#39;</span>]<span style="color: #666666">.</span>append(<span style="color: #008000">round</span>(r, <span style="color: #666666">2</span>))
+
+<span style="color: #008000; font-weight: bold">print</span> results
+<span style="color: #008000; font-weight: bold">for</span> case <span style="color: #AA22FF; font-weight: bold">in</span> results:
+    <span style="color: #008000; font-weight: bold">for</span> d <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">sorted</span>(results[case]):
+        <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;case=</span><span style="color: #BB6688; font-weight: bold">%s</span><span style="color: #BA2121"> d=</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">, r: </span><span style="color: #BB6688; font-weight: bold">%s</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> \ 
+              (case, d, results[case][d][<span style="color: #BA2121">&#39;r&#39;</span>])
+</pre></div>
+<p>
+The output becomes
+
+<p>
+
+<!-- code=text typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">case=sqrt d=1, r: [1.0, 1.0, 1.0, 1.0, 1.0]
+case=sqrt d=2, r: [1.0, 1.0, 1.0, 1.0, 1.0]
+case=sqrt d=3, r: [1.0, 1.0, 1.0, 1.0, 1.0]
+case=sqrt d=4, r: [1.0, 1.0, 1.0, 1.0, 1.0]
+case=exp d=1, r: [2.01, 2.01, 2.0, 2.0, 2.0]
+case=exp d=2, r: [2.81, 2.89, 2.94, 2.97, 2.98]
+case=exp d=3, r: [3.98, 4.0, 4.0, 4.0, 4.0]
+case=exp d=4, r: [4.87, 4.93, 4.96, 4.98, 4.99]
+case=sin d=1, r: [2.15, 2.06, 2.02, 2.0, 2.0]
+case=sin d=2, r: [2.68, 2.83, 2.93, 2.97, 2.99]
+case=sin d=3, r: [4.06, 4.04, 4.01, 4.0, 4.0]
+case=sin d=4, r: [4.79, 4.9, 4.96, 4.98, 4.99]
+</pre></div>
+<p>
+showing that the convergence rate stabilizes quite quickly at \( N_e=128 \)
+cells. While the theory predicts the rate as \( d+1 \), this is only
+fulfilled for the exponential and sine functions, while the square root
+functions gives a rate 1 regardless of \( d \). The reason is that the
+estimate <a href="._approx-sol007.html#mjx-eqn-101">(101)</a> contains the integral of
+the derivatives of \( f \) over \( [0,1] \). For \( f=\sqrt{x} \), we
+have \( f'=\half x^{-1/2} \), \( f''=-\frac{1}{4}x^{-3/2} \), and all integrals
+of \( f'' \) and higher derivatives are infinite on \( [0,L] \). Our experiments
+show that the method still converges, but \( f \) is not smooth enough that
+higher-order elements give superior convergence rates.
+
+<p>
+</div></p>
+</div>
+</p>
+
+<p>
+<!-- --- end solution of exercise --- -->
 Filename: <code>Pd_approx_error</code>.
 
 <p>
@@ -2920,8 +3078,7 @@ $$
 \end{equation*}
 $$
 
-by 2, 4, and 8 P1 and P2 elements. Compare
-approximations visually.
+by 2, 4, 8, and 16 P1, P2, P3, and P4. Compare approximations visually.
 
 <p>
 <!-- --- begin hint in exercise --- -->
@@ -2949,9 +3106,18 @@ making the <code>approximate</code> function in the
 problem. However, <code>sympy</code> does not handle symbolic integration
 with this particular integrand, and the <code>approximate</code> function faces a problem
 when converting <code>f</code> to a Python function (for plotting) since
-<code>Heaviside</code> is not an available function in <code>numpy</code>. It is better to make
-special-purpose code for this case or perform all
-calculations by hand.
+<code>Heaviside</code> is not an available function in <code>numpy</code>.
+
+<p>
+An alternative is to perform hand calculations. This is an instructive
+task, but in practice only feasible for few elements and P1 and P2 elements.
+It is better to copy the functions <code>element_matrix</code>, <code>element_vector</code>,
+<code>assemble</code>, and <code>approximate</code> from the <code>fe_approx1D_numint.py</code> file
+and edit these functions such that they can compute approximations
+with <code>f</code> given as a Python function and not a symbolic expression.
+Also assume that <code>phi</code> computed by the <code>basis</code> function is a Python
+callable function. Remove all instances of the <code>symbolic</code> variable
+and associated code.
 
 <p>
 </div></p>
@@ -2960,6 +3126,205 @@ calculations by hand.
 
 <p>
 <!-- --- end hint in exercise --- -->
+
+<p>
+<!-- --- begin solution of exercise --- -->
+
+<p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_18_2" style="font-size: 80%;"></a>
+<b>Solution.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_18_2">
+
+<p>
+The modifications of <code>element_matrix</code>, <code>element_vector</code>,
+<code>assemble</code>, and <code>approximate</code> from the <code>fe_approx1D_numint.py</code> file
+are listed below.
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">fe_approx1D_numint</span> <span style="color: #008000; font-weight: bold">import</span> mesh_uniform, u_glob
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">fe_approx1D</span> <span style="color: #008000; font-weight: bold">import</span> basis
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">element_matrix</span>(phi, Omega_e, numint):
+    n <span style="color: #666666">=</span> <span style="color: #008000">len</span>(phi)
+    A_e <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros((n, n))
+    h <span style="color: #666666">=</span> Omega_e[<span style="color: #666666">1</span>] <span style="color: #666666">-</span> Omega_e[<span style="color: #666666">0</span>]
+    detJ <span style="color: #666666">=</span> h<span style="color: #666666">/2</span>  <span style="color: #408080; font-style: italic"># dx/dX</span>
+    <span style="color: #008000; font-weight: bold">for</span> r <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(n):
+        <span style="color: #008000; font-weight: bold">for</span> s <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(r, n):
+            <span style="color: #008000; font-weight: bold">for</span> j <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(numint[<span style="color: #666666">0</span>])):
+                Xj, wj <span style="color: #666666">=</span> numint[<span style="color: #666666">0</span>][j], numint[<span style="color: #666666">1</span>][j]
+                A_e[r,s] <span style="color: #666666">+=</span> phi[r](Xj)<span style="color: #666666">*</span>phi[s](Xj)<span style="color: #666666">*</span>detJ<span style="color: #666666">*</span>wj
+            A_e[s,r] <span style="color: #666666">=</span> A_e[r,s]
+    <span style="color: #008000; font-weight: bold">return</span> A_e
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">element_vector</span>(f, phi, Omega_e, numint):
+    n <span style="color: #666666">=</span> <span style="color: #008000">len</span>(phi)
+    b_e <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros(n)
+    h <span style="color: #666666">=</span> Omega_e[<span style="color: #666666">1</span>] <span style="color: #666666">-</span> Omega_e[<span style="color: #666666">0</span>]
+    detJ <span style="color: #666666">=</span> h<span style="color: #666666">/2</span>
+    <span style="color: #008000; font-weight: bold">for</span> r <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(n):
+        <span style="color: #008000; font-weight: bold">for</span> j <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(numint[<span style="color: #666666">0</span>])):
+            Xj, wj <span style="color: #666666">=</span> numint[<span style="color: #666666">0</span>][j], numint[<span style="color: #666666">1</span>][j]
+            xj <span style="color: #666666">=</span> (Omega_e[<span style="color: #666666">0</span>] <span style="color: #666666">+</span> Omega_e[<span style="color: #666666">1</span>])<span style="color: #666666">/2</span> <span style="color: #666666">+</span> h<span style="color: #666666">/2*</span>Xj  <span style="color: #408080; font-style: italic"># mapping</span>
+            b_e[r] <span style="color: #666666">+=</span> f(xj)<span style="color: #666666">*</span>phi[r](Xj)<span style="color: #666666">*</span>detJ<span style="color: #666666">*</span>wj
+    <span style="color: #008000; font-weight: bold">return</span> b_e
+
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">assemble</span>(vertices, cells, dof_map, phi, f, numint):
+    <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">sets</span>
+    N_n <span style="color: #666666">=</span> <span style="color: #008000">len</span>(<span style="color: #008000">list</span>(<span style="color: #008000">set</span>(np<span style="color: #666666">.</span>array(dof_map)<span style="color: #666666">.</span>ravel())))
+    N_e <span style="color: #666666">=</span> <span style="color: #008000">len</span>(cells)
+    A <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros((N_n, N_n))
+    b <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros(N_n)
+    <span style="color: #008000; font-weight: bold">for</span> e <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(N_e):
+        Omega_e <span style="color: #666666">=</span> [vertices[cells[e][<span style="color: #666666">0</span>]], vertices[cells[e][<span style="color: #666666">1</span>]]]
+        A_e <span style="color: #666666">=</span> element_matrix(phi[e], Omega_e, numint)
+        b_e <span style="color: #666666">=</span> element_vector(f, phi[e], Omega_e, numint)
+        <span style="color: #408080; font-style: italic">#print &#39;element&#39;, e</span>
+        <span style="color: #408080; font-style: italic">#print b_e</span>
+        <span style="color: #008000; font-weight: bold">for</span> r <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(dof_map[e])):
+            <span style="color: #008000; font-weight: bold">for</span> s <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(dof_map[e])):
+                A[dof_map[e][r],dof_map[e][s]] <span style="color: #666666">+=</span> A_e[r,s]
+            b[dof_map[e][r]] <span style="color: #666666">+=</span> b_e[r]
+    <span style="color: #008000; font-weight: bold">return</span> A, b
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">approximate</span>(f, d, N_e, numint, Omega<span style="color: #666666">=</span>[<span style="color: #666666">0</span>,<span style="color: #666666">1</span>], filename<span style="color: #666666">=</span><span style="color: #BA2121">&#39;tmp&#39;</span>):
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;</span>
+<span style="color: #BA2121; font-style: italic">    Compute the finite element approximation, using Lagrange</span>
+<span style="color: #BA2121; font-style: italic">    elements of degree d, to a Python functionn f on a domain</span>
+<span style="color: #BA2121; font-style: italic">    Omega. N_e is the number of elements.</span>
+<span style="color: #BA2121; font-style: italic">    numint is the name of the numerical integration rule</span>
+<span style="color: #BA2121; font-style: italic">    (Trapezoidal, Simpson, GaussLegendre2, GaussLegendre3,</span>
+<span style="color: #BA2121; font-style: italic">    GaussLegendre4, etc.). numint=None implies exact</span>
+<span style="color: #BA2121; font-style: italic">    integration.</span>
+<span style="color: #BA2121; font-style: italic">    &quot;&quot;&quot;</span>
+    <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">math</span> <span style="color: #008000; font-weight: bold">import</span> sqrt
+    numint_name <span style="color: #666666">=</span> numint  <span style="color: #408080; font-style: italic"># save name</span>
+    <span style="color: #008000; font-weight: bold">if</span> numint <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;Trapezoidal&#39;</span>:
+        numint <span style="color: #666666">=</span> [[<span style="color: #666666">-1</span>, <span style="color: #666666">1</span>], [<span style="color: #666666">1</span>, <span style="color: #666666">1</span>]]
+    <span style="color: #008000; font-weight: bold">elif</span> numint <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;Simpson&#39;</span>:
+        numint <span style="color: #666666">=</span> [[<span style="color: #666666">-1</span>, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>], [<span style="color: #666666">1./3</span>, <span style="color: #666666">4./3</span>, <span style="color: #666666">1./3</span>]]
+    <span style="color: #008000; font-weight: bold">elif</span> numint <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;Midpoint&#39;</span>:
+        numint <span style="color: #666666">=</span> [[<span style="color: #666666">0</span>], [<span style="color: #666666">2</span>]]
+    <span style="color: #008000; font-weight: bold">elif</span> numint <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;GaussLegendre2&#39;</span>:
+        numint <span style="color: #666666">=</span> [[<span style="color: #666666">-1/</span>sqrt(<span style="color: #666666">3</span>), <span style="color: #666666">1/</span>sqrt(<span style="color: #666666">3</span>)], [<span style="color: #666666">1</span>, <span style="color: #666666">1</span>]]
+    <span style="color: #008000; font-weight: bold">elif</span> numint <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;GaussLegendre3&#39;</span>:
+        numint <span style="color: #666666">=</span> [[<span style="color: #666666">-</span>sqrt(<span style="color: #666666">3./5</span>), <span style="color: #666666">0</span>, sqrt(<span style="color: #666666">3./5</span>)],
+                  [<span style="color: #666666">5./9</span>, <span style="color: #666666">8./9</span>, <span style="color: #666666">5./9</span>]]
+    <span style="color: #008000; font-weight: bold">elif</span> numint <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;GaussLegendre4&#39;</span>:
+        numint <span style="color: #666666">=</span> [[<span style="color: #666666">-0.86113631</span>, <span style="color: #666666">-0.33998104</span>,  <span style="color: #666666">0.33998104</span>,
+                   <span style="color: #666666">0.86113631</span>],
+                  [ <span style="color: #666666">0.34785485</span>,  <span style="color: #666666">0.65214515</span>,  <span style="color: #666666">0.65214515</span>,
+                    <span style="color: #666666">0.34785485</span>]]
+    <span style="color: #008000; font-weight: bold">elif</span> numint <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;GaussLegendre5&#39;</span>:
+        numint <span style="color: #666666">=</span> [[<span style="color: #666666">-0.90617985</span>, <span style="color: #666666">-0.53846931</span>, <span style="color: #666666">-0.</span>        ,
+                   <span style="color: #666666">0.53846931</span>,  <span style="color: #666666">0.90617985</span>],
+                  [ <span style="color: #666666">0.23692689</span>,  <span style="color: #666666">0.47862867</span>,  <span style="color: #666666">0.56888889</span>,
+                    <span style="color: #666666">0.47862867</span>,  <span style="color: #666666">0.23692689</span>]]
+    <span style="color: #008000; font-weight: bold">elif</span> numint <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #AA22FF; font-weight: bold">not</span> <span style="color: #008000">None</span>:
+        <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;Numerical rule </span><span style="color: #BB6688; font-weight: bold">%s</span><span style="color: #BA2121"> is not supported for numerical computing&#39;</span> <span style="color: #666666">%</span> numint
+        sys<span style="color: #666666">.</span>exit(<span style="color: #666666">1</span>)
+
+
+    vertices, cells, dof_map <span style="color: #666666">=</span> mesh_uniform(N_e, d, Omega)
+
+    <span style="color: #408080; font-style: italic"># phi is a list where phi[e] holds the basis in cell no e</span>
+    <span style="color: #408080; font-style: italic"># (this is required by assemble, which can work with</span>
+    <span style="color: #408080; font-style: italic"># meshes with different types of elements).</span>
+    <span style="color: #408080; font-style: italic"># len(dof_map[e]) is the number of nodes in cell e,</span>
+    <span style="color: #408080; font-style: italic"># and the degree of the polynomial is len(dof_map[e])-1</span>
+    phi <span style="color: #666666">=</span> [basis(<span style="color: #008000">len</span>(dof_map[e])<span style="color: #666666">-1</span>) <span style="color: #008000; font-weight: bold">for</span> e <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(N_e)]
+
+    A, b <span style="color: #666666">=</span> assemble(vertices, cells, dof_map, phi, f,
+                    numint<span style="color: #666666">=</span>numint)
+
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;cells:&#39;</span>, cells
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;vertices:&#39;</span>, vertices
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;dof_map:&#39;</span>, dof_map
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;A:</span><span style="color: #BB6622; font-weight: bold">\n</span><span style="color: #BA2121">&#39;</span>, A
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;b:</span><span style="color: #BB6622; font-weight: bold">\n</span><span style="color: #BA2121">&#39;</span>, b
+    c <span style="color: #666666">=</span> np<span style="color: #666666">.</span>linalg<span style="color: #666666">.</span>solve(A, b)
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;c:</span><span style="color: #BB6622; font-weight: bold">\n</span><span style="color: #BA2121">&#39;</span>, c
+
+    <span style="color: #008000; font-weight: bold">if</span> filename <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #AA22FF; font-weight: bold">not</span> <span style="color: #008000">None</span>:
+        title <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;P</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">, N_e=</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> (d, N_e)
+        title <span style="color: #666666">+=</span> <span style="color: #BA2121">&#39;, integration: </span><span style="color: #BB6688; font-weight: bold">%s</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> numint_name
+        x_u, u <span style="color: #666666">=</span> u_glob(np<span style="color: #666666">.</span>asarray(c), vertices, cells, dof_map,
+                        resolution_per_element<span style="color: #666666">=51</span>)
+        x_f <span style="color: #666666">=</span> np<span style="color: #666666">.</span>linspace(Omega[<span style="color: #666666">0</span>], Omega[<span style="color: #666666">1</span>], <span style="color: #666666">10001</span>) <span style="color: #408080; font-style: italic"># mesh for f</span>
+        <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">scitools.std</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">plt</span>
+        plt<span style="color: #666666">.</span>plot(x_u, u, <span style="color: #BA2121">&#39;-&#39;</span>,
+                 x_f, f(x_f), <span style="color: #BA2121">&#39;--&#39;</span>)
+        plt<span style="color: #666666">.</span>legend([<span style="color: #BA2121">&#39;u&#39;</span>, <span style="color: #BA2121">&#39;f&#39;</span>])
+        plt<span style="color: #666666">.</span>title(title)
+        plt<span style="color: #666666">.</span>savefig(filename <span style="color: #666666">+</span> <span style="color: #BA2121">&#39;.pdf&#39;</span>)
+        plt<span style="color: #666666">.</span>savefig(filename <span style="color: #666666">+</span> <span style="color: #BA2121">&#39;.png&#39;</span>)
+    <span style="color: #008000; font-weight: bold">return</span> c
+</pre></div>
+<p>
+With a purely numerical version of the <code>approximate</code> function, we can
+easily investigate the suggested approximations in this exercise:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">exercise</span>():
+    <span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">f</span>(x):
+        <span style="color: #008000; font-weight: bold">if</span> <span style="color: #008000">isinstance</span>(x, (<span style="color: #008000">float</span>,<span style="color: #008000">int</span>)):
+            <span style="color: #008000; font-weight: bold">return</span> <span style="color: #666666">0</span> <span style="color: #008000; font-weight: bold">if</span> x <span style="color: #666666">&lt;</span> <span style="color: #666666">0.5</span> <span style="color: #008000; font-weight: bold">else</span> <span style="color: #666666">1</span>
+        <span style="color: #008000; font-weight: bold">elif</span> <span style="color: #008000">isinstance</span>(x, np<span style="color: #666666">.</span>ndarray):
+            <span style="color: #008000; font-weight: bold">return</span> np<span style="color: #666666">.</span>where(x <span style="color: #666666">&lt;</span> <span style="color: #666666">0.5</span>, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>)
+
+    N_e_values <span style="color: #666666">=</span> [<span style="color: #666666">2</span>, <span style="color: #666666">4</span>, <span style="color: #666666">8</span>, <span style="color: #666666">16</span>]
+    <span style="color: #008000; font-weight: bold">for</span> d <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #666666">1</span>, <span style="color: #666666">2</span>, <span style="color: #666666">3</span>, <span style="color: #666666">4</span>:
+        <span style="color: #008000; font-weight: bold">for</span> N_e <span style="color: #AA22FF; font-weight: bold">in</span> N_e_values:
+            approximate(f, numint<span style="color: #666666">=</span><span style="color: #BA2121">&#39;GaussLegendre</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> (d<span style="color: #666666">+1</span>),
+                        d<span style="color: #666666">=</span>d, N_e<span style="color: #666666">=</span>N_e,
+                        filename<span style="color: #666666">=</span><span style="color: #BA2121">&#39;fe_Heaviside_P</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">_</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">e&#39;</span> <span style="color: #666666">%</span> (d, N_e))
+        <span style="color: #008000; font-weight: bold">for</span> ext <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #BA2121">&#39;pdf&#39;</span>, <span style="color: #BA2121">&#39;png&#39;</span>:
+            cmd <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;doconce combine_images &#39;</span>
+            cmd <span style="color: #666666">+=</span> ext <span style="color: #666666">+</span> <span style="color: #BA2121">&#39; -2 &#39;</span>
+            cmd <span style="color: #666666">+=</span> <span style="color: #BA2121">&#39; &#39;</span><span style="color: #666666">.</span>join([<span style="color: #BA2121">&#39;fe_Heaviside_P</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">_</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">e&#39;</span> <span style="color: #666666">%</span> (d, N_e)
+                             <span style="color: #008000; font-weight: bold">for</span> N_e <span style="color: #AA22FF; font-weight: bold">in</span> N_e_values])
+            cmd <span style="color: #666666">+=</span> <span style="color: #BA2121">&#39; fe_Heaviside_P</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> d
+            <span style="color: #008000; font-weight: bold">print</span> cmd
+            os<span style="color: #666666">.</span>system(cmd)
+</pre></div>
+<p>
+Running this function reveals that even finite elements
+(and not only sines, as demonstrated in <a href="#fem:approx:exer:Fourier">Exercise 8: Fourier series as a least squares approximation</a>)
+give oscillations around a discontinuity.
+
+<p>
+<center><p><img src="fig-approx/fe_Heaviside_P1.png" align="bottom" width=800></p></center>
+
+<p>
+<center><p><img src="fig-approx/fe_Heaviside_P2.png" align="bottom" width=800></p></center>
+
+<p>
+<center><p><img src="fig-approx/fe_Heaviside_P3.png" align="bottom" width=800></p></center>
+
+<p>
+<center><p><img src="fig-approx/fe_Heaviside_P4.png" align="bottom" width=800></p></center>
+
+<p>
+<b>Remarks.</b>
+It is of extreme importance to use a Gauss-Legendre numerical integration
+rule that matches the degree of polynomials in the basis.
+Using a rule with fewer points may lead to very strange results.
+
+<p>
+</div></p>
+</div>
+</p>
+
+<p>
+<!-- --- end solution of exercise --- -->
 Filename: <code>fe_Heaviside_P1P2</code>.
 
 <p>
@@ -3026,7 +3391,7 @@ Filename: <code>approx2D_ls_orth</code>.
 Consider approximation of some \( f(x) \) on an interval \( \Omega \) using
 the least squares or Galerkin methods with P1 elements. Derive
 the element matrix and vector using the
-Trapezoidal rule <a href="._approx-sol008.html#mjx-eqn-48">(48)</a> for calculating
+Trapezoidal rule <a href="._approx-sol008.html#mjx-eqn-109">(109)</a> for calculating
 integrals on the reference element. Assemble the contributions, assuming
 a uniform cell partitioning, and show that the resulting linear system
 has the form \( c_i=f(\xno{i}) \) for \( i\in\If \).

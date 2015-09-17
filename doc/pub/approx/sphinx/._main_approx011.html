@@ -363,14 +363,14 @@ this case with the same number of nodes?</p>
 </div>
 <div class="section" id="exercise-17-investigate-the-approximation-error-in-finite-elements">
 <span id="fem-approx-fe-exer-asinwt-interpol-error"></span><h2>Exercise 17: Investigate the approximation error in finite elements<a class="headerlink" href="#exercise-17-investigate-the-approximation-error-in-finite-elements" title="Permalink to this headline">¶</a></h2>
-<p>The theory <a class="reference internal" href="._main_approx007.html#eq-fem-approx-fe-error-theorem"><span class="std std-ref">(8.1)</span></a> from the section <a class="reference internal" href="._main_approx007.html#fem-approx-fe-error"><span class="std std-ref">Computing the error of the approximation</span></a> predicts that the error in the Pd
+<p>The theory <a class="reference internal" href="._main_approx007.html#eq-fem-approx-fe-error-theorem"><span class="std std-ref">(8.2)</span></a> from the section <a class="reference internal" href="._main_approx007.html#fem-approx-fe-error"><span class="std std-ref">Computing the error of the approximation</span></a> predicts that the error in the Pd
 approximation of a function should behave as <span class="math">\(h^{d+1}\)</span>, where <span class="math">\(h\)</span> is
 the length of the element. Use experiments to verify this asymptotic
 behavior (i.e., for small enough <span class="math">\(h\)</span>).  Choose three examples:
 <span class="math">\(f(x)=Ae^{-\omega x}\)</span> on <span class="math">\([0,3/\omega]\)</span>, <span class="math">\(f(x) = A\sin (\omega x)\)</span> on
 <span class="math">\(\Omega=[0, 2\pi/\omega]\)</span> for constant <span class="math">\(A\)</span> and <span class="math">\(\omega\)</span>, and
 <span class="math">\(f(x)=\sqrt{x}\)</span> on <span class="math">\([0,1]\)</span>.</p>
-<p><strong>Hint.</strong>
+<p><strong>Hint 1.</strong>
 Run a series of experiments: <span class="math">\((h_i,E_i)\)</span>, <span class="math">\(i=0,\ldots,m\)</span>, where <span class="math">\(E_i\)</span>
 is the <span class="math">\(L^2\)</span> norm of the error corresponding to element length <span class="math">\(h_i\)</span>.
 Assume an error model <span class="math">\(E=Ch^r\)</span> and compute <span class="math">\(r\)</span> from two successive
@@ -380,6 +380,27 @@ experiments:</p>
 <p>Hopefully, the sequence <span class="math">\(r_0,\ldots,r_{m-1}\)</span> converges to the true
 <span class="math">\(r\)</span>, and <span class="math">\(r_{m-1}\)</span> can be taken as an approximation to <span class="math">\(r\)</span>.
 Run such experiments for different <span class="math">\(d\)</span> for the different <span class="math">\(f(x)\)</span> functions.</p>
+<p><strong>Hint 2.</strong>
+The <code class="docutils literal"><span class="pre">approximate</span></code> function in <code class="docutils literal"><span class="pre">fe_approx1D_numint.py</span></code> is handy for
+calculating the numerical solution. This function returns the
+finite element solution as the coefficients <span class="math">\(\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}\)</span>.
+To compute <span class="math">\(u\)</span>, use <code class="docutils literal"><span class="pre">u_glob</span></code> from the same module.
+Use the Trapezoidal rule to integrate the <span class="math">\(L^2\)</span> error:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">xc</span><span class="p">,</span> <span class="n">u</span> <span class="o">=</span> <span class="n">u_glob</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">vertices</span><span class="p">,</span> <span class="n">cells</span><span class="p">,</span> <span class="n">dof_map</span><span class="p">)</span>
+<span class="n">e</span> <span class="o">=</span> <span class="n">f_func</span><span class="p">(</span><span class="n">xc</span><span class="p">)</span> <span class="o">-</span> <span class="n">u</span>
+<span class="n">L2_error</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">e2</span> <span class="o">=</span> <span class="n">e</span><span class="o">**</span><span class="mi">2</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xc</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">L2_error</span> <span class="o">+=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">e2</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">e2</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">xc</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">xc</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+<span class="n">L2_error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">L2_error</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The reason for this Trapezoidal integration is
+that <code class="docutils literal"><span class="pre">u_glob</span></code> returns coordinates <code class="docutils literal"><span class="pre">xc</span></code> and corresponding <code class="docutils literal"><span class="pre">u</span></code> values
+where some of the coordinates (the cell vertices) coincides, because
+the solution is computed in one element at a time, using all local
+nodes. Also note that there are many coordinates in <span class="math">\(xc\)</span> per cell
+such that we can accurately compute the error inside each cell.</p>
 <p>Filename: <code class="docutils literal"><span class="pre">Pd_approx_error</span></code>.</p>
 </div>
 <div class="section" id="problem-18-approximate-a-step-function-by-finite-elements">
@@ -390,8 +411,7 @@ Run such experiments for different <span class="math">\(d\)</span> for the diffe
 0 &amp; 0\leq x &lt; {1/2},\\
 1 &amp; {1/2} \leq x \geq {1/2}
 \end{array}\right.\end{split}\]</div>
-<p>by 2, 4, and 8 P1 and P2 elements. Compare
-approximations visually.</p>
+<p>by 2, 4, 8, and 16 P1, P2, P3, and P4. Compare approximations visually.</p>
 <p><strong>Hint.</strong>
 This <span class="math">\(f\)</span> can also be expressed in terms of the Heaviside function <span class="math">\(H(x)\)</span>:
 <span class="math">\(f(x) = H(x-{1/2})\)</span>.
@@ -404,9 +424,16 @@ Therefore, <span class="math">\(f\)</span> can be defined by</p>
 problem. However, <code class="docutils literal"><span class="pre">sympy</span></code> does not handle symbolic integration
 with this particular integrand, and the <code class="docutils literal"><span class="pre">approximate</span></code> function faces a problem
 when converting <code class="docutils literal"><span class="pre">f</span></code> to a Python function (for plotting) since
-<code class="docutils literal"><span class="pre">Heaviside</span></code> is not an available function in <code class="docutils literal"><span class="pre">numpy</span></code>. It is better to make
-special-purpose code for this case or perform all
-calculations by hand.</p>
+<code class="docutils literal"><span class="pre">Heaviside</span></code> is not an available function in <code class="docutils literal"><span class="pre">numpy</span></code>.</p>
+<p>An alternative is to perform hand calculations. This is an instructive
+task, but in practice only feasible for few elements and P1 and P2 elements.
+It is better to copy the functions <code class="docutils literal"><span class="pre">element_matrix</span></code>, <code class="docutils literal"><span class="pre">element_vector</span></code>,
+<code class="docutils literal"><span class="pre">assemble</span></code>, and <code class="docutils literal"><span class="pre">approximate</span></code> from the <code class="docutils literal"><span class="pre">fe_approx1D_numint.py</span></code> file
+and edit these functions such that they can compute approximations
+with <code class="docutils literal"><span class="pre">f</span></code> given as a Python function and not a symbolic expression.
+Also assume that <code class="docutils literal"><span class="pre">phi</span></code> computed by the <code class="docutils literal"><span class="pre">basis</span></code> function is a Python
+callable function. Remove all instances of the <code class="docutils literal"><span class="pre">symbolic</span></code> variable
+and associated code.</p>
 <p>Filename: <code class="docutils literal"><span class="pre">fe_Heaviside_P1P2</span></code>.</p>
 </div>
 <div class="section" id="exercise-19-2d-approximation-with-orthogonal-functions">
@@ -437,7 +464,7 @@ file <a class="reference external" href="http://tinyurl.com/nm5587k/approx/fe_ap
 <p>Consider approximation of some <span class="math">\(f(x)\)</span> on an interval <span class="math">\(\Omega\)</span> using
 the least squares or Galerkin methods with P1 elements. Derive
 the element matrix and vector using the
-Trapezoidal rule <a class="reference internal" href="._main_approx008.html#eq-fem-approx-fe-numint1-trapez"><span class="std std-ref">(9.1)</span></a> for calculating
+Trapezoidal rule <a class="reference internal" href="._main_approx008.html#eq-fem-approx-fe-numint1-trapez"><span class="std std-ref">(9.3)</span></a> for calculating
 integrals on the reference element. Assemble the contributions, assuming
 a uniform cell partitioning, and show that the resulting linear system
 has the form <span class="math">\(c_i=f(x_{i})\)</span> for <span class="math">\(i\in{\mathcal{I}_s}\)</span>.

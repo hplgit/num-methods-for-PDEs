@@ -1,6 +1,6 @@
 .. !split
 
-.. _fem:deq:1D:code:global:
+.. _fem:deq:1D:code:
 
 Implementation
 ==============
@@ -12,6 +12,8 @@ both for automating the work and for documenting the complete algorithms.
 As we have seen, there are quite many details involved with
 finite element computations and incorporation of boundary conditions.
 An implementation will also act as a structured summary of all these details.
+
+.. _fem:deq:1D:code:global:
 
 Global basis functions
 ----------------------
@@ -59,8 +61,8 @@ the following function:
 
         import sympy as sym
         
-        def solve(integrand_lhs, integrand_rhs, psi, Omega,
-                  boundary_lhs=None, boundary_rhs=None):
+        def solver(integrand_lhs, integrand_rhs, psi, Omega,
+                   boundary_lhs=None, boundary_rhs=None):
             N = len(psi[0]) - 1
             A = sym.zeros((N+1, N+1))
             b = sym.zeros((N+1, 1))
@@ -79,7 +81,7 @@ the following function:
                 b[i,0] = I
             c = A.LUsolve(b)
             u = sum(c[i,0]*psi[0][i] for i in range(len(psi[0])))
-            return u
+            return u, c
 
 Not surprisingly, symbolic solution of differential
 equations, discretized by a Galerkin or least squares method
@@ -92,7 +94,7 @@ only in ``sympy`` but also in
 software available today: Mathematica). Numerical integration
 as an option is therefore desirable.
 
-The extended ``solve`` function below tries to combine symbolic and
+The extended ``solver`` function below tries to combine symbolic and
 numerical integration.  The latter can be enforced by the user, or it
 can be invoked after a non-successful symbolic integration (being
 detected by an ``Integral`` object as the result of the integration
@@ -103,17 +105,17 @@ in ``sympy``).
 Note that for a
 numerical integration, symbolic expressions must be converted to
 Python functions (using ``lambdify``), and the expressions cannot contain
-other symbols than ``x``. The real ``solve`` routine in the
+other symbols than ``x``. The real ``solver`` routine in the
 `varform1D.py <http://tinyurl.com/nm5587k/varform/varform1D.py>`__
 file has error checking and meaningful error messages in such cases.
-The ``solve`` code below is a condensed version of the real one, with
+The ``solver`` code below is a condensed version of the real one, with
 the purpose of showing how to automate the Galerkin or least squares
 method for solving differential equations in 1D with global basis functions:
 
 .. code-block:: python
 
-        def solve(integrand_lhs, integrand_rhs, psi, Omega,
-                  boundary_lhs=None, boundary_rhs=None, symbolic=True):
+        def solver(integrand_lhs, integrand_rhs, psi, Omega,
+                   boundary_lhs=None, boundary_rhs=None, symbolic=True):
             N = len(psi[0]) - 1
             A = sym.zeros((N+1, N+1))
             b = sym.zeros((N+1, 1))
@@ -144,7 +146,7 @@ method for solving differential equations in 1D with global basis functions:
                 b[i,0] = I
             c = A.LUsolve(b)
             u = sum(c[i,0]*psi[0][i] for i in range(len(psi[0])))
-            return u
+            return u, c
 
 Example: constant right-hand side
 ---------------------------------
@@ -178,17 +180,22 @@ equation by :math:`v` and integrating by parts yield
 
 and with :math:`u=B + \sum_jc_j{\psi}_j` we get the linear system
 
+.. _Eq:_auto37:
+
 .. math::
+   :label: _auto37
         
         \sum_{j\in{\mathcal{I}_s}}\left(\int_0^1{\psi}_i'{\psi}_j' {\, \mathrm{d}x}\right)c_j =
         \int_0^1(f{\psi}_i-B'{\psi}_i') {\, \mathrm{d}x},
         \quad i\in{\mathcal{I}_s}{\thinspace .}
+        
         
 
 The application can be coded as follows with ``sympy``:
 
 .. code-block:: python
 
+        import sympy as sym
         x, b = sym.symbols('x b')
         f = b
         B = 1 - x**3
@@ -207,8 +214,9 @@ The application can be coded as follows with ``sympy``:
         
         Omega = [0, 1]
         
-        u_bar = solve(integrand_lhs, integrand_rhs, psi, Omega,
-                      verbose=True, symbolic=True)
+        from varform1D import solver
+        u_bar, c = solver(integrand_lhs, integrand_rhs, psi, Omega,
+                          verbose=True, symbolic=True)
         u = B + u_bar
         print 'solution u:', sym.simplify(sym.expand(u))
 
@@ -254,6 +262,8 @@ the symbolic expressions for :math:`u` quickly become lengthy and non-informativ
 so numerical integration in the code, and hence numerical answers,
 have the greatest application potential.
 
+.. _fem:deq:1D:code:fe:
+
 Finite elements
 ---------------
 
@@ -285,7 +295,10 @@ Here, ``phi`` is a dictionary where ``phi[q]`` holds a list of the
 derivatives of order ``q`` of the basis functions with respect to the
 physical coordinate :math:`x`.  The derivatives are available as Python
 functions of ``X``.  For example, ``phi[0][r](X)`` means :math:`{\tilde{\varphi}}_r(X)`,
-and ``phi[1][s](X, h)`` means :math:`d{\tilde{\varphi}}_s (X)/dx`.  The ``r`` and ``s``
+and ``phi[1][s](X, h)`` means :math:`d{\tilde{\varphi}}_s (X)/dx` (we refer to
+the file `fe1D.py <http://tinyurl.com/nm5587k/varform/fe1D.py>`__ for details
+regarding the function ``basis`` that computes the ``phi``
+dictionary).  The ``r`` and ``s``
 arguments in the above functions correspond to the index in the
 integrand contribution from an integration point to :math:`\tilde
 A^{(e)}_{r,s}` and :math:`\tilde b^{(e)}_r`. The variables ``e`` and ``h`` are
@@ -439,9 +452,149 @@ The ``timing`` object is a dictionary holding the CPU spent on computing
 ``A`` and the CPU time spent on solving the linear system. (We have
 left out the timing statements.)
 
-``model2`` function from the section :ref:`fem:deq:1D:models:simple` can
-readily solve the problem: ``model2(x, L, C, D)``.
+.. _fem:deq:1D:code:fe_sparse:
+
+Utilizing a sparse matrix
+-------------------------
+
+A potential efficiency problem with the ``finite_element1D_naive`` function
+is that it uses dense :math:`(N+1)\times (N+1)` matrices, while we know that
+only :math:`2d+1` diagonals around the main diagonal are different from zero.
+Switching to a sparse matrix is very easy. Using the DOK (dictionary of
+keys) format, we declare ``A`` as
+
+.. code-block:: python
+
+        import scipy.sparse
+        A = scipy.sparse.dok_matrix((N_n, N_n))
+
+Assignments or in-place arithmetics are done as for a dense matrix,
+
+.. code-block:: text
+
+        A[i,j] += term
+        A[i,j]  = term
+
+but only the index pairs ``(i,j)`` we have used in assignments or
+in-place arithmetics are actually stored.
+A tailored solution algorithm is needed. The most reliable is
+sparse Gaussian elimination:
+
+.. code-block:: python
+
+        import scipy.sparse.linalg
+        c = scipy.sparse.linalg.spsolve(A.tocsr(), b, use_umfpack=True)
+
+The declaration of ``A`` and the solve statement are the only
+changes needed in the ``finite_element1D_naive`` to utilize
+sparse matrices. The resulting modification is found in the
+function ``finite_element1D``.
+
+Example  (2)
+~~~~~~~~~~~~
+
+Let us demonstrate the finite element software on
 
 .. math::
-         u(x) = D + C(x-L) + \frac{1}{6}(L^3 - x^3) 
+         -u''(x)=f(x),\quad x\in (0,L),\quad u'(0)=C,\ u(L)=D{\thinspace .}
+
+This problem can be analytically solved by the
+``model2`` function from the section :ref:`fem:deq:1D:models:simple`.
+Let :math:`f(x)=x^2`. Calling ``model2(x**2, L, C, D)`` gives
+
+.. math::
+         u(x) = D + C(x-L) + \frac{1}{12}(L^4 - x^4) 
+
+The variational formulation reads
+
+.. math::
+         (u', v) = (x^2, v) - Cv(0){\thinspace .}
+
+The entries in the element matrix and vector,
+which we need to set up the ``ilhs``, ``irhs``,
+``blhs``, and ``brhs`` functions, becomes
+
+.. math::
+        
+        A^{(e)}_{r,s} &= \int_{-1}^1 \frac{d{\tilde{\varphi}}_r}{dx}\frac{{\tilde{\varphi}}_s}{dx}(\det J{\, \mathrm{d}X}),\\ 
+        b^{(e)} &= \int_{-1}^1 x^2{\tilde{\varphi}}_r\det J{\, \mathrm{d}X} - C{\tilde{\varphi}}_r(-1)I(e,0),
+        
+
+where :math:`I(e)` is an indicator function: :math:`I(e,q)=1` if :math:`e=q`, otherwise :math:`I(e)=0`.
+We use this indicator function to formulate that the boundary term
+:math:`Cv(0)`, which in the local element coordinate system becomes :math:`C{\tilde{\varphi}}_r(-1)`,
+is only included for the element :math:`e=0`.
+
+The functions for specifying the element matrix and vector entries
+must contain the integrand, but without the :math:`\det J{\, \mathrm{d}X}` term, and
+the derivatives :math:`d{\tilde{\varphi}}_r(X)/dx`
+with respect to the physical :math:`x` coordinates are
+contained in ``phi[1][r](X)``, computed by the function ``basis``.
+
+.. code-block:: python
+
+        def ilhs(e, phi, r, s, X, x, h):
+            return phi[1][r](X, h)*phi[1][s](X, h)
+        
+        def irhs(e, phi, r, X, x, h):
+            return x**2*phi[0][r](X)
+        
+        def blhs(e, phi, r, s, X, x, h):
+            return 0
+        
+        def brhs(e, phi, r, X, x, h):
+            return -C*phi[0][r](-1) if e == 0 else 0
+
+We can then make the call to ``finite_element1D_naive`` or ``finite_element1D``
+to solve the problem with two P1 elements:
+
+.. code-block:: python
+
+        from fe1D import finite_element1D_naive, mesh_uniform
+        C = 5;  D = 2;  L = 4
+        d = 1
+        
+        vertices, cells, dof_map = mesh_uniform(
+            N_e=2, d=d, Omega=[0,L], symbolic=False)
+        essbc = {}
+        essbc[dof_map[-1][-1]] = D
+        
+        c, A, b, timing = finite_element1D(
+            vertices, cells, dof_map, essbc,
+            ilhs=ilhs, irhs=irhs, blhs=blhs, brhs=brhs,
+            intrule='GaussLegendre')
+
+It remains to plot the solution (with high resolution in each element).
+To this end, we use the ``u_glob`` function imported from
+``fe1D``, which imports it from ``fe_approx1D_numit`` (the
+``u_glob`` function in ``fe_approx1D.py``
+works with ``elements`` and ``nodes``, while ``u_glob`` in
+``fe_approx1D_numint`` works with ``cells``, ``vertices``,
+and ``dof_map``):
+
+.. code-block:: python
+
+        u_exact = lambda x: D + C*(x-L) + (1./6)*(L**3 - x**3)
+        from fe1D import u_glob
+        x, u, nodes = u_glob(c, cells, vertices, dof_map)
+        u_e = u_exact(x, C, D, L)
+        print u_exact(nodes, C, D, L) - c  # difference at the nodes
+        
+        import matplotlib.pyplot as plt
+        plt.plot(x, u, 'b-', x, u_e, 'r--')
+        plt.legend(['finite elements, d=%d' %d, 'exact'], loc='upper left')
+        plt.show()
+
+The result is shown in Figure :ref:`fem:deq:1D:code:fe:fig1`. We see
+that the solution using P1 elements is exact at the nodes, but
+feature considerable discrepancy between the nodes.
+:ref:`fem:deq:exer:1D:exact_numerics` asks you to explore
+this problem further using other :math:`m` and :math:`d` values.
+
+.. _fem:deq:1D:code:fe:fig1:
+
+.. figure:: uxx_x2.png
+   :width: 500
+
+   *Finite element and exact solution using two cells*
 

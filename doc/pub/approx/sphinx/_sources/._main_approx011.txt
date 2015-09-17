@@ -579,7 +579,7 @@ Filename: ``fe_tanh_P3P4``.
 Exercise 17: Investigate the approximation error in finite elements
 -------------------------------------------------------------------
 
-The theory :ref:`(8.1) <Eq:fem:approx:fe:error:theorem>` from the section :ref:`fem:approx:fe:error` predicts that the error in the Pd
+The theory :ref:`(8.2) <Eq:fem:approx:fe:error:theorem>` from the section :ref:`fem:approx:fe:error` predicts that the error in the Pd
 approximation of a function should behave as :math:`h^{d+1}`, where :math:`h` is
 the length of the element. Use experiments to verify this asymptotic
 behavior (i.e., for small enough :math:`h`).  Choose three examples:
@@ -589,7 +589,7 @@ behavior (i.e., for small enough :math:`h`).  Choose three examples:
 
 .. --- begin hint in exercise ---
 
-**Hint.**
+**Hint 1.**
 Run a series of experiments: :math:`(h_i,E_i)`, :math:`i=0,\ldots,m`, where :math:`E_i`
 is the :math:`L^2` norm of the error corresponding to element length :math:`h_i`.
 Assume an error model :math:`E=Ch^r` and compute :math:`r` from two successive
@@ -603,6 +603,36 @@ Hopefully, the sequence :math:`r_0,\ldots,r_{m-1}` converges to the true
 Run such experiments for different :math:`d` for the different :math:`f(x)` functions.
 
 .. --- end hint in exercise ---
+
+.. --- begin hint in exercise ---
+
+**Hint 2.**
+The ``approximate`` function in ``fe_approx1D_numint.py`` is handy for
+calculating the numerical solution. This function returns the
+finite element solution as the coefficients :math:`\left\{ {c}_i \right\}_{i\in{\mathcal{I}_s}}`.
+To compute :math:`u`, use ``u_glob`` from the same module.
+Use the Trapezoidal rule to integrate the :math:`L^2` error:
+
+.. code-block:: python
+
+        xc, u = u_glob(c, vertices, cells, dof_map)
+        e = f_func(xc) - u
+        L2_error = 0
+        e2 = e**2
+        for i in range(len(xc)-1):
+            L2_error += 0.5*(e2[i+1] + e2[i])*(xc[i+1] - xc[i])
+        L2_error = np.sqrt(L2_error)
+
+The reason for this Trapezoidal integration is
+that ``u_glob`` returns coordinates ``xc`` and corresponding ``u`` values
+where some of the coordinates (the cell vertices) coincides, because
+the solution is computed in one element at a time, using all local
+nodes. Also note that there are many coordinates in :math:`xc` per cell
+such that we can accurately compute the error inside each cell.
+
+.. --- end hint in exercise ---
+
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
 
 Filename: ``Pd_approx_error``.
 
@@ -624,8 +654,7 @@ Approximate the step function
         \end{array}\right.
         
 
-by 2, 4, and 8 P1 and P2 elements. Compare
-approximations visually.
+by 2, 4, 8, and 16 P1, P2, P3, and P4. Compare approximations visually.
 
 .. --- begin hint in exercise ---
 
@@ -643,11 +672,21 @@ making the ``approximate`` function in the
 problem. However, ``sympy`` does not handle symbolic integration
 with this particular integrand, and the ``approximate`` function faces a problem
 when converting ``f`` to a Python function (for plotting) since
-``Heaviside`` is not an available function in ``numpy``. It is better to make
-special-purpose code for this case or perform all
-calculations by hand.
+``Heaviside`` is not an available function in ``numpy``.
+
+An alternative is to perform hand calculations. This is an instructive
+task, but in practice only feasible for few elements and P1 and P2 elements.
+It is better to copy the functions ``element_matrix``, ``element_vector``,
+``assemble``, and ``approximate`` from the ``fe_approx1D_numint.py`` file
+and edit these functions such that they can compute approximations
+with ``f`` given as a Python function and not a symbolic expression.
+Also assume that ``phi`` computed by the ``basis`` function is a Python
+callable function. Remove all instances of the ``symbolic`` variable
+and associated code.
 
 .. --- end hint in exercise ---
+
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
 
 Filename: ``fe_Heaviside_P1P2``.
 
@@ -704,7 +743,7 @@ Exercise 20: Use the Trapezoidal rule and P1 elements
 Consider approximation of some :math:`f(x)` on an interval :math:`\Omega` using
 the least squares or Galerkin methods with P1 elements. Derive
 the element matrix and vector using the
-Trapezoidal rule :ref:`(9.1) <Eq:fem:approx:fe:numint1:trapez>` for calculating
+Trapezoidal rule :ref:`(9.3) <Eq:fem:approx:fe:numint1:trapez>` for calculating
 integrals on the reference element. Assemble the contributions, assuming
 a uniform cell partitioning, and show that the resulting linear system
 has the form :math:`c_i=f(x_{i})` for :math:`i\in{\mathcal{I}_s}`.

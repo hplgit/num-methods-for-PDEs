@@ -45,8 +45,8 @@ def demo():
     print 'model1:', u, u.subs(x, 0), u.subs(x, L)
     print sym.latex(u, mode='plain')
     u = model2(f, L, C, D)
-    f = x
-    u = model2(f, L, C, D)
+    #f = x
+    #u = model2(f, L, C, D)
     print 'model2:', u, sym.diff(u, x).subs(x, 0), u.subs(x, L)
     print sym.latex(u, mode='plain')
     u = model3(0, 1+x**2, L, C, D)

@@ -2,6 +2,7 @@ from fe_approx1D import basis, affine_mapping
 import sys
 from math import sqrt
 import numpy as np
+import sympy as sym
 """
 This module extends and replaces functions in the module fe_approx1D.
 Two major changes are implemented:
@@ -52,15 +53,12 @@ def element_matrix(phi, Omega_e, symbolic=True, numint=None):
                 A_e[r,s] = sym.integrate(phi[r]*phi[s]*detJ, (X, -1, 1))
                 A_e[s,r] = A_e[r,s]
     else:
-        #phi = [sym.lambdify([X], phi[r]) for r in range(n)]
-        # Do instead a phi_rj = phi[r].subs(X, Xj) to avoid real numbers
+        # symbolic=False means phi is function
         for r in range(n):
             for s in range(r, n):
                 for j in range(len(numint[0])):
                     Xj, wj = numint[0][j], numint[1][j]
-                    phi_rj = phi[r].subs(X, Xj)
-                    phi_sj = phi[s].subs(X, Xj)
-                    A_e[r,s] += phi_rj*phi_sj*detJ*wj
+                    A_e[r,s] += phi[r](Xj)*phi[s](Xj)*detJ*wj
                 A_e[s,r] = A_e[r,s]
     return A_e
 
@@ -84,8 +82,9 @@ def element_vector(f, phi, Omega_e, symbolic=True, numint=None):
                 # Ensure h is numerical
                 h = Omega_e[1] - Omega_e[0]
                 detJ = h/2
-                #integrand = sym.lambdify([X], f*phi[r]*detJ, modules='sympy')
-                integrand = sym.lambdify([X], f*phi[r]*detJ)
+                f_func = lambdify([X], f)
+                # phi is function
+                integrand = lambda X: f_func(X)*phi[r](X)*detJ
                 #integrand = integrand.subs(sym.pi, np.pi)
                 # integrand may still contain symbols like sym.pi that
                 # prevents numerical evaluation...
@@ -104,8 +103,7 @@ def element_vector(f, phi, Omega_e, symbolic=True, numint=None):
             for j in range(len(numint[0])):
                 Xj, wj = numint[0][j], numint[1][j]
                 fj = f.subs(X, Xj)
-                phi_rj = phi[r].subs(X, Xj)
-                b_e[r] += fj*phi_rj*detJ*wj
+                b_e[r] += fj*phi[r](Xj)*detJ*wj
     return b_e
 
 def exemplify_element_matrix_vector(f, d, symbolic=True, numint=False):
@@ -152,7 +150,7 @@ def assemble(vertices, cells, dof_map, phi, f,
     return A, b
 
 def approximate(f, symbolic=False, d=1, N_e=4, numint=None,
-                Omega=[0, 1], filename='tmp'):
+                Omega=[0, 1], collocation=False, filename='tmp'):
     """
     Compute the finite element approximation, using Lagrange
     elements of degree d, to a symbolic expression f (with x
@@ -217,7 +215,6 @@ def approximate(f, symbolic=False, d=1, N_e=4, numint=None,
     # and the degree of the polynomial is len(dof_map[e])-1
     phi = [basis(len(dof_map[e])-1) for e in range(N_e)]
 
-    print 'phi basis (reference element):\n', phi
     A, b = assemble(vertices, cells, dof_map, phi, f,
                     symbolic=symbolic, numint=numint)
 
@@ -231,23 +228,20 @@ def approximate(f, symbolic=False, d=1, N_e=4, numint=None,
 
     if symbolic:
         c = A.LUsolve(b)
+        c = np.asarray([c[i,0] for i in range(c.shape[0])])
     else:
         c = np.linalg.solve(A, b)
 
     print 'c:\n', c
 
-    if not symbolic:
+    x = sym.Symbol('x')
+    f = sym.lambdify([x], f, modules='numpy')
+
+    if collocation and not symbolic:
         print 'Plain interpolation/collocation:'
-        x = sym.Symbol('x')
-        f = sym.lambdify([x], f, modules='numpy')
-        try:
-            f_at_vertices = [f(xc) for xc in vertices]
-            print f_at_vertices
-        except Exception as e:
-            print 'could not evaluate f numerically:'
-            print e
-    # else: nodes are symbolic so f(nodes[i]) only makes sense
-    # in the non-symbolic case
+        # Should use vertices, but compute all nodes!
+        f_at_vertices = [f(xc) for xc in vertices]
+        print f_at_vertices
 
     if filename is not None:
         title = 'P%d, N_e=%d' % (d, N_e)
@@ -255,7 +249,7 @@ def approximate(f, symbolic=False, d=1, N_e=4, numint=None,
             title += ', exact integration'
         else:
             title += ', integration: %s' % numint_name
-        x_u, u = u_glob(np.asarray(c), vertices, cells, dof_map,
+        x_u, u = u_glob(c, vertices, cells, dof_map,
                         resolution_per_element=51)
         x_f = np.linspace(Omega[0], Omega[1], 10001) # mesh for f
         import scitools.std as plt
@@ -265,16 +259,17 @@ def approximate(f, symbolic=False, d=1, N_e=4, numint=None,
         plt.title(title)
         plt.savefig(filename + '.pdf')
         plt.savefig(filename + '.png')
+
     return c
 
-def u_glob(U, vertices, cells, dof_map,
-           resolution_per_element=51):
+def u_glob(U, vertices, cells, dof_map, resolution_per_element=51):
     """
     Compute (x, y) coordinates of a curve y = u(x), where u is a
     finite element function: u(x) = sum_i of U_i*phi_i(x).
     Method: Run through each element and compute curve coordinates
     over the element.
     """
+    from fe_approx1D import phi_r
     x_patches = []
     u_patches = []
     for e in range(len(cells)):

@@ -1,4 +1,4 @@
-import sympy as sp
+import sympy as sym
 
 class TaylorSeries:
     """Class for symbolic Taylor series."""
@@ -8,13 +8,13 @@ class TaylorSeries:
         # Introduce symbols for the derivatives
         self.df = [f]
         for i in range(1, self.N+1):
-            self.df.append(sp.Symbol('D%d%s' % (i, f.name)))
+            self.df.append(sym.Symbol('D%d%s' % (i, f.name)))
 
     def __call__(self, h):
         """Return the truncated Taylor series at x+h."""
         terms = self.f
         for i in range(1, self.N+1):
-            terms += sp.Rational(1, sp.factorial(i))*self.df[i]*h**i
+            terms += sym.Rational(1, sym.factorial(i))*self.df[i]*h**i
         return terms
 
 
@@ -24,11 +24,11 @@ class DiffOp:
                  num_terms_Taylor_series=4):
         self.Taylor = TaylorSeries(f, num_terms_Taylor_series)
         self.f = self.Taylor.f
-        self.h = sp.Symbol('d%s' % independent_variable)
+        self.h = sym.Symbol('d%s' % independent_variable)
 
         # Finite difference operators
         h, f, f_T = self.h, self.f, self.Taylor # short names
-        theta = sp.Symbol('theta')
+        theta = sym.Symbol('theta')
         self.diffops = {
             'Dtp':  (f_T(h) - f)/h,
             'Dtm':  (f - f_T(-h))/h,
@@ -37,7 +37,7 @@ class DiffOp:
             'DtDt': (f_T(h) - 2*f + f_T(-h))/h**2,
             'barDt': (f_T((1-theta)*h) - f_T(-theta*h))/h,
             }
-        self.diffops = {diffop: sp.simplify(self.diffops[diffop])
+        self.diffops = {diffop: sym.simplify(self.diffops[diffop])
                         for diffop in self.diffops}
 
         self.diffops['weighted_arithmetic_mean'] = \
@@ -48,25 +48,25 @@ class DiffOp:
     def _weighted_arithmetic_mean(self):
         # The expansion is around n*h + theta*h
         h, f, f_T = self.h, self.f, self.Taylor
-        theta = sp.Symbol('theta')
+        theta = sym.Symbol('theta')
         f_n = f_T(-h*theta)
         f_np1 = f_T((1-theta)*h)
         a_mean = theta*f_np1 + (1-theta)*f_n
-        return sp.expand(a_mean)
+        return sym.expand(a_mean)
 
     def _geometric_mean(self):
         h, f, f_T = self.h, self.f, self.Taylor
         f_nmhalf = f_T(-h/2)
         f_nphalf = f_T(h/2)
         g_mean = f_nmhalf*f_nphalf
-        return sp.expand(g_mean)
+        return sym.expand(g_mean)
 
     def _harmonic_mean(self):
         h, f, f_T = self.h, self.f, self.Taylor
         f_nmhalf = f_T(-h/2)
         f_nphalf = f_T(h/2)
         h_mean = 2/(1/f_nmhalf + 1/f_nphalf)
-        return sp.expand(h_mean)
+        return sym.expand(h_mean)
 
     def D(self, i):
         """Return the symbol for the i-th derivative."""
@@ -81,7 +81,7 @@ class DiffOp:
 
 def truncation_errors():
     # Make a table
-    u, theta = sp.symbols('u theta')
+    u, theta = sym.symbols('u theta')
     diffop = DiffOp(u, independent_variable='t',
                     num_terms_Taylor_series=5)
     D1u = diffop.D(1)   # symbol for du/dt
@@ -92,7 +92,7 @@ def truncation_errors():
     print 'R barDt:', diffop['barDt'] - D1u
     print 'R DtDt:', diffop['DtDt'] - D2u
     print 'R weighted arithmetic mean:', diffop['weighted_arithmetic_mean'] - u
-    print 'R arithmetic mean:', diffop['weighted_arithmetic_mean'].subs(theta, sp.Rational(1,2)) - u
+    print 'R arithmetic mean:', diffop['weighted_arithmetic_mean'].subs(theta, sym.Rational(1,2)) - u
     print 'R geometric mean:', diffop['geometric_mean'] - u
     dt = diffop.h
     print 'R harmonic mean:', (diffop['harmonic_mean'] - u).\

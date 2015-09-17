@@ -8,13 +8,13 @@ from scitools.std import plot, hold, legend, savefig, linspace, \
      title, xlabel, axis
 
 
-def solve(integrand_lhs, integrand_rhs, psi, Omega,
-          boundary_lhs=None, boundary_rhs=None,
-          symbolic=True, verbose=False):
+def solver(integrand_lhs, integrand_rhs, psi, Omega,
+           boundary_lhs=None, boundary_rhs=None,
+           symbolic=True, verbose=False):
     """
     psi: dictionary of lists, psi[0] holdes the basis functions,
     psi[1] holdes the first-order derivatives, and psi[2] the
-    second-order derivatives (and so on).
+    second-order derivatives (and so on), as symbolic expressions.
     integrand_lhs and integrand_rhs are functions of psi
     defining the integrands in integrals over Omega in the variational
     formulation. boundary_lhs/rhs are similar functions defining
@@ -73,12 +73,13 @@ def solve(integrand_lhs, integrand_rhs, psi, Omega,
     if verbose: print 'A:\n', A, '\nb:\n', b
     c = A.LUsolve(b)
     #c = sym.mpmath.lu_solve(A, b)
+    c = [c[i,0] for i in range(c.shape[0])]
     if verbose: print 'coeff:', c
     u = 0
     for i in range(len(psi[0])):
-        u += c[i,0]*psi[0][i]
+        u += c[i]*psi[0][i]
     if verbose: print 'approximation:', u
-    return u
+    return u, c
 
 def collocation(term_lhs, term_rhs, psi, points):
     """

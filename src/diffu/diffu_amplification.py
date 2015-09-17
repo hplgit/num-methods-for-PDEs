@@ -35,17 +35,17 @@ def compare_plot(F, p):
 
 
 p = linspace(0, pi/2, 101)
-#for F in 20, 2, 0.5, 0.25, 0.1, 0.01:
+#for F in 20, 5, 2, 0.5, 0.25, 0.1, 0.01:
 #    compare_plot(F, p)
 
+#import sys; sys.exit(0)
 from sympy import *
-F, p, dx, dt = symbols('F p dx dt')
-#A_err_FE = A_FE(F, p)/A_exact(F, p)
+F, p, dx, dt, k = symbols('F p dx dt k')
 A_err_FE = A_exact(F, p) - A_FE(F, p)
 A_err_FE = A_FE(F, p)/A_exact(F, p)
 #print 'Error in A, FE:', A_err_FE.series(F, 0, 6)
-A_err_FE = A_err_FE.subs('F', 'dt/dx**2').subs('p', 'dx')
-print 'Error in A, FE:', A_err_FE.series(dt, 0, 6)
+A_err_FE = A_err_FE.subs(F, dt/dx**2).subs(sin(p), 1).subs(p, k*dx/2)
+print 'Error in A, FE:', A_err_FE.series(dt, 0, 3)
 print latex(A_err_FE.series(F, 0, 6))
 A_err_BE = A_exact(F, p) - A_BE(F, p)
 A_err_BE = A_BE(F, p)/A_exact(F, p)
@@ -60,7 +60,8 @@ raw_input()
 
 show()
 
-"""
+f = open('tmp.sh', 'w')
+f.write("""#!/bin/sh
 doconce combine_images A_F20.pdf A_F2.pdf diffusion_A_F20_F2.pdf
 doconce combine_images A_F20.png A_F2.png diffusion_A_F20_F2.png
 
@@ -69,4 +70,7 @@ doconce combine_images A_F05.pdf A_F025.pdf diffusion_A_F05_F025.pdf
 
 doconce combine_images A_F01.pdf A_F001.pdf diffusion_A_F01_F001.pdf
 doconce combine_images A_F01.png A_F001.png diffusion_A_F01_F001.png
-"""
+""")
+f.close()
+import os
+os.system('sh -x tmp.sh')

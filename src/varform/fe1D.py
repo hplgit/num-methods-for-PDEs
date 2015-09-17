@@ -3,6 +3,7 @@ import sys, os, time
 sys.path.insert(
     0, os.path.join(os.pardir, os.pardir, 'approx', 'src-approx'))
 from numint import GaussLegendre, NewtonCotes
+from fe_approx1D_numint import u_glob
 
 import sympy as sym
 import numpy as np
@@ -59,12 +60,12 @@ def basis(d, point_distribution='uniform', symbolic=False):
 
         phi_sym[0] = [Lagrange_polynomial(X, r, nodes)
                       for r in range(d+1)]
-        phi_sym[1] = [sym.simplify(sym.diff(phi_sym[0][r], X))
+        phi_sym[1] = [sym.simplify(sym.diff(phi_sym[0][r], X)*2/h)
                       for r in range(d+1)]
     # Transform to Python functions
     phi_num[0] = [sym.lambdify([X], phi_sym[0][r])
                   for r in range(d+1)]
-    phi_num[1] = [sym.lambdify([X, h], phi_sym[1][r]*(2.0/h))
+    phi_num[1] = [sym.lambdify([X, h], phi_sym[1][r]))
                   for r in range(d+1)]
     return phi_sym if symbolic else phi_num
 
@@ -291,9 +292,11 @@ def mesh_uniform(N_e, d, Omega=[0,1], symbolic=False):
     return vertices, cells, dof_map
 
 def define_cases(name=None):
+    C = 0.5;  D = 2;  L = 4  # constants for case 'cubic'
     cases = {
         # u''=0 on (0,1), u(0)=0, u(1)=1 => u(x)=x
         'linear': {
+            'Omega': [0,1],
             'ilhs': lambda e, phi, r, s, X, x, h:
             phi[1][r](X, h)*phi[1][s](X, h),
             'irhs': lambda e, phi, r, X, x, h: 0,
@@ -305,6 +308,7 @@ def define_cases(name=None):
             },
         # -u''=2 on (0,1), u(0)=0, u(1)=0 => u(x)=x(1-x)
         'quadratic': {
+            'Omega': [0,1],
             'ilhs': lambda e, phi, r, s, X, x, h:
             phi[1][r](X, h)*phi[1][s](X, h),
             'irhs': lambda e, phi, r, X, x, h:
@@ -315,11 +319,26 @@ def define_cases(name=None):
             'u_R': 0,
             'u_exact': lambda x: x*(1-x),
             },
+        # -u''=f(x) on (0,L), u'(0)=C, u(L)=D
+        # f(x)=x: u = D + C*(x-L) + (1./6)*(L**3 - x**3)
+        'cubic': {
+            'Omega': [0,L],
+            'ilhs': lambda e, phi, r, s, X, x, h:
+            phi[1][r](X, h)*phi[1][s](X, h),
+            'irhs': lambda e, phi, r, X, x, h:
+            x*phi[0][r](X),
+            'blhs': lambda e, phi, r, s, X, x, h: 0,
+            'brhs': lambda e, phi, r, X, x, h:
+            -C*phi[0][r](-1) if e == 0 else 0,
+            'u_R': D,
+            'u_exact': lambda x: D + C*(x-L) + (1./6)*(L**3 - x**3),
+            'min_d': 1,  # min d for exact finite element solution
+            },
         }
     if name is None:
         return cases
     else:
-        return cases[name]
+        return {name: cases[name]}
 
 def test_finite_element1D():
     """Solve 1D test problems."""
@@ -330,15 +349,23 @@ def test_finite_element1D():
         case = cases[name]
         for N_e in [3]:
             for d in [1, 2, 3, 4]:
+                # Do we need a minimum d to get exact
+                # numerical solution?
+                if d < case.get('min_d', 0):
+                    continue
                 vertices, cells, dof_map = \
-                    mesh_uniform(N_e=3, d=3, Omega=[0,1],
+                    mesh_uniform(N_e=N_e, d=d, Omega=case['Omega'],
                                  symbolic=False)
                 N_n = np.array(dof_map).max() + 1
-                x = np.linspace(0, 1, N_n)
+                # Assume uniform mesh
+                x = np.linspace(
+                    case['Omega'][0], case['Omega'][1], N_n)
 
                 essbc = {}
-                essbc[0] = case['u_L']
-                essbc[dof_map[-1][-1]] = case['u_R']
+                if 'u_L' in case:
+                    essbc[0] = case['u_L']
+                if 'u_R' in case:
+                    essbc[dof_map[-1][-1]] = case['u_R']
 
                 c, A, b, timing = finite_element1D_naive(
                     vertices, cells, dof_map, essbc,
@@ -346,13 +373,13 @@ def test_finite_element1D():
                     case['blhs'], case['brhs'],
                 intrule='GaussLegendre',
                 verbose=verbose)
-
                 # Compare with exact solution
-                tol = 1E-14
+                tol = 1E-12
                 diff = (case['u_exact'](x) - c).max()
                 msg = 'naive:  case "%s", N_e=%d, d=%d, diff=%g' % \
                       (name, N_e, d, diff)
-                print msg, timing
+                print msg, 'assemble: %.2f' % timing['assemble'], \
+                      'solve: %.2f' % timing['solve']
                 assert diff < tol, msg
 
                 c, A, b, timing = finite_element1D(
@@ -363,11 +390,11 @@ def test_finite_element1D():
                 verbose=verbose)
 
                 # Compare with exact solution
-                tol = 1E-14
                 diff = (case['u_exact'](x) - c).max()
                 msg = 'sparse: case "%s", N_e=%d, d=%d, diff=%g' % \
                       (name, N_e, d, diff)
-                print msg, timing
+                print msg, 'assemble: %.2f' % timing['assemble'], \
+                      'solve: %.2f' % timing['solve']
                 assert diff < tol, msg
 
 def investigate_efficiency():
@@ -407,5 +434,5 @@ def investigate_efficiency():
             print msg
 
 if __name__ == '__main__':
-    #test_finite_element1D()
-    investigate_efficiency()
+    test_finite_element1D()
+    #investigate_efficiency()

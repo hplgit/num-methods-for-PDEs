@@ -82,26 +82,31 @@
 <h1>Exercises<a class="headerlink" href="#exercises" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="exercise-1-refactor-functions-into-a-more-general-class">
 <span id="fem-deq-exer-bvp1d-class"></span><h2>Exercise 1: Refactor functions into a more general class<a class="headerlink" href="#exercise-1-refactor-functions-into-a-more-general-class" title="Permalink to this headline">¶</a></h2>
-<p>The section <a class="reference internal" href="._main_varform001.html#fem-deq-1d-models-simple"><span class="std std-ref">Simple model problems and their solutions</span></a> displays three functions
-for computing the analytical solution of some simple
-model problems. There is quite some repetitive code, suggesting
-that the functions can benefit from being refactored into a
-class where the user can define the <span class="math">\(f(x)\)</span>, <span class="math">\({\alpha}(x)\)</span>, and the boundary
-conditions in particular methods in subclasses. Demonstrate how
-the new class can be used to solve the three particular
-problems in the section <a class="reference internal" href="._main_varform001.html#fem-deq-1d-models-simple"><span class="std std-ref">Simple model problems and their solutions</span></a>.</p>
-<p>In the method that computes the solution, check that the solution
-found fulfills the differential equation and the boundary conditions.
-Filename: <code class="docutils literal"><span class="pre">uxx_f_sympy_class</span></code>.</p>
+<p>The section <a class="reference internal" href="._main_varform001.html#fem-deq-1d-models-simple"><span class="std std-ref">Simple model problems and their solutions</span></a> lists three functions for
+computing the analytical solution of some simple model problems. There
+is quite some repetitive code, suggesting that the functions can
+benefit from being refactored into a class hierarchy, where the base
+class solves <span class="math">\(-(a(x)u'(x))'=f(x)\)</span> and where subclasses define the
+equations for the boundary conditions in a model. Make a method for
+returning the residual in the differential equation and the boundary
+conditions when the solution is inserted in these equations. Create a
+test function that verifies that all three residuals vanish for each
+of the model problems in the section <a class="reference internal" href="._main_varform001.html#fem-deq-1d-models-simple"><span class="std std-ref">Simple model problems and their solutions</span></a>.  Also
+make a method that returns the solution either as <code class="docutils literal"><span class="pre">sympy</span></code> expression
+or as a string in LaTeX format.  Add a fourth subclass for the problem
+<span class="math">\(-(au')'=f\)</span> with a Robin boundary condition:</p>
+<div class="math">
+\[u(0)=0,\quad -u'(L) = C*(u - D){\thinspace .}\]</div>
+<p>Demonstrate the use of this subclass for the case <span class="math">\(f=0\)</span> and <span class="math">\(a=\sqrt{1+x}\)</span>.</p>
+<p>Filename: <code class="docutils literal"><span class="pre">uxx_f_sympy_class</span></code>.</p>
 </div>
 <div class="section" id="exercise-2-compute-the-deflection-of-a-cable-with-sine-functions">
 <span id="fem-deq-exer-tension-cable"></span><h2>Exercise 2: Compute the deflection of a cable with sine functions<a class="headerlink" href="#exercise-2-compute-the-deflection-of-a-cable-with-sine-functions" title="Permalink to this headline">¶</a></h2>
 <p>A hanging cable of length <span class="math">\(L\)</span>
-with significant tension <span class="math">\(T\)</span> has a downward deflection <span class="math">\(w(x)\)</span>
+with significant tension <span class="math">\(T\)</span> has a deflection <span class="math">\(w(x)\)</span>
 governed by</p>
-<p>Solve</p>
 <div class="math">
-\[T w''(x) = \ell(x),\]</div>
+\[T w''(x) = -\ell(x),\]</div>
 <p>when <span class="math">\(\ell(x)\)</span> the vertical load per unit length.
 The cable is fixed at <span class="math">\(x=0\)</span> and <span class="math">\(x=L\)</span> so the boundary conditions become
 <span class="math">\(w(0)=w(L)=0\)</span>.</p>
@@ -109,55 +114,103 @@ The cable is fixed at <span class="math">\(x=0\)</span> and <span class="math">\
 the solution is expected to be symmetric around <span class="math">\(x=L/2\)</span>. For a function
 <span class="math">\(w(x)\)</span> that is symmetric around some point <span class="math">\(x_0\)</span>, it means that
 <span class="math">\(w(x_0-h) = w(x_0+h)\)</span>, and then <span class="math">\(w'(x_0)=\lim_{h\rightarrow 0}(w(x_0+h)-
-w(x_0-h))/(2h)=0\)</span>. We can therefore halve the domain and
-seek <span class="math">\(w(x)\)</span> in <span class="math">\([0,L/2]\)</span> with boundary conditions <span class="math">\(w(0)=0\)</span> and
+w(x_0-h))/(2h)=0\)</span>. We can therefore utilize symmetry to halve the domain.
+We then seek <span class="math">\(w(x)\)</span> in <span class="math">\([0,L/2]\)</span> with boundary conditions <span class="math">\(w(0)=0\)</span> and
 <span class="math">\(w'(L/2)=0\)</span>.</p>
-<p>The problem can be scaled by introducing a dimensionless coordinate
-(also called <span class="math">\(x\)</span>) in <span class="math">\([0,1]\)</span> and a dimensionless vertical
-deflection <span class="math">\(u(x)\)</span>.
-The differential equation problem for <span class="math">\(u(x)\)</span> becomes</p>
+<p>The problem can be scaled by introducing a dimensionless independent
+and dependent variables,</p>
 <div class="math">
-\[u'' = 1,\quad x\in (0,1),\quad u(0)=0,\ u'(1)=0{\thinspace .}\]</div>
-<p>A possible function space is spanned by <span class="math">\({\psi}_i=\sin ((2i+1)\pi x/2)\)</span>,
-<span class="math">\(i=0,\ldots,N\)</span>.
-Use a Galerkin and a least squares method to find the coefficients
+\[\bar x = \frac{x}{L/2},\quad \bar u = \frac{w}{u_c},\]</div>
+<p>where <span class="math">\(u_c\)</span> is a characteristic size of <span class="math">\(u\)</span>.
+Inserted in the problem for <span class="math">\(w\)</span>,</p>
+<div class="math">
+\[\frac{4Tu_c}{L^{2}}\frac{d^2\bar u}{d\bar x^2} = -\ell\ (= \hbox{const}){\thinspace .}\]</div>
+<p>A desire is to have <span class="math">\(u\)</span> and its derivatives to be about unity, so
+choosing <span class="math">\(u_c\)</span> such that <span class="math">\(|d^2\bar u/d\bar x^2|=1\)</span> is an idea.
+Then <span class="math">\(u_c=\frac{1}{4}\ell L^2/T\)</span>, and the problem for the scaled vertical
+deflection <span class="math">\(u\)</span> becomes</p>
+<div class="math">
+\[u'' = -1,\quad x\in (0,1),\quad u(0)=0,\ u'(1)=0{\thinspace .}\]</div>
+<p>Observe that there are no physical parameters in this scaled problem.
+From now on we have for convenience
+renamed <span class="math">\(x\)</span> to be the scaled quantity <span class="math">\(\bar x\)</span>.</p>
+<p><strong>a)</strong>
+Find the exact solution for the deflection <span class="math">\(u\)</span>.</p>
+<p><strong>b)</strong>
+A possible function space is spanned by <span class="math">\({\psi}_i=\sin ((2i+1)\pi x/2)\)</span>,
+<span class="math">\(i=0,\ldots,N\)</span>. These fulfill the necessary condition <span class="math">\({\psi}_i(0)=0\)</span>,
+but they also fulfill <span class="math">\({\psi}_i'(1)=0\)</span> such that both boundary
+conditions are fulfilled by the expansion <span class="math">\(u=\sum_jc_j{\varphi}_j\)</span>.</p>
+<p>Use a Galerkin and a least squares method to find the coefficients
 <span class="math">\(c_j\)</span> in <span class="math">\(u(x)=\sum_j c_j{\psi}_j\)</span>. Find how fast the coefficients
 decrease in magnitude by looking at <span class="math">\(c_j/c_{j-1}\)</span>.
 Find the error in the maximum deflection at <span class="math">\(x=1\)</span> when only one
 basis function is used (<span class="math">\(N=0\)</span>).</p>
-<p>What happens if we choose basis functions
-<span class="math">\({\psi}_i=\sin ((i+1)\pi x)\)</span>? These basis functions are appropriate
-if we do not utilize symmetry and solve the original problem on <span class="math">\([0,L]\)</span>.
-A scaled version of this problem reads</p>
+<p><strong>Hint.</strong>
+In this case, where the basis functions and their derivatives are
+orthogonal, it is easiest to set up the calculations by hand and
+use <code class="docutils literal"><span class="pre">sympy</span></code> to help out with the integrals.</p>
+<p><strong>c)</strong>
+Visualize the solutions in b) for <span class="math">\(N=0,1,20\)</span>.</p>
+<p><strong>d)</strong>
+The functions in b) were selected such that they fulfill the
+condition <span class="math">\({\psi}'(1)=0\)</span>. However, in the Galerkin method, where we
+integrate by parts, the condition <span class="math">\(u'(1)=0\)</span> is incorporated in the
+variational form. This leads to the idea of just choosing a simpler
+basis, namely &#8220;all&#8221; sine functions <span class="math">\({\psi}_i = \sin((i+1)\frac{\pi x}{2})\)</span>.
+Will the method adjust the coefficient such that inappropriate basis
+functions are omitted from the sum? Use Galerkin&#8217;s method.</p>
+<p><strong>e)</strong>
+Now we drop the symmetry condition at <span class="math">\(x=1\)</span> and extend the domain to
+<span class="math">\([0,2]\)</span> such that it covers the entire (scaled) physical cable. The
+problem now reads</p>
 <div class="math">
-\[u''=1,\quad x\in(0,1),\quad u(0)=u(1)=0{\thinspace .}\]</div>
-<p>Carry out the computations with <span class="math">\(N=0\)</span> and demonstrate that the
-maximum deflection <span class="math">\(u(1/2)\)</span> is the same in the problem utilizing
-symmetry and the problem covering the whole cable.
-Filename: <code class="docutils literal"><span class="pre">cable_sin</span></code>.</p>
+\[u'' = -1,\quad x\in (0,2),\quad u(0)=u(2)=0{\thinspace .}\]</div>
+<p>This time we need basis functions that are zero at <span class="math">\(x=0\)</span> and <span class="math">\(x=2\)</span>.
+The set <span class="math">\(\sin((i+1)\frac{\pi x}{2})\)</span> from d) is a candidate since
+they vanish <span class="math">\(x=2\)</span> for any <span class="math">\(i\)</span>. Compute the approximation in this case.
+Why is this approximation without the problem that this set of
+basis functions introduced in d)?</p>
+<p>Filename: <code class="docutils literal"><span class="pre">cable_sin</span></code>.</p>
 </div>
-<div class="section" id="exercise-3-check-integration-by-parts">
-<span id="fem-deq-exer-intg-parts"></span><h2>Exercise 3: Check integration by parts<a class="headerlink" href="#exercise-3-check-integration-by-parts" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="exercise-3-compute-the-deflection-of-a-cable-with-power-functions">
+<span id="fem-deq-exer-tension-cable-xn"></span><h2>Exercise 3: Compute the deflection of a cable with power functions<a class="headerlink" href="#exercise-3-compute-the-deflection-of-a-cable-with-power-functions" title="Permalink to this headline">¶</a></h2>
+<p><strong>a)</strong>
+Repeat <a class="reference internal" href="#fem-deq-exer-tension-cable"><span class="std std-ref">Exercise 2: Compute the deflection of a cable with sine functions</span></a> b), but work with
+the space</p>
+<div class="math">
+\[V = \hbox{span}\{x, x^2, x^3, x^4, \ldots\]</div>
+<p>Choose the dimension of <span class="math">\(V\)</span> to be 4 and observe that the exact solution
+is recovered by the Galerkin method.</p>
+<p><strong>Hint.</strong>
+Use the <code class="docutils literal"><span class="pre">solver</span></code> function from <code class="docutils literal"><span class="pre">varform1D.py</span></code>.</p>
+<p><strong>b)</strong>
+What happens if we use a least squares method for this problem with
+the basis in a)?</p>
+<p>Filename: <code class="docutils literal"><span class="pre">cable_xn</span></code>.</p>
+</div>
+<div class="section" id="exercise-4-check-integration-by-parts">
+<span id="fem-deq-exer-intg-parts"></span><h2>Exercise 4: Check integration by parts<a class="headerlink" href="#exercise-4-check-integration-by-parts" title="Permalink to this headline">¶</a></h2>
 <p>Consider the Galerkin method for the problem involving <span class="math">\(u\)</span>
 in <a class="reference internal" href="#fem-deq-exer-tension-cable"><span class="std std-ref">Exercise 2: Compute the deflection of a cable with sine functions</span></a>.
 Show that the formulas for <span class="math">\(c_j\)</span> are independent of whether we perform
 integration by parts or not.
 Filename: <code class="docutils literal"><span class="pre">cable_integr_by_parts</span></code>.</p>
 </div>
-<div class="section" id="exercise-4-compute-the-deflection-of-a-cable-with-2-p1-elements">
-<span id="id1"></span><h2>Exercise 4: Compute the deflection of a cable with 2 P1 elements<a class="headerlink" href="#exercise-4-compute-the-deflection-of-a-cable-with-2-p1-elements" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="exercise-5-compute-the-deflection-of-a-cable-with-2-p1-elements">
+<span id="id1"></span><h2>Exercise 5: Compute the deflection of a cable with 2 P1 elements<a class="headerlink" href="#exercise-5-compute-the-deflection-of-a-cable-with-2-p1-elements" title="Permalink to this headline">¶</a></h2>
 <p>Solve the problem for <span class="math">\(u\)</span> in <a class="reference internal" href="#fem-deq-exer-tension-cable"><span class="std std-ref">Exercise 2: Compute the deflection of a cable with sine functions</span></a>
 using two P1 linear elements.
 Filename: <code class="docutils literal"><span class="pre">cable_2P1</span></code>.</p>
 </div>
-<div class="section" id="exercise-5-compute-the-deflection-of-a-cable-with-1-p2-element">
-<span id="id2"></span><h2>Exercise 5: Compute the deflection of a cable with 1 P2 element<a class="headerlink" href="#exercise-5-compute-the-deflection-of-a-cable-with-1-p2-element" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="exercise-6-compute-the-deflection-of-a-cable-with-1-p2-element">
+<span id="id2"></span><h2>Exercise 6: Compute the deflection of a cable with 1 P2 element<a class="headerlink" href="#exercise-6-compute-the-deflection-of-a-cable-with-1-p2-element" title="Permalink to this headline">¶</a></h2>
 <p>Solve the problem for <span class="math">\(u\)</span> in <a class="reference internal" href="#fem-deq-exer-tension-cable"><span class="std std-ref">Exercise 2: Compute the deflection of a cable with sine functions</span></a>
 using one P2 element with quadratic basis functions.
 Filename: <code class="docutils literal"><span class="pre">cable_1P2</span></code>.</p>
 </div>
-<div class="section" id="exercise-6-compute-the-deflection-of-a-cable-with-a-step-load">
-<span id="id3"></span><h2>Exercise 6: Compute the deflection of a cable with a step load<a class="headerlink" href="#exercise-6-compute-the-deflection-of-a-cable-with-a-step-load" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="exercise-7-compute-the-deflection-of-a-cable-with-a-step-load">
+<span id="id3"></span><h2>Exercise 7: Compute the deflection of a cable with a step load<a class="headerlink" href="#exercise-7-compute-the-deflection-of-a-cable-with-a-step-load" title="Permalink to this headline">¶</a></h2>
 <p>We consider the deflection of a tension cable as described in
 <a class="reference internal" href="#fem-deq-exer-tension-cable"><span class="std std-ref">Exercise 2: Compute the deflection of a cable with sine functions</span></a>. Now the load is</p>
 <div class="math">
@@ -186,8 +239,8 @@ Solve the problem with P1 finite elements.
 Plot the solution for <span class="math">\(N_e=2,4,8\)</span> elements.</p>
 <p>Filename: <code class="docutils literal"><span class="pre">cable_discont_load</span></code>.</p>
 </div>
-<div class="section" id="exercise-7-show-equivalence-between-linear-systems">
-<span id="fem-deq-exer-aub-essbc-equiv"></span><h2>Exercise 7: Show equivalence between linear systems<a class="headerlink" href="#exercise-7-show-equivalence-between-linear-systems" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="exercise-8-show-equivalence-between-linear-systems">
+<span id="fem-deq-exer-aub-essbc-equiv"></span><h2>Exercise 8: Show equivalence between linear systems<a class="headerlink" href="#exercise-8-show-equivalence-between-linear-systems" title="Permalink to this headline">¶</a></h2>
 <p>Incorporation of Dirichlet conditions at <span class="math">\(x=0\)</span> and <span class="math">\(x=L\)</span>
 in a finite element mesh on <span class="math">\(\Omega=[0,L]\)</span> can either be done by
 introducing an expansion <span class="math">\(u(x)=U_0{\varphi}_0 + U_{N_n-1}{\varphi}_{N_n-1} +
@@ -199,8 +252,8 @@ c_j{\varphi}_j\)</span> and afterwards replace the rows corresponding to known
 <span class="math">\(c_j\)</span> values by the boundary conditions.
 Show that the two approaches are equivalent.</p>
 </div>
-<div class="section" id="exercise-8-compute-with-a-non-uniform-mesh">
-<span id="fem-deq-exer-1d-mesh-nonuniform"></span><h2>Exercise 8: Compute with a non-uniform mesh<a class="headerlink" href="#exercise-8-compute-with-a-non-uniform-mesh" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="exercise-9-compute-with-a-non-uniform-mesh">
+<span id="fem-deq-exer-1d-mesh-nonuniform"></span><h2>Exercise 9: Compute with a non-uniform mesh<a class="headerlink" href="#exercise-9-compute-with-a-non-uniform-mesh" title="Permalink to this headline">¶</a></h2>
 <p>Derive the linear system for the problem <span class="math">\(-u''=2\)</span> on <span class="math">\([0,1]\)</span>,
 with <span class="math">\(u(0)=0\)</span> and <span class="math">\(u(1)=1\)</span>, using P1 elements and a <em>non-uniform</em>
 mesh. The vertices have coordinates <span class="math">\(x_{0}=0 &lt; x_{1} &lt;\cdots &lt;
@@ -215,13 +268,13 @@ modify it to find a natural discretization of <span class="math">\(u''(x_i)\)</s
 mesh.
 Filename: <code class="docutils literal"><span class="pre">nonuniform_P1</span></code>.</p>
 </div>
-<div class="section" id="problem-9-solve-a-1d-finite-element-problem-by-hand">
-<span id="fem-deq-exer-1d-gen-problem1"></span><h2>Problem 9: Solve a 1D finite element problem by hand<a class="headerlink" href="#problem-9-solve-a-1d-finite-element-problem-by-hand" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="problem-10-solve-a-1d-finite-element-problem-by-hand">
+<span id="fem-deq-exer-1d-gen-problem1"></span><h2>Problem 10: Solve a 1D finite element problem by hand<a class="headerlink" href="#problem-10-solve-a-1d-finite-element-problem-by-hand" title="Permalink to this headline">¶</a></h2>
 <p>The following scaled 1D problem is a very simple, yet relevant, model
 for convective transport in fluids:</p>
-<div class="math">
-\[u' = \epsilon u'' ,\quad u(0)=0,\ u(1)=1,\ x\in [0,1]
-{\thinspace .}\]</div>
+<div class="math" id="equation-_auto45">
+<span id="eq-auto45"></span><span class="eqno">(1)</span>\[     u' = \epsilon u'' ,\quad u(0)=0,\ u(1)=1,\ x\in [0,1]
+     {\thinspace .}\]</div>
 <p><strong>a)</strong>
 Find the analytical solution to this problem.
 (Introduce <span class="math">\(w=u'\)</span>, solve the first-order differential equation for <span class="math">\(w(x)\)</span>,
@@ -246,19 +299,35 @@ for a mesh with 20 elements and
 <span class="math">\(\epsilon=10, 1, 0.1, 0.01\)</span>.</p>
 <p>Filename: <code class="docutils literal"><span class="pre">convdiff1D_P1</span></code>.</p>
 </div>
-<div class="section" id="exercise-10-compare-finite-elements-and-differences-for-a-radially-symmetric-poisson-equation">
-<span id="fem-deq-exer-1d-poisson-polar"></span><h2>Exercise 10: Compare finite elements and differences for a radially symmetric Poisson equation<a class="headerlink" href="#exercise-10-compare-finite-elements-and-differences-for-a-radially-symmetric-poisson-equation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="exercise-11-investigate-exact-finite-element-solutions">
+<span id="fem-deq-exer-1d-exact-numerics"></span><h2>Exercise 11: Investigate exact finite element solutions<a class="headerlink" href="#exercise-11-investigate-exact-finite-element-solutions" title="Permalink to this headline">¶</a></h2>
+<p>Consider</p>
+<div class="math">
+\[-u''(x)=x^m,\quad x\in (0,L),\quad u'(0)=C,\ u(L)=D,\]</div>
+<p>where <span class="math">\(m\geq 0\)</span> is an integer, and <span class="math">\(L\)</span>, <span class="math">\(C\)</span>, and <span class="math">\(D\)</span> are given numbers.
+Utilize a mesh with two (non-uniform) elements: <span class="math">\(\Omega^{(0)}=[0,3]\)</span> and
+<span class="math">\(\Omega^{(0)}=[3,4]\)</span>.
+Plot the exact solution and the finite element solution for
+<span class="math">\(d=1,2,3,4\)</span> and <span class="math">\(m=0, 1, 2, 3, 4\)</span>. Find values of <span class="math">\(d\)</span> and <span class="math">\(m\)</span>
+that make the finite element solution exact at the nodes in the mesh.</p>
+<p><strong>Hint.</strong>
+Use the <code class="docutils literal"><span class="pre">mesh_uniform</span></code>, <code class="docutils literal"><span class="pre">finite_element1D</span></code>, and <code class="docutils literal"><span class="pre">u_glob2</span></code> functions
+from the <code class="docutils literal"><span class="pre">fe1D.py</span></code> module.</p>
+<p>Filename: <code class="docutils literal"><span class="pre">u_xx_xm_P1to4</span></code>.</p>
+</div>
+<div class="section" id="exercise-12-compare-finite-elements-and-differences-for-a-radially-symmetric-poisson-equation">
+<span id="fem-deq-exer-1d-poisson-polar"></span><h2>Exercise 12: Compare finite elements and differences for a radially symmetric Poisson equation<a class="headerlink" href="#exercise-12-compare-finite-elements-and-differences-for-a-radially-symmetric-poisson-equation" title="Permalink to this headline">¶</a></h2>
 <p>We consider the Poisson problem in a disk with radius <span class="math">\(R\)</span> with
 Dirichlet conditions at the boundary.
 Given that the solution is radially symmetric and hence dependent only on
 the radial coordinate (<span class="math">\(r=\sqrt{x^2+y^2}\)</span>), we can reduce the problem
 to a 1D Poisson equation</p>
 <div class="math" id="equation-fem:deq:exer:1D:Poisson:polar:eq">
-<span id="eq-fem-deq-exer-1d-poisson-polar-eq"></span><span class="eqno">(1)</span>\[     -\frac{1}{r}\frac{d}{dr}\left( r\frac{du}{dr}\right) = f(r),\quad r\in (0,R),\
+<span id="eq-fem-deq-exer-1d-poisson-polar-eq"></span><span class="eqno">(2)</span>\[     -\frac{1}{r}\frac{d}{dr}\left( r\frac{du}{dr}\right) = f(r),\quad r\in (0,R),\
      u'(0)=0,\ u(R)=U_R
      {\thinspace .}\]</div>
 <p><strong>a)</strong>
-Derive a variational form of <a href="#equation-fem:deq:exer:1D:Poisson:polar:eq">(1)</a>
+Derive a variational form of <a href="#equation-fem:deq:exer:1D:Poisson:polar:eq">(2)</a>
 by integrating over the whole disk, or posed equivalently: use
 a weighting function <span class="math">\(2\pi r v(r)\)</span> and integrate <span class="math">\(r\)</span> from <span class="math">\(0\)</span> to <span class="math">\(R\)</span>.</p>
 <p><strong>b)</strong>
@@ -267,7 +336,7 @@ resulting set of equations becomes. Integrate the matrix entries
 exact by hand, but use a Trapezoidal rule to integrate the <span class="math">\(f\)</span> term.</p>
 <p><strong>c)</strong>
 Explain that an intuitive
-finite difference method applied to <a href="#equation-fem:deq:exer:1D:Poisson:polar:eq">(1)</a>
+finite difference method applied to <a href="#equation-fem:deq:exer:1D:Poisson:polar:eq">(2)</a>
 gives</p>
 <div class="math">
 \[\frac{1}{r_i}\frac{1}{h^2}\left( r_{i+\frac{1}{2}}(u_{i+1}-u_i) -
@@ -290,15 +359,15 @@ and compare to the finite element method in case a Trapezoidal rule
 is used to integrate the <span class="math">\(f\)</span> term in the latter method.</p>
 <p>Filename: <code class="docutils literal"><span class="pre">radial_Poisson1D_P1</span></code>.</p>
 </div>
-<div class="section" id="exercise-11-compute-with-variable-coefficients-and-p1-elements-by-hand">
-<span id="fem-deq-exer-1d-gen-problem2"></span><h2>Exercise 11: Compute with variable coefficients and P1 elements by hand<a class="headerlink" href="#exercise-11-compute-with-variable-coefficients-and-p1-elements-by-hand" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="exercise-13-compute-with-variable-coefficients-and-p1-elements-by-hand">
+<span id="fem-deq-exer-1d-gen-problem2"></span><h2>Exercise 13: Compute with variable coefficients and P1 elements by hand<a class="headerlink" href="#exercise-13-compute-with-variable-coefficients-and-p1-elements-by-hand" title="Permalink to this headline">¶</a></h2>
 <p>Consider the problem</p>
 <div class="math" id="equation-fem:deq:1D:model4">
-<span id="eq-fem-deq-1d-model4"></span><span class="eqno">(2)</span>\[     -\frac{d}{dx}\left( {\alpha}(x)\frac{du}{dx}\right) + \gamma u = f(x),
+<span id="eq-fem-deq-1d-model4"></span><span class="eqno">(3)</span>\[     -\frac{d}{dx}\left( {\alpha}(x)\frac{du}{dx}\right) + \gamma u = f(x),
      \quad x\in\Omega=[0,L],\quad u(0)={\alpha},\ u'(L)=\beta{\thinspace .}\]</div>
 <p>We choose <span class="math">\({\alpha}(x)=1+x^2\)</span>. Then</p>
-<div class="math">
-\[u(x) = {\alpha} + \beta(1+L^2)\tan^{-1}(x),\]</div>
+<div class="math" id="equation-_auto46 u(x) = {\alpha} + \beta(1+L^2)\tan^{-1}(x),">
+<span id="eq-auto46"></span></div>
 <p>is an exact solution if <span class="math">\(f(x) = \gamma u\)</span>.</p>
 <p>Derive a variational formulation and compute general expressions for the
 element matrix and vector in an arbitrary element, using P1 elements
@@ -308,8 +377,8 @@ rule. The Trapezoidal rule (<span class="xref std std-ref">fem:approx:fe:numint1
 gives particularly simple expressions.
 Filename: <code class="docutils literal"><span class="pre">atan1D_P1</span></code>.</p>
 </div>
-<div class="section" id="exercise-12-solve-a-2d-poisson-equation-using-polynomials-and-sines">
-<span id="fem-deq-exer-2d-torsion-xy-sin"></span><h2>Exercise 12: Solve a 2D Poisson equation using polynomials and sines<a class="headerlink" href="#exercise-12-solve-a-2d-poisson-equation-using-polynomials-and-sines" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="exercise-14-solve-a-2d-poisson-equation-using-polynomials-and-sines">
+<span id="fem-deq-exer-2d-torsion-xy-sin"></span><h2>Exercise 14: Solve a 2D Poisson equation using polynomials and sines<a class="headerlink" href="#exercise-14-solve-a-2d-poisson-equation-using-polynomials-and-sines" title="Permalink to this headline">¶</a></h2>
 <p>The classical problem of applying a torque to the ends of a rod
 can be modeled by a Poisson equation defined in the cross section <span class="math">\(\Omega\)</span>:</p>
 <div class="math">
@@ -361,16 +430,18 @@ estimate of the maximum <span class="math">\(u\)</span> value at <span class="ma
 <li><a class="reference internal" href="#">Exercises</a><ul>
 <li><a class="reference internal" href="#exercise-1-refactor-functions-into-a-more-general-class">Exercise 1: Refactor functions into a more general class</a></li>
 <li><a class="reference internal" href="#exercise-2-compute-the-deflection-of-a-cable-with-sine-functions">Exercise 2: Compute the deflection of a cable with sine functions</a></li>
-<li><a class="reference internal" href="#exercise-3-check-integration-by-parts">Exercise 3: Check integration by parts</a></li>
-<li><a class="reference internal" href="#exercise-4-compute-the-deflection-of-a-cable-with-2-p1-elements">Exercise 4: Compute the deflection of a cable with 2 P1 elements</a></li>
-<li><a class="reference internal" href="#exercise-5-compute-the-deflection-of-a-cable-with-1-p2-element">Exercise 5: Compute the deflection of a cable with 1 P2 element</a></li>
-<li><a class="reference internal" href="#exercise-6-compute-the-deflection-of-a-cable-with-a-step-load">Exercise 6: Compute the deflection of a cable with a step load</a></li>
-<li><a class="reference internal" href="#exercise-7-show-equivalence-between-linear-systems">Exercise 7: Show equivalence between linear systems</a></li>
-<li><a class="reference internal" href="#exercise-8-compute-with-a-non-uniform-mesh">Exercise 8: Compute with a non-uniform mesh</a></li>
-<li><a class="reference internal" href="#problem-9-solve-a-1d-finite-element-problem-by-hand">Problem 9: Solve a 1D finite element problem by hand</a></li>
-<li><a class="reference internal" href="#exercise-10-compare-finite-elements-and-differences-for-a-radially-symmetric-poisson-equation">Exercise 10: Compare finite elements and differences for a radially symmetric Poisson equation</a></li>
-<li><a class="reference internal" href="#exercise-11-compute-with-variable-coefficients-and-p1-elements-by-hand">Exercise 11: Compute with variable coefficients and P1 elements by hand</a></li>
-<li><a class="reference internal" href="#exercise-12-solve-a-2d-poisson-equation-using-polynomials-and-sines">Exercise 12: Solve a 2D Poisson equation using polynomials and sines</a></li>
+<li><a class="reference internal" href="#exercise-3-compute-the-deflection-of-a-cable-with-power-functions">Exercise 3: Compute the deflection of a cable with power functions</a></li>
+<li><a class="reference internal" href="#exercise-4-check-integration-by-parts">Exercise 4: Check integration by parts</a></li>
+<li><a class="reference internal" href="#exercise-5-compute-the-deflection-of-a-cable-with-2-p1-elements">Exercise 5: Compute the deflection of a cable with 2 P1 elements</a></li>
+<li><a class="reference internal" href="#exercise-6-compute-the-deflection-of-a-cable-with-1-p2-element">Exercise 6: Compute the deflection of a cable with 1 P2 element</a></li>
+<li><a class="reference internal" href="#exercise-7-compute-the-deflection-of-a-cable-with-a-step-load">Exercise 7: Compute the deflection of a cable with a step load</a></li>
+<li><a class="reference internal" href="#exercise-8-show-equivalence-between-linear-systems">Exercise 8: Show equivalence between linear systems</a></li>
+<li><a class="reference internal" href="#exercise-9-compute-with-a-non-uniform-mesh">Exercise 9: Compute with a non-uniform mesh</a></li>
+<li><a class="reference internal" href="#problem-10-solve-a-1d-finite-element-problem-by-hand">Problem 10: Solve a 1D finite element problem by hand</a></li>
+<li><a class="reference internal" href="#exercise-11-investigate-exact-finite-element-solutions">Exercise 11: Investigate exact finite element solutions</a></li>
+<li><a class="reference internal" href="#exercise-12-compare-finite-elements-and-differences-for-a-radially-symmetric-poisson-equation">Exercise 12: Compare finite elements and differences for a radially symmetric Poisson equation</a></li>
+<li><a class="reference internal" href="#exercise-13-compute-with-variable-coefficients-and-p1-elements-by-hand">Exercise 13: Compute with variable coefficients and P1 elements by hand</a></li>
+<li><a class="reference internal" href="#exercise-14-solve-a-2d-poisson-equation-using-polynomials-and-sines">Exercise 14: Solve a 2D Poisson equation using polynomials and sines</a></li>
 </ul>
 </li>
 </ul>
@@ -425,7 +496,7 @@ estimate of the maximum <span class="math">\(u\)</span> value at <span class="ma
     <a href="http://cbc.simula.no"><img src="_static/cbc_banner.png" width="100%"><a>
     <br />
     <br />
-      &copy;2015, No author.
+      &copy;2015, Hans Petter Langtangen.
   </div>
 </div>
 

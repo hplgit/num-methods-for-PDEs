@@ -920,7 +920,7 @@ $$
 \begin{equation}
 \baspsi_{2i} = \cos\left( i\frac{2\pi}{L}x\right),\quad
 \baspsi_{2i+1} = \sin\left( i\frac{2\pi}{L}x\right),
-\tag{54}
+\tag{125}
 \end{equation}
 $$
 
@@ -1189,7 +1189,7 @@ Filename: <code>fe_tanh_P3P4</code>.
 <h2 id="fem:approx:fe:exer:Asinwt:interpol:error">Exercise 17: Investigate the approximation error in finite elements</h2>
 
 <p>
-The theory <a href="._approx007.html#mjx-eqn-47">(47)</a> from the section <a href="._approx007.html#fem:approx:fe:error">Computing the error of the approximation</a> predicts that the error in the Pd
+The theory <a href="._approx007.html#mjx-eqn-101">(101)</a> from the section <a href="._approx007.html#fem:approx:fe:error">Computing the error of the approximation</a> predicts that the error in the Pd
 approximation of a function should behave as \( h^{d+1} \), where \( h \) is
 the length of the element. Use experiments to verify this asymptotic
 behavior (i.e., for small enough \( h \)).  Choose three examples:
@@ -1203,7 +1203,7 @@ behavior (i.e., for small enough \( h \)).  Choose three examples:
 <p>
 <a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
  data-target="#exer_17_1" style="font-size: 80%;"></a>
-<b>Hint.</b>
+<b>Hint 1.</b>
 <div class="collapse-group">
 <p><div class="collapse" id="exer_17_1">
 
@@ -1226,7 +1226,54 @@ Run such experiments for different \( d \) for the different \( f(x) \) function
 
 <p>
 <!-- --- end hint in exercise --- -->
-Filename: <code>Pd_approx_error</code>.
+
+<p>
+<!-- --- begin hint in exercise --- -->
+
+<p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_17_2" style="font-size: 80%;"></a>
+<b>Hint 2.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_17_2">
+
+<p>
+The <code>approximate</code> function in <code>fe_approx1D_numint.py</code> is handy for
+calculating the numerical solution. This function returns the
+finite element solution as the coefficients \( \sequencei{c} \).
+To compute \( u \), use <code>u_glob</code> from the same module.
+Use the Trapezoidal rule to integrate the \( L^2 \) error:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">xc, u <span style="color: #666666">=</span> u_glob(c, vertices, cells, dof_map)
+e <span style="color: #666666">=</span> f_func(xc) <span style="color: #666666">-</span> u
+L2_error <span style="color: #666666">=</span> <span style="color: #666666">0</span>
+e2 <span style="color: #666666">=</span> e<span style="color: #666666">**2</span>
+<span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(xc)<span style="color: #666666">-1</span>):
+    L2_error <span style="color: #666666">+=</span> <span style="color: #666666">0.5*</span>(e2[i<span style="color: #666666">+1</span>] <span style="color: #666666">+</span> e2[i])<span style="color: #666666">*</span>(xc[i<span style="color: #666666">+1</span>] <span style="color: #666666">-</span> xc[i])
+L2_error <span style="color: #666666">=</span> np<span style="color: #666666">.</span>sqrt(L2_error)
+</pre></div>
+<p>
+The reason for this Trapezoidal integration is
+that <code>u_glob</code> returns coordinates <code>xc</code> and corresponding <code>u</code> values
+where some of the coordinates (the cell vertices) coincides, because
+the solution is computed in one element at a time, using all local
+nodes. Also note that there are many coordinates in \( xc \) per cell
+such that we can accurately compute the error inside each cell.
+
+<p>
+</div></p>
+</div>
+</p>
+
+<p>
+<!-- --- end hint in exercise --- -->
+
+<p>
+<!-- removed !bsol ... !esol environment (because of the command-line option --without_solutions)
+ -->Filename: <code>Pd_approx_error</code>.
 
 <p>
 <!-- --- end exercise --- -->
@@ -1247,8 +1294,7 @@ $$
 \end{equation*}
 $$
 
-by 2, 4, and 8 P1 and P2 elements. Compare
-approximations visually.
+by 2, 4, 8, and 16 P1, P2, P3, and P4. Compare approximations visually.
 
 <p>
 <!-- --- begin hint in exercise --- -->
@@ -1276,9 +1322,18 @@ making the <code>approximate</code> function in the
 problem. However, <code>sympy</code> does not handle symbolic integration
 with this particular integrand, and the <code>approximate</code> function faces a problem
 when converting <code>f</code> to a Python function (for plotting) since
-<code>Heaviside</code> is not an available function in <code>numpy</code>. It is better to make
-special-purpose code for this case or perform all
-calculations by hand.
+<code>Heaviside</code> is not an available function in <code>numpy</code>.
+
+<p>
+An alternative is to perform hand calculations. This is an instructive
+task, but in practice only feasible for few elements and P1 and P2 elements.
+It is better to copy the functions <code>element_matrix</code>, <code>element_vector</code>,
+<code>assemble</code>, and <code>approximate</code> from the <code>fe_approx1D_numint.py</code> file
+and edit these functions such that they can compute approximations
+with <code>f</code> given as a Python function and not a symbolic expression.
+Also assume that <code>phi</code> computed by the <code>basis</code> function is a Python
+callable function. Remove all instances of the <code>symbolic</code> variable
+and associated code.
 
 <p>
 </div></p>
@@ -1287,7 +1342,10 @@ calculations by hand.
 
 <p>
 <!-- --- end hint in exercise --- -->
-Filename: <code>fe_Heaviside_P1P2</code>.
+
+<p>
+<!-- removed !bsol ... !esol environment (because of the command-line option --without_solutions)
+ -->Filename: <code>fe_Heaviside_P1P2</code>.
 
 <p>
 <!-- --- end exercise --- -->
@@ -1353,7 +1411,7 @@ Filename: <code>approx2D_ls_orth</code>.
 Consider approximation of some \( f(x) \) on an interval \( \Omega \) using
 the least squares or Galerkin methods with P1 elements. Derive
 the element matrix and vector using the
-Trapezoidal rule <a href="._approx008.html#mjx-eqn-48">(48)</a> for calculating
+Trapezoidal rule <a href="._approx008.html#mjx-eqn-109">(109)</a> for calculating
 integrals on the reference element. Assemble the contributions, assuming
 a uniform cell partitioning, and show that the resulting linear system
 has the form \( c_i=f(\xno{i}) \) for \( i\in\If \).

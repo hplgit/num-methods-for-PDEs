@@ -35,9 +35,10 @@ b_i = sym.factor(sym.simplify(b_i))
 print b_i
 print sym.expand(2 - (2+i)*(D+C))
 
-# Solving model2 problem with f=x and fe1D.py
+# Solving model2 problem with f(x) and fe1D.py
 from u_xx_f_sympy import model2, x, C, D, L
-u = model2(0, L, C, D)
+m = 2
+u = model2(x**m, L, C, D)
 print u
 #u_exact = lambda x: D + C*(x-L) + (1./6)*(L**3 - x**3)
 u_exact = sym.lambdify([x, C, D, L], u)
@@ -45,12 +46,15 @@ u_exact = sym.lambdify([x, C, D, L], u)
 import numpy as np
 from fe1D import finite_element1D_naive, mesh_uniform
 # Override C, D and L with numeric values
-C = 0.5
+C = 5
 D = 2
-L = 1.5
+L = 4
+
+d = 1
 
 vertices, cells, dof_map = mesh_uniform(
-    N_e=2, d=1, Omega=[0,L], symbolic=False)
+    N_e=2, d=d, Omega=[0,L], symbolic=False)
+vertices[1] = 3
 essbc = {}
 essbc[dof_map[-1][-1]] = D
 
@@ -60,19 +64,23 @@ c, A, b, timing = finite_element1D_naive(
     ilhs=lambda e, phi, r, s, X, x, h:
     phi[1][r](X, h)*phi[1][s](X, h),
     irhs=lambda e, phi, r, X, x, h:
-    x*phi[0][r](X),
+    x**m*phi[0][r](X),
     blhs=lambda e, phi, r, s, X, x, h: 0,
     brhs=lambda e, phi, r, X, x, h:
-    -C*phi[0][r](X) if e == 0 else 0,
+    -C*phi[0][r](-1) if e == 0 else 0,
     intrule='GaussLegendre',
     verbose=False,
     )
 
-N_n = np.array(dof_map).max() + 1
-x = np.linspace(0, L, N_n)
-print x
-print vertices
-print u_exact(x, C, D, L)
-print c
+# Visualize
+from fe1D import u_glob
+x, u, nodes = u_glob(c, cells, vertices, dof_map)
+u_e = u_exact(x, C, D, L)
+print u_exact(nodes, C, D, L) - c  # difference at the nodes
+import matplotlib.pyplot as plt
+plt.plot(x, u, 'b-', x, u_e, 'r--')
+plt.legend(['finite elements, d=%d' %d, 'exact'], loc='upper left')
+plt.savefig('tmp.png'); plt.savefig('tmp.pdf')
+plt.show()
 
 

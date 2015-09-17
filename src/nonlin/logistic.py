@@ -1,9 +1,9 @@
 import numpy as np
 
-def FE_logistic(u0, dt, N):
+def FE_logistic(u0, dt, Nt):
     u = np.zeros(N+1)
     u[0] = u0
-    for n in range(N):
+    for n in range(Nt):
         u[n+1] = u[n] + dt*(u[n] - u[n]**2)
     return u
 
@@ -80,9 +80,9 @@ def quadratic_root_goes_to_infinity():
         print dt, quadratic_roots(a, b, c)
 
 print 'sympy calculations'
-import sympy as sp
-dt, u_1, u = sp.symbols('dt u_1 u')
-r1, r2 = sp.solve(dt*u**2 + (1-dt)*u - u_1, u)
+import sympy as sym
+dt, u_1, u = sym.symbols('dt u_1 u')
+r1, r2 = sym.solve(dt*u**2 + (1-dt)*u - u_1, u)
 print r1
 print r2
 print r1.series(dt, 0, 2)
@@ -99,13 +99,9 @@ except:
     omega = 1
 N = int(round(T/float(dt)))
 
-u_BE3, iter_BE3 = BE_logistic(0.1, dt, N, 'Picard', eps_r, omega)
-print iter_BE3
-print 'Picard mean no of iterations (dt=%g):' % dt, int(round(mean(iter_BE3)))
-sys.exit(0)
 u_FE = FE_logistic(0.1, dt, N)
-u_BE1, dummy = BE_logistic(0.1, dt, N, 'r1')
-u_BE2, dummy = BE_logistic(0.1, dt, N, 'r2')
+u_BE1, _ = BE_logistic(0.1, dt, N, 'r1')
+u_BE2, _ = BE_logistic(0.1, dt, N, 'r2')
 u_BE31, iter_BE31 = BE_logistic(0.1, dt, N, 'Picard1', eps_r, omega)
 u_BE3, iter_BE3 = BE_logistic(0.1, dt, N, 'Picard', eps_r, omega)
 u_BE4, iter_BE4 = BE_logistic(0.1, dt, N, 'Newton', eps_r, omega)

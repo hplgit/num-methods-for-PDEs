@@ -213,8 +213,8 @@ code { color: inherit; background-color: transparent; }
                'fem:approx:fe:fd:feproj'),
               ('Making finite elements behave as finite differences',
                2,
-               'fem:deq:1D:approx:fem_vs_fem',
-               'fem:deq:1D:approx:fem_vs_fem'),
+               'fem:deq:1D:approx:fem_vs_fdm',
+               'fem:deq:1D:approx:fem_vs_fdm'),
               ('Computations in physical space', 3, None, '___sec68'),
               ('Elementwise computations', 3, None, '___sec69'),
               ('Terminology', 3, None, '___sec70'),
@@ -3336,15 +3336,112 @@ Filename: <code>fe_Heaviside_P1P2</code>.
 <h2 id="fem:approx:fe:exer:2Dsines:symbolic">Exercise 19: 2D approximation with orthogonal functions</h2>
 
 <p>
+<b>a)</b>
 Assume we have basis functions \( \basphi_i(x,y) \) in 2D that are
-orthogonal
-such that \( (\basphi_i,\basphi_j)=0 \) when \( i\neq j \).
-The function <code>least_squares</code> in the
-file <a href="http://tinyurl.com/nm5587k/approx/fe_approx2D.py" target="_self"><tt>approx2D.py</tt></a> will then spend much time on computing off-diagonal terms
-in the coefficient matrix that we know are zero.
-To speed up the computations, make a
-version <code>least_squares_orth</code> that utilizes the orthogonality among the
-basis functions. Apply the function to approximate
+orthogonal such that \( (\basphi_i,\basphi_j)=0 \) when \( i\neq j \).  The
+function <code>least_squares</code> in the file <a href="http://tinyurl.com/nm5587k/approx/fe_approx2D.py" target="_self"><tt>approx2D.py</tt></a> will then spend much time on computing
+off-diagonal terms in the coefficient matrix that we know are zero.
+To speed up the computations, make a version <code>least_squares_orth</code> that
+utilizes the orthogonality among the basis functions.
+
+<p>
+<!-- --- begin solution of exercise --- -->
+
+<p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_19_2" style="font-size: 80%;"></a>
+<b>Solution.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_19_2">
+
+<p>
+We 1) remove the <code>j</code> loop in the <code>least_squares</code> function and set
+<code>j = i</code>,
+2) make <code>A</code> a vector (i.e., \( (N+1, 1) \) matrix as <code>b</code> and <code>c</code>),
+3) solve for <code>c[i,0]</code> as soon as <code>A[i,0]</code> and <code>b[i,0]</code> are computed.
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">sym</span>
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">least_squares_orth</span>(f, psi, Omega, symbolic<span style="color: #666666">=</span><span style="color: #008000">True</span>,
+                       print_latex<span style="color: #666666">=</span><span style="color: #008000">False</span>):
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;</span>
+<span style="color: #BA2121; font-style: italic">    Given a function f(x,y) on a rectangular domain</span>
+<span style="color: #BA2121; font-style: italic">    Omega=[[xmin,xmax],[ymin,ymax]],</span>
+<span style="color: #BA2121; font-style: italic">    return the best approximation to f(x,y) in the space V</span>
+<span style="color: #BA2121; font-style: italic">    spanned by the functions in the list psi.</span>
+<span style="color: #BA2121; font-style: italic">    This function assumes that psi are orthogonal on Omega.</span>
+<span style="color: #BA2121; font-style: italic">    &quot;&quot;&quot;</span>
+    <span style="color: #408080; font-style: italic"># Modification of least_squares function: drop the j loop,</span>
+    <span style="color: #408080; font-style: italic"># set j=i, compute c on the fly in the i loop.</span>
+
+    N <span style="color: #666666">=</span> <span style="color: #008000">len</span>(psi) <span style="color: #666666">-</span> <span style="color: #666666">1</span>
+    <span style="color: #408080; font-style: italic"># Note that A, b, c becmes (N+1)x(N+1), use 1st column</span>
+    A <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>zeros(N<span style="color: #666666">+1</span>)
+    b <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>zeros(N<span style="color: #666666">+1</span>)
+    c <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>zeros(N<span style="color: #666666">+1</span>)
+    x, y <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>symbols(<span style="color: #BA2121">&#39;x y&#39;</span>)
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;...evaluating matrix...&#39;</span>, A<span style="color: #666666">.</span>shape, b<span style="color: #666666">.</span>shape, c<span style="color: #666666">.</span>shape
+    <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(N<span style="color: #666666">+1</span>):
+        j <span style="color: #666666">=</span> i
+        <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;(</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">,</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">)&#39;</span> <span style="color: #666666">%</span> (i, j)
+
+        integrand <span style="color: #666666">=</span> psi[i]<span style="color: #666666">*</span>psi[j]
+        <span style="color: #008000; font-weight: bold">if</span> symbolic:
+            I <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>integrate(integrand,
+                             (x, Omega[<span style="color: #666666">0</span>][<span style="color: #666666">0</span>], Omega[<span style="color: #666666">0</span>][<span style="color: #666666">1</span>]),
+                             (y, Omega[<span style="color: #666666">1</span>][<span style="color: #666666">0</span>], Omega[<span style="color: #666666">1</span>][<span style="color: #666666">1</span>]))
+        <span style="color: #008000; font-weight: bold">if</span> <span style="color: #AA22FF; font-weight: bold">not</span> symbolic <span style="color: #AA22FF; font-weight: bold">or</span> <span style="color: #008000">isinstance</span>(I, sym<span style="color: #666666">.</span>Integral):
+            <span style="color: #408080; font-style: italic"># Could not integrate symbolically, use numerical int.</span>
+            <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;numerical integration of&#39;</span>, integrand
+            integrand <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>lambdify([x,y], integrand)
+            I <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>mpmath<span style="color: #666666">.</span>quad(integrand,
+                               [Omega[<span style="color: #666666">0</span>][<span style="color: #666666">0</span>], Omega[<span style="color: #666666">0</span>][<span style="color: #666666">1</span>]],
+                               [Omega[<span style="color: #666666">1</span>][<span style="color: #666666">0</span>], Omega[<span style="color: #666666">1</span>][<span style="color: #666666">1</span>]])
+        A[i,<span style="color: #666666">0</span>] <span style="color: #666666">=</span> I
+
+        integrand <span style="color: #666666">=</span> psi[i]<span style="color: #666666">*</span>f
+        <span style="color: #008000; font-weight: bold">if</span> symbolic:
+            I <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>integrate(integrand,
+                             (x, Omega[<span style="color: #666666">0</span>][<span style="color: #666666">0</span>], Omega[<span style="color: #666666">0</span>][<span style="color: #666666">1</span>]),
+                             (y, Omega[<span style="color: #666666">1</span>][<span style="color: #666666">0</span>], Omega[<span style="color: #666666">1</span>][<span style="color: #666666">1</span>]))
+        <span style="color: #008000; font-weight: bold">if</span> <span style="color: #AA22FF; font-weight: bold">not</span> symbolic <span style="color: #AA22FF; font-weight: bold">or</span> <span style="color: #008000">isinstance</span>(I, sym<span style="color: #666666">.</span>Integral):
+            <span style="color: #408080; font-style: italic"># Could not integrate symbolically, use numerical int.</span>
+            <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;numerical integration of&#39;</span>, integrand
+            integrand <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>lambdify([x,y], integrand)
+            I <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>mpmath<span style="color: #666666">.</span>quad(integrand,
+                               [Omega[<span style="color: #666666">0</span>][<span style="color: #666666">0</span>], Omega[<span style="color: #666666">0</span>][<span style="color: #666666">1</span>]],
+                               [Omega[<span style="color: #666666">1</span>][<span style="color: #666666">0</span>], Omega[<span style="color: #666666">1</span>][<span style="color: #666666">1</span>]])
+        b[i,<span style="color: #666666">0</span>] <span style="color: #666666">=</span> I
+        c[i,<span style="color: #666666">0</span>] <span style="color: #666666">=</span> b[i,<span style="color: #666666">0</span>]<span style="color: #666666">/</span>A[i,<span style="color: #666666">0</span>]
+    <span style="color: #008000; font-weight: bold">print</span>
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;A:</span><span style="color: #BB6622; font-weight: bold">\n</span><span style="color: #BA2121">&#39;</span>, A, <span style="color: #BA2121">&#39;</span><span style="color: #BB6622; font-weight: bold">\n</span><span style="color: #BA2121">b:</span><span style="color: #BB6622; font-weight: bold">\n</span><span style="color: #BA2121">&#39;</span>, b
+    c <span style="color: #666666">=</span> [c[i,<span style="color: #666666">0</span>] <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(c<span style="color: #666666">.</span>shape[<span style="color: #666666">0</span>])]  <span style="color: #408080; font-style: italic"># make list</span>
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;coeff:&#39;</span>, c
+
+    <span style="color: #408080; font-style: italic"># c is a sympy Matrix object, numbers are in c[i,0]</span>
+    u <span style="color: #666666">=</span> <span style="color: #008000">sum</span>(c[i]<span style="color: #666666">*</span>psi[i] <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(psi)))
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;approximation:&#39;</span>, u
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;f:&#39;</span>, sym<span style="color: #666666">.</span>expand(f)
+    <span style="color: #008000; font-weight: bold">if</span> print_latex:
+        <span style="color: #008000; font-weight: bold">print</span> sym<span style="color: #666666">.</span>latex(A, mode<span style="color: #666666">=</span><span style="color: #BA2121">&#39;plain&#39;</span>)
+        <span style="color: #008000; font-weight: bold">print</span> sym<span style="color: #666666">.</span>latex(b, mode<span style="color: #666666">=</span><span style="color: #BA2121">&#39;plain&#39;</span>)
+        <span style="color: #008000; font-weight: bold">print</span> sym<span style="color: #666666">.</span>latex(c, mode<span style="color: #666666">=</span><span style="color: #BA2121">&#39;plain&#39;</span>)
+    <span style="color: #008000; font-weight: bold">return</span> u, c
+</pre></div>
+<p>
+</div></p>
+</div>
+</p>
+
+<p>
+<!-- --- end solution of exercise --- -->
+
+<p>
+<b>b)</b>
+Apply the function to approximate
 
 $$ f(x,y) = x(1-x)y(1-y)e^{-x-y}$$
 
@@ -3377,6 +3474,139 @@ file <a href="http://tinyurl.com/nm5587k/approx/fe_approx1D.py" target="_self"><
 
 <p>
 <!-- --- end hint in exercise --- -->
+
+<p>
+<!-- --- begin solution of exercise --- -->
+
+<p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_19_3" style="font-size: 80%;"></a>
+<b>Solution.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_19_3">
+
+<p>
+A function for computing the basis functions may look like this:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">sine_basis</span>(Nx, Ny):
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;</span>
+<span style="color: #BA2121; font-style: italic">    Compute basis sin((p+1)*pi*x)*sin((q+1)*pi*y),</span>
+<span style="color: #BA2121; font-style: italic">    p=0,...,Nx, q=0,...,Ny.</span>
+<span style="color: #BA2121; font-style: italic">    &quot;&quot;&quot;</span>
+    x, y <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>symbols(<span style="color: #BA2121">&#39;x y&#39;</span>)
+    psi <span style="color: #666666">=</span> []
+    <span style="color: #008000; font-weight: bold">for</span> q <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">0</span>, Ny<span style="color: #666666">+1</span>):
+        <span style="color: #008000; font-weight: bold">for</span> p <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">0</span>, Nx<span style="color: #666666">+1</span>):
+            r <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>sin((p<span style="color: #666666">+1</span>)<span style="color: #666666">*</span>sym<span style="color: #666666">.</span>pi<span style="color: #666666">*</span>x)<span style="color: #666666">*</span>sym<span style="color: #666666">.</span>sin((q<span style="color: #666666">+1</span>)<span style="color: #666666">*</span>sym<span style="color: #666666">.</span>pi<span style="color: #666666">*</span>y)
+            psi<span style="color: #666666">.</span>append(r)
+    <span style="color: #008000; font-weight: bold">return</span> psi
+</pre></div>
+<p>
+Application of this basis to approximate the given function is coded in
+the following function:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">demo</span>(N):
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;</span>
+<span style="color: #BA2121; font-style: italic">    Find the approximation of f by the least squares method.</span>
+<span style="color: #BA2121; font-style: italic">    The basis is sin((p+1)*pi*x)sin((q+1)*pi*y) where</span>
+<span style="color: #BA2121; font-style: italic">    0&lt;p&lt;=N, p&lt;q&lt;=N.</span>
+<span style="color: #BA2121; font-style: italic">    &quot;&quot;&quot;</span>
+    x, y <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>symbols(<span style="color: #BA2121">&#39;x y&#39;</span>)
+    f <span style="color: #666666">=</span> x<span style="color: #666666">*</span>(<span style="color: #666666">1-</span>x)<span style="color: #666666">*</span>y<span style="color: #666666">*</span>(<span style="color: #666666">1-</span>y)<span style="color: #666666">*</span>sym<span style="color: #666666">.</span>exp(<span style="color: #666666">-</span>x<span style="color: #666666">-</span>y)
+
+    psi <span style="color: #666666">=</span> sine_basis(N, N)
+
+    Omega <span style="color: #666666">=</span> [[<span style="color: #666666">0</span>,<span style="color: #666666">1</span>], [<span style="color: #666666">0</span>,<span style="color: #666666">1</span>]]
+    u, c  <span style="color: #666666">=</span> least_squares_orth(f, psi, Omega, symbolic<span style="color: #666666">=</span><span style="color: #008000">False</span>)
+    <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">approx2D</span> <span style="color: #008000; font-weight: bold">import</span> comparison_plot
+    comparison_plot(f, u, Omega, title<span style="color: #666666">=</span><span style="color: #BA2121">&#39;N=</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">&#39;</span> <span style="color: #666666">%</span> N)
+    <span style="color: #008000; font-weight: bold">print</span> c
+
+<span style="color: #008000; font-weight: bold">if</span> __name__<span style="color: #666666">==</span><span style="color: #BA2121">&#39;__main__&#39;</span>:
+    <span style="color: #408080; font-style: italic">#test_least_squares_orth()</span>
+    demo(N<span style="color: #666666">=2</span>)
+</pre></div>
+<p>
+A lesson learned is that <code>symbolic=False</code> is important, otherwise <code>sympy</code>
+consumes a lot of CPU time on trying to integrate symbolically.
+
+<p>
+The figure below shows the error in the approximation for \( N=0 \) (left)
+and \( N=2 \) (right). The coefficients for \( N=2 \) decay rapidly:
+
+<p>
+
+<!-- code=text typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%">[0.025, 0.0047, 0.0014, 0.0047, 0.0009, 0.0003, 0.0014, 0.0003,
+ 8.2e-5]
+</pre></div>
+<p>
+<center><p><img src="fig-approx/approx2D_ls_orth_sine_c.png" align="bottom" width=800></p></center>
+
+<p>
+</div></p>
+</div>
+</p>
+
+<p>
+<!-- --- end solution of exercise --- -->
+
+<p>
+<b>c)</b>
+Make a unit test for the <code>least_squares_orth</code> function.
+
+<p>
+<!-- --- begin solution of exercise --- -->
+
+<p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_19_4" style="font-size: 80%;"></a>
+<b>Solution.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_19_4">
+
+<p>
+Let us use the basis in b), fix the coefficients of some function
+\( f \), and check that the computed approximation, with the
+same basis, has the same coefficients (this test employs the principle
+that if \( f\in V \), then \( u=f \)).
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">test_least_squares_orth</span>():
+    <span style="color: #408080; font-style: italic"># Use sine functions</span>
+    x, y <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>symbols(<span style="color: #BA2121">&#39;x y&#39;</span>)
+    N <span style="color: #666666">=</span> <span style="color: #666666">2</span>  <span style="color: #408080; font-style: italic"># (N+1)**2 = 9 basis functions</span>
+    psi <span style="color: #666666">=</span> sine_basis(N, N)
+    f_coeff <span style="color: #666666">=</span> [<span style="color: #666666">0</span>]<span style="color: #666666">*</span><span style="color: #008000">len</span>(psi)
+    f_coeff[<span style="color: #666666">3</span>] <span style="color: #666666">=</span> <span style="color: #666666">2</span>
+    f_coeff[<span style="color: #666666">4</span>] <span style="color: #666666">=</span> <span style="color: #666666">3</span>
+    f <span style="color: #666666">=</span> <span style="color: #008000">sum</span>(f_coeff[i]<span style="color: #666666">*</span>psi[i] <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(psi)))
+    <span style="color: #408080; font-style: italic"># Check that u exactly reproduces f</span>
+    u, c <span style="color: #666666">=</span> least_squares_orth(f, psi, Omega<span style="color: #666666">=</span>[[<span style="color: #666666">0</span>,<span style="color: #666666">1</span>], [<span style="color: #666666">0</span>,<span style="color: #666666">1</span>]],
+                              symbolic<span style="color: #666666">=</span><span style="color: #008000">False</span>)
+    <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+    diff <span style="color: #666666">=</span> np<span style="color: #666666">.</span>abs(np<span style="color: #666666">.</span>array(c) <span style="color: #666666">-</span> np<span style="color: #666666">.</span>array(f_coeff))<span style="color: #666666">.</span>max()
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;diff:&#39;</span>, diff
+    tol <span style="color: #666666">=</span> <span style="color: #666666">1E-15</span>
+    <span style="color: #008000; font-weight: bold">assert</span> diff <span style="color: #666666">&lt;</span> tol
+</pre></div>
+<p>
+</div></p>
+</div>
+</p>
+
+<p>
+<!-- --- end solution of exercise --- -->
+
+<p>
 Filename: <code>approx2D_ls_orth</code>.
 
 <p>
@@ -3395,6 +3625,87 @@ Trapezoidal rule <a href="._approx-sol008.html#mjx-eqn-109">(109)</a> for calcul
 integrals on the reference element. Assemble the contributions, assuming
 a uniform cell partitioning, and show that the resulting linear system
 has the form \( c_i=f(\xno{i}) \) for \( i\in\If \).
+
+<p>
+<!-- --- begin solution of exercise --- -->
+
+<p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_20_1" style="font-size: 80%;"></a>
+<b>Solution.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_20_1">
+
+<p>
+The Trapezoidal rule for integrals on \( [-1,1] \)
+is given by <a href="._approx-sol008.html#mjx-eqn-109">(109)</a>.
+The expressions for the entries in the element matrix
+are given by <a href="._approx-sol004.html#mjx-eqn-74">(74)</a> in
+the section <a href="._approx-sol004.html#fem:approx:fe:mapping">Mapping to a reference element</a>:
+
+$$
+\begin{align*} \tilde A^{(e)}_{r,s} &=
+\int_{-1}^1 \refphi_r(X)\refphi_s(X)\det J\,\dX\\ 
+&\approx \frac{h}{2}(\refphi_r(-1)\refphi_s(-1)
++ \refphi_r(1)\refphi_s(1))\tp
+\end{align*}
+$$
+
+We know that if \( \refphi_r(\pm 1) \) is 0 or 1, so evaluating
+the formula above for \( r,s=0,1 \) gives
+
+$$ \tilde A^{(e)} = \frac{h}{2}\left(\begin{array}{cc}
+1 & 0\\ 
+0 & 1
+\end{array}\right)\tp$$
+
+As usual, \( h \) is the length of the element in physical coordinates.
+
+<p>
+The element vector in the reference element is given by
+<a href="._approx-sol004.html#mjx-eqn-75">(75)</a>:
+
+$$
+\begin{align*}
+\tilde b^{(e)}_{r} &=  \int_{-1}^1 f(x(X))\refphi_r(X)\det J\,\dX\\ 
+&\approx \frac{h}{2}(f(x(-1))\refphi_r(-1)
++ f(x(1))\refphi_r(1))\tp
+\end{align*}
+$$
+
+Evaluating the formula for \( r=0,1 \) leads to
+
+$$ \tilde b^{(e)} = \frac{h}{2}\left(\begin{array}{c}
+f(x_L)\\ 
+f(x_R)
+\end{array}\right),$$
+
+where \( x_L \) and \( x_R \) are the \( x \) coordinates of the local points
+\( X=-1 \) and \( X=1 \), respectively.
+
+<p>
+With a uniform mesh with nodes \( \xno{i}=ih \), the element matrix and
+vectors assemble to a coefficient matrix
+
+$$ \frac{h}{2}\hbox{diag}(1, 2, \ldots, 2, 1),$$
+
+and right-hand side vector
+
+$$ \frac{h}{2}(f(\xno{0}), 2f(\xno{1}), \ldots, 2f(\xno{N_n-1}),
+f(\xno{N_n}))\tp$$
+
+The factors \( h/2 \) and \( 2 \) cancel, so we are left with the solution of
+the system as
+
+$$ c_i = f(\xno{i})\tp$$
+
+<p>
+</div></p>
+</div>
+</p>
+
+<p>
+<!-- --- end solution of exercise --- -->
 Filename: <code>fe_P1_trapez</code>.
 
 <p>
@@ -3477,7 +3788,152 @@ Filename: <code>fe_P1_vs_interp</code>.
 <p>
 Extend the <a href="http://tinyurl.com/nm5587k/approx/approx2D.py" target="_self"><tt>approx2D.py</tt></a> code to 3D
 applying ideas from the section <a href="._approx-sol009.html#fem:approx:3D:global">Extension to 3D</a>.
-Use a 3D generalization of the test problem in the section <a href="._approx-sol009.html#fem:approx:2D:global:code">Implementation</a> to test the implementation.
+Construct some 3D problem to make a test function for the
+implementation.
+
+<p>
+<!-- --- begin hint in exercise --- -->
+
+<p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_22_1" style="font-size: 80%;"></a>
+<b>Hint.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_22_1">
+
+<p>
+Drop symbolic integration since it is in general too slow for 3D problems.
+Also use <code>scipy.integrate.nquad</code> instead of <code>sympy.mpmath.quad</code>
+for numerical integration, since it is much faster.
+
+<p>
+</div></p>
+</div>
+</p>
+
+<p>
+<!-- --- end hint in exercise --- -->
+
+<p>
+<!-- --- begin solution of exercise --- -->
+
+<p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_22_2" style="font-size: 80%;"></a>
+<b>Solution.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_22_2">
+
+<p>
+We take a copy of <code>approx2D.py</code> and drop the <code>comparison_plot</code> function since
+plotting in 3D is much more complicated (could make a special version with
+curves through lines in the 3D domain, for instance).
+Furthermore, we remove the lines with symbolic integration and replace
+the calls to <code>sym.mpmath.quad</code> by calls to
+<code>scipy.integrate.nquad</code>. The resulting function becomes
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">sym</span>
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">scipy.integrate</span>
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">least_squares</span>(f, psi, Omega):
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;</span>
+<span style="color: #BA2121; font-style: italic">    Given a function f(x,y,z) on a rectangular domain</span>
+<span style="color: #BA2121; font-style: italic">    Omega=[[xmin,xmax],[ymin,ymax],[zmin,zmax]],</span>
+<span style="color: #BA2121; font-style: italic">    return the best approximation to f in the space V</span>
+<span style="color: #BA2121; font-style: italic">    spanned by the functions in the list psi.</span>
+<span style="color: #BA2121; font-style: italic">    f and psi are symbolic (sympy) expressions, but will</span>
+<span style="color: #BA2121; font-style: italic">    be converted to numeric functions for faster integration.</span>
+<span style="color: #BA2121; font-style: italic">    &quot;&quot;&quot;</span>
+    N <span style="color: #666666">=</span> <span style="color: #008000">len</span>(psi) <span style="color: #666666">-</span> <span style="color: #666666">1</span>
+    A <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros((N<span style="color: #666666">+1</span>, N<span style="color: #666666">+1</span>))
+    b <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros(N<span style="color: #666666">+1</span>)
+    x, y, z <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>symbols(<span style="color: #BA2121">&#39;x y z&#39;</span>)
+    f <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>lambdify([x, y, z], f, modules<span style="color: #666666">=</span><span style="color: #BA2121">&#39;numpy&#39;</span>)
+    psi_sym <span style="color: #666666">=</span> psi[:]  <span style="color: #408080; font-style: italic"># take a copy, needed for forming u later</span>
+    psi <span style="color: #666666">=</span> [sym<span style="color: #666666">.</span>lambdify([x, y, z], psi[i]) <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(psi))]
+
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;...evaluating matrix...&#39;</span>
+    <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(N<span style="color: #666666">+1</span>):
+        <span style="color: #008000; font-weight: bold">for</span> j <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(i, N<span style="color: #666666">+1</span>):
+            <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;(</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">,</span><span style="color: #BB6688; font-weight: bold">%d</span><span style="color: #BA2121">)&#39;</span> <span style="color: #666666">%</span> (i, j)
+
+            integrand <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">lambda</span> x, y, z: psi[i](x,y,z)<span style="color: #666666">*</span>psi[j](x,y,z)
+            I, err <span style="color: #666666">=</span> scipy<span style="color: #666666">.</span>integrate<span style="color: #666666">.</span>nquad(
+                integrand,
+                [[Omega[<span style="color: #666666">0</span>][<span style="color: #666666">0</span>], Omega[<span style="color: #666666">0</span>][<span style="color: #666666">1</span>]],
+                 [Omega[<span style="color: #666666">1</span>][<span style="color: #666666">0</span>], Omega[<span style="color: #666666">1</span>][<span style="color: #666666">1</span>]],
+                 [Omega[<span style="color: #666666">2</span>][<span style="color: #666666">0</span>], Omega[<span style="color: #666666">2</span>][<span style="color: #666666">1</span>]]])
+            A[i,j] <span style="color: #666666">=</span> A[j,i] <span style="color: #666666">=</span> I
+        integrand <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">lambda</span> x, y, z: psi[i](x,y,z)<span style="color: #666666">*</span>f(x,y,z)
+        I, err <span style="color: #666666">=</span> scipy<span style="color: #666666">.</span>integrate<span style="color: #666666">.</span>nquad(
+            integrand,
+            [[Omega[<span style="color: #666666">0</span>][<span style="color: #666666">0</span>], Omega[<span style="color: #666666">0</span>][<span style="color: #666666">1</span>]],
+             [Omega[<span style="color: #666666">1</span>][<span style="color: #666666">0</span>], Omega[<span style="color: #666666">1</span>][<span style="color: #666666">1</span>]],
+             [Omega[<span style="color: #666666">2</span>][<span style="color: #666666">0</span>], Omega[<span style="color: #666666">2</span>][<span style="color: #666666">1</span>]]])
+        b[i] <span style="color: #666666">=</span> I
+    <span style="color: #008000; font-weight: bold">print</span>
+    c <span style="color: #666666">=</span> np<span style="color: #666666">.</span>linalg<span style="color: #666666">.</span>solve(A, b)
+    <span style="color: #008000; font-weight: bold">if</span> N <span style="color: #666666">&lt;=</span> <span style="color: #666666">10</span>:
+        <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;A:</span><span style="color: #BB6622; font-weight: bold">\n</span><span style="color: #BA2121">&#39;</span>, A, <span style="color: #BA2121">&#39;</span><span style="color: #BB6622; font-weight: bold">\n</span><span style="color: #BA2121">b:</span><span style="color: #BB6622; font-weight: bold">\n</span><span style="color: #BA2121">&#39;</span>, b
+        <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;coeff:&#39;</span>, c
+    u <span style="color: #666666">=</span> <span style="color: #008000">sum</span>(c[i]<span style="color: #666666">*</span>psi_sym[i] <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(psi_sym)))
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;approximation:&#39;</span>, u
+    <span style="color: #008000; font-weight: bold">return</span> u, c
+</pre></div>
+<p>
+As test example, we can use the basis
+
+$$ \baspsi_{p,q,r} = \sin((p+1)\pi x)\sin((q+1)\pi y)\sin((r+1)\pi z),$$
+
+for \( p=1,\ldots,N_x \), \( q=1,\ldots,N_y \), \( r=1,\ldots,N_z \).
+We choose \( f \) as some prescribed combination of these functions and
+check that the computed \( u \) is exactly equal to \( f \).
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">sine_basis</span>(Nx, Ny, Nz):
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;</span>
+<span style="color: #BA2121; font-style: italic">    Compute basis sin((p+1)*pi*x)*sin((q+1)*pi*y)*sin((r+1)*pi*z),</span>
+<span style="color: #BA2121; font-style: italic">    p=0,...,Nx, q=0,...,Ny, r=0,...,Nz.</span>
+<span style="color: #BA2121; font-style: italic">    &quot;&quot;&quot;</span>
+    x, y, z <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>symbols(<span style="color: #BA2121">&#39;x y z&#39;</span>)
+    psi <span style="color: #666666">=</span> []
+    <span style="color: #008000; font-weight: bold">for</span> r <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">0</span>, Nz<span style="color: #666666">+1</span>):
+        <span style="color: #008000; font-weight: bold">for</span> q <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">0</span>, Ny<span style="color: #666666">+1</span>):
+            <span style="color: #008000; font-weight: bold">for</span> p <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">0</span>, Nx<span style="color: #666666">+1</span>):
+                s <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>sin((p<span style="color: #666666">+1</span>)<span style="color: #666666">*</span>sym<span style="color: #666666">.</span>pi<span style="color: #666666">*</span>x)<span style="color: #666666">*</span>\ 
+                    sym<span style="color: #666666">.</span>sin((q<span style="color: #666666">+1</span>)<span style="color: #666666">*</span>sym<span style="color: #666666">.</span>pi<span style="color: #666666">*</span>y)<span style="color: #666666">*</span>sym<span style="color: #666666">.</span>sin((r<span style="color: #666666">+1</span>)<span style="color: #666666">*</span>sym<span style="color: #666666">.</span>pi<span style="color: #666666">*</span>z)
+                psi<span style="color: #666666">.</span>append(s)
+    <span style="color: #008000; font-weight: bold">return</span> psi
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">test_least_squares</span>():
+    <span style="color: #408080; font-style: italic"># Use sine functions</span>
+    x, y, z <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>symbols(<span style="color: #BA2121">&#39;x y z&#39;</span>)
+    N <span style="color: #666666">=</span> <span style="color: #666666">1</span>  <span style="color: #408080; font-style: italic"># (N+1)**3 = 8 basis functions</span>
+    psi <span style="color: #666666">=</span> sine_basis(N, N, N)
+    f_coeff <span style="color: #666666">=</span> [<span style="color: #666666">0</span>]<span style="color: #666666">*</span><span style="color: #008000">len</span>(psi)
+    f_coeff[<span style="color: #666666">3</span>] <span style="color: #666666">=</span> <span style="color: #666666">2</span>
+    f_coeff[<span style="color: #666666">4</span>] <span style="color: #666666">=</span> <span style="color: #666666">3</span>
+    f <span style="color: #666666">=</span> <span style="color: #008000">sum</span>(f_coeff[i]<span style="color: #666666">*</span>psi[i] <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(psi)))
+    <span style="color: #408080; font-style: italic"># Check that u exactly reproduces f</span>
+    u, c <span style="color: #666666">=</span> least_squares(f, psi, Omega<span style="color: #666666">=</span>[[<span style="color: #666666">0</span>,<span style="color: #666666">1</span>], [<span style="color: #666666">0</span>,<span style="color: #666666">1</span>], [<span style="color: #666666">0</span>,<span style="color: #666666">1</span>]])
+    diff <span style="color: #666666">=</span> np<span style="color: #666666">.</span>abs(np<span style="color: #666666">.</span>array(c) <span style="color: #666666">-</span> np<span style="color: #666666">.</span>array(f_coeff))<span style="color: #666666">.</span>max()
+    <span style="color: #008000; font-weight: bold">print</span> <span style="color: #BA2121">&#39;diff:&#39;</span>, diff
+    tol <span style="color: #666666">=</span> <span style="color: #666666">1E-15</span>
+    <span style="color: #008000; font-weight: bold">assert</span> diff <span style="color: #666666">&lt;</span> tol
+</pre></div>
+<p>
+</div></p>
+</div>
+</p>
+
+<p>
+<!-- --- end solution of exercise --- -->
 Filename: <code>approx3D</code>.
 
 <p>
@@ -3492,6 +3948,93 @@ Filename: <code>approx3D</code>.
 Redo <a href="#fem:approx:fe:exer:1D:trapez">Exercise 20: Use the Trapezoidal rule and P1 elements</a>, but use P2
 elements and Simpson's rule based on sampling the integrands at
 the nodes in the reference cell.
+
+<p>
+<!-- --- begin solution of exercise --- -->
+
+<p>
+<a class="glyphicon glyphicon-hand-right showdetails" data-toggle="collapse"
+ data-target="#exer_23_1" style="font-size: 80%;"></a>
+<b>Solution.</b>
+<div class="collapse-group">
+<p><div class="collapse" id="exer_23_1">
+
+<p>
+Simpson's rule for integrals on \( [-1,1] \)
+is given by <a href="._approx-sol008.html#mjx-eqn-110">(110)</a>.
+The expressions for the entries in the element matrix
+are given by <a href="._approx-sol004.html#mjx-eqn-74">(74)</a>:
+
+$$
+\begin{align*} \tilde A^{(e)}_{r,s} &=
+\int_{-1}^1 \refphi_r(X)\refphi_s(X)\det J\,\dX\\ 
+&\approx \frac{1}{3}\frac{h}{2}(\refphi_r(-1)\refphi_s(-1)
++ 4\refphi_r(0)\refphi_s(0)
++ \refphi_r(1)\refphi_s(1))\tp
+\end{align*}
+$$
+
+The expressions for \( \refphi_r(X) \) are given by
+<a href="._approx-sol004.html#mjx-eqn-78">(78)</a>-<a href="._approx-sol004.html#mjx-eqn-80">(80)</a>.
+Evaluating the formula for \( r,s=0,1,2 \) gives the element matrix
+
+$$ \tilde A^{(e)} = \frac{h}{6}\left(\begin{array}{ccc}
+1 & 0 & 0\\ 
+0 & 4 & 0\\ 
+0 & 0 & 1
+\end{array}\right)\tp$$
+
+As usual, \( h \) is the length of the element in physical coordinates.
+
+<p>
+The element vector in the reference element is given by
+<a href="._approx-sol004.html#mjx-eqn-75">(75)</a>:
+
+$$
+\begin{align*}
+\tilde b^{(e)}_{r} &=  \int_{-1}^1 f(x(X))\refphi_r(X)\det J\,\dX\\ 
+&\approx \frac{1}{3}\frac{h}{2}(f(x(-1))\refphi_r(-1)
++ 4f(x(0))\refphi_r(0)
++ f(x(1))\refphi_r(1))\tp
+\end{align*}
+$$
+
+Evaluating the formula for \( r=0,1,2 \) leads to
+
+$$ \tilde b^{(e)} = \frac{h}{2}\left(\begin{array}{c}
+f(x_L)\\ 
+4f(x_c)
+f(x_R)
+\end{array}\right),$$
+
+where \( x_L \), \( x_c \), and \( x_R \) are the \( x \) coordinates of the local points
+\( X=-1 \), \( X=0 \), and \( X=1 \), respectively. These correspond to the nodes
+in the element.
+
+<p>
+With a uniform mesh with nodes \( \xno{i}=ih \), the element matrix and
+vectors assemble to a coefficient matrix
+
+$$ \frac{h}{6}\hbox{diag}(1, 4, 2, 4, 2, 4, \ldots, 2, 4, 1),$$
+
+and right-hand side vector
+
+$$ \frac{h}{6}(f(\xno{0}), 4f(\xno{1}), 2f(\xno{2}),
+4f(\xno{3}), 2f(\xno{4}), \ldots, 2f(\xno{N_n-2}),
+4f(\xno{N_n-1}), f(\xno{N_n}))\tp$$
+
+The factors \( h/6 \), \( 2 \) and \( 4 \) all cancel, so we are left with the solution of
+the system as
+
+$$ c_i = f(\xno{i})\tp$$
+
+<p>
+</div></p>
+</div>
+</p>
+
+<p>
+<!-- --- end solution of exercise --- -->
 Filename: <code>fe_P2_simpson</code>.
 
 <p>

@@ -225,7 +225,7 @@ $$
 <center>[2] <b style="font-weight: bold">Department of Informatics, University of Oslo</b></center>
 <br>
 <p>
-<center><b style="font-weight: bold">Sep 17, 2015</b></center> <!-- date -->
+<center><b style="font-weight: bold">Sep 20, 2015</b></center> <!-- date -->
 <br>
 <p>
 <!-- 2DO: -->
@@ -432,7 +432,7 @@ $$
 <p>&nbsp;<br>
 $$
 \begin{align*}
-E(c_0) &= (\e,\e) = (\f - \u, (\f - \u) = (\f - c_0\psib_0, \f - c_0\psib_0)\\ 
+E(c_0) &= (\e,\e) = (\f - \u, \f - \u) = (\f - c_0\psib_0, \f - c_0\psib_0)\\ 
        &= (\f,\f) - 2c_0(\f,\psib_0) + c_0^2(\psib_0,\psib_0)
 \end{align*}
 $$
@@ -615,7 +615,7 @@ of the error, \( E \), with respect to the coefficients \( c_j \), \( j\in\If \)
 
 <p>&nbsp;<br>
 $$
-E = (e,e) = (f-u,f-u) = (f(x)-\sum_{j\in\If} c_j\baspsi_j(x), f(x)-\sum_{j\in\If} c_j\baspsi_j(x))
+E = (e,e) = (f-u,f-u) = \left(f(x)-\sum_{j\in\If} c_j\baspsi_j(x), f(x)-\sum_{j\in\If} c_j\baspsi_j(x)\right)
 $$
 <p>&nbsp;<br>
 
@@ -1337,6 +1337,167 @@ No symmetric matrix: \( \baspsi_j(\xno{i})\neq \baspsi_i(\xno{j}) \) in general
 
 <section class="slide">
 
+<h2 id="fem:approx:global:regression">The regression method</h2>
+
+<ul>
+ <p><li> Idea: Interpolation (collocation) method, but use \( m\gg N+1 \) points</li>
+ <p><li> Problem: More equations than unknowns</li>
+ <p><li> But this is well known as regression in statistics</li>
+</ul>
+<p>
+
+<center><p><img src="fig-approx/parabola_by_regression.png" align="bottom" width=800></p></center>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec45">The regression method leads to an overdetermined linear system </h2>
+
+<p>
+Overdetermined linear system:
+
+<p>&nbsp;<br>
+$$
+u(\xno{i}) = \sum_{j\in\If} c_j \baspsi_j(\xno{i}) = f(\xno{i}),
+\quad i=0,1,\ldots,m
+$$
+<p>&nbsp;<br>
+
+<p>&nbsp;<br>
+$$ \sum_{j\in\If} A_{i,j}c_j = b_i,\quad i=0,1,\ldots,m $$
+<p>&nbsp;<br>
+
+<p>&nbsp;<br>
+$$ A_{i,j} = \baspsi_j(\xno{i}),\quad
+b_i = f(\xno{i})$$
+<p>&nbsp;<br>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec46">A least squares method is used to solve overdetermined linear systems </h2>
+
+<ul>
+ <p><li> Cannot (in general) solve \( Ac=b \) when there are more equations than unknowns</li>
+ <p><li> Idea: Minimize \( r=b-Ac \) instead</li>
+ <p><li> Result: the <em>normal equations</em> \( A^TAc=A^Tb \)</li>
+ <p><li> \( (N+1)\times(N+1) \) system</li>
+ <p><li> Write the normal equations as \( Bc=d \)</li>
+</ul>
+<p>&nbsp;<br>
+$$
+\begin{align*}
+B_{i,j} &= \sum_k A^T{i,k}A_{k,j} = \sum_k A{k,i}A_{k,j}
+=\sum_{k=0}^m\baspsi_i(\xno{k}\baspsi_j(\xno{k}
+\\ 
+d_i &=\sum_k A^T_{i,k}b_k = \sum_k A_{k,i}b_k =\sum_{k=0}^m
+\baspsi_i(\xno{k})f(\xno{k})
+\end{align*}
+$$
+<p>&nbsp;<br>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec47">Implementation </h2>
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">regression</span>(f, psi, points):
+    N = <span style="color: #658b00">len</span>(psi) - <span style="color: #B452CD">1</span>
+    m = <span style="color: #658b00">len</span>(points)
+    <span style="color: #228B22"># Use numpy arrays and numerical computing</span>
+    B = np.zeros((N+<span style="color: #B452CD">1</span>, N+<span style="color: #B452CD">1</span>))
+    d = np.zeros(N+<span style="color: #B452CD">1</span>)
+    <span style="color: #228B22"># Wrap psi and f in Python functions rather than expressions</span>
+    <span style="color: #228B22"># so that we can evaluate psi at points[i]</span>
+    x = sym.Symbol(<span style="color: #CD5555">&#39;x&#39;</span>)
+    psi_sym = psi  <span style="color: #228B22"># save symbolic expression</span>
+    psi = [sym.lambdify([x], psi[i]) <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(N+<span style="color: #B452CD">1</span>)]
+    f = sym.lambdify([x], f)
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(N+<span style="color: #B452CD">1</span>):
+        <span style="color: #8B008B; font-weight: bold">for</span> j <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(N+<span style="color: #B452CD">1</span>):
+            B[i,j] = <span style="color: #B452CD">0</span>
+            <span style="color: #8B008B; font-weight: bold">for</span> k <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(m+<span style="color: #B452CD">1</span>):
+                B[i,j] += psi[i](points[k])*psi[j](points[k])
+        d[i] = <span style="color: #B452CD">0</span>
+        <span style="color: #8B008B; font-weight: bold">for</span> k <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(m+<span style="color: #B452CD">1</span>):
+            d[i] += psi[i](points[k])*f(points[k])
+    c = np.linalg.solve(B, d)
+    u = <span style="color: #658b00">sum</span>(c[i]*psi_sym[i] <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">range</span>(N+<span style="color: #B452CD">1</span>))
+    <span style="color: #8B008B; font-weight: bold">return</span> u, c
+</pre></div>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec48">Example on using the regression method; code </h2>
+
+<ul>
+ <p><li> Approximate \( f(x)=10(x-1)^2-1 \) by a linear function on \( \Omega=[1,2] \)</li>
+</ul>
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">sympy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">sym</span>
+x = sym.Symbol(<span style="color: #CD5555">&#39;x&#39;</span>)
+f = <span style="color: #B452CD">10</span>*(x-<span style="color: #B452CD">1</span>)**<span style="color: #B452CD">2</span> - <span style="color: #B452CD">1</span>
+psi = [<span style="color: #B452CD">1</span>, x]
+Omega = [<span style="color: #B452CD">1</span>, <span style="color: #B452CD">2</span>]
+m_values = [<span style="color: #B452CD">2</span>-<span style="color: #B452CD">1</span>, <span style="color: #B452CD">8</span>-<span style="color: #B452CD">1</span>, <span style="color: #B452CD">64</span>-<span style="color: #B452CD">1</span>]
+<span style="color: #228B22"># Create m+3 points and use the inner m+1 points</span>
+<span style="color: #8B008B; font-weight: bold">for</span> m <span style="color: #8B008B">in</span> m_values:
+    points = np.linspace(Omega[<span style="color: #B452CD">0</span>], Omega[<span style="color: #B452CD">1</span>], m+<span style="color: #B452CD">3</span>)[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]
+    u, c = regression(f, psi, points)
+    comparison_plot(f, u, Omega, points=points,
+        points_legend=<span style="color: #CD5555">&#39;%d interpolation points&#39;</span> % (m+<span style="color: #B452CD">1</span>))
+</pre></div>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec49">Example on using the regression method; result </h2>
+
+<p>&nbsp;<br>
+$$
+\begin{align*}
+u(x) &= 10x - 13.2,\quad 2\hbox{ points}\\ 
+u(x) &= 10x - 12.7,\quad 8\hbox{ points}\\ 
+u(x) &= 10x - 12.7,\quad 64\hbox{ points}
+\end{align*}
+$$
+<p>&nbsp;<br>
+
+<p>
+<center><p><img src="fig-approx/parabola_by_regression.png" align="bottom" width=800></p></center>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec50">What is the regression method used for? </h2>
+
+<ul>
+ <p><li> It is one of the most dominating methods for approximating data
+   in statistics</li>
+ <p><li> Not so common for approximating functions</li>
+ <p><li> Not much used for solving differential equations</li>
+ <p><li> Recently very popular for statistical uncertainty quantification:
+   approximating the mapping from input parameters to the solution
+   via polynomials and the regression method (called polynomial chaos
+   expansions)</li>
+</ul>
+</section>
+
+
+<section class="slide">
+
 <h2 id="fem:approx:global:Lagrange">Lagrange polynomials; motivation and ideas</h2>
 
 <p>
@@ -1379,7 +1540,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec45">Lagrange polynomials; formula and code </h2>
+<h2 id="___sec52">Lagrange polynomials; formula and code </h2>
 
 <p>&nbsp;<br>
 $$
@@ -1406,7 +1567,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec46">Lagrange polynomials; successful example </h2>
+<h2 id="___sec53">Lagrange polynomials; successful example </h2>
 
 <p>
 <center><p><img src="fig-approx/Lagrange_ls_interp_sin_4.png" align="bottom" width=800></p></center>
@@ -1415,7 +1576,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec47">Lagrange polynomials; a less successful example </h2>
+<h2 id="___sec54">Lagrange polynomials; a less successful example </h2>
 
 <p>
 <center><p><img src="fig-approx/Lagrange_interp_abs_8_15.png" align="bottom" width=800></p></center>
@@ -1424,7 +1585,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec48">Lagrange polynomials; oscillatory behavior </h2>
+<h2 id="___sec55">Lagrange polynomials; oscillatory behavior </h2>
 
 <p>
 12 points, degree 11, plot of two of the Lagrange polynomials - note that
@@ -1440,7 +1601,7 @@ Problem: strong oscillations near the boundaries for larger \( N \) values.
 
 <section class="slide">
 
-<h2 id="___sec49">Lagrange polynomials; remedy for strong oscillations </h2>
+<h2 id="___sec56">Lagrange polynomials; remedy for strong oscillations </h2>
 
 <p>
 The oscillations can be reduced by a more clever choice of
@@ -1458,7 +1619,7 @@ on an interval \( [a,b] \).
 
 <section class="slide">
 
-<h2 id="___sec50">Lagrange polynomials; recalculation with Chebyshev nodes </h2>
+<h2 id="___sec57">Lagrange polynomials; recalculation with Chebyshev nodes </h2>
 
 <p>
 <center><p><img src="fig-approx/Lagrange_interp_abs_Cheb_8_15.png" align="bottom" width=800></p></center>
@@ -1467,7 +1628,7 @@ on an interval \( [a,b] \).
 
 <section class="slide">
 
-<h2 id="___sec51">Lagrange polynomials; less oscillations with Chebyshev nodes </h2>
+<h2 id="___sec58">Lagrange polynomials; less oscillations with Chebyshev nodes </h2>
 
 <p>
 12 points, degree 11, plot of two of the Lagrange polynomials - note that
@@ -1489,7 +1650,7 @@ they are zero at all points except one.
 
 <section class="slide">
 
-<h2 id="___sec53">The basis functions have so far been global: \( \baspsi_i(x) \neq 0 \) almost everywhere </h2>
+<h2 id="___sec60">The basis functions have so far been global: \( \baspsi_i(x) \neq 0 \) almost everywhere </h2>
 
 <p>
 <center><p><img src="fig-approx/u_example_sin.png" align="bottom" width=800></p></center>
@@ -1498,7 +1659,7 @@ they are zero at all points except one.
 
 <section class="slide">
 
-<h2 id="___sec54">In the finite element method we use basis functions with local support </h2>
+<h2 id="___sec61">In the finite element method we use basis functions with local support </h2>
 
 <ul>
  <p><li> <em>Local support</em>: \( \baspsi_i(x) \neq 0 \) for \( x \) in a
@@ -1517,7 +1678,7 @@ they are zero at all points except one.
 
 <section class="slide">
 
-<h2 id="___sec55">The linear combination of hat functions is a piecewise linear function </h2>
+<h2 id="___sec62">The linear combination of hat functions is a piecewise linear function </h2>
 
 <p>
 <center><p><img src="fig-approx/u_example_fe2.png" align="bottom" width=500></p></center>
@@ -1553,7 +1714,7 @@ points called <em>nodes</em>: \( \xno{0},\ldots,\xno{N_n-1} \)
 
 <section class="slide">
 
-<h2 id="___sec57">Example on elements with two nodes (P1 elements) </h2>
+<h2 id="___sec64">Example on elements with two nodes (P1 elements) </h2>
 
 <p>
 <center><p><img src="fig-approx/fe_mesh1D_P1.png" align="bottom" width=500></p></center>
@@ -1573,7 +1734,7 @@ elements = [[<span style="color: #B452CD">0</span>, <span style="color: #B452CD"
 
 <section class="slide">
 
-<h2 id="___sec58">Illustration of two basis functions on the mesh </h2>
+<h2 id="___sec65">Illustration of two basis functions on the mesh </h2>
 
 <p>
 <center><p><img src="fig-approx/fe_mesh1D_phi_2_3.png" align="bottom" width=600></p></center>
@@ -1582,7 +1743,7 @@ elements = [[<span style="color: #B452CD">0</span>, <span style="color: #B452CD"
 
 <section class="slide">
 
-<h2 id="___sec59">Example on elements with three nodes (P2 elements) </h2>
+<h2 id="___sec66">Example on elements with three nodes (P2 elements) </h2>
 
 <p>
 <center><p><img src="fig-approx/fe_mesh1D_P2.png" align="bottom" width=500></p></center>
@@ -1598,7 +1759,7 @@ elements = [[<span style="color: #B452CD">0</span>, <span style="color: #B452CD"
 
 <section class="slide">
 
-<h2 id="___sec60">Some corresponding basis functions (P2 elements) </h2>
+<h2 id="___sec67">Some corresponding basis functions (P2 elements) </h2>
 
 <p>
 <center><p><img src="fig-approx/phi/mpl_fe_basis_p2_4e.png" align="bottom" width=600></p></center>
@@ -1607,7 +1768,7 @@ elements = [[<span style="color: #B452CD">0</span>, <span style="color: #B452CD"
 
 <section class="slide">
 
-<h2 id="___sec61">Examples on elements with four nodes (P3 elements) </h2>
+<h2 id="___sec68">Examples on elements with four nodes (P3 elements) </h2>
 
 <p>
 <center><p><img src="fig-approx/fe_mesh1D_d4_stretched.png" align="bottom" width=500></p></center>
@@ -1626,7 +1787,7 @@ elements = [[i*d+j <span style="color: #8B008B; font-weight: bold">for</span> j 
 
 <section class="slide">
 
-<h2 id="___sec62">Some corresponding basis functions (P3 elements) </h2>
+<h2 id="___sec69">Some corresponding basis functions (P3 elements) </h2>
 
 <p>
 <center><p><img src="fig-approx/phi/mpl_fe_basis_p3_4e.png" align="bottom" width=600></p></center>
@@ -1635,7 +1796,7 @@ elements = [[i*d+j <span style="color: #8B008B; font-weight: bold">for</span> j 
 
 <section class="slide">
 
-<h2 id="___sec63">The numbering does not need to be regular from left to right </h2>
+<h2 id="___sec70">The numbering does not need to be regular from left to right </h2>
 
 <p>
 <center><p><img src="fig-approx/fe_mesh1D_random_numbering.png" align="bottom" width=500></p></center>
@@ -1651,7 +1812,7 @@ elements = [[<span style="color: #B452CD">2</span>, <span style="color: #B452CD"
 
 <section class="slide">
 
-<h2 id="___sec64">Interpretation of the coefficients \( c_i \) </h2>
+<h2 id="___sec71">Interpretation of the coefficients \( c_i \) </h2>
 
 <p>
 Important property: \( c_i \)
@@ -1671,7 +1832,7 @@ because \( \basphi_j(\xno{i}) =0 \) if \( i\neq j \) and \( \basphi_i(\xno{i}) =
 
 <section class="slide">
 
-<h2 id="___sec65">Properties of the basis functions </h2>
+<h2 id="___sec72">Properties of the basis functions </h2>
 
 <ul>
  <p><li> \( \basphi_i(x) \neq 0 \) only on those elements that contain global node \( i \)</li>
@@ -1690,7 +1851,7 @@ Since \( A_{i,j}=\int\basphi_i\basphi_j\dx \),
 
 <section class="slide">
 
-<h2 id="___sec66">How to construct quadratic \( \basphi_i \) (P2 elements) </h2>
+<h2 id="___sec73">How to construct quadratic \( \basphi_i \) (P2 elements) </h2>
 
 <p>
 <center><p><img src="fig-approx/phi/mpl_fe_basis_p2_4e.png" align="bottom" width=500></p></center>
@@ -1706,7 +1867,7 @@ Since \( A_{i,j}=\int\basphi_i\basphi_j\dx \),
 
 <section class="slide">
 
-<h2 id="___sec67">Example on linear \( \basphi_i \) (P1 elements) </h2>
+<h2 id="___sec74">Example on linear \( \basphi_i \) (P1 elements) </h2>
 
 <p>
 <center><p><img src="fig-approx/phi/mpl_fe_basis_p1_4e.png" align="bottom" width=500></p></center>
@@ -1730,7 +1891,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec68">Example on cubic \( \basphi_i \) (P3 elements) </h2>
+<h2 id="___sec75">Example on cubic \( \basphi_i \) (P3 elements) </h2>
 
 <p>
 <center><p><img src="fig-approx/phi/mpl_fe_basis_p3_4e.png" align="bottom" width=500></p></center>
@@ -1748,7 +1909,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec70">Computing a specific matrix entry (1) </h2>
+<h2 id="___sec77">Computing a specific matrix entry (1) </h2>
 
 <p>
 <center><p><img src="fig-approx/fe_mesh1D_phi_2_3.png" align="bottom" width=300></p></center>
@@ -1774,7 +1935,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec71">Computing a specific matrix entry (2) </h2>
+<h2 id="___sec78">Computing a specific matrix entry (2) </h2>
 
 <p>
 <center><p><img src="fig-approx/fe_mesh1D_phi_2_3.png" align="bottom" width=500></p></center>
@@ -1793,7 +1954,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec72">Calculating a general row in the matrix; figure </h2>
+<h2 id="___sec79">Calculating a general row in the matrix; figure </h2>
 
 <p>
 <center><p><img src="fig-approx/fe_mesh1D_phi_i_im1.png" align="bottom" width=500></p></center>
@@ -1806,7 +1967,7 @@ $$ A_{i,i-1} = \int_\Omega \basphi_i\basphi_{i-1}\dx = \hbox{?}$$
 
 <section class="slide">
 
-<h2 id="___sec73">Calculating a general row in the matrix; details </h2>
+<h2 id="___sec80">Calculating a general row in the matrix; details </h2>
 
 <p>&nbsp;<br>
 $$
@@ -1835,7 +1996,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec74">Calculation of the right-hand side </h2>
+<h2 id="___sec81">Calculation of the right-hand side </h2>
 
 <p>
 <center><p><img src="fig-approx/fe_mesh1D_phi_i_f.png" align="bottom" width=500></p></center>
@@ -1856,7 +2017,7 @@ Need a specific \( f(x) \) to do more...
 
 <section class="slide">
 
-<h2 id="___sec75">Specific example with two elements; linear system and solution </h2>
+<h2 id="___sec82">Specific example with two elements; linear system and solution </h2>
 
 <ul>
  <p><li> \( f(x)=x(1-x) \) on \( \Omega=[0,1] \)</li>
@@ -1891,7 +2052,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec76">Specific example with two elements; plot </h2>
+<h2 id="___sec83">Specific example with two elements; plot </h2>
 
 <p>&nbsp;<br>
 $$
@@ -1906,7 +2067,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec77">Specific example with four elements; plot </h2>
+<h2 id="___sec84">Specific example with four elements; plot </h2>
 
 <p>
 <center><p><img src="fig-approx/fe_p1_x2_2e_4e.png" align="bottom" width=800></p></center>
@@ -1915,7 +2076,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec78">Specific example: what about P2 elements? </h2>
+<h2 id="___sec85">Specific example: what about P2 elements? </h2>
 
 <p>
 
@@ -1941,7 +2102,7 @@ can represent a 2nd-degree polynomial exactly.
 
 <section class="slide">
 
-<h2 id="___sec80">Split the integrals into elementwise integrals </h2>
+<h2 id="___sec87">Split the integrals into elementwise integrals </h2>
 
 <p>&nbsp;<br>
 $$
@@ -1972,7 +2133,7 @@ Important observations:
 
 <section class="slide">
 
-<h2 id="___sec81">The element matrix and local vs global node numbers </h2>
+<h2 id="___sec88">The element matrix and local vs global node numbers </h2>
 
 <p>&nbsp;<br>
 $$
@@ -2005,7 +2166,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec82">Illustration of the matrix assembly: regularly numbered P1 elements </h2>
+<h2 id="___sec89">Illustration of the matrix assembly: regularly numbered P1 elements </h2>
 
 <p>
 <center><p><img src="mov-approx/fe_assembly_regular_2x2/fe_assembly_regular_2x2.png" align="bottom" width=400></p></center>
@@ -2017,7 +2178,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec83">Illustration of the matrix assembly: regularly numbered P3 elements </h2>
+<h2 id="___sec90">Illustration of the matrix assembly: regularly numbered P3 elements </h2>
 
 <p>
 <center><p><img src="mov-approx/fe_assembly_regular_4x4/fe_assembly_regular_4x4.png" align="bottom" width=400></p></center>
@@ -2029,7 +2190,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec84">Illustration of the matrix assembly: irregularly numbered P1 elements </h2>
+<h2 id="___sec91">Illustration of the matrix assembly: irregularly numbered P1 elements </h2>
 
 <p>
 <center><p><img src="mov-approx/fe_assembly_irregular/fe_assembly_irregular.png" align="bottom" width=400></p></center>
@@ -2041,7 +2202,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec85">Assembly of the right-hand side </h2>
+<h2 id="___sec92">Assembly of the right-hand side </h2>
 
 <p>&nbsp;<br>
 $$
@@ -2100,7 +2261,7 @@ a standardized reference element domain \( [-1,1] \) with local coordinate \( X 
 
 <section class="slide">
 
-<h2 id="___sec87">We use affine mapping: linear stretch of \( X\in [-1,1] \) to \( x\in [x_L,x_R] \) </h2>
+<h2 id="___sec94">We use affine mapping: linear stretch of \( X\in [-1,1] \) to \( x\in [x_L,x_R] \) </h2>
 
 <p>&nbsp;<br>
 $$
@@ -2119,7 +2280,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec88">Integral transformation </h2>
+<h2 id="___sec95">Integral transformation </h2>
 
 <p>
 Reference element integration: just change integration variable
@@ -2150,7 +2311,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec89">Advantages of the reference element </h2>
+<h2 id="___sec96">Advantages of the reference element </h2>
 
 <ul>
 
@@ -2168,7 +2329,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec90">Standardized basis functions for P1 elements </h2>
+<h2 id="___sec97">Standardized basis functions for P1 elements </h2>
 
 <p>&nbsp;<br>
 $$
@@ -2189,7 +2350,7 @@ defined functions)
 
 <section class="slide">
 
-<h2 id="___sec91">Standardized basis functions for P2 elements </h2>
+<h2 id="___sec98">Standardized basis functions for P2 elements </h2>
 
 <p>&nbsp;<br>
 $$
@@ -2211,7 +2372,7 @@ Easy to generalize to arbitrary order!
 
 <section class="slide">
 
-<h2 id="___sec92">How to find the polynomial expressions? </h2>
+<h2 id="___sec99">How to find the polynomial expressions? </h2>
 
 <p>
 Three alternatives:
@@ -2269,7 +2430,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec94">Integration over a reference element; element vector </h2>
+<h2 id="___sec101">Integration over a reference element; element vector </h2>
 
 <p>&nbsp;<br>
 $$
@@ -2298,7 +2459,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec95">Tedious calculations! Let's use symbolic software </h2>
+<h2 id="___sec102">Tedious calculations! Let's use symbolic software </h2>
 
 <p>
 
@@ -2330,7 +2491,7 @@ Can print out in LaTeX too (convenient for copying into reports):
 
 <section class="slide">
 
-<h1 id="___sec96">Implementation </h1>
+<h1 id="___sec103">Implementation </h1>
 
 <ul>
  <p><li> Coming functions appear in <a href="http://tinyurl.com/nm5587k/approx/fe_approx1D.py" target="_self"><tt>fe_approx1D.py</tt></a></li>
@@ -2342,7 +2503,7 @@ Can print out in LaTeX too (convenient for copying into reports):
 
 <section class="slide">
 
-<h2 id="___sec97">Compute finite element basis functions in the reference element </h2>
+<h2 id="___sec104">Compute finite element basis functions in the reference element </h2>
 
 <p>
 Let \( \refphi_r(X) \) be a Lagrange polynomial of degree <code>d</code>:
@@ -2380,7 +2541,7 @@ Let \( \refphi_r(X) \) be a Lagrange polynomial of degree <code>d</code>:
 
 <section class="slide">
 
-<h2 id="___sec98">Compute the element matrix </h2>
+<h2 id="___sec105">Compute the element matrix </h2>
 
 <p>
 
@@ -2405,7 +2566,7 @@ Let \( \refphi_r(X) \) be a Lagrange polynomial of degree <code>d</code>:
 
 <section class="slide">
 
-<h2 id="___sec99">Example on symbolic vs numeric element matrix </h2>
+<h2 id="___sec106">Example on symbolic vs numeric element matrix </h2>
 
 <p>
 
@@ -2426,7 +2587,7 @@ Let \( \refphi_r(X) \) be a Lagrange polynomial of degree <code>d</code>:
 
 <section class="slide">
 
-<h2 id="___sec100">Compute the element vector </h2>
+<h2 id="___sec107">Compute the element vector </h2>
 
 <p>
 
@@ -2454,7 +2615,7 @@ Note <code>f.subs('x', x)</code>: replace <code>x</code> by \( x(X) \) such that
 
 <section class="slide">
 
-<h2 id="___sec101">Fallback on numerical integration if symbolic integration of \( \int f\refphi_r dx \) fails </h2>
+<h2 id="___sec108">Fallback on numerical integration if symbolic integration of \( \int f\refphi_r dx \) fails </h2>
 
 <ul>
 
@@ -2482,7 +2643,7 @@ Note <code>f.subs('x', x)</code>: replace <code>x</code> by \( x(X) \) such that
 
 <section class="slide">
 
-<h2 id="___sec102">Linear system assembly and solution </h2>
+<h2 id="___sec109">Linear system assembly and solution </h2>
 
 <p>
 
@@ -2509,7 +2670,7 @@ Note <code>f.subs('x', x)</code>: replace <code>x</code> by \( x(X) \) such that
 
 <section class="slide">
 
-<h2 id="___sec103">Linear system solution </h2>
+<h2 id="___sec110">Linear system solution </h2>
 
 <p>
 
@@ -2527,7 +2688,7 @@ can be very tedious.
 
 <section class="slide">
 
-<h2 id="___sec104">Example on computing symbolic approximations </h2>
+<h2 id="___sec111">Example on computing symbolic approximations </h2>
 
 <p>
 
@@ -2557,7 +2718,7 @@ can be very tedious.
 
 <section class="slide">
 
-<h2 id="___sec105">Example on computing numerical approximations </h2>
+<h2 id="___sec112">Example on computing numerical approximations </h2>
 
 <p>
 
@@ -2615,7 +2776,7 @@ Note: do this by hand to understand what is going on!
 
 <section class="slide">
 
-<h2 id="___sec107">General result: the coefficient matrix is sparse </h2>
+<h2 id="___sec114">General result: the coefficient matrix is sparse </h2>
 
 <ul>
  <p><li> Sparse = most of the entries are zeros</li>
@@ -2646,7 +2807,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec108">Exemplifying the sparsity for P2 elements </h2>
+<h2 id="___sec115">Exemplifying the sparsity for P2 elements </h2>
 
 <p>&nbsp;<br>
 $$
@@ -2674,7 +2835,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec109">Matrix sparsity pattern for regular/random numbering of P1 elements </h2>
+<h2 id="___sec116">Matrix sparsity pattern for regular/random numbering of P1 elements </h2>
 
 <ul>
  <p><li> Left: number nodes and elements from left to right</li>
@@ -2688,7 +2849,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec110">Matrix sparsity pattern for regular/random numbering of P3 elements </h2>
+<h2 id="___sec117">Matrix sparsity pattern for regular/random numbering of P3 elements </h2>
 
 <ul>
  <p><li> Left: number nodes and elements from left to right</li>
@@ -2719,7 +2880,7 @@ The minimum storage requirements for the coefficient matrix \( A_{i,j} \):
 
 <section class="slide">
 
-<h2 id="___sec112">Approximate \( f\sim x^9 \) by various elements; code </h2>
+<h2 id="___sec119">Approximate \( f\sim x^9 \) by various elements; code </h2>
 
 <p>
 Compute a mesh with \( N_e \) elements, basis functions of
@@ -2743,7 +2904,7 @@ approximate(f=x*(<span style="color: #B452CD">1</span>-x)**<span style="color: #
 
 <section class="slide">
 
-<h2 id="___sec113">Approximate \( f\sim x^9 \) by various elements; plot </h2>
+<h2 id="___sec120">Approximate \( f\sim x^9 \) by various elements; plot </h2>
 
 <p>
 <center><p><img src="fig-approx/fe_p1_p2_x9_248e.png" align="bottom" width=800></p></center>
@@ -2768,7 +2929,7 @@ approximate(f=x*(<span style="color: #B452CD">1</span>-x)**<span style="color: #
 
 <section class="slide">
 
-<h2 id="___sec115">Interpolation/collocation with finite elements </h2>
+<h2 id="___sec122">Interpolation/collocation with finite elements </h2>
 
 <p>
 Let \( \{\xno{i}\}_{i\in\If} \) be the nodes in the mesh.
@@ -2803,7 +2964,7 @@ define \( u \) also <em>between</em> the \( \xno{i} \) points
 
 <section class="slide">
 
-<h2 id="___sec116">Galerkin/project and least squares vs collocation/interpolation or finite differences </h2>
+<h2 id="___sec123">Galerkin/project and least squares vs collocation/interpolation or finite differences </h2>
 
 <ul>
  <p><li> Scope: work with P1 elements</li>
@@ -2836,7 +2997,7 @@ Note:
 
 <section class="slide">
 
-<h2 id="___sec117">Expressing the left-hand side in finite difference operator notation </h2>
+<h2 id="___sec124">Expressing the left-hand side in finite difference operator notation </h2>
 
 <p>
 Rewrite the left-hand side of finite element equation no \( i \):
@@ -2857,7 +3018,7 @@ $$ h(u + \frac{h^2}{6}u'')$$
 
 <section class="slide">
 
-<h2 id="___sec118">Treating the right-hand side; Trapezoidal rule </h2>
+<h2 id="___sec125">Treating the right-hand side; Trapezoidal rule </h2>
 
 <p>&nbsp;<br>
 $$ (f,\basphi_i) = \int_{\xno{i-1}}^{\xno{i}} f(x)\frac{1}{h} (x - \xno{i-1}) dx
@@ -2893,7 +3054,7 @@ and the finite difference method!
 
 <section class="slide">
 
-<h2 id="___sec119">Treating the right-hand side; Simpson's rule </h2>
+<h2 id="___sec126">Treating the right-hand side; Simpson's rule </h2>
 
 <p>&nbsp;<br>
 $$ \int_\Omega g(x)dx \approx \frac{h}{6}\left( g(\xno{0}) +
@@ -2930,7 +3091,7 @@ Conclusions:
 
 <section class="slide">
 
-<h2 id="___sec120">Finite element approximation vs finite differences </h2>
+<h2 id="___sec127">Finite element approximation vs finite differences </h2>
 
 <p>
 With Trapezoidal integration of \( (f,\basphi_i) \), the finite element
@@ -2971,7 +3132,7 @@ Note: as \( h\rightarrow 0 \), \( hu''\rightarrow 0 \) and \( \bar f_i\rightarro
 
 <section class="slide">
 
-<h2 id="___sec121">Making finite elements behave as finite differences </h2>
+<h2 id="___sec128">Making finite elements behave as finite differences </h2>
 
 <ul>
  <p><li> Can we adjust the finite element method so that we do not
@@ -3034,7 +3195,7 @@ One problem:
 
 <section class="slide">
 
-<h2 id="___sec124">The concept of a finite element </h2>
+<h2 id="___sec131">The concept of a finite element </h2>
 
 <ol>
  <p><li> a <em>reference cell</em> in a local reference coordinate system</li>
@@ -3079,7 +3240,7 @@ b[dof_map[e][r]] += b_e[r]
 
 <section class="slide">
 
-<h2 id="___sec126">Example: data structures for P2 elements </h2>
+<h2 id="___sec133">Example: data structures for P2 elements </h2>
 
 <p>
 <center><p><img src="fig-approx/fe_mesh1D_P2.png" align="bottom" width=500></p></center>
@@ -3096,7 +3257,7 @@ dof_map = [[<span style="color: #B452CD">0</span>, <span style="color: #B452CD">
 
 <section class="slide">
 
-<h2 id="___sec127">Example: P0 elements </h2>
+<h2 id="___sec134">Example: P0 elements </h2>
 
 <p>
 Example: Same mesh, but \( u \) is piecewise constant in each cell (P0 element).
@@ -3121,7 +3282,7 @@ We will hereafter work with <code>cells</code>, <code>vertices</code>, and <code
 
 <section class="slide">
 
-<h2 id="___sec128">A program with the fundamental algorithmic steps </h2>
+<h2 id="___sec135">A program with the fundamental algorithmic steps </h2>
 
 <p>
 
@@ -3153,7 +3314,7 @@ plot(x_u, u)
 
 <section class="slide">
 
-<h2 id="___sec129">Approximating a parabola by P0 elements </h2>
+<h2 id="___sec136">Approximating a parabola by P0 elements </h2>
 
 <p>
 <center><p><img src="fig-approx/fe_p0_x2_4e_8e.png" align="bottom" width=800></p></center>
@@ -3195,7 +3356,7 @@ Accurate approximation of the integral:
 
 <section class="slide">
 
-<h2 id="___sec131">Computing the error of the approximation; details </h2>
+<h2 id="___sec138">Computing the error of the approximation; details </h2>
 
 <p>
 <div class="alert alert-block alert-warning alert-text-normal">
@@ -3227,7 +3388,7 @@ E = np.sqrt(<span style="color: #B452CD">0.5</span>*np.sum((e2[:-<span style="co
 
 <section class="slide">
 
-<h2 id="___sec132">How does the error depend on \( h \) and \( d \)? </h2>
+<h2 id="___sec139">How does the error depend on \( h \) and \( d \)? </h2>
 
 <p>
 Theory and experiments show that the least squares or projection/Galerkin
@@ -3245,7 +3406,7 @@ where \( C \) depends on \( f \), but not on \( h \) or \( d \).
 
 <section class="slide">
 
-<h2 id="___sec133">Cubic Hermite polynomials; definition </h2>
+<h2 id="___sec140">Cubic Hermite polynomials; definition </h2>
 
 <ul>
  <p><li> Can we construct \( \basphi_i(x) \) with continuous derivatives? Yes!</li>
@@ -3278,7 +3439,7 @@ and thereby continuous derivatives.
 
 <section class="slide">
 
-<h2 id="___sec134">Cubic Hermite polynomials; derivation </h2>
+<h2 id="___sec141">Cubic Hermite polynomials; derivation </h2>
 
 <p>
 4 constraints on \( \refphi_r \) (1 for dof \( r \), 0 for all others):
@@ -3307,7 +3468,7 @@ coefficients in the cubic polynomial
 
 <section class="slide">
 
-<h2 id="___sec135">Cubic Hermite polynomials; result </h2>
+<h2 id="___sec142">Cubic Hermite polynomials; result </h2>
 
 <p>&nbsp;<br>
 $$
@@ -3329,7 +3490,7 @@ $$
 
 <section class="slide">
 
-<h1 id="___sec136">Numerical integration </h1>
+<h1 id="___sec143">Numerical integration </h1>
 
 <ul>
  <p><li> \( \int_\Omega f\basphi_idx \) must in general be computed by numerical integration</li>
@@ -3340,7 +3501,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec137">Common form of a numerical integration rule </h2>
+<h2 id="___sec144">Common form of a numerical integration rule </h2>
 
 <p>&nbsp;<br>
 $$
@@ -3362,7 +3523,7 @@ Different rules correspond to different choices of points and weights
 
 <section class="slide">
 
-<h2 id="___sec138">The Midpoint rule </h2>
+<h2 id="___sec145">The Midpoint rule </h2>
 
 <p>
 Simplest possibility: the Midpoint rule,
@@ -3420,7 +3581,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec140">Gauss-Legendre rules apply optimized points </h2>
+<h2 id="___sec147">Gauss-Legendre rules apply optimized points </h2>
 
 <ul>
  <p><li> Optimize the location of points to get higher accuracy</li>
@@ -3470,7 +3631,7 @@ All the concepts and algorithms developed for approximation of 1D functions
 
 <section class="slide">
 
-<h2 id="___sec142">Quick overview of the 2D case </h2>
+<h2 id="___sec149">Quick overview of the 2D case </h2>
 
 <p>
 Inner product in 2D:
@@ -3532,7 +3693,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec144">Tensor products </h2>
+<h2 id="___sec151">Tensor products </h2>
 
 <p>
 Given two vectors \( a=(a_0,\ldots,a_M) \) and \( b=(b_0,\ldots,b_N) \)
@@ -3557,7 +3718,7 @@ $$ \baspsi_{p,q}(x,y) = \hat\baspsi_p(x)\hat\baspsi_q(y),
 
 <section class="slide">
 
-<h2 id="___sec145">Double or single index? </h2>
+<h2 id="___sec152">Double or single index? </h2>
 
 <p>
 The 2D basis can employ a double index and double sum:
@@ -3588,7 +3749,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec146">Example on 2D (bilinear) basis functions; formulas </h2>
+<h2 id="___sec153">Example on 2D (bilinear) basis functions; formulas </h2>
 
 <p>
 In 1D we use the basis
@@ -3620,7 +3781,7 @@ See notes for details of a hand-calculation.
 
 <section class="slide">
 
-<h2 id="___sec147">Example on 2D (bilinear) basis functions; plot </h2>
+<h2 id="___sec154">Example on 2D (bilinear) basis functions; plot </h2>
 
 <p>
 Quadratic \( f(x,y) = (1+x^2)(1+2y^2) \) (left), bilinear \( u \) (right):
@@ -3647,7 +3808,7 @@ Very small modification of <code>approx1D.py</code>:
 
 <section class="slide">
 
-<h2 id="___sec149">Implementation; 2D integration </h2>
+<h2 id="___sec156">Implementation; 2D integration </h2>
 
 <p>
 
@@ -3672,7 +3833,7 @@ I = sym.integrate(integrand,
 
 <section class="slide">
 
-<h2 id="___sec150">Implementation; 2D basis functions </h2>
+<h2 id="___sec157">Implementation; 2D basis functions </h2>
 
 <p>
 Tensor product of 1D &quot;Taylor-style&quot; polynomials \( x^i \):
@@ -3701,7 +3862,7 @@ Complete code in
 
 <section class="slide">
 
-<h2 id="___sec151">Implementation; application </h2>
+<h2 id="___sec158">Implementation; application </h2>
 
 <p>
 \( f(x,y) = (1+x^2)(1+2y^2) \)
@@ -3724,7 +3885,7 @@ Complete code in
 
 <section class="slide">
 
-<h2 id="___sec152">Implementation; trying a perfect expansion </h2>
+<h2 id="___sec159">Implementation; trying a perfect expansion </h2>
 
 <p>
 Add higher powers to the basis such that \( f\in V \):
@@ -3785,7 +3946,7 @@ $$
 
 <section class="slide">
 
-<h1 id="___sec154">Finite elements in 2D and 3D </h1>
+<h1 id="___sec161">Finite elements in 2D and 3D </h1>
 
 <p>
 The two great advantages of the finite element method:
@@ -3804,7 +3965,7 @@ Finite elements in 1D: mostly for learning, insight, debugging
 
 <section class="slide">
 
-<h2 id="___sec155">Examples on cell types </h2>
+<h2 id="___sec162">Examples on cell types </h2>
 
 <p>
 2D:
@@ -3826,7 +3987,7 @@ Finite elements in 1D: mostly for learning, insight, debugging
 
 <section class="slide">
 
-<h2 id="___sec156">Rectangular domain with 2D P1 elements </h2>
+<h2 id="___sec163">Rectangular domain with 2D P1 elements </h2>
 
 <p>
 <center><p><img src="fig-approx/mesh2D_rect_P1.png" align="bottom" width=800></p></center>
@@ -3835,7 +3996,7 @@ Finite elements in 1D: mostly for learning, insight, debugging
 
 <section class="slide">
 
-<h2 id="___sec157">Deformed geometry with 2D P1 elements </h2>
+<h2 id="___sec164">Deformed geometry with 2D P1 elements </h2>
 
 <p>
 <center><p><img src="fig-approx/mesh2D_quarter_circle.png" align="bottom" width=600></p></center>
@@ -3844,7 +4005,7 @@ Finite elements in 1D: mostly for learning, insight, debugging
 
 <section class="slide">
 
-<h2 id="___sec158">Rectangular domain with 2D Q1 elements </h2>
+<h2 id="___sec165">Rectangular domain with 2D Q1 elements </h2>
 
 <p>
 <center><p><img src="fig-approx/mesh2D_rect_Q1.png" align="bottom" width=500></p></center>
@@ -3853,7 +4014,7 @@ Finite elements in 1D: mostly for learning, insight, debugging
 
 <section class="slide">
 
-<h2 id="___sec159">Basis functions over triangles in the physical domain </h2>
+<h2 id="___sec166">Basis functions over triangles in the physical domain </h2>
 
 <p>
 The P1 triangular 2D element: \( u \) is linear \( ax + by + c \) over each
@@ -3866,7 +4027,7 @@ triangular cell
 
 <section class="slide">
 
-<h2 id="___sec160">Basic features of 2D elements </h2>
+<h2 id="___sec167">Basic features of 2D elements </h2>
 
 <ul>
  <p><li> Cells = triangles</li>
@@ -3879,7 +4040,7 @@ triangular cell
 
 <section class="slide">
 
-<h2 id="___sec161">Linear mapping of reference element onto general triangular cell </h2>
+<h2 id="___sec168">Linear mapping of reference element onto general triangular cell </h2>
 
 <p>
 <center><p><img src="fig-approx/ElmT3n2D_map.png" align="bottom" width=400></p></center>
@@ -3888,7 +4049,7 @@ triangular cell
 
 <section class="slide">
 
-<h2 id="___sec162">\( \basphi_i \): pyramid shape, composed of planes </h2>
+<h2 id="___sec169">\( \basphi_i \): pyramid shape, composed of planes </h2>
 
 <ul>
  <p><li> \( \basphi_i(x,y) \) varies linearly over each cell</li>
@@ -3902,7 +4063,7 @@ triangular cell
 
 <section class="slide">
 
-<h2 id="___sec163">Element matrices and vectors </h2>
+<h2 id="___sec170">Element matrices and vectors </h2>
 
 <ul>
  <p><li> As in 1D, the contribution from one cell to the matrix involves
@@ -3916,7 +4077,7 @@ triangular cell
 
 <section class="slide">
 
-<h2 id="___sec164">Basis functions over triangles in the reference cell </h2>
+<h2 id="___sec171">Basis functions over triangles in the reference cell </h2>
 
 <p>
 <center><p><img src="fig-approx/fenics-book/elements/P1_2d.png" align="bottom" width=100></p></center>
@@ -3941,7 +4102,7 @@ Higher-degree \( \refphi_r \) introduce more nodes (dof = node values)
 
 <section class="slide">
 
-<h2 id="___sec165">2D P1, P2, P3, P4, P5, and P6 elements </h2>
+<h2 id="___sec172">2D P1, P2, P3, P4, P5, and P6 elements </h2>
 
 <p>
 <center><p><img src="fig-approx/fenics-book/elements/P1-6_2d.png" align="bottom" width=320></p></center>
@@ -3950,7 +4111,7 @@ Higher-degree \( \refphi_r \) introduce more nodes (dof = node values)
 
 <section class="slide">
 
-<h2 id="___sec166">P1 elements in 1D, 2D, and 3D </h2>
+<h2 id="___sec173">P1 elements in 1D, 2D, and 3D </h2>
 
 <p>
 <center><p><img src="fig-approx/fenics-book/elements/P1-1d2d3d.png" align="bottom" width=320></p></center>
@@ -3959,7 +4120,7 @@ Higher-degree \( \refphi_r \) introduce more nodes (dof = node values)
 
 <section class="slide">
 
-<h2 id="___sec167">P2 elements in 1D, 2D, and 3D </h2>
+<h2 id="___sec174">P2 elements in 1D, 2D, and 3D </h2>
 
 <p>
 <center><p><img src="fig-approx/fenics-book/elements/P2-1d2d3d.png" align="bottom" width=320></p></center>
@@ -3975,7 +4136,7 @@ Higher-degree \( \refphi_r \) introduce more nodes (dof = node values)
 
 <section class="slide">
 
-<h2 id="___sec168">Affine mapping of the reference cell; formula </h2>
+<h2 id="___sec175">Affine mapping of the reference cell; formula </h2>
 
 <p>
 Mapping of local \( \X = (X,Y) \) coordinates in the reference cell to
@@ -4009,7 +4170,7 @@ This mapping preserves the straight/planar faces and edges.
 
 <section class="slide">
 
-<h2 id="___sec169">Affine mapping of the reference cell; figure </h2>
+<h2 id="___sec176">Affine mapping of the reference cell; figure </h2>
 
 <p>
 <center><p><img src="fig-approx/ElmT3n2D_map.png" align="bottom" width=400></p></center>
@@ -4018,7 +4179,7 @@ This mapping preserves the straight/planar faces and edges.
 
 <section class="slide">
 
-<h2 id="___sec170">Isoparametric mapping of the reference cell </h2>
+<h2 id="___sec177">Isoparametric mapping of the reference cell </h2>
 
 <p>
 Idea: Use the basis functions
@@ -4042,7 +4203,7 @@ reference cell to a <em>curved</em> triangle or tetrahedron.
 
 <section class="slide">
 
-<h2 id="___sec171">Computing integrals </h2>
+<h2 id="___sec178">Computing integrals </h2>
 
 <p>
 Integrals must be transformed from \( \Omega^{(e)} \) (physical cell)
@@ -4084,7 +4245,7 @@ Affine mapping
 
 <section class="slide">
 
-<h2 id="___sec172">Remark on going from 1D to 2D/3D </h2>
+<h2 id="___sec179">Remark on going from 1D to 2D/3D </h2>
 
 <p>
 <div class="alert alert-block alert-block alert-text-normal">

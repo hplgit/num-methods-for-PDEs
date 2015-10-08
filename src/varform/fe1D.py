@@ -65,7 +65,7 @@ def basis(d, point_distribution='uniform', symbolic=False):
     # Transform to Python functions
     phi_num[0] = [sym.lambdify([X], phi_sym[0][r])
                   for r in range(d+1)]
-    phi_num[1] = [sym.lambdify([X, h], phi_sym[1][r]))
+    phi_num[1] = [sym.lambdify([X, h], phi_sym[1][r])
                   for r in range(d+1)]
     return phi_sym if symbolic else phi_num
 

@@ -25,7 +25,7 @@ Exercise 1: Refactor functions into a more general class
 The section :ref:`fem:deq:1D:models:simple` lists three functions for
 computing the analytical solution of some simple model problems. There
 is quite some repetitive code, suggesting that the functions can
-benefit from being refactored into a class hierarchy, where the base
+benefit from being refactored into a class hierarchy, where the super
 class solves :math:`-(a(x)u'(x))'=f(x)` and where subclasses define the
 equations for the boundary conditions in a model. Make a method for
 returning the residual in the differential equation and the boundary
@@ -37,7 +37,7 @@ or as a string in LaTeX format.  Add a fourth subclass for the problem
 :math:`-(au')'=f` with a Robin boundary condition:
 
 .. math::
-         u(0)=0,\quad -u'(L) = C*(u - D){\thinspace .}
+         u(0)=0,\quad -u'(L) = C(u - D){\thinspace .}
 
 Demonstrate the use of this subclass for the case :math:`f=0` and :math:`a=\sqrt{1+x}`.
 
@@ -60,12 +60,13 @@ governed by
 
 .. math::
         
-        T w''(x) = -\ell(x),
+        T w''(x) = \ell(x),
         
 
-when :math:`\ell(x)` the vertical load per unit length.
+where :math:`\ell(x)` the vertical load per unit length.
 The cable is fixed at :math:`x=0` and :math:`x=L` so the boundary conditions become
-:math:`w(0)=w(L)=0`.
+:math:`w(0)=w(L)=0`. The deflection :math:`w` is positive upwards, and :math:`\ell` is
+positive when it acts downwards.
 
 If we assume a constant load :math:`\ell(x)=\hbox{const}`,
 the solution is expected to be symmetric around :math:`x=L/2`. For a function
@@ -75,26 +76,26 @@ w(x_0-h))/(2h)=0`. We can therefore utilize symmetry to halve the domain.
 We then seek :math:`w(x)` in :math:`[0,L/2]` with boundary conditions :math:`w(0)=0` and
 :math:`w'(L/2)=0`.
 
-The problem can be scaled by introducing a dimensionless independent
+The problem can be scaled by introducing dimensionless independent
 and dependent variables,
 
 .. math::
-         \bar x = \frac{x}{L/2},\quad \bar u = \frac{w}{u_c},
+         \bar x = \frac{x}{L/2},\quad \bar u = \frac{w}{w_c},
 
-where :math:`u_c` is a characteristic size of :math:`u`.
+where :math:`w_c` is a characteristic size of :math:`w`.
 Inserted in the problem for :math:`w`,
 
 .. math::
-         \frac{4Tu_c}{L^{2}}\frac{d^2\bar u}{d\bar x^2} = -\ell\ (= \hbox{const}){\thinspace .}
+         \frac{4Tw_c}{L^{2}}\frac{d^2\bar u}{d\bar x^2} = \ell\ (= \hbox{const}){\thinspace .}
 
-A desire is to have :math:`u` and its derivatives to be about unity, so
-choosing :math:`u_c` such that :math:`|d^2\bar u/d\bar x^2|=1` is an idea.
-Then :math:`u_c=\frac{1}{4}\ell L^2/T`, and the problem for the scaled vertical
+A desire is to have :math:`u` and its derivatives about unity, so
+choosing :math:`w_c` such that :math:`|d^2\bar u/d\bar x^2|=1` is an idea.
+Then :math:`w_c=\frac{1}{4}\ell L^2/T`, and the problem for the scaled vertical
 deflection :math:`u` becomes
 
 .. math::
         
-        u'' = -1,\quad x\in (0,1),\quad u(0)=0,\ u'(1)=0{\thinspace .}
+        u'' = 1,\quad x\in (0,1),\quad u(0)=0,\ u'(1)=0{\thinspace .}
         
 
 Observe that there are no physical parameters in this scaled problem.
@@ -108,7 +109,8 @@ Find the exact solution for the deflection :math:`u`.
 
 **b)**
 A possible function space is spanned by :math:`{\psi}_i=\sin ((2i+1)\pi x/2)`,
-:math:`i=0,\ldots,N`. These fulfill the necessary condition :math:`{\psi}_i(0)=0`,
+:math:`i=0,\ldots,N`. These functions
+fulfill the necessary condition :math:`{\psi}_i(0)=0`,
 but they also fulfill :math:`{\psi}_i'(1)=0` such that both boundary
 conditions are fulfilled by the expansion :math:`u=\sum_jc_j{\varphi}_j`.
 
@@ -140,8 +142,10 @@ condition :math:`{\psi}'(1)=0`. However, in the Galerkin method, where we
 integrate by parts, the condition :math:`u'(1)=0` is incorporated in the
 variational form. This leads to the idea of just choosing a simpler
 basis, namely "all" sine functions :math:`{\psi}_i = \sin((i+1)\frac{\pi x}{2})`.
-Will the method adjust the coefficient such that inappropriate basis
-functions are omitted from the sum? Use Galerkin's method.
+Will the method adjust the coefficient such that the additional
+functions compared with those in b) get vanishing coefficients? Or
+will the additional basis functions improve the solution?
+Use Galerkin's method.
 
 .. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
 
@@ -151,7 +155,7 @@ Now we drop the symmetry condition at :math:`x=1` and extend the domain to
 problem now reads
 
 .. math::
-         u'' = -1,\quad x\in (0,2),\quad u(0)=u(2)=0{\thinspace .}
+         u'' = 1,\quad x\in (0,2),\quad u(0)=u(2)=0{\thinspace .}
 
 This time we need basis functions that are zero at :math:`x=0` and :math:`x=2`.
 The set :math:`\sin((i+1)\frac{\pi x}{2})` from d) is a candidate since
@@ -181,7 +185,7 @@ Repeat :ref:`fem:deq:exer:tension:cable` b), but work with
 the space
 
 .. math::
-         V = \hbox{span}\{x, x^2, x^3, x^4, \ldots 
+         V = \hbox{span}\{x, x^2, x^3, x^4, \ldots\}{\thinspace .} 
 
 Choose the dimension of :math:`V` to be 4 and observe that the exact solution
 is recovered by the Galerkin method.
@@ -265,7 +269,8 @@ Exercise 7: Compute the deflection of a cable with a step load
 --------------------------------------------------------------
 
 We consider the deflection of a tension cable as described in
-:ref:`fem:deq:exer:tension:cable`. Now the load is
+:ref:`fem:deq:exer:tension:cable`: :math:`w''=\ell`, :math:`w(0)=w(L)=0`.
+Now the load is discontinuous:
 
 .. math::
          \ell (x) =\left\lbrace\begin{array}{ll}
@@ -276,27 +281,49 @@ We consider the deflection of a tension cable as described in
         
 
 This load is not symmetric
-with respect to the midpoint :math:`x=L/2` so the solution loses its symmetry
-and we must solve the scaled problem
+with respect to the midpoint :math:`x=L/2` so the solution loses its symmetry.
+Scaling the problem by introducing
 
 .. math::
-         u'' =-\left\lbrace\begin{array}{ll}
-        1, & x <1/2,\\ 
-        0, & x \geq 1/2
+         \bar x = \frac{x}{L/2},\quad u = \frac{w}{w_c},\quad\bar\ell = \frac{\ell - \ell_1}{\ell_2 - \ell_1}{\thinspace .}
+
+This leads to a scaled problem on :math:`[0,2]` (we rename :math:`\bar x` as :math:`x`
+for convenience):
+
+.. math::
+         u'' = \bar\ell(x) = \left\lbrace\begin{array}{ll}
+        1, & x <1,\\ 
+        0, & x \geq 1
         \end{array}\right.
-        \quad x\in (0,1),\quad u(0)=0,\ u(1)=0
+        \quad x\in (0,1),\quad u(0)=0,\ u(2)=0
         {\thinspace .} 
 
 **a)**
-Use :math:`{\psi}_i = \sin((i+1)\frac{\pi x}{2})`,
-:math:`i=0,\ldots,N` and the Galerkin method
-without integration by parts. Derive a formula
-for :math:`c_j` in the solution expansion :math:`u=\sum_j c_j{\psi}_j`.
-Plot how fast the coefficients :math:`c_j` tend to zero (on a log scale).
+Find the analytical solution of the problem.
+
+.. --- begin hint in exercise ---
+
+**Hint.**
+Integrate the equation separately for :math:`x<1` and :math:`x>1`. Use
+the conditions that :math:`u` and :math:`u'` must be continuous at :math:`x=1`.
+
+.. --- end hint in exercise ---
+
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
 
 **b)**
+Use :math:`{\psi}_i = \sin((i+1)\frac{\pi x}{2})`,
+:math:`i=0,\ldots,N` and the Galerkin method to find an approximate
+solution :math:`u=\sum_j c_j{\psi}_j`.
+Plot how fast the coefficients :math:`c_j` tend to zero (on a log scale).
+
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
+
+**c)**
 Solve the problem with P1 finite elements.
 Plot the solution for :math:`N_e=2,4,8` elements.
+
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
 
 Filename: ``cable_discont_load``.
 
@@ -304,45 +331,31 @@ Filename: ``cable_discont_load``.
 
 .. --- begin exercise ---
 
-.. _fem:deq:exer:Aub:essbc:equiv:
-
-Exercise 8: Show equivalence between linear systems
----------------------------------------------------
-
-Incorporation of Dirichlet conditions at :math:`x=0` and :math:`x=L` in a finite
-element mesh on :math:`\Omega=[0,L]` can either be done by introducing an
-expansion :math:`u(x)=U_0{\varphi}_0 + U_{N_n-1}{\varphi}_{N_n-1} +
-\sum_{j=0}^{N} c_j{\varphi}_{\nu(j)}`, with :math:`N=N_n-3` and considering
-:math:`u` values at the inner nodes as unknowns, *or* one can assemble the
-matrix system with :math:`u(x)=\sum_{j=0}^{N=N_n-1} c_j{\varphi}_j` and
-afterwards replace the rows corresponding to known :math:`c_j` values by the
-boundary conditions.  Show that the two approaches are equivalent.
-
-.. Start with the system N=N_n-1 and eliminate c_0 and c_N and show that
-
-.. the resulting system is equal to the other
-
-.. --- end exercise ---
-
-.. --- begin exercise ---
-
 .. _fem:deq:exer:1D:mesh:nonuniform:
 
-Exercise 9: Compute with a non-uniform mesh
+Exercise 8: Compute with a non-uniform mesh
 -------------------------------------------
 
+**a)**
 Derive the linear system for the problem :math:`-u''=2` on :math:`[0,1]`, with
 :math:`u(0)=0` and :math:`u(1)=1`, using P1 elements and a *non-uniform* mesh. The
 vertices have coordinates :math:`x_{0}=0 < x_{1} <\cdots <
 x_{N_n-1}=1`, and the length of cell number :math:`e` is :math:`h_e = x_{e+1}
 -x_{e}`.
 
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
+
+**b)**
 It is of interest to compare the discrete equations for the finite
 element method in a non-uniform mesh with the corresponding discrete
 equations arising from a finite difference method. Go through the
 derivation of the finite difference formula :math:`u''(x_i) \approx [D_x D_x
 u]_i` and modify it to find a natural discretization of :math:`u''(x_i)` on
-a non-uniform mesh.
+a non-uniform mesh. Compare the finite element and difference
+discretizations
+
+.. removed !bsol ... !esol environment (because of the command-line option --without_solutions)
+
 Filename: ``nonuniform_P1``.
 
 .. --- end exercise ---
@@ -351,8 +364,8 @@ Filename: ``nonuniform_P1``.
 
 .. _fem:deq:exer:1D:gen:problem1:
 
-Problem 10: Solve a 1D finite element problem by hand
------------------------------------------------------
+Problem 9: Solve a 1D finite element problem by hand
+----------------------------------------------------
 
 The following scaled 1D problem is a very simple, yet relevant, model
 for convective transport in fluids:
@@ -404,7 +417,7 @@ Filename: ``convdiff1D_P1``.
 
 .. _fem:deq:exer:1D:exact_numerics:
 
-Exercise 11: Investigate exact finite element solutions
+Exercise 10: Investigate exact finite element solutions
 -------------------------------------------------------
 
 Consider
@@ -439,7 +452,7 @@ Filename: ``u_xx_xm_P1to4``.
 
 .. _fem:deq:exer:1D:Poisson:polar:
 
-Exercise 12: Compare finite elements and differences for a radially symmetric Poisson equation
+Exercise 11: Compare finite elements and differences for a radially symmetric Poisson equation
 ----------------------------------------------------------------------------------------------
 
 We consider the Poisson problem in a disk with radius :math:`R` with
@@ -510,7 +523,7 @@ Filename: ``radial_Poisson1D_P1``.
 
 .. _fem:deq:exer:1D:gen:problem2:
 
-Exercise 13: Compute with variable coefficients and P1 elements by hand
+Exercise 12: Compute with variable coefficients and P1 elements by hand
 -----------------------------------------------------------------------
 
 Consider the problem
@@ -551,7 +564,7 @@ Filename: ``atan1D_P1``.
 
 .. _fem:deq:exer:2D:torsion:xy:sin:
 
-Exercise 14: Solve a 2D Poisson equation using polynomials and sines
+Exercise 13: Solve a 2D Poisson equation using polynomials and sines
 --------------------------------------------------------------------
 
 The classical problem of applying a torque to the ends of a rod

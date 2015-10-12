@@ -657,8 +657,9 @@ def pulse(C=1,            # aximum Courant number
         skip_frame=skip_frame, screen_movie=animate,
         backend=None, filename='tmpdata')
 
-    dt = (L/Nx)/c_0  # choose the stability limit with given Nx, worst case c
-    # Lower C will then use this dt, but smaller Nx
+    # Choose the stability limit with given Nx, worst case c
+    # (lower C will then use this dt, but smaller Nx)
+    dt = (L/Nx)/c_0
     solver(I=I, V=None, f=None, c=c, U_0=None, U_L=None,
            L=L, dt=dt, C=C, T=T,
            user_action=action, version=version,

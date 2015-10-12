@@ -1,5 +1,5 @@
 import numpy as np
-from numpy import sin
+from numpy import sin, pi
 
 def I(x):
     return sin(2*pi*x) + 0.5*sin(4*pi*x) + 0.1*sin(6*pi*x)

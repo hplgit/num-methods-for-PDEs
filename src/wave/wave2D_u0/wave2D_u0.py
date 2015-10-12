@@ -247,7 +247,7 @@ def quadratic(Nx, Ny, version):
         u_e = exact_solution(xv, yv, t[n])
         diff = abs(u - u_e).max()
         tol = 1E-12
-        msg = 'diff=%g, step %d, time=%g' % (diff, n, t[n]))
+        msg = 'diff=%g, step %d, time=%g' % (diff, n, t[n])
         assert diff < tol, msg
 
     new_dt, cpu = solver(

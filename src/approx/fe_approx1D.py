@@ -296,11 +296,4 @@ def dphi_r(r, X, d, point_distribution='uniform'):
 
 
 if __name__ == '__main__':
-    import sys
-    from scitools.misc import function_UI
-    cmd = function_UI(
-        [phi_r, u_glob, element_matrix, element_vector,
-         exemplify_element_matrix_vector, assemble, approximate],
-        sys.argv)
-    x = sym.Symbol('x')  # needed in eval when expression f contains x
-    eval(cmd)
+    pass

@@ -249,8 +249,8 @@ def approximate(f, symbolic=False, d=1, N_e=4, numint=None,
             title += ', exact integration'
         else:
             title += ', integration: %s' % numint_name
-        x_u, u = u_glob(c, vertices, cells, dof_map,
-                        resolution_per_element=51)
+        x_u, u, _ = u_glob(c, vertices, cells, dof_map,
+                           resolution_per_element=51)
         x_f = np.linspace(Omega[0], Omega[1], 10001) # mesh for f
         import scitools.std as plt
         plt.plot(x_u, u, '-',
@@ -262,38 +262,41 @@ def approximate(f, symbolic=False, d=1, N_e=4, numint=None,
 
     return c
 
-def u_glob(U, vertices, cells, dof_map, resolution_per_element=51):
+
+def u_glob(U, cells, vertices, dof_map, resolution_per_element=51):
     """
     Compute (x, y) coordinates of a curve y = u(x), where u is a
     finite element function: u(x) = sum_i of U_i*phi_i(x).
+    (The solution of the linear system is in U.)
     Method: Run through each element and compute curve coordinates
     over the element.
+    This function works with cells, vertices, and dof_map.
     """
-    from fe_approx1D import phi_r
     x_patches = []
     u_patches = []
+    nodes = {}  # node coordinates (use dict to avoid multiple values)
     for e in range(len(cells)):
-        Omega_e = [vertices[cells[e][0]], vertices[cells[e][1]]]
-        local_nodes = dof_map[e]
-        d = len(local_nodes) - 1
+        Omega_e = (vertices[cells[e][0]], vertices[cells[e][-1]])
+        d = len(dof_map[e]) - 1
+        phi = basis(d)
         X = np.linspace(-1, 1, resolution_per_element)
         x = affine_mapping(X, Omega_e)
         x_patches.append(x)
-        u_element = 0
-        for r in range(len(local_nodes)):
-            i = local_nodes[r]  # global node number
-            u_element += U[i]*phi_r(r, X, d)
-        u_patches.append(u_element)
+        u_cell = 0  # u(x) over this cell
+        for r in range(d+1):
+            i = dof_map[e][r]  # global dof number
+            u_cell += U[i]*phi[r](X)
+        u_patches.append(u_cell)
+        # Compute global coordinates of local nodes,
+        # assuming all dofs corresponds to values at nodes
+        X = np.linspace(-1, 1, d+1)
+        x = affine_mapping(X, Omega_e)
+        for r in range(d+1):
+            nodes[dof_map[e][r]] = x[r]
+    nodes = np.array([nodes[i] for i in sorted(nodes)])
     x = np.concatenate(x_patches)
     u = np.concatenate(u_patches)
-    return x, u
+    return x, u, nodes
 
 if __name__ == '__main__':
-    import sys
-    from scitools.misc import function_UI
-    cmd = function_UI(
-        [phi_r, u_glob, element_matrix, element_vector,
-         exemplify_element_matrix_vector, assemble, approximate],
-        sys.argv)
-    x = sym.Symbol('x')  # needed in eval when expression f contains x
-    eval(cmd)
+    pass

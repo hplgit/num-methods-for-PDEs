@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Study guide: Scientific software engineering; wave equation model">
+<meta name="keywords" content="Cython,C extension module,wrapper code,Fortran subroutine,row-major ordering,column-major ordering,Fortran array storage,C/Python array storage">
+
+<title>Study guide: Scientific software engineering; wave equation model</title>
+
+
+
+
+
+
+
+<!-- deck.js: https://github.com/imakewebthings/deck.js -->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=1024, user-scalable=no">
+
+<!-- Required stylesheet -->
+<link rel="stylesheet" href="deck.js/core/deck.core.css">
+
+<!-- Extension CSS files go here. Remove or add as needed.
+deck.goto: Adds a shortcut key to jump to any slide number.
+Hit g, type in the slide number, and hit enter.
+
+deck.hash: Enables internal linking within slides, deep
+linking to individual slides, and updates the address bar and
+a permalink anchor with each slide change.
+
+deck.menu: Adds a menu view, letting you see all slides in a grid.
+Hit m to toggle to menu view, continue navigating your deck,
+and hit m to return to normal view. Touch devices can double-tap
+the deck to switch between views.
+
+deck.navigation: Adds clickable left and right buttons for the
+less keyboard inclined.
+
+deck.status: Adds a page number indicator. (current/total).
+
+deck.scale: Scales each slide to fit within the deck container
+using CSS Transforms for those browsers that support them.
+
+deck.pointer: Turn mouse into laser pointer (toggle with p).
+(Requires https://github.com/mikeharris100/deck.pointer.js)
+-->
+
+<link rel="stylesheet" href="deck.js/extensions/menu/deck.menu.css">
+<link rel="stylesheet" href="deck.js/extensions/navigation/deck.navigation.css">
+<link rel="stylesheet" href="deck.js/extensions/scale/deck.scale.css">
+<link rel="stylesheet" href="deck.js/extensions/pointer/deck.pointer.css">
+<link rel="stylesheet" href="deck.js/extensions/notes/deck.notes.css">
+<!--
+<link rel="stylesheet" href="deck.js/extensions/goto/deck.goto.css">
+<link rel="stylesheet" href="deck.js/extensions/hash/deck.hash.css">
+<link rel="stylesheet" href="deck.js/extensions/status/deck.status.css">
+-->
+
+<!-- Style theme. More available in themes/style/ or create your own. -->
+<link rel="stylesheet" href="deck.js/themes/style/sandstone.default.css">
+
+<!--
+<link rel="stylesheet" href="deck.js/themes/style/neon.css">
+<link rel="stylesheet" href="deck.js/themes/style/swiss.css">
+<link rel="stylesheet" href="deck.js/themes/style/web-2.0.css">
+
+git clone git://github.com/duijf/mnml.git
+<link rel="stylesheet" href="deck.js/themes/style/mnml.css">
+
+git://github.com/groovecoder/deckjs-theme-mozilla.git
+<link rel="stylesheet" href="deck.js/themes/style/sandstone.css">
+<link rel="stylesheet" href="deck.js/themes/style/sandstone.aurora.css">
+<link rel="stylesheet" href="deck.js/themes/style/sandstone.dark.css">
+<link rel="stylesheet" href="deck.js/themes/style/sandstone.default.css">
+<link rel="stylesheet" href="deck.js/themes/style/sandstone.firefox.css">
+<link rel="stylesheet" href="deck.js/themes/style/sandstone.light.css">
+<link rel="stylesheet" href="deck.js/themes/style/sandstone.mdn.css">
+<link rel="stylesheet" href="deck.js/themes/style/sandstone.nightly.css">
+<link rel="stylesheet" href="deck.js/themes/style/sandstone.cbc.css">
+
+git://github.com/barraq/deck.ext.js.git
+<link rel="stylesheet" href="deck.js/themes/style/beamer.css">
+-->
+
+<!--
+Transition theme. More available in /themes/transition/ or create your own. -->
+<!--
+<link rel="stylesheet" href="deck.js/themes/transition/horizontal-slide.css">
+<link rel="stylesheet" href="deck.js/themes/transition/fade.css">
+<link rel="stylesheet" href="deck.js/themes/transition/vertical-slide.css">
+<link rel="stylesheet" href="deck.js/themes/transition/horizontal-slide.css">
+-->
+
+<!-- Required Modernizr file -->
+<script src="deck.js/modernizr.custom.js"></script>
+
+<style type="text/css">
+/* Override h1, h2, ... styles */
+h1 { font-size: 2.8em; }
+h2 { font-size: 1.5em; }
+h3 { font-size: 1.4em; }
+h4 { font-size: 1.3em; }
+h1, h2, h3, h4 { font-weight: bold; line-height: 1.2; }
+body { overflow: auto; } /* vertical scrolling */
+
+hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+p.caption { width: 80%; font-size: 60%; font-style: italic; text-align: left; }
+hr.figure { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+.slide .alert-text-small   { font-size: 80%;  }
+.slide .alert-text-large   { font-size: 130%; }
+.slide .alert-text-normal  { font-size: 90%;  }
+.slide .alert {
+     padding:8px 35px 8px 14px; margin-bottom:18px;
+     text-shadow:0 1px 0 rgba(255,255,255,0.5);
+     border:5px solid #bababa;
+       -webkit-border-radius:14px; -moz-border-radius:14px;
+     border-radius:14px
+     background-position: 10px 10px;
+     background-repeat: no-repeat;
+     background-size: 38px;
+     padding-left: 30px; /* 55px; if icon */
+ }
+ .slide .alert-block {padding-top:14px; padding-bottom:14px}
+ .slide .alert-block > p, .alert-block > ul {margin-bottom:0}
+ /*.slide .alert li {margin-top: 1em}*/
+ .deck .alert-block p+p {margin-top:5px}
+ /*.slide .alert-notice { background-image: url(http://hplgit.github.io/doconce/bundled/html_images//small_gray_notice.png); }
+ .slide .alert-summary  { background-image:url(http://hplgit.github.io/doconce/bundled/html_images//small_gray_summary.png); }
+ .slide .alert-warning { background-image: url(http://hplgit.github.io/doconce/bundled/html_images//small_gray_warning.png); }
+ .slide .alert-question {background-image:url(http://hplgit.github.io/doconce/bundled/html_images/small_gray_question.png); } */
+
+</style>
+
+
+
+<!-- Styles for table layout of slides -->
+<style type="text/css">
+td.padding {
+  padding-top:20px;
+  padding-bottom:20px;
+  padding-right:50px;
+  padding-left:50px;
+}
+</style>
+
+</head>
+
+<body class="deck-container">
+
+<header>
+<!-- Here goes a potential header -->
+</header>
+
+<!-- do not use the article tag - it gives strange sizings -->
+
+
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript"
+ src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+
+    
+
+
+
+<section class="slide">
+<!-- ------------------- main content ---------------------- -->
+
+<h2 style="text-align: center;">Study guide: Scientific software engineering; wave equation model</h2>  <!-- document title -->
+
+<p>
+<!-- author(s): Hans Petter Langtangen -->
+
+<center>
+<b style="font-weight: bold">Hans Petter Langtangen</b> [1, 2]
+</center>
+
+<p>
+<!-- institution(s) -->
+
+<center>[1] <b style="font-weight: bold">Center for Biomedical Computing, Simula Research Laboratory</b></center>
+<center>[2] <b style="font-weight: bold">Department of Informatics, University of Oslo</b></center>
+<br>
+<p>
+<center><b style="font-weight: bold">Oct 20, 2015</b></center> <!-- date -->
+<br>
+</section>
+
+
+<section class="slide">
+
+<h1 id="wave2D3D:impl:Cython">Migrating loops to Cython</h1>
+
+<ul>
+ <p><li> Vectorization: 5-10 times slower than pure C or Fortran code</li>
+ <p><li> Cython: extension of Python for translating functions to C</li>
+ <p><li> Principle: declare variables with type</li>
+</ul>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec1">Declaring variables and annotating the code </h2>
+
+<p>
+Pure Python code:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">advance_scalar</span>(u, u_1, u_2, f, x, y, t,
+                   n, Cx2, Cy2, dt2, D1=<span style="color: #B452CD">2</span>, D2=<span style="color: #B452CD">1</span>):
+    Ix = <span style="color: #658b00">range</span>(<span style="color: #B452CD">0</span>, u.shape[<span style="color: #B452CD">0</span>]);  Iy = <span style="color: #658b00">range</span>(<span style="color: #B452CD">0</span>, u.shape[<span style="color: #B452CD">1</span>])
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> Ix[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]:
+        <span style="color: #8B008B; font-weight: bold">for</span> j <span style="color: #8B008B">in</span> Iy[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>]:
+            u_xx = u_1[i-<span style="color: #B452CD">1</span>,j] - <span style="color: #B452CD">2</span>*u_1[i,j] + u_1[i+<span style="color: #B452CD">1</span>,j]
+            u_yy = u_1[i,j-<span style="color: #B452CD">1</span>] - <span style="color: #B452CD">2</span>*u_1[i,j] + u_1[i,j+<span style="color: #B452CD">1</span>]
+            u[i,j] = D1*u_1[i,j] - D2*u_2[i,j] + \ 
+                     Cx2*u_xx + Cy2*u_yy + dt2*f(x[i], y[j], t[n])
+</pre></div>
+<ul>
+ <p><li> Copy this function and put it in a file with <code>.pyx</code> extension.</li>
+ <p><li> Add type of variables:</li>
+
+<ul>
+
+<p><li> <code>function(a, b)</code> \( \rightarrow \) <code>cpdef function(int a, double b)</code></li>
+
+<p><li> <code>v = 1.2</code> \( \rightarrow \) <code>cdef double v = 1.2</code></li>
+
+<p><li> Array declaration: <code>np.ndarray[np.float64_t, ndim=2, mode='c'] u</code></li>
+</ul>
+<p>
+</ul>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec2">Cython version of the functions </h2>
+
+<p>
+
+<!-- code=cython (!bc cycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">np</span>
+<span style="color: #8B008B; font-weight: bold">cimport</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">np</span>
+<span style="color: #8B008B; font-weight: bold">cimport</span> <span style="color: #008b45; text-decoration: underline">cython</span>
+<span style="color: #8B008B; font-weight: bold">ctypedef</span> np.float64_t DT    <span style="color: #228B22"># data type</span>
+
+<span style="color: #707a7c">@cython</span>.boundscheck(<span style="color: #658b00">False</span>)  <span style="color: #228B22"># turn off array bounds check</span>
+<span style="color: #707a7c">@cython</span>.wraparound(<span style="color: #658b00">False</span>)   <span style="color: #228B22"># turn off negative indices (u[-1,-1])</span>
+<span style="color: #8B008B; font-weight: bold">cpdef</span> <span style="color: #008b45">advance</span>(
+    np.ndarray[DT, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] u,
+    np.ndarray[DT, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] u_1,
+    np.ndarray[DT, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] u_2,
+    np.ndarray[DT, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] f,
+    double Cx2, double Cy2, double dt2):
+
+    <span style="color: #8B008B; font-weight: bold">cdef</span> <span style="color: #a7a7a7; font-weight: bold">int</span> <span style="color: #008b45">Nx</span>, <span style="color: #008b45">Ny</span>, <span style="color: #008b45">i</span>, <span style="color: #008b45">j</span>
+    <span style="color: #8B008B; font-weight: bold">cdef</span> <span style="color: #a7a7a7; font-weight: bold">double</span> <span style="color: #008b45">u_xx</span>, <span style="color: #008b45">u_yy</span>
+    Nx = u.shape[<span style="color: #B452CD">0</span>]-<span style="color: #B452CD">1</span>
+    Ny = u.shape[<span style="color: #B452CD">1</span>]-<span style="color: #B452CD">1</span>
+    <span style="color: #8B008B; font-weight: bold">for</span> i <span style="color: #8B008B">in</span> <span style="color: #658b00">xrange</span>(<span style="color: #B452CD">1</span>, Nx):
+        <span style="color: #8B008B; font-weight: bold">for</span> j <span style="color: #8B008B">in</span> <span style="color: #658b00">xrange</span>(<span style="color: #B452CD">1</span>, Ny):
+            u_xx = u_1[i-<span style="color: #B452CD">1</span>,j] - <span style="color: #B452CD">2</span>*u_1[i,j] + u_1[i+<span style="color: #B452CD">1</span>,j]
+            u_yy = u_1[i,j-<span style="color: #B452CD">1</span>] - <span style="color: #B452CD">2</span>*u_1[i,j] + u_1[i,j+<span style="color: #B452CD">1</span>]
+            u[i,j] = <span style="color: #B452CD">2</span>*u_1[i,j] - u_2[i,j] + \ 
+                     Cx2*u_xx + Cy2*u_yy + dt2*f[i,j]
+</pre></div>
+<p>
+Note: from now in we skip the code for setting boundary values
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec3">Visual inspection of the C translation </h2>
+
+<p>
+See how effective Cython can translate this code to C:
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; cython -a wave2D_u0_loop_cy.pyx
+</pre></div>
+<p>
+Load <code>wave2D_u0_loop_cy.html</code> in a browser (white lines
+indicate code that was successfully translated to pure C, while
+yellow lines indicate code that is still in Python):
+
+<p>
+<center><p><img src="fig-softeng2/wave2D_u0_loop_cy1.png" align="bottom" width=600></p></center>
+
+<p>
+Can click on <code>wave2D_u0_loop_cy.c</code> to see the generated C code...
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec4">Building the extension module </h2>
+
+<ul>
+ <p><li> Cython code must be translated to C</li>
+ <p><li> C code must be compiled</li>
+ <p><li> Compiled C code must be linked to Python C libraries</li>
+ <p><li> Result: <em>C extension module</em> (<code>.so</code> file) that can be
+   loaded as a standard Python module</li>
+ <p><li> Use a <code>setup.py</code> script to build the extension module</li>
+</ul>
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">distutils.core</span> <span style="color: #8B008B; font-weight: bold">import</span> setup
+<span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">distutils.extension</span> <span style="color: #8B008B; font-weight: bold">import</span> Extension
+<span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">Cython.Distutils</span> <span style="color: #8B008B; font-weight: bold">import</span> build_ext
+
+cymodule = <span style="color: #CD5555">&#39;wave2D_u0_loop_cy&#39;</span>
+setup(
+  name=cymodule
+  ext_modules=[Extension(cymodule, [cymodule + <span style="color: #CD5555">&#39;.pyx&#39;</span>],)],
+  cmdclass={<span style="color: #CD5555">&#39;build_ext&#39;</span>: build_ext},
+)
+</pre></div>
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; python setup.py build_ext --inplace
+</pre></div>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec5">Calling the Cython function from Python </h2>
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">wave2D_u0_loop_cy</span>
+advance = wave2D_u0_loop_cy.advance
+...
+<span style="color: #8B008B; font-weight: bold">for</span> n <span style="color: #8B008B">in</span> It[<span style="color: #B452CD">1</span>:-<span style="color: #B452CD">1</span>:                  <span style="color: #228B22"># time loop</span>
+    f_a[:,:] = f(xv, yv, t[n])     <span style="color: #228B22"># precompute, size as u</span>
+    u = advance(u, u_1, u_2, f_a, x, y, t, Cx2, Cy2, dt2)
+</pre></div>
+<p>
+Efficiency:
+
+<ul>
+ <p><li> \( 120\times 120 \) cells in space:</li>
+
+<ul>
+
+<p><li> Pure Python: 1370 CPU time units</li>
+
+<p><li> Vectorized <code>numpy</code>: 5.5</li>
+
+<p><li> Cython: 1</li>
+</ul>
+<p><li> \( 60\times 60 \) cells in space:</li>
+
+<ul>
+
+<p><li> Pure Python: 1000 CPU time units</li>
+
+<p><li> Vectorized <code>numpy</code>: 6</li>
+
+<p><li> Cython: 1</li>
+</ul>
+<p>
+</ul>
+</section>
+
+
+<section class="slide">
+
+<h1 id="___sec6">Migrating loops to Fortran </h1>
+
+<ul>
+ <p><li> Write the <code>advance</code> function in pure Fortran</li>
+ <p><li> Use <code>f2py</code> to generate C code for calling Fortran from Python</li>
+ <p><li> Full manual control of the translation to Fortran</li>
+</ul>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec7">The Fortran subroutine </h2>
+
+<p>
+
+<!-- code=fortran (!bc fcod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">      <span style="color: #8B008B; font-weight: bold">subroutine </span>advance(u, u_1, u_2, f, Cx2, Cy2, dt2, Nx, Ny)
+      <span style="color: #a7a7a7; font-weight: bold">integer </span>Nx, Ny
+      <span style="color: #a7a7a7; font-weight: bold">real</span>*<span style="color: #B452CD">8</span> u(<span style="color: #B452CD">0</span>:Nx,<span style="color: #B452CD">0</span>:Ny), u_1(<span style="color: #B452CD">0</span>:Nx,<span style="color: #B452CD">0</span>:Ny), u_2(<span style="color: #B452CD">0</span>:Nx,<span style="color: #B452CD">0</span>:Ny)
+      <span style="color: #a7a7a7; font-weight: bold">real</span>*<span style="color: #B452CD">8</span> f(<span style="color: #B452CD">0</span>:Nx, <span style="color: #B452CD">0</span>:Ny), Cx2, Cy2, dt2
+      <span style="color: #a7a7a7; font-weight: bold">integer </span>i, j
+Cf2py <span style="color: #8B008B; font-weight: bold">intent</span>(in, out) u
+
+C     Scheme at interior points
+      <span style="color: #8B008B; font-weight: bold">do </span>j = <span style="color: #B452CD">1</span>, Ny-<span style="color: #B452CD">1</span>
+         <span style="color: #8B008B; font-weight: bold">do </span>i = <span style="color: #B452CD">1</span>, Nx-<span style="color: #B452CD">1</span>
+            u(i,j) = <span style="color: #B452CD">2</span>*u_1(i,j) - u_2(i,j) +
+     &amp;      Cx2*(u_1(i-<span style="color: #B452CD">1</span>,j) - <span style="color: #B452CD">2</span>*u_1(i,j) + u_1(i+<span style="color: #B452CD">1</span>,j)) +
+     &amp;      Cy2*(u_1(i,j-<span style="color: #B452CD">1</span>) - <span style="color: #B452CD">2</span>*u_1(i,j) + u_1(i,j+<span style="color: #B452CD">1</span>)) +
+     &amp;      dt2*f(i,j)
+         <span style="color: #8B008B; font-weight: bold">end do</span>
+<span style="color: #8B008B; font-weight: bold">      end do</span>
+</pre></div>
+<p>
+Note: <code>Cf2py</code> comment declares <code>u</code> as input argument and return value
+back to Python
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec8">Building the Fortran module with f2py </h2>
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; f2py -m wave2D_u0_loop_f77 -h wave2D_u0_loop_f77.pyf \ 
+          --overwrite-signature wave2D_u0_loop_f77.f
+Terminal&gt; f2py -c wave2D_u0_loop_f77.pyf --build-dir build_f77 \ 
+          -DF2PY_REPORT_ON_ARRAY_COPY=1 wave2D_u0_loop_f77.f
+</pre></div>
+<p>
+<code>f2py</code> changes the argument list (!)
+<p>
+
+<!-- code=ipy (!bc ipy) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">&gt;&gt;&gt; <span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">wave2D_u0_loop_f77</span>
+&gt;&gt;&gt; <span style="color: #8B008B; font-weight: bold">print</span> wave2D_u0_loop_f77.__doc__
+This module <span style="color: #CD5555">&#39;wave2D_u0_loop_f77&#39;</span> <span style="color: #8B008B">is</span> auto-generated <span style="color: #8B008B; font-weight: bold">with</span> f2py....
+Functions:
+  u = advance(u,u_1,u_2,f,cx2,cy2,dt2,
+      nx=(shape(u,<span style="color: #B452CD">0</span>)-<span style="color: #B452CD">1</span>),ny=(shape(u,<span style="color: #B452CD">1</span>)-<span style="color: #B452CD">1</span>))
+</pre></div>
+<ul>
+ <p><li> Array limits have default values</li>
+ <p><li> Examine doc strings from <code>f2py</code>!</li>
+</ul>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec9">How to avoid array copying </h2>
+
+<ul>
+ <p><li> Two-dimensional arrays are stored row by row in Python and C</li>
+ <p><li> Two-dimensional arrays are stored column by column in Fortran</li>
+ <p><li> <code>f2py</code> takes a copy of a <code>numpy</code> (C) array and transposes it
+   when calling Fortran</li>
+ <p><li> Such copies are time and memory consuming</li>
+ <p><li> Remedy: declare <code>numpy</code> arrays with Fortran storage</li>
+</ul>
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">order = <span style="color: #CD5555">&#39;Fortran&#39;</span> <span style="color: #8B008B; font-weight: bold">if</span> version == <span style="color: #CD5555">&#39;f77&#39;</span> <span style="color: #8B008B; font-weight: bold">else</span> <span style="color: #CD5555">&#39;C&#39;</span>
+u   = zeros((Nx+<span style="color: #B452CD">1</span>,Ny+<span style="color: #B452CD">1</span>), order=order)
+u_1 = zeros((Nx+<span style="color: #B452CD">1</span>,Ny+<span style="color: #B452CD">1</span>), order=order)
+u_2 = zeros((Nx+<span style="color: #B452CD">1</span>,Ny+<span style="color: #B452CD">1</span>), order=order)
+</pre></div>
+<p>
+Option <code>-DF2PY_REPORT_ON_ARRAY_COPY=1</code> makes <code>f2py</code> write out
+array copying:
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; f2py -c wave2D_u0_loop_f77.pyf --build-dir build_f77 \ 
+          -DF2PY_REPORT_ON_ARRAY_COPY=1 wave2D_u0_loop_f77.f
+</pre></div>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec10">Efficiency of translating to Fortran </h2>
+
+<ul>
+ <p><li> Same efficiency (in this example) as Cython and C</li>
+ <p><li> About 5 times faster than vectorized <code>numpy</code> code</li>
+ <p><li> \( >1000 \) faster than pure Python code</li>
+</ul>
+</section>
+
+
+<section class="slide">
+
+<h1 id="___sec11">Migrating loops to C via Cython </h1>
+
+<ul>
+ <p><li> Write the <code>advance</code> function in pure C</li>
+ <p><li> Use Cython to generate C code for calling C from Python</li>
+ <p><li> Full manual control of the translation to C</li>
+</ul>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec12">The C code </h2>
+
+<ul>
+ <p><li> <code>numpy</code> arrays transferred to C are one-dimensional in C</li>
+ <p><li> Need to translate <code>[i,j]</code> indices to single indices</li>
+</ul>
+<p>
+
+<!-- code=c (!bc ccod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #228B22">/* Translate (i,j) index to single array index */</span>
+<span style="color: #1e889b">#define idx(i,j) (i)*(Ny+1) + j</span>
+
+<span style="color: #a7a7a7; font-weight: bold">void</span> <span style="color: #008b45">advance</span>(<span style="color: #a7a7a7; font-weight: bold">double</span>* u, <span style="color: #a7a7a7; font-weight: bold">double</span>* u_1, <span style="color: #a7a7a7; font-weight: bold">double</span>* u_2, <span style="color: #a7a7a7; font-weight: bold">double</span>* f,
+	     <span style="color: #a7a7a7; font-weight: bold">double</span> Cx2, <span style="color: #a7a7a7; font-weight: bold">double</span> Cy2, <span style="color: #a7a7a7; font-weight: bold">double</span> dt2,
+	     <span style="color: #a7a7a7; font-weight: bold">int</span> Nx, <span style="color: #a7a7a7; font-weight: bold">int</span> Ny)
+{
+  <span style="color: #a7a7a7; font-weight: bold">int</span> i, j;
+  <span style="color: #228B22">/* Scheme at interior points */</span>
+  <span style="color: #8B008B; font-weight: bold">for</span> (i=<span style="color: #B452CD">1</span>; i&lt;=Nx-<span style="color: #B452CD">1</span>; i++) {
+    <span style="color: #8B008B; font-weight: bold">for</span> (j=<span style="color: #B452CD">1</span>; j&lt;=Ny-<span style="color: #B452CD">1</span>; j++) {
+        u[idx(i,j)] = <span style="color: #B452CD">2</span>*u_1[idx(i,j)] - u_2[idx(i,j)] +
+        Cx2*(u_1[idx(i-<span style="color: #B452CD">1</span>,j)] - <span style="color: #B452CD">2</span>*u_1[idx(i,j)] + u_1[idx(i+<span style="color: #B452CD">1</span>,j)]) +
+        Cy2*(u_1[idx(i,j-<span style="color: #B452CD">1</span>)] - <span style="color: #B452CD">2</span>*u_1[idx(i,j)] + u_1[idx(i,j+<span style="color: #B452CD">1</span>)]) +
+        dt2*f[idx(i,j)];
+	}
+    }
+  }
+}
+</pre></div>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec13">The Cython interface file </h2>
+
+<p>
+
+<!-- code=cython (!bc cycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">np</span>
+<span style="color: #8B008B; font-weight: bold">cimport</span> <span style="color: #008b45; text-decoration: underline">numpy</span> <span style="color: #8B008B; font-weight: bold">as</span> <span style="color: #008b45; text-decoration: underline">np</span>
+<span style="color: #8B008B; font-weight: bold">cimport</span> <span style="color: #008b45; text-decoration: underline">cython</span>
+
+<span style="color: #8B008B; font-weight: bold">cdef</span> <span style="color: #8B008B; font-weight: bold">extern</span> <span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #CD5555">&quot;wave2D_u0_loop_c.h&quot;</span>:
+    void advance(double* u, double* u_1, double* u_2, double* f,
+                 double Cx2, double Cy2, double dt2,
+                 <span style="color: #658b00">int</span> Nx, <span style="color: #658b00">int</span> Ny)
+
+<span style="color: #707a7c">@cython</span>.boundscheck(<span style="color: #658b00">False</span>)
+<span style="color: #707a7c">@cython</span>.wraparound(<span style="color: #658b00">False</span>)
+<span style="color: #8B008B; font-weight: bold">def</span> <span style="color: #008b45">advance_cwrap</span>(
+    np.ndarray[double, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] u,
+    np.ndarray[double, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] u_1,
+    np.ndarray[double, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] u_2,
+    np.ndarray[double, ndim=<span style="color: #B452CD">2</span>, mode=<span style="color: #CD5555">&#39;c&#39;</span>] f,
+    double Cx2, double Cy2, double dt2):
+    advance(&amp;u[<span style="color: #B452CD">0</span>,<span style="color: #B452CD">0</span>], &amp;u_1[<span style="color: #B452CD">0</span>,<span style="color: #B452CD">0</span>], &amp;u_2[<span style="color: #B452CD">0</span>,<span style="color: #B452CD">0</span>], &amp;f[<span style="color: #B452CD">0</span>,<span style="color: #B452CD">0</span>],
+            Cx2, Cy2, dt2,
+            u.shape[<span style="color: #B452CD">0</span>]-<span style="color: #B452CD">1</span>, u.shape[<span style="color: #B452CD">1</span>]-<span style="color: #B452CD">1</span>)
+    <span style="color: #8B008B; font-weight: bold">return</span> u
+</pre></div>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec14">Building the extension module </h2>
+
+<p>
+Compile and link the extension module with a <code>setup.py</code> file:
+
+<p>
+
+<!-- code=python (!bc pypro) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">distutils.core</span> <span style="color: #8B008B; font-weight: bold">import</span> setup
+<span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">distutils.extension</span> <span style="color: #8B008B; font-weight: bold">import</span> Extension
+<span style="color: #8B008B; font-weight: bold">from</span> <span style="color: #008b45; text-decoration: underline">Cython.Distutils</span> <span style="color: #8B008B; font-weight: bold">import</span> build_ext
+
+sources = [<span style="color: #CD5555">&#39;wave2D_u0_loop_c.c&#39;</span>, <span style="color: #CD5555">&#39;wave2D_u0_loop_c_cy.pyx&#39;</span>]
+module = <span style="color: #CD5555">&#39;wave2D_u0_loop_c_cy&#39;</span>
+setup(
+  name=module,
+  ext_modules=[Extension(module, sources,
+                         libraries=[], <span style="color: #228B22"># C libs to link with</span>
+                         )],
+  cmdclass={<span style="color: #CD5555">&#39;build_ext&#39;</span>: build_ext},
+)
+</pre></div>
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; python setup.py build_ext --inplace
+</pre></div>
+<p>
+In Python:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%"><span style="color: #8B008B; font-weight: bold">import</span> <span style="color: #008b45; text-decoration: underline">wave2D_u0_loop_c_cy</span>
+advance = wave2D_u0_loop_c_cy.advance_cwrap
+...
+f_a[:,:] = f(xv, yv, t[n])
+u = advance(u, u_1, u_2, f_a, Cx2, Cy2, dt2)
+</pre></div>
+</section>
+
+
+<section class="slide">
+
+<h1 id="___sec15">Migrating loops to C via f2py </h1>
+
+<ul>
+ <p><li> Write the <code>advance</code> function in pure C</li>
+ <p><li> Use <code>f2py</code> to generate C code for calling C from Python</li>
+ <p><li> Full manual control of the translation to C</li>
+</ul>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec16">The C code and the Fortran interface file </h2>
+
+<ul>
+ <p><li> Write the C function <code>advance</code> as before</li>
+ <p><li> Write a Fortran 90 module defining the signature of
+   the <code>advance</code> function</li>
+ <p><li> Or: write a Fortran 77 function defining the signature and
+   let <code>f2py</code> generate the Fortran 90 module</li>
+</ul>
+<p>
+
+Fortran 77 signature (note <code>intent(c)</code>):
+
+<p>
+
+<!-- code=fortran (!bc fpro) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">      <span style="color: #8B008B; font-weight: bold">subroutine </span>advance(u, u_1, u_2, f, Cx2, Cy2, dt2, Nx, Ny)
+Cf2py <span style="color: #8B008B; font-weight: bold">intent</span>(c) advance
+      <span style="color: #a7a7a7; font-weight: bold">integer </span>Nx, Ny, N
+      <span style="color: #a7a7a7; font-weight: bold">real</span>*<span style="color: #B452CD">8</span> u(<span style="color: #B452CD">0</span>:Nx,<span style="color: #B452CD">0</span>:Ny), u_1(<span style="color: #B452CD">0</span>:Nx,<span style="color: #B452CD">0</span>:Ny), u_2(<span style="color: #B452CD">0</span>:Nx,<span style="color: #B452CD">0</span>:Ny)
+      <span style="color: #a7a7a7; font-weight: bold">real</span>*<span style="color: #B452CD">8</span> f(<span style="color: #B452CD">0</span>:Nx, <span style="color: #B452CD">0</span>:Ny), Cx2, Cy2, dt2
+Cf2py <span style="color: #8B008B; font-weight: bold">intent</span>(in, out) u
+Cf2py <span style="color: #8B008B; font-weight: bold">intent</span>(c) u, u_1, u_2, f, Cx2, Cy2, dt2, Nx, Ny
+      <span style="color: #8B008B; font-weight: bold">return</span>
+<span style="color: #8B008B; font-weight: bold">      end</span>
+</pre></div>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec17">Building the extension module </h2>
+
+<p>
+Generate Fortran 90 module (<code>wave2D_u0_loop_c_f2py.pyf</code>):
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; f2py -m wave2D_u0_loop_c_f2py \ 
+          -h wave2D_u0_loop_c_f2py.pyf --overwrite-signature \ 
+          wave2D_u0_loop_c_f2py_signature.f
+</pre></div>
+<p>
+The compile and build step must list the C files:
+
+<p>
+
+<!-- code=text (!bc sys) typeset with pygments style "perldoc" -->
+<div class="highlight" style="background: #eeeedd"><pre style="line-height: 125%">Terminal&gt; f2py -c wave2D_u0_loop_c_f2py.pyf \ 
+          --build-dir tmp_build_c \ 
+          -DF2PY_REPORT_ON_ARRAY_COPY=1 wave2D_u0_loop_c.c
+</pre></div>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec18">Migrating loops to C++ via f2py </h2>
+
+<ul>
+ <p><li> C++ can be used as an alternative to C</li>
+ <p><li> C++ code often applies sophisticated arrays</li>
+ <p><li> Challenge: translate from <code>numpy</code> C arrays to C++ array classes</li>
+ <p><li> Can use SWIG to make C++ classes available as Python classes</li>
+ <p><li> Easier (and more efficient):</li>
+
+<ul>
+
+<p><li> Make C API to the C++ code</li>
+
+<p><li> Wrap C API with <code>f2py</code></li>
+
+<p><li> Send <code>numpy</code> arrays to C API and let C translate <code>numpy</code> arrays
+     into C++ array classes</li>
+</ul>
+<p>
+</ul>
+</section>
+
+
+
+
+<footer>
+<!-- Here goes a footer -->
+</footer>
+
+<!-- Begin extension snippets. Add or remove as needed. -->
+
+<!-- deck.navigation snippet -->
+<a href="#" class="deck-prev-link" title="Previous">&#8592;</a>
+<a href="#" class="deck-next-link" title="Next">&#8594;</a>
+
+<!-- deck.status snippet
+<p class="deck-status">
+	<span class="deck-status-current"></span>
+	/
+	<span class="deck-status-total"></span>
+</p>
+-->
+
+<!-- deck.goto snippet
+<form action="." method="get" class="goto-form">
+	<label for="goto-slide">Go to slide:</label>
+	<input type="text" name="slidenum" id="goto-slide" list="goto-datalist">
+	<datalist id="goto-datalist"></datalist>
+	<input type="submit" value="Go">
+</form>
+-->
+
+<!-- deck.hash snippet
+<a href="." title="Permalink to this slide" class="deck-permalink">#</a>
+-->
+
+<!-- End extension snippets. -->
+
+
+<!-- Required JS files. -->
+<script src="deck.js/jquery.min.js"></script>
+<script src="deck.js/core/deck.core.js"></script>
+
+<!-- Extension JS files. Add or remove as needed. -->
+<script src="deck.js/core/deck.core.js"></script>
+<script src="deck.js/extensions/hash/deck.hash.js"></script>
+<script src="deck.js/extensions/menu/deck.menu.js"></script>
+<script src="deck.js/extensions/goto/deck.goto.js"></script>
+<script src="deck.js/extensions/status/deck.status.js"></script>
+<script src="deck.js/extensions/navigation/deck.navigation.js"></script>
+<script src="deck.js/extensions/scale/deck.scale.js"></script>
+<script src="deck.js/extensions/notes/deck.notes.js"></script>
+
+<!-- From https://github.com/mikeharris100/deck.pointer.js -->
+<script src="deck.js/extensions/pointer/deck.pointer.js"></script>
+
+<!-- From https://github.com/stvnwrgs/presenterview
+<script type="text/javascript" src="deck.js/extensions/presenterview/deck.presenterview.js"></script> -->
+
+<!-- From https://github.com/nemec/deck.annotate.js
+<script type="text/javascript" src="deck.js/extensions/deck.annotate.js/deck.annotate.js"></script>
+-->
+
+
+<!-- Initialize the deck. You can put this in an external file if desired. -->
+<script>
+	$(function() {
+		$.deck('.slide');
+	});
+</script>
+
+
+</body>
+</html>

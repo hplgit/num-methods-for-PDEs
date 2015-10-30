@@ -173,6 +173,7 @@ MathJax.Hub.Config({
 <!-- newcommands_keep.tex -->
 $$
 \newcommand{\half}{\frac{1}{2}}
+\newcommand{\tp}{\thinspace .}
 \newcommand{\uex}{{u_{\small\mbox{e}}}}
 \newcommand{\Aex}{{A_{\small\mbox{e}}}}
 \newcommand{\x}{\boldsymbol{x}}
@@ -212,7 +213,7 @@ $$
 <center>[2] <b style="font-weight: bold">Department of Informatics, University of Oslo</b></center>
 <br>
 <p>
-<center><b style="font-weight: bold">Oct 16, 2015</b></center> <!-- date -->
+<center><b style="font-weight: bold">Oct 30, 2015</b></center> <!-- date -->
 <br>
 </section>
 
@@ -223,9 +224,9 @@ $$
 
 <ul>
  <p><li> So far: used the finite element framework for discretizing in space</li>
- <p><li> What about \( u_t = u_{xx} + f \)?</li>
+ <p><li> What about \( u_t = u_{xx} + f \)?
 
-<ol>
+<ol type="a"></li>
 
 <p><li> Use finite differences in time to obtain a set of recursive spatial
      problems</li>
@@ -431,7 +432,7 @@ $$
 \begin{equation*}
 (u,v) = (u_1,v) -
 \Delta t (\dfc\nabla u_1,\nabla v) +
-(f^n, v)
+\Delta t (f^n, v)
 \end{equation*}
 $$
 <p>&nbsp;<br>
@@ -455,12 +456,12 @@ Insert these in
 $$
 (u, \baspsi_i) = (u_1,\baspsi_i) -
 \Delta t (\dfc\nabla u_1,\nabla\baspsi_i) +
-(f^n,\baspsi_i)
+\Delta t (f^n,\baspsi_i)
 $$
 <p>&nbsp;<br>
 
 <p>
-and order terms as matrix-vector products (\( \quad i=0,\ldots,N \)):
+and order terms as matrix-vector products (\( i=0,\ldots,N \)):
 
 <p>&nbsp;<br>
 $$
@@ -469,7 +470,7 @@ $$
 \sum_{j=0}^{N} \underbrace{(\baspsi_i,\baspsi_j)}_{M_{i,j}} c_{1,j}
 -\Delta t \sum_{j=0}^{N}
 \underbrace{(\nabla\baspsi_i,\dfc\nabla\baspsi_j)}_{K_{i,j}} c_{1,j}
-+ (f^n,\baspsi_i)
++ \Delta t (f^n,\baspsi_i)
 \end{equation*}
 $$
 <p>&nbsp;<br>
@@ -483,7 +484,7 @@ $$
 <p>&nbsp;<br>
 $$
 \begin{equation*}
-Mc = Mc_1 - \Delta t Kc_1 + f
+Mc = Mc_1 - \Delta t Kc_1 +\Delta t f
 \end{equation*}
 $$
 <p>&nbsp;<br>
@@ -509,11 +510,11 @@ $$
 <ol>
 <p><li> Compute \( M \) and \( K \).</li>
 <p><li> Initialize \( u^0 \) by either interpolation or projection</li>
-<p><li> For \( n=1,2,\ldots,N_t \):</li>
+<p><li> For \( n=1,2,\ldots,N_t \):
 
-<ol>
+<ol type="a"></li>
 
-<p><li> compute \( b = Mc_1 - \Delta t Kc_1 + f \)</li>
+<p><li> compute \( b = Mc_1 - \Delta t Kc_1 + \Delta t f \)</li>
 
 <p><li> solve \( Mc = b \)</li>
 
@@ -529,6 +530,89 @@ Initial condition:
  <p><li> Either interpolation: \( c_{1,j} = I(\x_j) \) (finite elements)</li>
  <p><li> Or projection: solve \( \sum_j M_{i,j}c_{1,j} = (I,\baspsi_i) \), \( i\in\If \)</li>
 </ul>
+</section>
+
+
+<section class="slide">
+
+<h2 id="fem:deq:diffu:FE:cosex">Example using sinusoidal basis functions</h2>
+
+<p>&nbsp;<br>
+$$
+\begin{align}
+\frac{\partial u}{\partial t} &= \dfc\frac{\partial^2 u}{\partial x^2},\quad
+&x\in (0,L),\ t\in (0,T],
+\tag{1}\\ 
+u(x, 0) & = A\cos(\pi\x/L) + B\cos(10\pi x/L),\quad &x\in[0,L],
+\tag{2}\\ 
+\frac{\partial u}{\partial x} &= 0,\quad &x=0,L,\ t\in (0,T]
+\tag{3}
+\tp
+\end{align}
+$$
+<p>&nbsp;<br>
+
+<p>&nbsp;<br>
+$$ \baspsi_i = \cos(i\pi x/L)\tp$$
+<p>&nbsp;<br>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec11">Approximating the initial condition </h2>
+
+<p>
+\( I(x)\in V \) implies perfect approximation of the initial condition:
+
+<p>&nbsp;<br>
+$$ c_{1,1}=A,\quad c_{1,10}=B,$$
+<p>&nbsp;<br>
+
+while \( c_{1,i}=0 \) for \( i\neq 1,10 \).
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec12">Computing the \( M \) and \( K \) matrices </h2>
+
+<p>
+Note that \( \baspsi_i \) and \( \baspsi_i' \)
+are orthogonal on \( [0,L] \) such that we only need
+to compute the diagonal elements \( M_{i,i} \) and \( K_{i,i} \)!
+
+<p>&nbsp;<br>
+$$ M_{0,0}=L,\quad M_{i,i}=L/2,\ i>0,\quad K_{0,0}=0,\quad K_{i,i}=\frac{\pi^2 i^2}{2L},\ i>0\tp$$
+<p>&nbsp;<br>
+</section>
+
+
+<section class="slide">
+
+<h2 id="___sec13">Solving the equation system </h2>
+
+<p>&nbsp;<br>
+$$
+\begin{align*}
+Lc_0 &= Lc_{1,0} - \Delta t \cdot 0\cdot c_{1,0},\\ 
+\frac{L}{2}c_i &= \frac{L}{2}c_{1,i} - \Delta t
+\frac{\pi^2 i^2}{2L} c_{1,i},\quad i>0\tp
+\end{align*}
+$$
+<p>&nbsp;<br>
+
+<p>&nbsp;<br>
+$$ c_i = (1-\Delta t (\frac{\pi i}{L})^2) c_{1,i}\tp $$
+<p>&nbsp;<br>
+
+<p>
+We actually get a closed-form discrete solution:
+
+<p>&nbsp;<br>
+$$ u^n_i = A(1-\Delta t (\frac{\pi}{L})^2)^n \cos(\pi x/L)
++ B(1-\Delta t (\frac{10\pi }{L})^2)^n \cos(10\pi x/L)\tp$$
+<p>&nbsp;<br>
 </section>
 
 
@@ -551,7 +635,7 @@ Initial condition:
 
 <section class="slide">
 
-<h2 id="___sec11">Comparing P1 elements with the finite difference method; results </h2>
+<h2 id="___sec15">Comparing P1 elements with the finite difference method; results </h2>
 
 <p>
 Diffusion equation with finite elements is equivalent to
@@ -609,14 +693,14 @@ $$ \uex^n \approx u^n = \sum_{j=0}^{N} c_j^{n}\baspsi_j(\x),\quad
 
 <section class="slide">
 
-<h2 id="___sec13">The variational form of the time-discrete problem </h2>
+<h2 id="___sec17">The variational form of the time-discrete problem </h2>
 
 <p>&nbsp;<br>
 $$
 \begin{equation*}
 \int_{\Omega} \left( u^{n}v
 + \Delta t \dfc\nabla u^n\cdot\nabla v\right)\dx
-= \int_{\Omega} u^{n-1}  v\dx -
+= \int_{\Omega} u^{n-1}  v\dx +
 \Delta t\int_{\Omega}f^n v\dx,\quad\forall v\in V
 \end{equation*}
 $$
@@ -642,7 +726,7 @@ The linear system: insert \( u=\sum_j c_j\baspsi_i \) and \( u_1=\sum_j c_{1,j}\
 <p>&nbsp;<br>
 $$
 \begin{equation*}
-(M + \Delta t \dfc K)c = Mc_1 + f
+(M + \Delta t K)c = Mc_1 + \Delta t f
 \end{equation*}
 $$
 <p>&nbsp;<br>
@@ -651,7 +735,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec14">Calculations with P1 elements in 1D </h2>
+<h2 id="___sec18">Calculations with P1 elements in 1D </h2>
 
 <p>
 Can interpret the resulting equation system as
@@ -702,7 +786,8 @@ Forward Euler in time, Galerkin's method, and integration by parts:
 $$
 \begin{equation*}
 \int_\Omega u^{n+1}v\dx =
-\int_\Omega (u^n - \Delta t\dfc\nabla u^n\cdot\nabla v)\dx -
+\int_\Omega (u^n - \Delta t\dfc\nabla u^n\cdot\nabla v)\dx +
+\Delta t\int_\Omega fv \dx -
 \Delta t\int_{\partial\Omega_N} gv\ds,\quad \forall v\in V
 \end{equation*}
 $$
@@ -715,7 +800,7 @@ Requirement: \( v=0 \) on \( \partial\Omega_D \)
 
 <section class="slide">
 
-<h2 id="___sec16">Boundary function </h2>
+<h2 id="___sec20">Boundary function </h2>
 
 <p>&nbsp;<br>
 $$ u^n(\x) = u_0(\x,t_n) + \sum_{j\in\If}c_j^n\baspsi_j(\x)$$
@@ -742,7 +827,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec17">Finite element basis functions </h2>
+<h2 id="___sec21">Finite element basis functions </h2>
 
 <ul>
  <p><li> \( B(\x,t_n)=\sum_{j\in\Ifb} U_j^n\basphi_j \)</li>
@@ -782,7 +867,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec18">Modification of the linear system; the raw system </h2>
+<h2 id="___sec22">Modification of the linear system; the raw system </h2>
 
 <ul>
  <p><li> Drop boundary function</li>
@@ -800,7 +885,7 @@ c_j &= \sum_{j\in\If}
 \Delta t\underbrace{\int_\Omega
 \dfc\nabla \basphi_i\cdot\nabla\basphi_j\dx}_{K_{i,j}}\biggr) c_{1,j}
 \\ 
-&\quad \underbrace{-\Delta t\int_\Omega f\basphi_i\dx -
+&\quad \underbrace{+\Delta t\int_\Omega f\basphi_i\dx -
 \Delta t\int_{\partial\Omega_N} g\basphi_i\ds}_{f_i},\quad i\in\If
 \end{align*}
 $$
@@ -810,7 +895,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec19">Modification of the linear system; setting Dirichlet conditions </h2>
+<h2 id="___sec23">Modification of the linear system; setting Dirichlet conditions </h2>
 
 <p>&nbsp;<br>
 $$
@@ -838,7 +923,7 @@ preserves symmetry of \( M \)
 
 <section class="slide">
 
-<h2 id="___sec20">Modification of the linear system; Backward Euler example </h2>
+<h2 id="___sec24">Modification of the linear system; Backward Euler example </h2>
 
 <p>
 Backward Euler discretization in time gives a more complicated
@@ -903,7 +988,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec22">Handy formulas </h2>
+<h2 id="___sec26">Handy formulas </h2>
 
 <p>&nbsp;<br>
 $$
@@ -920,7 +1005,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec23">Amplification factor for the Forward Euler method; results </h2>
+<h2 id="___sec27">Amplification factor for the Forward Euler method; results </h2>
 
 <p>
 Introduce \( p=k\Delta x/2 \) and \( C=\dfc\Delta t/\Delta x^2 \):
@@ -951,7 +1036,7 @@ stability criterion for this PDE!
 
 <section class="slide">
 
-<h2 id="___sec24">Amplification factor for the Backward Euler method; results </h2>
+<h2 id="___sec28">Amplification factor for the Backward Euler method; results </h2>
 
 <p>
 Coarse meshes:
@@ -970,7 +1055,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec25">Amplification factors for smaller time steps; Forward Euler </h2>
+<h2 id="___sec29">Amplification factors for smaller time steps; Forward Euler </h2>
 
 <p>
 <center><p><img src="fig-femtime/diffu_A_factors_fine_FE.png" align="bottom" width=400></p></center>
@@ -979,7 +1064,7 @@ $$
 
 <section class="slide">
 
-<h2 id="___sec26">Amplification factors for smaller time steps; Backward Euler </h2>
+<h2 id="___sec30">Amplification factors for smaller time steps; Backward Euler </h2>
 
 <p>
 <center><p><img src="fig-femtime/diffu_A_factors_fine_BE.png" align="bottom" width=400></p></center>

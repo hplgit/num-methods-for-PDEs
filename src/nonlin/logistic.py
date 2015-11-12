@@ -79,15 +79,20 @@ def quadratic_root_goes_to_infinity():
         c = -0.1
         print dt, quadratic_roots(a, b, c)
 
-print 'sympy calculations'
-import sympy as sym
-dt, u_1, u = sym.symbols('dt u_1 u')
-r1, r2 = sym.solve(dt*u**2 + (1-dt)*u - u_1, u)
-print r1
-print r2
-print r1.series(dt, 0, 2)
-print r2.series(dt, 0, 2)
+def sympy_analysis():
+    print 'sympy calculations'
+    import sympy as sym
+    dt, u_1, u = sym.symbols('dt u_1 u')
+    r1, r2 = sym.solve(dt*u**2 + (1-dt)*u - u_1, u)
+    print r1
+    print r2
+    print r1.series(dt, 0, 2)
+    print r2.series(dt, 0, 2)
+    print r1.limit(dt, 0)
+    print r2.limit(dt, 0)
 
+sympy_analysis()
+print '-----------------------------------------------------'
 T = 9
 try:
     dt = float(sys.argv[1])

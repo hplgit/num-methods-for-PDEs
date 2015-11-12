@@ -82,7 +82,7 @@
 <h1>Multi-dimensional PDE problems<a class="headerlink" href="#multi-dimensional-pde-problems" title="Permalink to this headline">¶</a></h1>
 <p>The fundamental ideas in the
 derivation of <span class="math">\(F_i\)</span> and <span class="math">\(J_{i,j}\)</span> in the 1D model problem
-is easily generalized to multi-dimensional problems.
+are easily generalized to multi-dimensional problems.
 Nevertheless, the expressions involved are slightly different, with
 derivatives in <span class="math">\(x\)</span> replaced by <span class="math">\(\nabla\)</span>, so we present some
 examples below in detail.</p>
@@ -90,8 +90,9 @@ examples below in detail.</p>
 <span id="nonlin-alglevel-dd-fe"></span><h2>Finite element discretization<a class="headerlink" href="#finite-element-discretization" title="Permalink to this headline">¶</a></h2>
 <p>As an example, Backward Euler discretization of the
 PDE</p>
-<div class="math" id="equation-nonlin:alglevel:dD:fe:PDE">
-<span id="eq-nonlin-alglevel-dd-fe-pde"></span><span class="eqno">(1)</span>\[     u_t = \nabla\cdot({\alpha}(u)\nabla u) + f(u),\]</div>
+<div class="math" id="eq-nonlin-alglevel-dd-fe-pde">
+\[\tag{76}
+u_t = \nabla\cdot({\alpha}(u)\nabla u) + f(u),\]</div>
 <p>gives the nonlinear time-discrete PDEs</p>
 <div class="math">
 \[u^n - \Delta t\nabla\cdot({\alpha}(u^n)\nabla u^n) + f(u^n) = u^{n-1}{\thinspace .}\]</div>
@@ -99,33 +100,63 @@ PDE</p>
 with <span class="math">\(u\)</span> for <span class="math">\(u^n\)</span> and <span class="math">\(u^{(1)}\)</span> for <span class="math">\(u^{n-1}\)</span>:</p>
 <div class="math">
 \[u - \Delta t\nabla\cdot({\alpha}(u)\nabla u) - \Delta t f(u) = u^{(1)}{\thinspace .}\]</div>
-<p>(Note that the mathematical meaning of the symbol <span class="math">\(u\)</span> changes in
-these equations: <span class="math">\(u(\boldsymbol{x},t)\)</span> is the exact solution of <a href="#equation-nonlin:alglevel:dD:fe:PDE">(1)</a>, <span class="math">\(u^n(\boldsymbol{x})\)</span> is an approximation to the exact solution at <span class="math">\(t=t_n\)</span>,
+<div class="admonition-understand-the-meaning-of-the-symbol-math-u-in-various-formulas admonition">
+<p class="first admonition-title">Understand the meaning of the symbol <span class="math">\(u\)</span> in various formulas</p>
+<p>Note that the mathematical meaning of the symbol <span class="math">\(u\)</span> changes in
+the above equations: <span class="math">\(u(\boldsymbol{x},t)\)</span> is the exact solution of <a class="reference internal" href="#eq-nonlin-alglevel-dd-fe-pde"><span class="std std-ref">(76)</span></a>, <span class="math">\(u^n(\boldsymbol{x})\)</span> is an approximation to the exact solution at <span class="math">\(t=t_n\)</span>,
 while <span class="math">\(u(\boldsymbol{x})\)</span> in the latter equation is a synonym for <span class="math">\(u^n\)</span>.
 Below, this <span class="math">\(u(\boldsymbol{x})\)</span> will be approximated by a new
 <span class="math">\(u=\sum_kc_k{\psi}_k(\boldsymbol{x})\)</span> in space, and then the actual <span class="math">\(u\)</span> symbol used
 in the Picard and Newton iterations is a further approximation of
-<span class="math">\(\sum_kc_k{\psi}_k\)</span> arising from the nonlinear iteration algorithm.)</p>
+<span class="math">\(\sum_kc_k{\psi}_k\)</span> arising from the nonlinear iteration algorithm.</p>
+<p class="last">Much literature reserves <span class="math">\(u\)</span> for the exact solution, uses <span class="math">\(u_h(x, t)\)</span>
+for the finite element solution that varies continuously in time,
+introduces perhaps <span class="math">\(u_h^n\)</span> as the approximation of <span class="math">\(u_h\)</span> at time <span class="math">\(t_n\)</span>,
+arising from some time discretization, and then finally applies
+<span class="math">\(u_h^{n,k}\)</span> for the approximation to <span class="math">\(u_h^n\)</span> in the <span class="math">\(k\)</span>-th
+iteration of a Picard or Newton method. The converged solution at
+the previous time step can be called <span class="math">\(u_h^{n-1}\)</span>, but then this
+quantity is an approximate solution of the nonlinear equations (at the
+previous time level), while the counterpart <span class="math">\(u_h^n\)</span> is formally the
+exact solution of the nonlinear equations at the current time level.
+The various symbols in the
+mathematics can in this way be clearly distinguished. However,
+we favor to use <span class="math">\(u\)</span> for the quantity that is most naturally called <code class="docutils literal"><span class="pre">u</span></code>
+in the code, and that is the most recent approximation to the solution,
+e.g., named <span class="math">\(u_h^{n,k}\)</span> above. This is also the key quantity of
+interest in mathematical derivations of algorithms as well.
+Choosing <span class="math">\(u\)</span> this way makes the most important mathematical cleaner
+than using more cluttered notation as <span class="math">\(u_h^{n,k}\)</span>.
+We therefore introduce other symbols for other versions of the unknown
+function. It is most appropriate for us to say that <span class="math">\({u_{\small\mbox{e}}}(\boldsymbol{x}, t)\)</span> is the
+exact solution, <span class="math">\(u^n\)</span> in the equation above
+is the approximation to <span class="math">\({u_{\small\mbox{e}}}(\boldsymbol{x},t_n)\)</span> after
+time discretization, and <span class="math">\(u\)</span> is the spatial approximation to
+<span class="math">\(u^n\)</span> from the most recent iteration in a nonlinear iteration method.</p>
+</div>
 <p>Let us assume homogeneous Neumann conditions
 on the entire boundary for simplicity in the boundary term. The
 variational form becomes: find <span class="math">\(u\in V\)</span> such that</p>
-<div class="math" id="equation-nonlin:alglevel:dD:fe:varform">
-<span id="eq-nonlin-alglevel-dd-fe-varform"></span><span class="eqno">(2)</span>\[     \int_\Omega (uv + \Delta t\,{\alpha}(u)\nabla u\cdot\nabla v
-     - \Delta t f(u)v - u^{(1)} v){\, \mathrm{d}x} = 0,\quad \forall v\in V{\thinspace .}\]</div>
+<div class="math" id="eq-nonlin-alglevel-dd-fe-varform">
+\[\tag{77}
+\int_\Omega (uv + \Delta t\,{\alpha}(u)\nabla u\cdot\nabla v
+    - \Delta t f(u)v - u^{(1)} v){\, \mathrm{d}x} = 0,\quad \forall v\in V{\thinspace .}\]</div>
 <p>The nonlinear algebraic equations follow from setting <span class="math">\(v={\psi}_i\)</span>
 and using the representation <span class="math">\(u=\sum_kc_k{\psi}_k\)</span>, which we
 just write as</p>
-<div class="math" id="equation-nonlin:alglevel:dD:fe:Fi">
-<span id="eq-nonlin-alglevel-dd-fe-fi"></span><span class="eqno">(3)</span>\[     F_i =
-     \int_\Omega (u{\psi}_i + \Delta t\,{\alpha}(u)\nabla u\cdot\nabla {\psi}_i
-     - \Delta t f(u){\psi}_i - u^{(1)}{\psi}_i){\, \mathrm{d}x}{\thinspace .}\]</div>
+<div class="math" id="eq-nonlin-alglevel-dd-fe-fi">
+\[\tag{78}
+F_i =
+    \int_\Omega (u{\psi}_i + \Delta t\,{\alpha}(u)\nabla u\cdot\nabla {\psi}_i
+    - \Delta t f(u){\psi}_i - u^{(1)}{\psi}_i){\, \mathrm{d}x}{\thinspace .}\]</div>
 <p>Picard iteration needs a linearization where we use
 the most recent approximation <span class="math">\(u^{-}\)</span> to <span class="math">\(u\)</span> in
 <span class="math">\({\alpha}\)</span> and <span class="math">\(f\)</span>:</p>
-<div class="math" id="equation-nonlin:alglevel:dD:fe:Fi:Picard">
-<span id="eq-nonlin-alglevel-dd-fe-fi-picard"></span><span class="eqno">(4)</span>\[     F_i \approx \hat F_i =
-     \int_\Omega (u{\psi}_i + \Delta t\,{\alpha}(u^{-})\nabla u\cdot\nabla {\psi}_i
-     - \Delta t f(u^{-}){\psi}_i - u^{(1)}{\psi}_i){\, \mathrm{d}x}{\thinspace .}\]</div>
+<div class="math" id="eq-nonlin-alglevel-dd-fe-fi-picard">
+\[\tag{79}
+F_i \approx \hat F_i =
+    \int_\Omega (u{\psi}_i + \Delta t\,{\alpha}(u^{-})\nabla u\cdot\nabla {\psi}_i
+    - \Delta t f(u^{-}){\psi}_i - u^{(1)}{\psi}_i){\, \mathrm{d}x}{\thinspace .}\]</div>
 <p>The equations <span class="math">\(\hat F_i=0\)</span> are now linear and we can easily derive
 a linear system <span class="math">\(\sum_{j\in{\mathcal{I}_s}}A_{i,j}c_j=b_i\)</span>, <span class="math">\(i\in{\mathcal{I}_s}\)</span>,
 for the unknown coefficients
@@ -137,73 +168,81 @@ for the unknown coefficients
 \int_\Omega (\Delta t f(u^{-}){\psi}_i + u^{(1)}{\psi}_i){\, \mathrm{d}x}{\thinspace .}\]</div>
 <p>In Newton&#8217;s method we need to evaluate <span class="math">\(F_i\)</span> with the known value
 <span class="math">\(u^{-}\)</span> for <span class="math">\(u\)</span>:</p>
-<div class="math" id="equation-nonlin:alglevel:dD:fe:Fi:Newton">
-<span id="eq-nonlin-alglevel-dd-fe-fi-newton"></span><span class="eqno">(5)</span>\[     F_i \approx \hat F_i =
-     \int_\Omega (u^{-}{\psi}_i + \Delta t\,{\alpha}(u^{-})
-     \nabla u^{-}\cdot\nabla {\psi}_i
-     - \Delta t f(u^{-}){\psi}_i - u^{(1)}{\psi}_i){\, \mathrm{d}x}{\thinspace .}\]</div>
+<div class="math" id="eq-nonlin-alglevel-dd-fe-fi-newton">
+\[\tag{80}
+F_i \approx \hat F_i =
+    \int_\Omega (u^{-}{\psi}_i + \Delta t\,{\alpha}(u^{-})
+    \nabla u^{-}\cdot\nabla {\psi}_i
+    - \Delta t f(u^{-}){\psi}_i - u^{(1)}{\psi}_i){\, \mathrm{d}x}{\thinspace .}\]</div>
 <p>The Jacobian is obtained by differentiating
-<a href="#equation-nonlin:alglevel:dD:fe:Fi">(3)</a> and using</p>
-<div class="math" id="equation-_auto46">
-<span id="eq-auto46"></span><span class="eqno">(6)</span>\[     \frac{\partial u}{\partial c_j} = \sum_k\frac{\partial}{\partial c_j}
-     c_k{\psi}_k = {\psi}_j,\]</div>
-<div class="math" id="equation-_auto47">
-<span id="eq-auto47"></span><span class="eqno">(7)</span>\[     \frac{\partial \nabla u}{\partial c_j} = \sum_k\frac{\partial}{\partial c_j}
-     c_k\nabla {\psi}_k = \nabla {\psi}_j{\thinspace .}\]</div>
+<a class="reference internal" href="#eq-nonlin-alglevel-dd-fe-fi"><span class="std std-ref">(78)</span></a> and using</p>
+<div class="math" id="eq-auto31">
+\[\tag{81}
+\frac{\partial u}{\partial c_j} = \sum_k\frac{\partial}{\partial c_j}
+    c_k{\psi}_k = {\psi}_j,\]</div>
+<div class="math" id="eq-auto32">
+\[\tag{82}
+\frac{\partial \nabla u}{\partial c_j} = \sum_k\frac{\partial}{\partial c_j}
+    c_k\nabla {\psi}_k = \nabla {\psi}_j{\thinspace .}\]</div>
 <p>The result becomes</p>
-<div class="math" id="equation-_auto48">
-<span id="eq-auto48"></span><span class="eqno">(8)</span>\[     J_{i,j} = \frac{\partial F_i}{\partial c_j} =
-     \int_\Omega  ({\psi}_j{\psi}_i + \Delta t\,{\alpha}^{\prime}(u){\psi}_j
-     \nabla u\cdot\nabla {\psi}_i +
-     \Delta t\,{\alpha}(u)\nabla{\psi}_j\cdot\nabla{\psi}_i - \nonumber\]</div>
-<div class="math" id="equation-nonlin:alglevel:dD:fe:Jij">
-<span id="id1"></span><span class="eqno">(9)</span>\[     \ \Delta t f^{\prime}(u){\psi}_j{\psi}_i){\, \mathrm{d}x}{\thinspace .}\]</div>
+<div class="math">
+\[J_{i,j} = \frac{\partial F_i}{\partial c_j} =
+\int_\Omega  ({\psi}_j{\psi}_i + \Delta t\,{\alpha}^{\prime}(u){\psi}_j
+\nabla u\cdot\nabla {\psi}_i +
+\Delta t\,{\alpha}(u)\nabla{\psi}_j\cdot\nabla{\psi}_i - \nonumber\]</div>
+<div class="math" id="eq-nonlin-alglevel-dd-fe-jij">
+\[\tag{83}
+\ \Delta t f^{\prime}(u){\psi}_j{\psi}_i){\, \mathrm{d}x}{\thinspace .}\]</div>
 <p>The evaluation of <span class="math">\(J_{i,j}\)</span> as the coefficient matrix in the linear
 system in Newton&#8217;s method applies the known approximation <span class="math">\(u^{-}\)</span>
 for <span class="math">\(u\)</span>:</p>
-<div class="math" id="equation-_auto49">
-<span id="eq-auto49"></span><span class="eqno">(10)</span>\[     J_{i,j} =
-     \int_\Omega  ({\psi}_j{\psi}_i + \Delta t\,{\alpha}^{\prime}(u^{-}){\psi}_j
-     \nabla u^{-}\cdot\nabla {\psi}_i +
-     \Delta t\,{\alpha}(u^{-})\nabla{\psi}_j\cdot\nabla{\psi}_i - \nonumber\]</div>
-<div class="math" id="equation-nonlin:alglevel:dD:fe:Jij">
-<span id="id3"></span><span class="eqno">(11)</span>\[     \ \Delta t f^{\prime}(u^{-}){\psi}_j{\psi}_i){\, \mathrm{d}x}{\thinspace .}\]</div>
+<div class="math">
+\[J_{i,j} =
+\int_\Omega  ({\psi}_j{\psi}_i + \Delta t\,{\alpha}^{\prime}(u^{-}){\psi}_j
+\nabla u^{-}\cdot\nabla {\psi}_i +
+\Delta t\,{\alpha}(u^{-})\nabla{\psi}_j\cdot\nabla{\psi}_i - \nonumber\]</div>
+<div class="math" id="eq-nonlin-alglevel-dd-fe-jij2">
+\[\tag{84}
+\ \Delta t f^{\prime}(u^{-}){\psi}_j{\psi}_i){\, \mathrm{d}x}{\thinspace .}\]</div>
 <p>Hopefully, this example also shows how convenient the notation
 with <span class="math">\(u\)</span> and <span class="math">\(u^{-}\)</span> is: the unknown to be computed is always <span class="math">\(u\)</span> and
 linearization by inserting known (previously computed) values
 is a matter of adding an underscore.
 One can take great advantage of this quick notation in
-software <a class="reference internal" href="._main_nonlin006.html#ref2" id="id4">[Ref2]</a>.</p>
+software <a class="reference internal" href="._main_nonlin006.html#ref2" id="id1">[Ref2]</a>.</p>
 <div class="section" id="non-homogeneous-neumann-conditions">
 <h3>Non-homogeneous Neumann conditions<a class="headerlink" href="#non-homogeneous-neumann-conditions" title="Permalink to this headline">¶</a></h3>
-<p>A natural physical flux condition for the PDE <a href="#equation-nonlin:alglevel:dD:fe:PDE">(1)</a>
+<p>A natural physical flux condition for the PDE <a class="reference internal" href="#eq-nonlin-alglevel-dd-fe-pde"><span class="std std-ref">(76)</span></a>
 takes the form of a non-homogeneous Neumann condition</p>
-<div class="math" id="equation-nonlin:alglevel:dD:fe:Neumann">
-<span id="eq-nonlin-alglevel-dd-fe-neumann"></span><span class="eqno">(12)</span>\[     -{\alpha}(u)\frac{\partial u}{\partial n} = g,\quad\boldsymbol{x}\in\partial\Omega_N,\]</div>
+<div class="math" id="eq-nonlin-alglevel-dd-fe-neumann">
+\[\tag{85}
+-{\alpha}(u)\frac{\partial u}{\partial n} = g,\quad\boldsymbol{x}\in\partial\Omega_N,\]</div>
 <p>where <span class="math">\(g\)</span> is a prescribed function and <span class="math">\(\partial\Omega_N\)</span> is a part
 of the boundary of the domain <span class="math">\(\Omega\)</span>. From integrating
 <span class="math">\(\int_\Omega\nabla\cdot({\alpha}\nabla u){\, \mathrm{d}x}\)</span> by parts, we get a boundary term</p>
-<div class="math" id="equation-nonlin:alglevel:dD:fe:boundary:integral">
-<span id="eq-nonlin-alglevel-dd-fe-boundary-integral"></span><span class="eqno">(13)</span>\[     \int_{\partial\Omega_N}{\alpha}(u)\frac{\partial u}{\partial u}v{\, \mathrm{d}s}{\thinspace .}\]</div>
-<p>Inserting the condition <a href="#equation-nonlin:alglevel:dD:fe:Neumann">(12)</a> into
+<div class="math" id="eq-nonlin-alglevel-dd-fe-boundary-integral">
+\[\tag{86}
+\int_{\partial\Omega_N}{\alpha}(u)\frac{\partial u}{\partial u}v{\, \mathrm{d}s}{\thinspace .}\]</div>
+<p>Inserting the condition <a class="reference internal" href="#eq-nonlin-alglevel-dd-fe-neumann"><span class="std std-ref">(85)</span></a> into
 this term results in an integral over prescribed values:</p>
 <div class="math">
 \[-\int_{\partial\Omega_N}gv{\, \mathrm{d}s}{\thinspace .}\]</div>
 <p>The nonlinearity in the <span class="math">\({\alpha}(u)\)</span> coefficient condition
-<a href="#equation-nonlin:alglevel:dD:fe:Neumann">(12)</a> therefore does not contribute with
+<a class="reference internal" href="#eq-nonlin-alglevel-dd-fe-neumann"><span class="std std-ref">(85)</span></a> therefore does not contribute with
 a nonlinearity in the variational form.</p>
 </div>
 <div class="section" id="robin-conditions">
 <h3>Robin conditions<a class="headerlink" href="#robin-conditions" title="Permalink to this headline">¶</a></h3>
 <p>Heat conduction problems often apply a kind of Newton&#8217;s cooling law,
 also known as a Robin condition, at the boundary:</p>
-<div class="math" id="equation-nonlin:alglevel:dD:fe:Robin">
-<span id="eq-nonlin-alglevel-dd-fe-robin"></span><span class="eqno">(14)</span>\[     -{\alpha}(u)\frac{\partial u}{\partial u} = h(u)(u-T_s(t)),\quad\boldsymbol{x}\in\partial\Omega_R,\]</div>
+<div class="math" id="eq-nonlin-alglevel-dd-fe-robin">
+\[\tag{87}
+-{\alpha}(u)\frac{\partial u}{\partial u} = h(u)(u-T_s(t)),\quad\boldsymbol{x}\in\partial\Omega_R,\]</div>
 <p>where <span class="math">\(h(u)\)</span> is a heat transfer coefficient between the body (<span class="math">\(\Omega\)</span>)
 and its surroundings, <span class="math">\(T_s\)</span> is the temperature of the surroundings,
 and <span class="math">\(\partial\Omega_R\)</span> is a part of the boundary where this Robin
 condition applies. The boundary integral
-<a href="#equation-nonlin:alglevel:dD:fe:boundary:integral">(13)</a> now becomes</p>
+<a class="reference internal" href="#eq-nonlin-alglevel-dd-fe-boundary-integral"><span class="std std-ref">(86)</span></a> now becomes</p>
 <div class="math">
 \[\int_{\partial\Omega_R}h(u)(u-T_s(T))v{\, \mathrm{d}s}{\thinspace .}\]</div>
 <p>In many physical applications,
@@ -216,8 +255,8 @@ in <span class="math">\(h\)</span>, but keep the <span class="math">\(u\)</span>
 asks you to carry out the details.</p>
 </div>
 </div>
-<div class="section" id="finite-difference-discretization">
-<span id="nonlin-alglevel-dd-fd"></span><h2>Finite difference discretization<a class="headerlink" href="#finite-difference-discretization" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="finite-difference-discretization-2">
+<span id="nonlin-alglevel-dd-fd"></span><h2>Finite difference discretization<a class="headerlink" href="#finite-difference-discretization-2" title="Permalink to this headline">¶</a></h2>
 <p>A typical diffusion equation</p>
 <div class="math">
 \[u_t = \nabla\cdot({\alpha}(u)\nabla u) + f(u),\]</div>
@@ -244,7 +283,7 @@ introducing <span class="math">\(\Delta x=\Delta y=h\)</span> to save some writi
 - \Delta tf(u_{i,j}^n) = u^{n-1}_{i,j}\end{split}\]</div>
 <p>This defines a nonlinear algebraic system on the form <span class="math">\(A(u)u=b(u)\)</span>.</p>
 <div class="section" id="picard-iteration-4">
-<h3>Picard iteration  (4)<a class="headerlink" href="#picard-iteration-4" title="Permalink to this headline">¶</a></h3>
+<h3>Picard iteration<a class="headerlink" href="#picard-iteration-4" title="Permalink to this headline">¶</a></h3>
 <p>The most recently computed values <span class="math">\(u^{-}\)</span> of <span class="math">\(u^n\)</span> can be
 used in <span class="math">\({\alpha}\)</span> and <span class="math">\(f\)</span> for a Picard iteration,
 or equivalently, we solve <span class="math">\(A(u^{-})u=b(u^{-})\)</span>.
@@ -256,7 +295,7 @@ from <span class="math">\(u_t = \nabla\cdot ({\alpha}(\boldsymbol{x})\nabla u) +
 + D_y\overline{{\alpha}(u^{-})}^yD_y u + f(u^{-})]_{i,j}^n{\thinspace .}\]</div>
 </div>
 <div class="section" id="newton-s-method-5">
-<h3>Newton&#8217;s method  (5)<a class="headerlink" href="#newton-s-method-5" title="Permalink to this headline">¶</a></h3>
+<h3>Newton&#8217;s method<a class="headerlink" href="#newton-s-method-5" title="Permalink to this headline">¶</a></h3>
 <p>As always, Newton&#8217;s method is technically more involved than
 Picard iteration. We first define
 the nonlinear algebraic equations to be solved, drop the
@@ -272,7 +311,7 @@ superscript <span class="math">\(n\)</span> (use <span class="math">\(u\)</span>
 finite difference discretizations, but it complicates
 the derivation of the Jacobian, which then gets four indices.
 (Make sure you really understand the 1D version of this problem
-as treated in the section <a class="reference internal" href="._main_nonlin004.html#nonlin-alglevel-1d-fd"><span class="std std-ref">Finite difference discretizations</span></a>.)
+as treated in the section <a class="reference internal" href="._main_nonlin004.html#nonlin-alglevel-1d-fd"><span class="std std-ref">Finite difference discretization</span></a>.)
 The left-hand expression of an equation <span class="math">\(F_{i,j}=0\)</span> is to be
 differentiated with respect to each of the unknowns <span class="math">\(u_{r,s}\)</span>
 (recall that this is short notation for <span class="math">\(u_{r,s}^n\)</span>), <span class="math">\(r\in{\mathcal{I}_x}\)</span>, <span class="math">\(s\in{\mathcal{I}_y}\)</span>:</p>
@@ -340,7 +379,7 @@ Suppose we intend to solve</p>
 <div class="math">
 \[-\nabla\cdot\left( ||\nabla u||^q\nabla u\right) = f,\]</div>
 <p>which is an equation modeling the flow of a non-Newtonian fluid through
-i channel or pipe. For <span class="math">\(q=0\)</span> we have the Poisson equation (corresponding
+a channel or pipe. For <span class="math">\(q=0\)</span> we have the Poisson equation (corresponding
 to a Newtonian fluid) and the problem is linear. A typical
 value for pseudo-plastic fluids may be <span class="math">\(q_n=-0.8\)</span>. We can introduce
 the continuation parameter <span class="math">\(\Lambda\in [0,1]\)</span> such that
@@ -378,9 +417,9 @@ and repeat halving the step in <span class="math">\(\Lambda\)</span> until conve
 <li><a class="reference internal" href="#robin-conditions">Robin conditions</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#finite-difference-discretization">Finite difference discretization</a><ul>
-<li><a class="reference internal" href="#picard-iteration-4">Picard iteration  (4)</a></li>
-<li><a class="reference internal" href="#newton-s-method-5">Newton&#8217;s method  (5)</a></li>
+<li><a class="reference internal" href="#finite-difference-discretization-2">Finite difference discretization</a><ul>
+<li><a class="reference internal" href="#picard-iteration-4">Picard iteration</a></li>
+<li><a class="reference internal" href="#newton-s-method-5">Newton&#8217;s method</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#continuation-methods">Continuation methods</a></li>

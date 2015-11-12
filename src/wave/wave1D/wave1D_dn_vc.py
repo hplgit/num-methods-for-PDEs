@@ -43,7 +43,7 @@ def solver(I, V, f, c, U_0, U_L, L, dt, C, T,
     if isinstance(c, (float,int)):
         c_max = c
     elif callable(c):
-        c_max = max([c(x_) for x_ in linspace(0, L, 101)])
+        c_max = max([c(x_) for x_ in np.linspace(0, L, 101)])
     dx = dt*c_max/(stability_safety_factor*C)
     Nx = int(round(L/dx))
     x = np.linspace(0, L, Nx+1)          # Mesh points in space
@@ -352,10 +352,10 @@ class PlotAndStoreSolution:
             name = 'u%04d' % n  # array name
             kwargs = {name: u}
             fname = '.' + self.filename + '_' + name + '.dat'
-            savez(fname, **kwargs)
+            np.savez(fname, **kwargs)
             self.t.append(t[n])  # store corresponding time value
             if n == 0:           # save x once
-                savez('.' + self.filename + '_x.dat', x=x)
+                np.savez('.' + self.filename + '_x.dat', x=x)
 
         # Animate
         if n % self.skip_frame != 0:
@@ -439,8 +439,8 @@ class PlotAndStoreSolution:
         """
         if self.filename is not None:
             # Save all the time points where solutions are saved
-            savez('.' + self.filename + '_t.dat',
-                  t=array(self.t, dtype=float))
+            np.savez('.' + self.filename + '_t.dat',
+                     t=array(self.t, dtype=float))
 
             # Merge all savez files to one zip archive
             archive_name = '.' + hashed_input + '_archive.npz'
@@ -478,7 +478,7 @@ def demo_BC_gaussian(C=1, Nx=80, T=4):
     L = 1.
     dt = (L/Nx)/c  # choose the stability limit with given Nx
     cpu, hashed_input = solver(
-        I=lambda x: exp(-0.5*((x-0.5)/0.05)**2),
+        I=lambda x: np.exp(-0.5*((x-0.5)/0.05)**2),
         V=0, f=0, c=1, U_0=lambda t: 0, U_L=None, L=L,
         dt=dt, C=C, T=T,
         user_action=action, version='vectorized',
@@ -499,7 +499,7 @@ def moving_end(C=1, Nx=50, reflecting_right_boundary=True,
     f = 0
 
     def U_0(t):
-        return 1.0*sin(6*pi*t) if t < 1./3 else 0
+        return 1.0*sin(6*np.pi*t) if t < 1./3 else 0
 
     if reflecting_right_boundary:
         U_L = None
@@ -533,10 +533,10 @@ class PlotMediumAndSolution(PlotAndStoreSolution):
             name = 'u%04d' % n  # array name
             kwargs = {name: u}
             fname = '.' + self.filename + '_' + name + '.dat'
-            savez(fname, **kwargs)
+            np.savez(fname, **kwargs)
             self.t.append(t[n])  # store corresponding time value
             if n == 0:           # save x once
-                savez('.' + self.filename + '_x.dat', x=x)
+                np.savez('.' + self.filename + '_x.dat', x=x)
 
         # Animate
         if n % self.skip_frame != 0:
@@ -623,7 +623,7 @@ def pulse(C=1,            # aximum Courant number
 
     if pulse_tp in ('gaussian','Gaussian'):
         def I(x):
-            return exp(-0.5*((x-xc)/sigma)**2)
+            return np.exp(-0.5*((x-xc)/sigma)**2)
     elif pulse_tp == 'plug':
         def I(x):
             return 0 if abs(x-xc) > sigma else 1
@@ -632,7 +632,7 @@ def pulse(C=1,            # aximum Courant number
             # One period of a cosine
             w = 2
             a = w*sigma
-            return 0.5*(1 + cos(pi*(x-xc)/a)) \
+            return 0.5*(1 + np.cos(np.pi*(x-xc)/a)) \
                    if xc - a <= x <= xc + a else 0
 
     elif pulse_tp == 'half-cosinehat':
@@ -640,7 +640,7 @@ def pulse(C=1,            # aximum Courant number
             # Half a period of a cosine
             w = 4
             a = w*sigma
-            return cos(pi*(x-xc)/a) \
+            return np.cos(np.pi*(x-xc)/a) \
                    if xc - 0.5*a <= x <= xc + 0.5*a else 0
     else:
         raise ValueError('Wrong pulse_tp="%s"' % pulse_tp)

@@ -233,14 +233,58 @@ otherwise.  The matrix <span class="math">\(A(u^{-})\)</span> is tridiagonal, so
 procedure is to fill a tridiagonal matrix data structure and the
 right-hand side vector with the right numbers and call a Gaussian
 elimination routine for tridiagonal linear systems.</p>
-<p>To write out all the mathematical details in a specific
-case, let us look at the case <span class="math">\(N_x=2\)</span>. We use <span class="math">\(u^{-}_i\)</span>
-for the <span class="math">\(i\)</span>-th component in <span class="math">\(u^{-}\)</span>. In case we omit the Dirichlet
-condition from the system we get the following <span class="math">\(2\times 2\)</span> system,</p>
+</div>
+<div class="section" id="mesh-with-two-cells">
+<h3>Mesh with two cells<a class="headerlink" href="#mesh-with-two-cells" title="Permalink to this headline">¶</a></h3>
+<p>It helps on the understanding of the details to write out all the
+mathematics in a specific
+case with a small mesh, say just two cells (<span class="math">\(N_x=2\)</span>). We use <span class="math">\(u^{-}_i\)</span>
+for the <span class="math">\(i\)</span>-th component in <span class="math">\(u^{-}\)</span>.
+The nonlinear equations at mesh point <span class="math">\(i=0\)</span> and <span class="math">\(i=1\)</span> are in this case</p>
+<div class="math" id="eq-nonlin-alglevel-1d-fd-2x2-x0">
+\[\tag{59}
+A_{0,-1}u_{-1} + A_{0,0}u_0 + A_{0,1}u_1 = b_0,\]</div>
+<div class="math" id="eq-nonlin-alglevel-1d-fd-2x2-x1">
+\[\tag{60}
+A_{1,0}u_{0} + A_{1,1}u_1 + A_{1,2}u_2 = b_1{\thinspace .}\]</div>
+<p>Equation <a class="reference internal" href="#eq-nonlin-alglevel-1d-fd-2x2-x0"><span class="std std-ref">(59)</span></a> written out reads</p>
+<div class="math">
+\[\begin{split}\frac{1}{2\Delta x^2}(&amp; -({\alpha}(u_{-1}) + {\alpha}(u_{0}))u_{-1}\, +\\
+&amp; ({\alpha}(u_{-1}) + 2{\alpha}(u_{0}) + {\alpha}(u_{1}))u_0\, -\\
+&amp; ({\alpha}(u_{0}) + {\alpha}(u_{1})))u_1 + au_0
+=f(u_0){\thinspace .}\end{split}\]</div>
+<p>We must then replace <span class="math">\(u_{-1}\)</span> by
+<a class="reference internal" href="#eq-nonlin-alglevel-1d-fd-neumann-x0-um1"><span class="std std-ref">(58)</span></a>.
+With Picard iteration we get</p>
+<div class="math">
+\[\begin{split}\frac{1}{2\Delta x^2}(&amp; -({\alpha}(u^-_{-1}) + {\alpha}(u^-_{0}))u_1\, +\\
+&amp;({\alpha}(u^-_{-1}) + 2{\alpha}(u^-_{0}) + {\alpha}(u^-_{1}))u_0\, -\\
+&amp;({\alpha}(u^-_{0}) + {\alpha}(u^-_{1})))u_1 + au_0\\
+&amp;=f(u^-_0) -
+\frac{1}{{\alpha}(u^-_0)\Delta x}({\alpha}(u^-_{-1}) + {\alpha}(u^-_{0}))C,\end{split}\]</div>
+<p>where</p>
+<div class="math">
+\[u^-_{-1} = u_1^- -\frac{2\Delta x}{{\alpha}(u^-_0)}C{\thinspace .}\]</div>
+<p>Equation <a class="reference internal" href="#eq-nonlin-alglevel-1d-fd-2x2-x1"><span class="std std-ref">(60)</span></a> contains the unknown <span class="math">\(u_2\)</span>
+for which we have a Dirichlet condition. In case we omit the
+condition as a separate equation, <a class="reference internal" href="#eq-nonlin-alglevel-1d-fd-2x2-x1"><span class="std std-ref">(60)</span></a>
+with Picard iteration becomes</p>
+<div class="math">
+\[\begin{split}\frac{1}{2\Delta x^2}(&amp;-({\alpha}(u^-_{0}) + {\alpha}(u^-_{1}))u_{0}\, + \\
+&amp;({\alpha}(u^-_{0}) + 2{\alpha}(u^-_{1}) + {\alpha}(u^-_{2}))u_1\, -\\
+&amp;({\alpha}(u^-_{1}) + {\alpha}(u^-_{2})))u_2 + au_1
+=f(u^-_1){\thinspace .}\end{split}\]</div>
+<p>We must now move the <span class="math">\(u_2\)</span> term to the right-hand side and replace all
+occurrences of <span class="math">\(u_2\)</span> by <span class="math">\(D\)</span>:</p>
+<div class="math">
+\[\begin{split}\frac{1}{2\Delta x^2}(&amp;-({\alpha}(u^-_{0}) + {\alpha}(u^-_{1}))u_{0}\, +\\
+&amp; ({\alpha}(u^-_{0}) + 2{\alpha}(u^-_{1}) + {\alpha}(D))u_1 + au_1\\
+&amp;=f(u^-_1) + \frac{1}{2\Delta x^2}({\alpha}(u^-_{1}) + {\alpha}(D)))D{\thinspace .}\end{split}\]</div>
+<p>The two equations can be written as a <span class="math">\(2\times 2\)</span> system:</p>
 <div class="math">
 \[\begin{split}\left(\begin{array}{cc}
-A_{0,0}&amp; A_{0,1}\\
-A_{1,0} &amp; A_{1,1}
+B_{0,0}&amp; B_{0,1}\\
+B_{1,0} &amp; B_{1,1}
 \end{array}\right)
 \left(\begin{array}{c}
 u_0\\
@@ -248,43 +292,41 @@ u_1
 \end{array}\right)
 =
 \left(\begin{array}{c}
-b_0\\
-b_1
+d_0\\
+d_1
 \end{array}\right)\end{split}\]</div>
-<p>The matrix and right-hand side entries are given by</p>
+<p>where</p>
 <div class="math" id="eq-auto23">
-\[\tag{59}
-A_{0,0} = \frac{1}{2\Delta x^2}({\alpha}(u_{-1}^{-}) + 2{\alpha}(u_{0}^{-})
-    + {\alpha}(u_{1}^{-})) + a\]</div>
-<div class="math" id="eq-auto24">
-\[\tag{60}
-A_{0,1} =
-    -\frac{1}{2\Delta x^2}({\alpha}(u_{0}^{-}) + {\alpha}(u_{1}^{-})),\]</div>
-<div class="math" id="eq-auto25">
 \[\tag{61}
-A_{1,0} =
-    -\frac{1}{2\Delta x^2}({\alpha}(u_{0}^{-}) + {\alpha}(u_{1}^{-})),\]</div>
-<div class="math" id="eq-auto26">
+B_{0,0} =\frac{1}{2\Delta x^2}({\alpha}(u^-_{-1}) + 2{\alpha}(u^-_{0}) + {\alpha}(u^-_{1}))
+    + a\]</div>
+<div class="math" id="eq-auto24">
 \[\tag{62}
-A_{1,1} =
-    \frac{1}{2\Delta x^2}({\alpha}(u_{0}^{-}) + 2{\alpha}(u_{1}^{-})
-    +{\alpha}(u_{2})) + a,\]</div>
-<div class="math" id="eq-auto27">
+B_{0,1} =
+    -\frac{1}{2\Delta x^2}({\alpha}(u^-_{-1}) + {\alpha}(u^-_{0})
+    + {\alpha}(u^-_{0}) + {\alpha}(u^-_{1})),\]</div>
+<div class="math" id="eq-auto25">
 \[\tag{63}
-b_0 =
-    f(u_0^{-}),\]</div>
-<div class="math" id="eq-auto28">
+B_{1,0} =
+    -\frac{1}{2\Delta x^2}({\alpha}(u^-_{0}) + {\alpha}(u^-_{1})),\]</div>
+<div class="math" id="eq-auto26">
 \[\tag{64}
-b_1 =
-    f(u_1^{-}),\]</div>
-<p>where <span class="math">\(u_{-1}\)</span> must be substituted by
-<a class="reference internal" href="#eq-nonlin-alglevel-1d-fd-neumann-x0-um1"><span class="std std-ref">(58)</span></a>, and <span class="math">\(u_2\)</span> by <span class="math">\(D\)</span>.</p>
+B_{1,1} =
+    \frac{1}{2\Delta x^2}({\alpha}(u^-_{0}) + 2{\alpha}(u^-_{1}) + {\alpha}(D)) + a,\]</div>
+<div class="math" id="eq-auto27">
+\[\tag{65}
+d_0 =
+    f(u^-_0) -
+    \frac{1}{{\alpha}(u^-_0)\Delta x}({\alpha}(u^-_{-1}) + {\alpha}(u^-_{0}))C,\]</div>
+<div class="math" id="eq-auto28">
+\[\tag{66}
+d_1 = f(u^-_1) + \frac{1}{2\Delta x^2}({\alpha}(u^-_{1}) + {\alpha}(D)))D{\thinspace .}\]</div>
 <p>The system with the Dirichlet condition becomes</p>
 <div class="math">
 \[\begin{split}\left(\begin{array}{ccc}
-A_{0,0}&amp; A_{0,1} &amp; A_{0,2}\\
-A_{1,0} &amp; A_{1,1} &amp; A_{1,2}\\
-A_{2,0} &amp; A_{2,1} &amp; A_{2,2}
+B_{0,0}&amp; B_{0,1} &amp; 0\\
+B_{1,0} &amp; B_{1,1} &amp; B_{1,2}\\
+0  &amp; 0 &amp; 1
 \end{array}\right)
 \left(\begin{array}{c}
 u_0\\
@@ -293,16 +335,23 @@ u_2
 \end{array}\right)
 =
 \left(\begin{array}{c}
-b_0\\
-b_1\\
-b_2
+d_0\\
+d_1\\
+D
 \end{array}\right),\end{split}\]</div>
-<p>with entries for <span class="math">\(A_{i,j}\)</span> and <span class="math">\(b_i\)</span> as above for <span class="math">\(i,j=1,2\)</span>, keeping
-<span class="math">\(u_2\)</span> as unknown in <span class="math">\(A_{1,1}\)</span>, and</p>
+<p>with</p>
 <div class="math" id="eq-auto29">
-\[\tag{65}
-A_{0,2}=A_{2,0}=A_{2,1}=0,\ A_{1,2}=
-    -\frac{1}{2\Delta x^2}({\alpha}(u_{1}) + {\alpha}(u_{2})),\ A_{2,2}=1,\ b_2=D{\thinspace .}\]</div>
+\[\tag{67}
+B_{1,1} =
+    \frac{1}{2\Delta x^2}({\alpha}(u^-_{0}) + 2{\alpha}(u^-_{1}) + {\alpha}(u_2)) + a,\]</div>
+<div class="math" id="eq-auto30">
+\[\tag{68}
+B_{1,2} = -
+    \frac{1}{2\Delta x^2}({\alpha}(u^-_{1}) + {\alpha}(u_2))),\]</div>
+<div class="math" id="eq-auto31">
+\[\tag{69}
+d_1 = f(u^-_1){\thinspace .}\]</div>
+<p>Other entries are as in the <span class="math">\(2\times 2\)</span> system.</p>
 </div>
 <div class="section" id="newton-s-method-4">
 <h3>Newton&#8217;s method<a class="headerlink" href="#newton-s-method-4" title="Permalink to this headline">¶</a></h3>
@@ -371,7 +420,7 @@ J_{i,i+1} &amp;= \frac{\partial A_{i,i+1}}{\partial u_{i-1}}u_{i+1}
 \left(({\alpha}(u_i)+{\alpha}(u_{i+1}))(u_{i+1}-u_i) -
 ({\alpha}(u_{i-1})+{\alpha}(u_{i}))(u_{i}-u_{i-1})\right)\nonumber\]</div>
 <div class="math" id="eq-nonlin-alglevel-1d-fd-deq2">
-\[\tag{66}
+\[\tag{70}
 \qquad\qquad + au_i - f(u_i) = 0{\thinspace .}\]</div>
 <p>At the boundary point <span class="math">\(i=0\)</span>, <span class="math">\(u_{-1}\)</span> must be replaced using
 the formula <a class="reference internal" href="#eq-nonlin-alglevel-1d-fd-neumann-x0-um1"><span class="std std-ref">(58)</span></a>.
@@ -424,7 +473,7 @@ of the basis functions also vanishes at <span class="math">\(x=L\)</span>: <span
 The variational problem is then:
 find <span class="math">\(u\in V\)</span> such that</p>
 <div class="math" id="eq-nonlin-alglevel-1d-pde-varform">
-\[\tag{67}
+\[\tag{71}
 \int_0^L {\alpha}(u)u^{\prime}v^{\prime}{\, \mathrm{d}x} + \int_0^L auv{\, \mathrm{d}x} =
     \int_0^L f(u)v{\, \mathrm{d}x} - Cv(0),\quad \forall v\in V{\thinspace .}\]</div>
 <p>To derive the algebraic equations, we note that <span class="math">\(\forall v\in V\)</span> is
@@ -435,8 +484,8 @@ and sorting terms results in the linear system</p>
 \int_0^L \left({\alpha}(D+\sum_{k\in{\mathcal{I}_s}}c_k{\psi}_k)
 {\psi}_j^{\prime}{\psi}_i^{\prime} + a{\psi}_i{\psi}_j\right){\, \mathrm{d}x}\right)c_j
 \nonumber\]</div>
-<div class="math" id="eq-auto30">
-\[\tag{68}
+<div class="math" id="eq-auto32">
+\[\tag{72}
 \qquad = \int_0^L f(D+\sum_{k\in{\mathcal{I}_s}}c_k{\psi}_k){\psi}_i{\, \mathrm{d}x} -
     C{\psi}_i(0),\quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
 <div class="section" id="fundamental-integration-problem">
@@ -469,7 +518,7 @@ while others will prefer to continue with computational algorithms
 <div class="section" id="picard-iteration-defined-from-the-variational-form">
 <span id="nonlin-alglevel-1d-fe-picard"></span><h2>Picard iteration defined from the variational form<a class="headerlink" href="#picard-iteration-defined-from-the-variational-form" title="Permalink to this headline">¶</a></h2>
 <p>Consider the problem <a class="reference internal" href="#eq-nonlin-alglevel-1d-pde"><span class="std std-ref">(50)</span></a> with the
-corresponding variational form <a class="reference internal" href="#eq-nonlin-alglevel-1d-pde-varform"><span class="std std-ref">(67)</span></a>.
+corresponding variational form <a class="reference internal" href="#eq-nonlin-alglevel-1d-pde-varform"><span class="std std-ref">(71)</span></a>.
 Our aim is to define a Picard iteration based on this variational form
 without any attempt to compute integrals symbolically as in the
 previous three sections.  The idea in Picard iteration is to use a
@@ -478,7 +527,7 @@ previously computed <span class="math">\(u\)</span> value in the nonlinear funct
 previous iteration.  The linearized variational form for Picard
 iteration is then</p>
 <div class="math" id="eq-nonlin-alglevel-1d-pde-varform-picard">
-\[\tag{69}
+\[\tag{73}
 \int_0^L ({\alpha}(u^{-})u^{\prime}v^{\prime} + auv){\, \mathrm{d}x} = \int_0^L f(u^{-})v{\, \mathrm{d}x} -
     Cv(0),\quad \forall v\in V{\thinspace .}\]</div>
 <p>This is a linear problem <span class="math">\(a(u,v)=L(v)\)</span> with bilinear and linear forms</p>
@@ -489,7 +538,7 @@ L(v) = \int_0^L f(u^{-})v{\, \mathrm{d}x} - Cv(0){\thinspace .}\]</div>
 differential equation from the <span class="math">\(a\)</span> in
 the abstract bilinear form notation <span class="math">\(a(\cdot,\cdot)\)</span>.</p>
 <p>The linear system associated with
-<a class="reference internal" href="#eq-nonlin-alglevel-1d-pde-varform-picard"><span class="std std-ref">(69)</span></a> is computed the standard way.
+<a class="reference internal" href="#eq-nonlin-alglevel-1d-pde-varform-picard"><span class="std std-ref">(73)</span></a> is computed the standard way.
 Technically, we are back to solving <span class="math">\(-({\alpha}(x)u^{\prime})^{\prime} + au=f(x)\)</span>.
 The unknown <span class="math">\(u\)</span> is sought on the form
 <span class="math">\(u = B(x) + \sum_{j\in{\mathcal{I}_s}}c_j{\psi}_j\)</span>, with <span class="math">\(B(x)=D\)</span>
@@ -499,7 +548,7 @@ and <span class="math">\({\psi}_i = {\varphi}_{\nu(i)}\)</span>, <span class="ma
 <div class="section" id="newton-s-method-defined-from-the-variational-form">
 <span id="nonlin-alglevel-1d-fe-newton"></span><h2>Newton&#8217;s method defined from the variational form<a class="headerlink" href="#newton-s-method-defined-from-the-variational-form" title="Permalink to this headline">¶</a></h2>
 <p>Application of Newton&#8217;s method to the nonlinear variational
-form <a class="reference internal" href="#eq-nonlin-alglevel-1d-pde-varform"><span class="std std-ref">(67)</span></a> arising from
+form <a class="reference internal" href="#eq-nonlin-alglevel-1d-pde-varform"><span class="std std-ref">(71)</span></a> arising from
 the problem <a class="reference internal" href="#eq-nonlin-alglevel-1d-pde"><span class="std std-ref">(50)</span></a> requires identification
 of the nonlinear algebraic equations <span class="math">\(F_i=0\)</span>.
 Although we originally denoted the unknowns in nonlinear
@@ -519,7 +568,7 @@ and write</p>
 to incorporate Dirichlet conditions.</p>
 <p>With <span class="math">\(v={\psi}_i\)</span> we get</p>
 <div class="math" id="eq-nonlin-alglevel-1d-fe-newton-fi">
-\[\tag{70}
+\[\tag{74}
 F_i =
     \int_0^L ({\alpha}(u)u^{\prime}{\psi}_i^{\prime} + au{\psi}_i -
     f(u){\psi}_i){\, \mathrm{d}x} + C{\psi}_i(0)=0,\quad i\in{\mathcal{I}_s}{\thinspace .}\]</div>
@@ -530,7 +579,7 @@ the results</p>
 \sum_kc_k{\psi}_k = {\psi}_j,\quad
 \frac{\partial u^{\prime}}{\partial c_j} = \frac{\partial}{\partial c_j}
 \sum_kc_k{\psi}_k^{\prime} = {\psi}_j^{\prime}{\thinspace .}\]</div>
-<p>The derivation of the Jacobian of <a class="reference internal" href="#eq-nonlin-alglevel-1d-fe-newton-fi"><span class="std std-ref">(70)</span></a> goes as</p>
+<p>The derivation of the Jacobian of <a class="reference internal" href="#eq-nonlin-alglevel-1d-fe-newton-fi"><span class="std std-ref">(74)</span></a> goes as</p>
 <div class="math">
 \[J_{i,j} = \frac{\partial F_i}{\partial c_j}
  = \int_0^L \frac{\partial}{\partial c_j}
@@ -551,7 +600,7 @@ f^{\prime}(u)\frac{\partial u}{\partial c_j}{\psi}_i){\, \mathrm{d}x}\nonumber\]
 + a{\psi}_j{\psi}_i -
 f^{\prime}(u){\psi}_j{\psi}_i){\, \mathrm{d}x}\nonumber\]</div>
 <div class="math" id="eq-nonlin-alglevel-1d-fe-newton-jij">
-\[\tag{71}
+\[\tag{75}
 =
     \int_0^L
     ({\alpha}^{\prime}(u)u^{\prime}{\psi}_i^{\prime}{\psi}_j +
@@ -574,18 +623,18 @@ of <span class="math">\(u\)</span>, so <span class="math">\(f^{\prime}\)</span> 
 matrix <span class="math">\(J_{i,j}\)</span> in the linear system to be solved in each Newton
 iteration, one must use
 a previously computed <span class="math">\(u\)</span>, denoted by <span class="math">\(u^{-}\)</span>, for
-the symbol <span class="math">\(u\)</span> in <a class="reference internal" href="#eq-nonlin-alglevel-1d-fe-newton-fi"><span class="std std-ref">(70)</span></a> and
-<a class="reference internal" href="#eq-nonlin-alglevel-1d-fe-newton-jij"><span class="std std-ref">(71)</span></a>.
+the symbol <span class="math">\(u\)</span> in <a class="reference internal" href="#eq-nonlin-alglevel-1d-fe-newton-fi"><span class="std std-ref">(74)</span></a> and
+<a class="reference internal" href="#eq-nonlin-alglevel-1d-fe-newton-jij"><span class="std std-ref">(75)</span></a>.
 With this notation we have</p>
 <div class="math" id="eq-nonlin-alglevel-1d-fe-newton-fi2">
-\[\tag{72}
+\[\tag{76}
 F_i =
     \int_0^L\left(
     {\alpha}(u^{-})u^{-\prime}{\psi}_i^{\prime} +
     (a-f(u^{-})){\psi}_i\right){\, \mathrm{d}x} -
     C{\psi}_i(0),\quad i\in{\mathcal{I}_s},\]</div>
 <div class="math" id="eq-nonlin-alglevel-1d-fe-newton-jij2">
-\[\tag{73}
+\[\tag{77}
 J_{i,j} =
     \int_0^L
     ({\alpha}^{\prime}(u^{-})u^{-\prime}{\psi}_i^{\prime}{\psi}_j +
@@ -602,17 +651,17 @@ The most recently computed approximation <span class="math">\(u^{-}\)</span> to 
 element, where <span class="math">\(\tilde u^{-1}_t\)</span> is the value of <span class="math">\(u^{-}\)</span>
 at global node (or degree of freedom)
 <span class="math">\(q(e,t)\)</span> corresponding to the local node <span class="math">\(t\)</span> (or degree of freedom).
-The formulas <a class="reference internal" href="#eq-nonlin-alglevel-1d-fe-newton-fi2"><span class="std std-ref">(72)</span></a> and
-<a class="reference internal" href="#eq-nonlin-alglevel-1d-fe-newton-jij2"><span class="std std-ref">(73)</span></a> then change to</p>
+The formulas <a class="reference internal" href="#eq-nonlin-alglevel-1d-fe-newton-fi2"><span class="std std-ref">(76)</span></a> and
+<a class="reference internal" href="#eq-nonlin-alglevel-1d-fe-newton-jij2"><span class="std std-ref">(77)</span></a> then change to</p>
 <div class="math" id="eq-nonlin-alglevel-1d-fe-newton-fi2-e">
-\[\tag{74}
+\[\tag{78}
 \tilde F_r^{(e)} =
     \int_{-1}^1\left(
     {\alpha}(\tilde u^{-})\tilde u^{-\prime}{\tilde{\varphi}}_r^{\prime} +
     (a-f(\tilde u^{-})){\tilde{\varphi}}_r\right)\det J{\, \mathrm{d}X} -
     C{\tilde{\varphi}}_r(0),\]</div>
 <div class="math" id="eq-nonlin-alglevel-1d-fe-newton-jij2-e">
-\[\tag{75}
+\[\tag{79}
 \tilde J_{r,s}^{(e)} =
     \int_{-1}^1
     ({\alpha}^{\prime}(\tilde u^{-})\tilde u^{-\prime}{\tilde{\varphi}}_r^{\prime}{\tilde{\varphi}}_s +
@@ -657,6 +706,7 @@ difference being that the known values are zero.</p>
 <li><a class="reference internal" href="#solution-of-algebraic-equations">Solution of algebraic equations</a><ul>
 <li><a class="reference internal" href="#the-structure-of-the-equation-system">The structure of the equation system</a></li>
 <li><a class="reference internal" href="#picard-iteration-3">Picard iteration</a></li>
+<li><a class="reference internal" href="#mesh-with-two-cells">Mesh with two cells</a></li>
 <li><a class="reference internal" href="#newton-s-method-4">Newton&#8217;s method</a></li>
 </ul>
 </li>

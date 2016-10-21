@@ -2,7 +2,7 @@
  * searchtools.js_t
  * ~~~~~~~~~~~~~~~~
  *
- * Sphinx JavaScript utilities for the full-text search.
+ * Sphinx JavaScript utilties for the full-text search.
  *
  * :copyright: Copyright 2007-2015 by the Sphinx team, see AUTHORS.
  * :license: BSD, see LICENSE for details.
@@ -10,7 +10,6 @@
  */
 
 
-/* Non-minified version JS is _stemmer.js if file is provided */ 
 /**
  * Porter Stemmer
  */
@@ -595,7 +594,7 @@ var Search = {
    * helper function to return a node containing the
    * search summary for a given text. keywords is a list
    * of stemmed words, hlwords is the list of normal, unstemmed
-   * words. the first one is used to find the occurrence, the
+   * words. the first one is used to find the occurance, the
    * latter for highlighting it.
    */
   makeSearchSummary : function(text, keywords, hlwords) {

@@ -1222,7 +1222,7 @@ Program <a href="http://tinyurl.com/nm5587k/nonlin/logistic.py" target="_self"><
             u_ = u[n-<span style="color: #B452CD">1</span>]
             k = <span style="color: #B452CD">0</span>
             <span style="color: #8B008B; font-weight: bold">while</span> <span style="color: #658b00">abs</span>(F(u_)) &gt; eps_r <span style="color: #8B008B">and</span> k &lt; max_iter:
-                u_ = u_ - F(u_)/dF(u_)
+                u_ = u_ - omega*F(u_)/dF(u_)
                 k += <span style="color: #B452CD">1</span>
             u[n] = u_
             iterations.append(k)
@@ -1488,7 +1488,7 @@ Introduce vector notation:
 
 <ul>
  <p><li> \( u=(u_0(t),u_1(t),\ldots,u_N(t)) \)</li>
- <p><li> \( (f_0(u,t),f_1(u,t),\ldots,f_N(u,t)) \)</li>
+ <p><li> \( f=(f_0(u,t),f_1(u,t),\ldots,f_N(u,t)) \)</li>
 </ul>
 
 Vector form:
@@ -1496,7 +1496,7 @@ Vector form:
 $$ u^{\prime} = f(u,t),\quad u(0)=U_0 $$
 
 <p>
-Schemes: apply scalar scheme to each component
+Strategy: apply scalar scheme to each component
 
 <p>
 <!-- !split --><br><br><br><br><br><br><br><br>
@@ -1648,7 +1648,7 @@ $$ A(u)u = b(u)$$
 
 <p>
 Picard iteration for \( F(u)=0 \) is meaningless unless there is
-some structure so we can linearize. For \( A(u)u=b(u) \) we can
+some structure that we can linearize. For \( A(u)u=b(u) \) we can
 linearize
 
 $$ A(u^{-})u = b(u^{-})$$
@@ -1747,8 +1747,8 @@ one gets
 
 $$
 J_{i,j} = \frac{\partial F_i}{\partial u_j}
-= \sum_k \frac{\partial A_{i,k}}{\partial u_j}u_k
-+ A_{i,j} -
+= A_{i,j}+\sum_k \frac{\partial A_{i,k}}{\partial u_j}u_k
+ -
 \frac{\partial b_i}{\partial u_j}
 $$
 
@@ -2140,7 +2140,7 @@ Rewrite with a simplified, implementation-friendly notation:
 
 <ul>
  <p><li> \( u \) means the unknown \( u^{n,k+1} \) to solve for</li>
- <p><li> \( u^{-} \) means the most recent approximation to \( u \)</li>
+ <p><li> \( u^{-} \) means the most recent approximation: \( u^{n,k} \)</li>
  <p><li> \( u^{(1)} \) means \( u^{n-1} \) (\( u^{(\ell)} \) means \( u^{n-\ell} \))</li>
 </ul>
 
@@ -2170,7 +2170,7 @@ but the idea of the method can be applied at the PDE level too!
 
 
 <p>
-Let \( u^{n,k} \) be an approximation to the unknown \( u^n \).
+Let \( u^{n,k} \) be the most recently computed approximation to the unknown \( u^n \).
 We seek a better approximation
 
 $$
@@ -2184,7 +2184,7 @@ $$
    and keep only terms that are linear in \( \delta u \)</li>
 </ul>
 
-Result: linear PDE for the <em>approximate</em> correction \( \delta u \)
+Result: a linear PDE for the <em>approximate</em> correction \( \delta u \)
 
 <p>
 <!-- !split --><br><br><br><br><br><br><br><br>
@@ -2252,10 +2252,10 @@ F(u^{n,k}) &= \frac{u^{n,k} - u^{n-1}}{\Delta t} -
 \nabla\cdot (\dfc(u^{n,k})\nabla u^{n,k}) + f(u^{n,k})
 \\ 
 \delta F(\delta u; u^{n,k}) &=
-- \frac{1}{\Delta t}\delta u +
-\nabla\cdot (\dfc(u^{n,k})\nabla \delta u) + \\ 
+\frac{1}{\Delta t}\delta u -
+\nabla\cdot (\dfc(u^{n,k})\nabla \delta u) - \\ 
 &\qquad \nabla\cdot (\dfc^{\prime}(u^{n,k})\delta u\nabla u^{n,k})
-+ f^{\prime}(u^{n,k})\delta u
+- f^{\prime}(u^{n,k})\delta u
 \end{align*}
 $$
 
@@ -2311,10 +2311,10 @@ F(u^{-}) &= \frac{u^{-} - u^{(1)}}{\Delta t} -
 \nabla\cdot (\dfc(u^{-})\nabla u^{-}) + f(u^{-})
 \\ 
 \delta F(\delta u; u^{-}) &=
-- \frac{1}{\Delta t}\delta u +
-\nabla\cdot (\dfc(u^{-})\nabla \delta u) \ + \nonumber\\ 
+\frac{1}{\Delta t}\delta u -
+\nabla\cdot (\dfc(u^{-})\nabla \delta u) \ - \nonumber\\ 
 &\quad \nabla\cdot (\dfc^{\prime}(u^{-})\delta u\nabla u^{-})
-+ f^{\prime}(u^{-})\delta u
+- f^{\prime}(u^{-})\delta u
 \end{align*}
 $$
 
@@ -2355,7 +2355,7 @@ at \( t_{n+\frac{1}{2}} \):
 $$ [D_t u = \nabla\cdot (\dfc(u)\nabla u) + f(u)]^{n+\frac{1}{2}}\tp$$
 
 <p>
-Many choices of formulating an arithmetic means:
+Many choices of formulating an arithmetic mean:
 
 $$
 \begin{align*}
@@ -2384,7 +2384,7 @@ $$
 Is there any differences in accuracy between
 
 <ol>
-<p><li> two factors of arithmetic means</li>
+<p><li> the product of arithmetic means</li>
 <p><li> the arithmetic mean of a product</li>
 </ol>
 
